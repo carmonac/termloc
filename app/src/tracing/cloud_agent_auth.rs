@@ -130,7 +130,9 @@ impl AuthContext {
     /// Creates a transport sharing the latest credential while leaving the exporter itself stable.
     pub(super) fn http_client(&self) -> AuthenticatedHttpClient {
         AuthenticatedHttpClient {
-            inner: reqwest::Client::new(),
+            inner: egress::guard(reqwest::Client::builder())
+                .build()
+                .expect("should not fail to create client"),
             token_store: self.token_store.clone(),
             refresh_hint_sender: self.refresh_hint_sender.clone(),
         }

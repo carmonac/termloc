@@ -295,6 +295,7 @@ pub async fn make_authenticated_client(
         .as_ref()
         .and_then(|c| c.client_secret.clone());
     let mut auth_manager = AuthorizationManager::new(resource_url).await?;
+    auth_manager.with_client(http_client.clone())?;
     install_persisting_credential_store(
         &mut auth_manager,
         persisted_credentials,

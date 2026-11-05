@@ -2,19 +2,32 @@
 // builds. See https://doc.rust-lang.org/reference/runtime.html#the-windows_subsystem-attribute.
 #![cfg_attr(feature = "release_bundle", windows_subsystem = "windows")]
 
+use std::env;
+
 use anyhow::Result;
+use egress::Policy;
 use warp_core::AppId;
 use warp_core::channel::{Channel, ChannelConfig, ChannelState, OzConfig, WarpServerConfig};
 
+/// Comma-separated hosts the app may reach besides this machine.
+const ALLOWED_HOSTS_VAR: &str = "WARP_EGRESS_ALLOW";
+
 // Simple wrapper around warp::run() for Warp OSS builds.
 fn main() -> Result<()> {
+    egress::enforce(Policy::new(
+        env::var(ALLOWED_HOSTS_VAR)
+            .unwrap_or_default()
+            .split(',')
+            .map(str::to_owned),
+    ));
+
     let mut state = ChannelState::new(
         Channel::Oss,
         ChannelConfig {
             app_id: AppId::new("dev", "warp", "WarpOss"),
             logfile_name: "warp-oss.log".into(),
-            server_config: WarpServerConfig::production(),
-            oz_config: OzConfig::production(),
+            server_config: WarpServerConfig::disabled(),
+            oz_config: OzConfig::disabled(),
             telemetry_config: None,
             crash_reporting_config: None,
             autoupdate_config: None,

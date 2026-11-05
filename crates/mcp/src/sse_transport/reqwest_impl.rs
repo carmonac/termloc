@@ -3,14 +3,12 @@
 // Used under the terms of the Apache License, Version 2.0.
 // See https://github.com/modelcontextprotocol/rust-sdk/blob/main/LICENSE for the full license text.
 
-use std::sync::Arc;
-
 use futures::StreamExt;
 use http::Uri;
 use reqwest::header::ACCEPT;
 use sse_stream::SseStream;
 
-use super::sse_client::{SseClient, SseClientConfig, SseClientTransport, SseTransportError};
+use super::sse_client::{SseClient, SseTransportError};
 
 const HEADER_LAST_EVENT_ID: &str = "Last-Event-Id";
 const EVENT_STREAM_MIME_TYPE: &str = "text/event-stream";
@@ -73,24 +71,5 @@ impl SseClient for reqwest::Client {
         }
         let event_stream = SseStream::from_bytes_stream(response.bytes_stream()).boxed();
         Ok(event_stream)
-    }
-}
-
-impl SseClientTransport<reqwest::Client> {
-    /// Creates a new transport using reqwest with the specified SSE endpoint.
-    ///
-    /// This is a convenience method that creates a transport using the default
-    /// reqwest client.
-    pub async fn start(
-        uri: impl Into<Arc<str>>,
-    ) -> Result<Self, SseTransportError<reqwest::Error>> {
-        SseClientTransport::start_with_client(
-            reqwest::Client::default(),
-            SseClientConfig {
-                sse_endpoint: uri.into(),
-                ..Default::default()
-            },
-        )
-        .await
     }
 }

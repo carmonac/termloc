@@ -548,6 +548,12 @@ fn enabled_features() -> HashSet<FeatureFlag> {
             FeatureFlag::ForceLogin,
             FeatureFlag::AccountFirstOnboarding,
             FeatureFlag::AgentOnboarding,
+            FeatureFlag::Autoupdate,
+            FeatureFlag::Changelog,
+            FeatureFlag::CocoaSentry,
+            FeatureFlag::CrashReporting,
+            FeatureFlag::LogExpensiveFramesInSentry,
+            FeatureFlag::SshRemoteServer,
         ] {
             flags.remove(&flag);
         }

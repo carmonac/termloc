@@ -46,6 +46,7 @@ field_mask = { path = "crates/field_mask" }
 firebase = { path = "crates/firebase" }
 fuzzy_match = { path = "crates/fuzzy_match" }
 handlebars = { path = "crates/handlebars" }
+egress = { path = "crates/egress" }
 http_client = { path = "crates/http_client" }
 local_agent = { path = "crates/local_agent" }
 http_server = { path = "crates/http_server" }

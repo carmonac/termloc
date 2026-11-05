@@ -1,0 +1,18 @@
+[package]
+name = "egress"
+version = "0.1.0"
+edition = "2024"
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+futures.workspace = true
+http.workspace = true
+log.workspace = true
+reqwest.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tower.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "net", "rt"] }

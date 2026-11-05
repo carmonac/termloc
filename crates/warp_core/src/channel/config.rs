@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::AppId;
 
+const DISABLED_SERVER_URL: &str = "http://127.0.0.1:9";
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChannelConfig {
     /// The application ID for this channel.
@@ -67,6 +69,18 @@ impl WarpServerConfig {
             iap_config: None,
         }
     }
+
+    /// Points every server URL at a closed loopback port, for builds that never talk to Warp.
+    pub fn disabled() -> Self {
+        Self {
+            server_root_url: DISABLED_SERVER_URL.into(),
+            prewarmed_sandbox_control_url: None,
+            rtc_server_url: "ws://127.0.0.1:9/graphql/v2".into(),
+            session_sharing_server_url: None,
+            firebase_auth_api_key: "".into(),
+            iap_config: None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -84,6 +98,14 @@ impl OzConfig {
     pub fn production() -> Self {
         Self {
             oz_root_url: "https://oz.warp.dev".into(),
+            workload_audience_url: None,
+        }
+    }
+
+    /// See [`WarpServerConfig::disabled`].
+    pub fn disabled() -> Self {
+        Self {
+            oz_root_url: DISABLED_SERVER_URL.into(),
             workload_audience_url: None,
         }
     }

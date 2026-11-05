@@ -7,6 +7,7 @@ use ai::api_keys::{
 pub use ai::{LLMId, LLMProvider};
 use parking_lot::FairMutex;
 use serde::{Deserialize, Serialize, de};
+use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::Icon;
 use warp_errors::report_error;
@@ -2045,6 +2046,10 @@ impl LLMPreferences {
         scope: &(impl TeamScope + ?Sized),
         ctx: &mut ModelContext<Self>,
     ) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         if AuthStateProvider::as_ref(ctx).get().is_logged_in() {
             self.refresh_authed_models(scope, ctx);
         } else {

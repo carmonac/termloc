@@ -182,7 +182,7 @@ impl Client {
     }
 
     pub fn from_client_builder(client_builder: reqwest::ClientBuilder) -> reqwest::Result<Self> {
-        client_builder.build().map(|client| Self {
+        egress::guard(client_builder).build().map(|client| Self {
             wrapped: client,
             include_warp_headers: true,
             #[cfg(target_family = "wasm")]

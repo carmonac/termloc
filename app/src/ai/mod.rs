@@ -20,8 +20,6 @@ pub mod aws_credentials;
 pub(crate) mod bedrock_credentials;
 pub(crate) mod block_context;
 pub(crate) mod blocklist;
-#[cfg(not(target_family = "wasm"))]
-pub(crate) mod local;
 pub mod chatgpt_subscription;
 #[cfg(any(feature = "local_fs", not(target_family = "wasm")))]
 pub(crate) mod codebase_auto_indexing;
@@ -44,6 +42,8 @@ pub(crate) mod get_relevant_files;
 pub mod harness_availability;
 pub(crate) mod harness_display;
 pub(crate) mod llms;
+#[cfg(not(target_family = "wasm"))]
+pub(crate) mod local;
 pub(crate) mod local_harness_setup;
 pub(crate) mod metadata_project_rules;
 pub mod onboarding;

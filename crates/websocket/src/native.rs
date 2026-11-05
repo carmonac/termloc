@@ -31,9 +31,15 @@ static CLIENT_CONFIG: std::sync::LazyLock<Result<Arc<rustls::ClientConfig>, rust
 /// The `NO_PROXY` environment variable is respected to bypass the proxy for specific hosts.
 pub async fn connect(request: impl IntoClientRequest + Unpin) -> anyhow::Result<WebSocket> {
     let request = request.into_client_request()?;
+    egress::check_uri(request.uri())?;
     let tls_connector = Some(TlsConnector::from(CLIENT_CONFIG.clone()?));
 
-    if let Some(proxy_info) = proxy::resolve_proxy(request.uri())? {
+    let proxy_info = if egress::is_enforced() {
+        None
+    } else {
+        proxy::resolve_proxy(request.uri())?
+    };
+    if let Some(proxy_info) = proxy_info {
         log::debug!(
             "Using HTTP proxy {}:{} for WebSocket connection to {}",
             proxy_info.host,

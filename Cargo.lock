@@ -1248,6 +1248,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "cfg-if",
+ "egress",
  "futures",
  "log",
  "reqwest",
@@ -4655,6 +4656,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "egress"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "http 1.4.0",
+ "log",
+ "reqwest",
+ "tokio",
+ "tower",
+]
+
+[[package]]
 name = "either"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6494,6 +6507,7 @@ dependencies = [
  "async-stream",
  "bytes",
  "cfg-if",
+ "egress",
  "futures",
  "gloo",
  "http 1.4.0",
@@ -8286,6 +8300,7 @@ dependencies = [
  "axum",
  "cfg-if",
  "cloud_object_models",
+ "egress",
  "futures",
  "handlebars",
  "http 1.4.0",
@@ -15335,6 +15350,7 @@ dependencies = [
  "directories",
  "dirs 6.0.0",
  "dunce",
+ "egress",
  "email_address 0.2.3",
  "embed-resource",
  "embed_plist",
@@ -16849,6 +16865,7 @@ dependencies = [
  "async-tungstenite",
  "base64 0.22.1",
  "cfg-if",
+ "egress",
  "futures",
  "futures-test-sink",
  "futures-util",

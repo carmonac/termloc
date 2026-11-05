@@ -172,6 +172,7 @@ rangemap.workspace = true
 rayon.workspace = true
 regex-automata.workspace = true
 regex.workspace = true
+egress.workspace = true
 reqwest.workspace = true
 rust-embed.workspace = true
 sentry-log = { workspace = true, optional = true }
