@@ -44,3 +44,18 @@ fn does_not_send_thinking_back_to_the_model() {
     let json = serde_json::to_string(&message).unwrap();
     assert!(!json.contains("secret"));
 }
+
+#[test]
+fn model_details_expose_capabilities_and_context() {
+    let details: ShowResponse = serde_json::from_value(serde_json::json!({
+        "capabilities": ["completion", "tools"],
+        "model_info": { "general.architecture": "qwen3", "qwen3.context_length": 40960 },
+    }))
+    .unwrap();
+
+    let model = details.into_model("qwen3:8b".to_owned(), 5);
+
+    assert!(model.supports_tools);
+    assert!(!model.supports_vision);
+    assert_eq!(model.context_length, Some(40_960));
+}

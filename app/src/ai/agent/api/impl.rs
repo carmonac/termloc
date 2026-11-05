@@ -150,9 +150,8 @@ pub async fn generate_multi_agent_output(
     };
 
     #[cfg(not(target_family = "wasm"))]
-    if crate::ai::local::is_enabled()
-        && let Some(stream) = crate::ai::local::run_turn(request.clone())
-    {
+    if crate::ai::local::is_enabled() {
+        let stream = crate::ai::local::run_turn(request.clone()).await;
         return Ok(Box::pin(stream.map(Ok).take_until(cancellation_rx)));
     }
 

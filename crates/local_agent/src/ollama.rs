@@ -57,6 +57,8 @@ pub struct ChatRequest {
     pub tools: Vec<Value>,
     pub options: ChatOptions,
     pub stream: bool,
+    /// How long Ollama keeps the model loaded, so a turn's steps don't each reload it.
+    pub keep_alive: &'static str,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -74,6 +76,58 @@ pub struct ChatChunk {
     pub done_reason: Option<String>,
     #[serde(default)]
     pub error: Option<String>,
+}
+
+/// A model installed in Ollama.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LocalModel {
+    pub name: String,
+    pub supports_tools: bool,
+    pub supports_vision: bool,
+    /// The model's context window in tokens, when Ollama reports it.
+    pub context_length: Option<u32>,
+    /// Size on disk in bytes.
+    pub size: u64,
+}
+
+#[derive(Deserialize)]
+struct TagsResponse {
+    #[serde(default)]
+    models: Vec<TaggedModel>,
+}
+
+#[derive(Deserialize)]
+struct TaggedModel {
+    name: String,
+    #[serde(default)]
+    size: u64,
+}
+
+#[derive(Default, Deserialize)]
+struct ShowResponse {
+    #[serde(default)]
+    capabilities: Vec<String>,
+    #[serde(default)]
+    model_info: serde_json::Map<String, Value>,
+}
+
+impl ShowResponse {
+    fn into_model(self, name: String, size: u64) -> LocalModel {
+        let context_length = self
+            .model_info
+            .iter()
+            .find(|(key, _)| key.ends_with(".context_length"))
+            .and_then(|(_, value)| value.as_u64())
+            .and_then(|length| u32::try_from(length).ok());
+        let supports = |capability: &str| self.capabilities.iter().any(|c| c == capability);
+        LocalModel {
+            supports_tools: supports("tools"),
+            supports_vision: supports("vision"),
+            context_length,
+            size,
+            name,
+        }
+    }
 }
 
 pub type ChatStream = BoxStream<'static, anyhow::Result<ChatChunk>>;
@@ -94,6 +148,43 @@ impl OllamaClient {
             client: Arc::new(http_client::Client::new_external()),
             base_url: base_url.into().trim_end_matches('/').to_owned(),
         }
+    }
+}
+
+impl OllamaClient {
+    /// Lists the installed models and what each one can do.
+    pub async fn list_models(&self) -> anyhow::Result<Vec<LocalModel>> {
+        let url = format!("{}/api/tags", self.base_url);
+        let tags: TagsResponse = self
+            .client
+            .get(url.as_str())
+            .send()
+            .await
+            .with_context(|| format!("could not reach Ollama at {url}"))?
+            .json()
+            .await
+            .context("invalid Ollama model list")?;
+        let mut models = Vec::with_capacity(tags.models.len());
+        for model in tags.models {
+            models.push(self.show_model(model).await?);
+        }
+        Ok(models)
+    }
+
+    async fn show_model(&self, model: TaggedModel) -> anyhow::Result<LocalModel> {
+        let TaggedModel { name, size } = model;
+        let url = format!("{}/api/show", self.base_url);
+        let details: ShowResponse = self
+            .client
+            .post(url.as_str())
+            .json(&serde_json::json!({ "model": name }))
+            .send()
+            .await
+            .with_context(|| format!("could not reach Ollama at {url}"))?
+            .json()
+            .await
+            .with_context(|| format!("invalid Ollama details for {name}"))?;
+        Ok(details.into_model(name, size))
     }
 }
 

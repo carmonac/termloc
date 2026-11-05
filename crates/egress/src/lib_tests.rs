@@ -79,6 +79,16 @@ fn check_uri_uses_the_active_policy() {
 }
 
 #[test]
+fn hosts_added_later_are_allowed() {
+    let policy = Policy::default();
+    assert!(!policy.allows("ollama.lan"));
+
+    policy.allow("Ollama.LAN");
+
+    assert!(policy.allows("ollama.lan"));
+}
+
+#[test]
 fn unreadable_connector_request_is_blocked() {
     enforce_test_policy();
 

@@ -396,6 +396,138 @@ fn reuses_the_existing_root_task() {
     }));
 }
 
+#[test]
+fn stops_when_the_model_repeats_the_same_call() {
+    let chat: Vec<ChatMessage> = std::iter::once(ChatMessage::new("user", "go"))
+        .chain((0..2).map(|_| ChatMessage {
+            tool_calls: vec![ls_call()],
+            ..ChatMessage::new("assistant", "")
+        }))
+        .collect();
+    assert!(runaway_notice(&chat, &[ls_call()]).is_some());
+    assert!(runaway_notice(&chat[..2], &[ls_call()]).is_none());
+}
+
+#[test]
+fn checking_on_a_running_command_is_not_a_loop() {
+    let check = ChatToolCall {
+        function: crate::ollama::ChatFunction {
+            name: "read_shell_output".to_owned(),
+            arguments: json!({ "command_id": "1" }),
+        },
+    };
+    let chat: Vec<ChatMessage> = std::iter::once(ChatMessage::new("user", "go"))
+        .chain((0..4).map(|_| ChatMessage {
+            tool_calls: vec![check.clone()],
+            ..ChatMessage::new("assistant", "")
+        }))
+        .collect();
+
+    assert!(runaway_notice(&chat, &[check]).is_none());
+}
+
+fn ls_call() -> ChatToolCall {
+    ChatToolCall {
+        function: crate::ollama::ChatFunction {
+            name: "run_shell_command".to_owned(),
+            arguments: json!({ "command": "ls" }),
+        },
+    }
+}
+
+fn numbered_call(index: usize) -> ChatToolCall {
+    ChatToolCall {
+        function: crate::ollama::ChatFunction {
+            name: "run_shell_command".to_owned(),
+            arguments: json!({ "command": format!("ls {index}") }),
+        },
+    }
+}
+
+#[test]
+fn stops_after_too_many_chained_calls_but_counts_from_the_last_user_message() {
+    let mut chat = vec![ChatMessage::new("user", "go")];
+    chat.extend((0..MAX_CHAINED_TOOL_CALLS).map(|index| ChatMessage {
+        tool_calls: vec![numbered_call(index)],
+        ..ChatMessage::new("assistant", "")
+    }));
+    assert!(runaway_notice(&chat, &[numbered_call(99)]).is_some());
+    assert!(runaway_notice(&chat, &[]).is_none());
+
+    chat.push(ChatMessage::new("user", "keep going"));
+    assert!(runaway_notice(&chat, &[numbered_call(99)]).is_none());
+}
+
+#[test]
+fn oversized_history_gets_summarized_before_continuing() {
+    let backend = FakeBackend::scripted(vec![vec![text("the summary")], vec![text("done")]]);
+    let task = Task {
+        id: "task".to_owned(),
+        messages: vec![Message {
+            message: Some(MessageKind::AgentOutput(AgentOutput {
+                text: "x".repeat(30_000),
+            })),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let events: Vec<ResponseEvent> = block_on(
+        run_turn(
+            backend.clone(),
+            LocalAgentConfig {
+                model: "test".to_owned(),
+                num_ctx: 16_000,
+            },
+            user_request("next", vec![task]),
+        )
+        .collect(),
+    );
+
+    assert!(matches!(finish_reason(&events), Reason::Done(_)));
+    assert!(backend.request(0).tools.is_empty());
+    let continued = backend.request(1);
+    assert!(
+        continued
+            .messages
+            .iter()
+            .any(|m| m.content.contains("the summary"))
+    );
+    assert!(!continued.messages.iter().any(|m| m.content.len() >= 30_000));
+}
+
+#[test]
+fn history_too_big_to_summarize_reports_the_context_window() {
+    let backend = FakeBackend::scripted(Vec::new());
+    let task = Task {
+        id: "task".to_owned(),
+        messages: vec![Message {
+            message: Some(MessageKind::AgentOutput(AgentOutput {
+                text: "x".repeat(30_000),
+            })),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let events: Vec<ResponseEvent> = block_on(
+        run_turn(
+            backend,
+            LocalAgentConfig {
+                model: "test".to_owned(),
+                num_ctx: 4_000,
+            },
+            user_request("next", vec![task]),
+        )
+        .collect(),
+    );
+
+    assert!(matches!(
+        finish_reason(&events),
+        Reason::ContextWindowExceeded(_)
+    ));
+}
+
 /// Needs a running Ollama. Run with `LOCAL_AGENT_TEST_MODEL=<model> cargo test -p local_agent -- --ignored`.
 #[test]
 #[ignore]

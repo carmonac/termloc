@@ -1653,6 +1653,26 @@ define_settings_group!(AISettings, settings: [
         toml_path: "cloud_platform.third_party_api_keys.aws_bedrock_auth_refresh_command",
         description: "The command to run to refresh AWS credentials for Bedrock.",
     }
+    ollama_url: OllamaUrl {
+        type: String,
+        default: "http://127.0.0.1:11434".to_string(),
+        supported_platforms: SupportedPlatforms::DESKTOP,
+        sync_to_cloud: SyncToCloud::Never,
+        surface: settings::SettingSurfaces::GUI,
+        private: false,
+        toml_path: "agents.local_models.ollama_url",
+        description: "The URL of the Ollama server that runs AI features.",
+    }
+    local_context_window: LocalContextWindow {
+        type: u32,
+        default: 16_384,
+        supported_platforms: SupportedPlatforms::DESKTOP,
+        sync_to_cloud: SyncToCloud::Never,
+        surface: settings::SettingSurfaces::GUI,
+        private: false,
+        toml_path: "agents.local_models.context_window",
+        description: "The maximum number of tokens to use per request to a local model.",
+    }
     // AWS profile name to use when loading credentials from the local AWS credential/config chain.
     aws_bedrock_profile: AwsBedrockProfile {
         type: String,

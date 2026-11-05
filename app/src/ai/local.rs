@@ -1,30 +1,218 @@
-//! Routes agent requests to a local Ollama model when `WARP_LOCAL_AGENT_MODEL` is set.
-use std::sync::Arc;
+//! Runs agent turns on the user's Ollama instance and tracks the models it offers.
+use std::sync::{Arc, LazyLock};
 
-use futures::Stream;
-use local_agent::{LocalAgentConfig, OllamaClient};
+use anyhow::anyhow;
+use futures::future::BoxFuture;
+use futures::{FutureExt as _, Stream};
+use local_agent::ollama::{ChatRequest, ChatStream};
+use local_agent::{ChatBackend, LocalAgentConfig, LocalModel, OllamaClient};
+use parking_lot::RwLock;
+use settings::Setting as _;
+use url::Url;
+use warp_core::channel::ChannelState;
 use warp_multi_agent_api::{Request, ResponseEvent};
+use warpui::{Entity, ModelContext, SingletonEntity};
 
-const MODEL_ENV_VAR: &str = "WARP_LOCAL_AGENT_MODEL";
-const URL_ENV_VAR: &str = "WARP_LOCAL_AGENT_URL";
-const DEFAULT_URL: &str = "http://localhost:11434";
-const DEFAULT_NUM_CTX: u32 = 16_384;
+use crate::ai::llms::LLMPreferences;
+use crate::settings::{AISettings, AISettingsChangedEvent};
+
+/// What agent turns read from outside the app's entity system.
+#[derive(Clone, Default)]
+struct Runtime {
+    url: String,
+    context_window: u32,
+    models: Vec<LocalModel>,
+}
+
+static RUNTIME: LazyLock<RwLock<Runtime>> = LazyLock::new(Default::default);
 
 pub(crate) fn is_enabled() -> bool {
-    std::env::var_os(MODEL_ENV_VAR).is_some()
+    ChannelState::is_local_only()
 }
 
-/// Starts a local turn, or returns `None` when no local model is configured.
-pub(crate) fn run_turn(request: Request) -> Option<impl Stream<Item = ResponseEvent> + Send> {
-    let model = std::env::var(MODEL_ENV_VAR).ok()?;
-    let url = std::env::var(URL_ENV_VAR).unwrap_or_else(|_| DEFAULT_URL.to_owned());
-    let config = LocalAgentConfig {
-        model,
-        num_ctx: DEFAULT_NUM_CTX,
-    };
-    Some(local_agent::run_turn(
-        Arc::new(OllamaClient::new(url)),
-        config,
-        request,
-    ))
+/// The models that can drive the agent, which works entirely through tool calls. Largest first,
+/// because the first is the default and small models tend to be poor at tool calls.
+fn agent_models(mut models: Vec<LocalModel>) -> Vec<LocalModel> {
+    models.retain(|model| model.supports_tools);
+    models.sort_by_key(|model| std::cmp::Reverse(model.size));
+    models
 }
+
+fn unavailable_message(url: &str) -> String {
+    format!(
+        "No Ollama model is available at {url}. Start Ollama and install a model with tool \
+         support, for example `ollama pull qwen3:8b`."
+    )
+}
+
+/// Reports why a turn can't run through the same path as a failed model call.
+struct UnavailableBackend(String);
+
+impl ChatBackend for UnavailableBackend {
+    fn chat(&self, _request: ChatRequest) -> BoxFuture<'static, anyhow::Result<ChatStream>> {
+        let message = self.0.clone();
+        async move { Err(anyhow!(message)) }.boxed()
+    }
+}
+
+/// Picks the model a request asked for, or the first one when it named something else, like a
+/// selection made before that model was removed.
+fn select_model<'a>(models: &'a [LocalModel], requested: &str) -> Option<&'a LocalModel> {
+    models
+        .iter()
+        .find(|model| model.name == requested)
+        .or(models.first())
+}
+
+fn context_window(limit: u32, model: &LocalModel) -> u32 {
+    model
+        .context_length
+        .map_or(limit, |length| length.min(limit))
+}
+
+/// Starts a local turn. Ollama may have started after the app did, so an empty model list is
+/// checked again first.
+pub(crate) async fn run_turn(request: Request) -> impl Stream<Item = ResponseEvent> + Send {
+    let mut runtime = RUNTIME.read().clone();
+    if runtime.models.is_empty()
+        && let Ok(models) = OllamaClient::new(runtime.url.clone()).list_models().await
+    {
+        runtime.models = agent_models(models);
+        RUNTIME.write().models = runtime.models.clone();
+    }
+
+    let requested = request
+        .settings
+        .as_ref()
+        .and_then(|settings| settings.model_config.as_ref())
+        .map(|config| config.base.as_str())
+        .unwrap_or_default();
+    let (backend, config): (Arc<dyn ChatBackend>, LocalAgentConfig) =
+        match select_model(&runtime.models, requested) {
+            Some(model) => (
+                Arc::new(OllamaClient::new(runtime.url.clone())),
+                LocalAgentConfig {
+                    model: model.name.clone(),
+                    num_ctx: context_window(runtime.context_window, model),
+                },
+            ),
+            None => (
+                Arc::new(UnavailableBackend(unavailable_message(&runtime.url))),
+                LocalAgentConfig {
+                    model: String::new(),
+                    num_ctx: runtime.context_window,
+                },
+            ),
+        };
+    local_agent::run_turn(backend, config, request)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum LocalModelsState {
+    Loading,
+    Ready,
+    Unavailable(String),
+}
+
+pub enum LocalModelsEvent {
+    Changed,
+}
+
+/// The models installed in Ollama, kept in sync with the user's settings.
+pub struct LocalModels {
+    state: LocalModelsState,
+    models: Vec<LocalModel>,
+}
+
+impl LocalModels {
+    pub fn new(ctx: &mut ModelContext<Self>) -> Self {
+        ctx.subscribe_to_model(&AISettings::handle(ctx), |me, _, event, ctx| {
+            if matches!(
+                event,
+                AISettingsChangedEvent::OllamaUrl { .. }
+                    | AISettingsChangedEvent::LocalContextWindow { .. }
+            ) {
+                me.refresh(ctx);
+            }
+        });
+        let mut me = Self {
+            state: LocalModelsState::Loading,
+            models: Vec::new(),
+        };
+        me.refresh(ctx);
+        me
+    }
+
+    pub fn state(&self) -> &LocalModelsState {
+        &self.state
+    }
+
+    pub fn models(&self) -> &[LocalModel] {
+        &self.models
+    }
+
+    pub fn refresh(&mut self, ctx: &mut ModelContext<Self>) {
+        let settings = AISettings::as_ref(ctx);
+        let url = settings.ollama_url.value().clone();
+        let context_window = *settings.local_context_window.value();
+        allow_ollama_host(&url);
+        {
+            let mut runtime = RUNTIME.write();
+            runtime.url = url.clone();
+            runtime.context_window = context_window;
+        }
+
+        self.state = LocalModelsState::Loading;
+        ctx.emit(LocalModelsEvent::Changed);
+        let _ = ctx.spawn(
+            async move {
+                OllamaClient::new(url.clone())
+                    .list_models()
+                    .await
+                    .map_err(|_| unavailable_message(&url))
+            },
+            Self::on_models_fetched,
+        );
+    }
+
+    fn on_models_fetched(
+        &mut self,
+        result: Result<Vec<LocalModel>, String>,
+        ctx: &mut ModelContext<Self>,
+    ) {
+        let url = RUNTIME.read().url.clone();
+        (self.models, self.state) = match result.map(agent_models) {
+            Ok(models) if models.is_empty() => (
+                Vec::new(),
+                LocalModelsState::Unavailable(unavailable_message(&url)),
+            ),
+            Ok(models) => (models, LocalModelsState::Ready),
+            Err(message) => (Vec::new(), LocalModelsState::Unavailable(message)),
+        };
+        RUNTIME.write().models = self.models.clone();
+        if !self.models.is_empty() {
+            let models = self.models.clone();
+            LLMPreferences::handle(ctx).update(ctx, |preferences, ctx| {
+                preferences.set_local_models(&models, ctx);
+            });
+        }
+        ctx.emit(LocalModelsEvent::Changed);
+    }
+}
+
+/// The user chose this server, so it counts as allowed even on another machine.
+fn allow_ollama_host(url: &str) {
+    if let Some(host) = Url::parse(url).ok().as_ref().and_then(Url::host_str) {
+        egress::allow_host(host);
+    }
+}
+
+impl Entity for LocalModels {
+    type Event = LocalModelsEvent;
+}
+
+impl SingletonEntity for LocalModels {}
+
+#[cfg(test)]
+#[path = "local_tests.rs"]
+mod tests;

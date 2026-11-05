@@ -9,6 +9,9 @@ pub(crate) const SUMMARY_PROMPT: &str = "Summarize this conversation so that wor
 from the summary alone. Keep the user's goal, decisions made, files changed, and open steps. \
 Reply with the summary only.";
 
+pub(crate) const CONTINUE_PROMPT: &str =
+    "Continue with the task from where the summary leaves off.";
+
 pub(crate) fn system_prompt(context: Option<&InputContext>) -> String {
     let mut prompt = BASE_PROMPT.to_owned();
     let Some(context) = context else {

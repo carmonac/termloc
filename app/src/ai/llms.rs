@@ -563,6 +563,28 @@ impl LLMInfo {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
+fn local_llm_info(model: &local_agent::LocalModel) -> LLMInfo {
+    LLMInfo {
+        display_name: model.name.clone(),
+        base_model_name: model.name.clone(),
+        id: model.name.clone().into(),
+        reasoning_level: None,
+        usage_metadata: LLMUsageMetadata {
+            request_multiplier: 1,
+            credit_multiplier: None,
+        },
+        description: None,
+        disable_reason: None,
+        vision_supported: model.supports_vision,
+        spec: None,
+        provider: LLMProvider::Unknown,
+        host_configs: HashMap::new(),
+        discount_percentage: None,
+        context_window: LLMContextWindow::default(),
+    }
+}
+
 /// The set of LLMs available for a feature.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AvailableLLMs {
@@ -2039,6 +2061,35 @@ impl LLMPreferences {
                 }
             },
         );
+    }
+
+    /// Offers `models`, which must not be empty, in every model picker.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn set_local_models(
+        &mut self,
+        models: &[local_agent::LocalModel],
+        ctx: &mut ModelContext<Self>,
+    ) {
+        let choices = || models.iter().map(local_llm_info).collect::<Vec<_>>();
+        let default_id: LLMId = models
+            .first()
+            .map(|model| model.name.clone())
+            .unwrap_or_default()
+            .into();
+        let available = || AvailableLLMs::new(default_id.clone(), choices(), None);
+        match (available(), available()) {
+            (Ok(agent_mode), Ok(coding)) => self.on_server_update(
+                None,
+                ModelsByFeature {
+                    agent_mode,
+                    coding,
+                    cli_agent: None,
+                    computer_use: None,
+                },
+                ctx,
+            ),
+            (Err(error), _) | (_, Err(error)) => report_error!(error),
+        }
     }
 
     pub fn refresh_available_models(

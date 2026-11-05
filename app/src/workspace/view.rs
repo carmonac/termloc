@@ -221,6 +221,8 @@ use crate::ai::facts::{AIFactManager, AIFactView, AIFactViewEvent};
 #[cfg(all(feature = "local_fs", not(target_family = "wasm")))]
 use crate::ai::llms::LLMId as HandoffLLMId;
 use crate::ai::llms::LLMPreferences;
+#[cfg(not(target_family = "wasm"))]
+use crate::ai::local::{LocalModels, LocalModelsState};
 use crate::ai::persisted_workspace::PersistedWorkspace;
 use crate::ai_assistant::execution_context::execution_context_for_session;
 use crate::ai_assistant::panel::{AIAssistantPanelEvent, AIAssistantPanelView};
@@ -3374,6 +3376,18 @@ impl Workspace {
                 }
             },
         );
+
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            ctx.subscribe_to_model(&LocalModels::handle(ctx), |me, models, _, ctx| {
+                if let LocalModelsState::Unavailable(message) = models.as_ref(ctx).state() {
+                    let toast = DismissibleToast::error(message.clone());
+                    me.toast_stack.update(ctx, |toast_stack, ctx| {
+                        toast_stack.add_ephemeral_toast(toast, ctx);
+                    });
+                }
+            });
+        }
 
         ctx.subscribe_to_model(&AISettings::handle(ctx), |me, _, event, ctx| match event {
             AISettingsChangedEvent::IsAnyAIEnabled { .. }

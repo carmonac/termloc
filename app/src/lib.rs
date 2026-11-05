@@ -2453,6 +2453,10 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(LocalWorkflows::new);
 
     ctx.add_singleton_model(LLMPreferences::new);
+    #[cfg(not(target_family = "wasm"))]
+    if ChannelState::is_local_only() {
+        ctx.add_singleton_model(ai::local::LocalModels::new);
+    }
     ctx.add_singleton_model(HarnessAvailabilityModel::new);
     ctx.add_singleton_model(ConnectedSelfHostedWorkersModel::new);
 

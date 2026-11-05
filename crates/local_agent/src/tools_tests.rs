@@ -141,3 +141,70 @@ fn widening_handles_multibyte_text() {
     let edit = whole_line_edit("año é fin\n", "é", "e");
     assert_eq!(edit, Some(("año é fin".to_owned(), "año e fin".to_owned())));
 }
+
+#[test]
+fn new_tools_parse_into_their_client_forms() {
+    assert!(matches!(
+        parse_tool_call(&call(GREP, json!({ "pattern": "todo" })), None),
+        Ok(Tool::Grep(grep)) if grep.queries == ["todo"] && grep.path == "."
+    ));
+    assert!(matches!(
+        parse_tool_call(&call(GLOB, json!({ "pattern": "*.rs", "path": "src" })), None),
+        Ok(Tool::FileGlobV2(glob)) if glob.patterns == ["*.rs"] && glob.search_dir == "src"
+    ));
+    assert!(matches!(
+        parse_tool_call(&call(CREATE_FILE, json!({ "path": "a", "content": "b" })), None),
+        Ok(Tool::ApplyFileDiffs(edit)) if edit.new_files[0].content == "b"
+            && !edit.new_files[0].allow_overwrite
+    ));
+}
+
+#[test]
+fn read_file_accepts_line_numbers_as_numbers_or_strings() {
+    let tool = parse_tool_call(
+        &call(
+            READ_FILE,
+            json!({ "path": "a", "start_line": 3, "end_line": "9" }),
+        ),
+        None,
+    );
+    let Ok(Tool::ReadFiles(read)) = tool else {
+        panic!("expected a read");
+    };
+    assert_eq!(read.files[0].line_ranges[0].start, 3);
+    assert_eq!(read.files[0].line_ranges[0].end, 9);
+}
+
+#[test]
+fn every_builtin_tool_round_trips_through_history() {
+    for (name, arguments) in [
+        (GREP, json!({ "pattern": "todo" })),
+        (GLOB, json!({ "pattern": "*.rs" })),
+        (CREATE_FILE, json!({ "path": "a", "content": "b" })),
+        (READ_SHELL_OUTPUT, json!({ "command_id": "1" })),
+        (ASK_USER, json!({ "question": "Why?", "options": ["a"] })),
+    ] {
+        let tool = parse_tool_call(&call(name, arguments), None).unwrap();
+        assert_eq!(chat_call_for_tool(&tool).unwrap().function.name, name);
+    }
+}
+
+#[test]
+fn running_commands_tell_the_model_their_id() {
+    let text = running_text(&LongRunningShellCommandSnapshot {
+        command_id: "abc".to_owned(),
+        ..Default::default()
+    });
+    assert!(text.contains("command_id abc"));
+}
+
+#[test]
+fn unsupported_tools_are_not_offered() {
+    let toolbox = Toolbox {
+        supported: vec![ToolType::RunShellCommand as i32],
+        mcp_tools: Vec::new(),
+    };
+    let definitions = toolbox.definitions();
+    assert_eq!(definitions.len(), 1);
+    assert_eq!(definitions[0]["function"]["name"], RUN_SHELL_COMMAND);
+}

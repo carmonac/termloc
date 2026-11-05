@@ -13,6 +13,7 @@ use features_page::{FeaturesPageView, FeaturesSettingsPageEvent};
 use itertools::Itertools as _;
 use keybindings::KeybindingsView;
 use knowledge_page::{KnowledgePageAction, KnowledgePageEvent, KnowledgePageView};
+use local_models_page::LocalModelsPageView;
 use main_page::{MainPageAction, MainSettingsPageEvent, MainSettingsPageView};
 use mcp_servers_page::MCPServersSettingsPageView;
 use nav::{SettingsNavItem, SettingsUmbrella};
@@ -100,6 +101,8 @@ pub(crate) mod handoff_environment_creation_modal;
 mod join_teams_modal;
 pub mod keybindings;
 mod knowledge_page;
+#[cfg(not(target_family = "wasm"))]
+mod local_models_page;
 mod main_page;
 pub mod mcp_servers;
 pub mod mcp_servers_page;
@@ -325,6 +328,7 @@ pub enum SettingsSection {
     WarpDrive,
     Warpify,
     // ── Agents umbrella subpages ──
+    LocalModels,
     WarpAgent,
     AgentProfiles,
     AgentMCPServers,
@@ -349,6 +353,7 @@ impl Display for SettingsSection {
             SettingsSection::Keybindings => write!(f, "Keyboard shortcuts"),
             SettingsSection::SharedBlocks => write!(f, "Shared blocks"),
             SettingsSection::Scripting => write!(f, "Scripting"),
+            SettingsSection::LocalModels => write!(f, "Local models"),
             SettingsSection::WarpDrive => write!(f, "Warp Drive"),
             SettingsSection::WarpAgent => write!(f, "Warp Agent"),
             SettingsSection::AgentProfiles => write!(f, "Profiles"),
@@ -389,6 +394,7 @@ impl SettingsSection {
             Self::Privacy => "Privacy",
             Self::Referrals => "Referrals",
             Self::Scripting => "Scripting",
+            Self::LocalModels => "Local models",
             Self::SharedBlocks => "Shared blocks",
             Self::Teams => "Teams",
             Self::WarpDrive => "Warp Drive",
@@ -425,6 +431,7 @@ impl SettingsSection {
             "Privacy" => Self::Privacy,
             "Referrals" => Self::Referrals,
             "Scripting" => Self::Scripting,
+            "Local models" => Self::LocalModels,
             "Shared blocks" => Self::SharedBlocks,
             "Teams" => Self::Teams,
             "Warp Drive" | "WarpDrive" => Self::WarpDrive,
@@ -1075,7 +1082,7 @@ fn is_cloud_nav_item(item: &SettingsNavItem) -> bool {
 /// Redirects pages that local-only builds don't offer.
 fn available_section(section: SettingsSection) -> SettingsSection {
     if ChannelState::is_local_only() && is_cloud_section(section) {
-        SettingsSection::Appearance
+        SettingsSection::LocalModels
     } else {
         section
     }
@@ -1185,6 +1192,7 @@ macro_rules! update_page {
             SettingsPageViewHandle::Privacy(handle) => $ctx.update_view(handle, $update),
             SettingsPageViewHandle::Referrals(handle) => $ctx.update_view(handle, $update),
             SettingsPageViewHandle::Scripting(handle) => $ctx.update_view(handle, $update),
+            SettingsPageViewHandle::LocalModels(handle) => $ctx.update_view(handle, $update),
             SettingsPageViewHandle::WarpAgent(handle) => $ctx.update_view(handle, $update),
             SettingsPageViewHandle::AgentProfiles(handle) => $ctx.update_view(handle, $update),
             SettingsPageViewHandle::Knowledge(handle) => $ctx.update_view(handle, $update),
@@ -1352,6 +1360,8 @@ impl SettingsView {
         ctx.subscribe_to_view(&referrals_page_handle, |me, _, event, ctx| {
             me.handle_referrals_page_event(event, ctx);
         });
+        let local_models_page_handle = ChannelState::is_local_only()
+            .then(|| ctx.add_typed_action_view(LocalModelsPageView::new));
         let scripting_page_handle = if FeatureFlag::WarpControlCli.is_enabled() {
             Some(ctx.add_typed_action_view(ScriptingSettingsPageView::new))
         } else {
@@ -1424,6 +1434,9 @@ impl SettingsView {
             SettingsPage::new(warp_drive_page_handle),
         ];
 
+        if let Some(local_models_page_handle) = local_models_page_handle {
+            settings_pages.push(SettingsPage::new(local_models_page_handle));
+        }
         if let Some(scripting_page_handle) = scripting_page_handle {
             settings_pages.push(SettingsPage::new(scripting_page_handle));
         }
@@ -1441,13 +1454,17 @@ impl SettingsView {
             SettingsNavItem::Page(SettingsSection::Account),
             SettingsNavItem::Umbrella(SettingsUmbrella::new(
                 "Agents",
-                vec![
-                    SettingsSection::WarpAgent,
-                    SettingsSection::AgentProfiles,
-                    SettingsSection::AgentMCPServers,
-                    SettingsSection::Knowledge,
-                    SettingsSection::ThirdPartyCLIAgents,
-                ],
+                ChannelState::is_local_only()
+                    .then_some(SettingsSection::LocalModels)
+                    .into_iter()
+                    .chain([
+                        SettingsSection::WarpAgent,
+                        SettingsSection::AgentProfiles,
+                        SettingsSection::AgentMCPServers,
+                        SettingsSection::Knowledge,
+                        SettingsSection::ThirdPartyCLIAgents,
+                    ])
+                    .collect(),
             )),
             SettingsNavItem::Page(SettingsSection::BillingAndUsage),
             SettingsNavItem::Umbrella(SettingsUmbrella::new(
@@ -2158,6 +2175,7 @@ impl SettingsView {
             SettingsPageViewHandle::Warpify(v) => v.as_ref(app).should_render(app),
             SettingsPageViewHandle::Referrals(v) => v.as_ref(app).should_render(app),
             SettingsPageViewHandle::Scripting(v) => v.as_ref(app).should_render(app),
+            SettingsPageViewHandle::LocalModels(v) => v.as_ref(app).should_render(app),
             SettingsPageViewHandle::WarpAgent(v) => v.as_ref(app).should_render(app),
             SettingsPageViewHandle::AgentProfiles(v) => v.as_ref(app).should_render(app),
             SettingsPageViewHandle::Knowledge(v) => v.as_ref(app).should_render(app),
