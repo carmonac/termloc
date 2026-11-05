@@ -1,15 +1,13 @@
 pub mod feature_section;
 pub use feature_section::FeatureSectionView;
-pub mod content_section;
-pub use content_section::ContentSectionView;
 use warp_core::features::FeatureFlag;
+use warpui::AppContext;
 use warpui::elements::{
     Align, Border, ConstrainedBox, Container, CrossAxisAlignment, Element, Flex, Hoverable, Icon,
     MouseStateHandle, ParentElement, ScrollbarWidth, Shrinkable,
 };
 use warpui::platform::Cursor;
 use warpui::ui_components::components::{UiComponent, UiComponentStyles};
-use warpui::{AppContext, ViewContext, ViewHandle};
 
 use crate::appearance::Appearance;
 use crate::resource_center::TipAction;
@@ -22,7 +20,6 @@ pub const DETAIL_FONT_SIZE: f32 = 12.;
 
 pub const KEYBOARD_ICON_SIZE: f32 = 30.;
 pub const CHEVRON_ICON_SIZE: f32 = 20.;
-pub const FOOTER_ICON_SIZE: f32 = 15.;
 pub const ELLIPSE_ICON_SIZE: f32 = 8.;
 pub const ICON_PADDING: f32 = 3.;
 
@@ -40,14 +37,8 @@ pub const CHEVRON_DOWN_SKINNY_SVG_PATH: &str = "bundled/svg/chevron-down-skinny.
 pub const CHEVRON_RIGHT_SKINNY_SVG_PATH: &str = "bundled/svg/chevron-right-skinny.svg";
 pub const ELLIPSE_SVG_PATH: &str = "bundled/svg/ellipse.svg";
 
-pub enum SectionViewHandle {
-    Feature(ViewHandle<FeatureSectionView>),
-    Content(ViewHandle<ContentSectionView>),
-}
-
 #[derive(Debug)]
 pub enum SectionAction {
-    OpenUrl(String),
     ToggleExpanded,
     Click(TipAction),
     CloseResourceCenter,
@@ -58,8 +49,6 @@ pub enum SectionAction {
 
 pub trait SectionView {
     fn is_expanded(&self) -> bool;
-
-    fn toggle_expanded(&mut self, ctx: &mut ViewContext<Self>);
 
     fn section_progress_indicator(
         &self,

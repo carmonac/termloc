@@ -12,7 +12,7 @@ pub use main_page::{ResourceCenterMainEvent, ResourceCenterMainView};
 mod keybindings_page;
 pub use keybindings_page::KeybindingsView;
 mod section_views;
-pub use section_views::{ContentSectionView, FeatureSectionView};
+pub use section_views::FeatureSectionView;
 pub mod sections;
 mod view;
 use serde::{Deserialize, Serialize};
@@ -163,30 +163,10 @@ impl FeatureItem {
     }
 }
 
-#[derive(Clone, Debug)]
-// Section item that links to an external URL
-pub struct ContentItem {
-    pub title: &'static str,
-    pub description: &'static str,
-    pub url: &'static str,
-    pub button_label: &'static str,
-}
-
-pub enum Section {
-    Feature(FeatureSectionData),
-    Content(ContentSectionData),
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FeatureSectionData {
     pub section_name: FeatureSection,
     pub items: Vec<FeatureItem>,
-}
-
-#[derive(Clone)]
-pub struct ContentSectionData {
-    pub section_name: FeatureSection,
-    pub items: Vec<ContentItem>,
 }
 
 #[derive(Default)]

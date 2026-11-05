@@ -297,7 +297,6 @@ pub enum WorkspaceAction {
         mode: PaletteMode,
         source: PaletteSource,
     },
-    ViewUserDocs,
     /// Open the log directory in the system file explorer with the current log file selected.
     #[cfg(not(target_family = "wasm"))]
     ViewLogs,
@@ -500,10 +499,6 @@ pub enum WorkspaceAction {
         zero_state_prompt_suggestion_type: Option<ZeroStatePromptSuggestionType>,
     },
     OpenCloudAgentSetupGuide,
-    /// Dismisses the Wayland crash recovery banner and opens a link to our docs page with more
-    /// information.
-    #[cfg(target_os = "linux")]
-    DismissWaylandCrashRecoveryBannerAndOpenLink,
     /// Open a new pane with its input in AI mode
     /// with query "Fix this" with error name and details from AI summary.
     FixInAgentMode {
@@ -944,7 +939,6 @@ impl WorkspaceAction {
             | ResetZoom
             | OpenPalette { .. }
             | TogglePalette { mode: _, source: _ }
-            | ViewUserDocs
             | ChangeCursor(_)
             | ToggleBlockSnackbar
             | ToggleErrorUnderlining
@@ -1140,8 +1134,6 @@ impl WorkspaceAction {
             FileRenamed { .. } => false, // File rename doesn't change workspace state
             #[cfg(feature = "local_fs")]
             FileDeleted { .. } => false, // File deletion doesn't change workspace state
-            #[cfg(target_os = "linux")]
-            DismissWaylandCrashRecoveryBannerAndOpenLink => false,
             #[cfg(target_family = "wasm")]
             OpenLinkOnDesktop(_) => false,
             // actions that are related to updating user settings or

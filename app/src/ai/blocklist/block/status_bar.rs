@@ -1051,17 +1051,9 @@ fn render_agent_tip(tip: &AgentTip, app: &AppContext) -> Box<dyn Element> {
 
     let mut fragments = tip.to_formatted_text(app);
 
-    match (tip.action.clone(), action_text.clone()) {
-        (Some(action), Some(text)) => {
-            fragments.push(FormattedTextFragment::plain_text(" "));
-            fragments.push(FormattedTextFragment::hyperlink_action(text, action));
-        }
-        _ => {
-            if let Some(link_target) = tip.link.clone() {
-                fragments.push(FormattedTextFragment::plain_text(" "));
-                fragments.push(FormattedTextFragment::hyperlink("Learn more", link_target));
-            }
-        }
+    if let (Some(action), Some(text)) = (tip.action.clone(), action_text.clone()) {
+        fragments.push(FormattedTextFragment::plain_text(" "));
+        fragments.push(FormattedTextFragment::hyperlink_action(text, action));
     }
 
     let formatted_text =
@@ -1079,32 +1071,19 @@ fn render_agent_tip(tip: &AgentTip, app: &AppContext) -> Box<dyn Element> {
     .with_clip(ClipConfig::ellipsis())
     .register_default_click_handlers_with_action_support(move |link, evt, app| {
         use warpui::elements::HyperlinkLens;
-        match link {
-            HyperlinkLens::Url(url) => {
-                send_telemetry_from_app_ctx!(
-                    TelemetryEvent::AgentTipClicked {
-                        tip: tip_description.clone(),
-                        click_target: url.to_string(),
-                    },
-                    app
-                );
-                app.open_url(url);
-            }
-            HyperlinkLens::Action(action_ref) => {
-                if let Some(action) = action_ref
-                    .as_any()
-                    .downcast_ref::<crate::workspace::WorkspaceAction>()
-                {
-                    send_telemetry_from_app_ctx!(
-                        TelemetryEvent::AgentTipClicked {
-                            tip: tip_description.clone(),
-                            click_target: action_text.clone().unwrap_or_default(),
-                        },
-                        app
-                    );
-                    evt.dispatch_typed_action(action.clone());
-                }
-            }
+        if let HyperlinkLens::Action(action_ref) = link
+            && let Some(action) = action_ref
+                .as_any()
+                .downcast_ref::<crate::workspace::WorkspaceAction>()
+        {
+            send_telemetry_from_app_ctx!(
+                TelemetryEvent::AgentTipClicked {
+                    tip: tip_description.clone(),
+                    click_target: action_text.clone().unwrap_or_default(),
+                },
+                app
+            );
+            evt.dispatch_typed_action(action.clone());
         }
     })
     .finish()

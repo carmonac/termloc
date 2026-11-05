@@ -3,11 +3,11 @@ use warp_core::features::FeatureFlag;
 use warpui::ViewContext;
 
 use super::{
-    ContentItem, ContentSectionData, FeatureItem, FeatureSection, FeatureSectionData,
-    ResourceCenterMainView, Section, Tip, TipAction, TipHint,
+    FeatureItem, FeatureSection, FeatureSectionData, ResourceCenterMainView, Tip, TipAction,
+    TipHint,
 };
 
-pub fn sections(ctx: &mut ViewContext<ResourceCenterMainView>) -> Vec<Section> {
+pub fn sections(ctx: &mut ViewContext<ResourceCenterMainView>) -> Vec<FeatureSectionData> {
     let mut sections = vec![];
 
     if FeatureFlag::AvatarInTabBar.is_enabled() {
@@ -49,32 +49,13 @@ pub fn sections(ctx: &mut ViewContext<ResourceCenterMainView>) -> Vec<Section> {
             ),
         ],
     };
-    sections.push(Section::Feature(get_started));
+    sections.push(get_started);
 
     let maximize_warp = FeatureSectionData {
         section_name: FeatureSection::MaximizeWarp,
         items: maximize_warp_items(ctx),
     };
-    sections.push(Section::Feature(maximize_warp));
-
-    let advanced_setup = ContentSectionData {
-        section_name: FeatureSection::AdvancedSetup,
-        items: vec![
-            ContentItem {
-                title: "Use your custom prompt",
-                description: "Set up Termloc to honor your PS1 setting",
-                url: "https://docs.warp.dev/terminal/appearance/prompt",
-                button_label: "View documentation",
-            },
-            ContentItem {
-                title: "Integrate Termloc with your IDE",
-                description: "Configure Termloc to launch from your most used development tools",
-                url: "https://docs.warp.dev/terminal/integrations-and-plugins",
-                button_label: "View documentation",
-            },
-        ],
-    };
-    sections.push(Section::Content(advanced_setup));
+    sections.push(maximize_warp);
 
     sections
 }

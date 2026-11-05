@@ -1,6 +1,6 @@
 use warp_core::settings::ToggleableSetting as _;
 use warp_errors::report_if_error;
-use warpui::elements::{Element, MouseStateHandle};
+use warpui::elements::Element;
 use warpui::keymap::ContextPredicate;
 use warpui::ui_components::components::UiComponent;
 use warpui::ui_components::switch::SwitchStateHandle;
@@ -9,8 +9,7 @@ use warpui::{
 };
 
 use super::settings_page::{
-    AdditionalInfo, MatchData, PageType, SettingsPageMeta, SettingsPageViewHandle, SettingsWidget,
-    render_body_item,
+    MatchData, PageType, SettingsPageMeta, SettingsPageViewHandle, SettingsWidget, render_body_item,
 };
 use super::{
     LocalOnlyIconState, SettingActionPairContexts, SettingActionPairDescriptions, SettingsAction,
@@ -23,7 +22,6 @@ use crate::drive::settings::WarpDriveSettings;
 #[derive(Debug, Clone)]
 pub enum WarpDriveSettingsPageAction {
     ToggleShowWarpDrive,
-    OpenUrl(String),
 }
 
 pub fn init_actions_from_parent_view<T: Action + Clone>(
@@ -82,9 +80,6 @@ impl TypedActionView for WarpDriveSettingsPageView {
                 });
                 ctx.notify();
             }
-            WarpDriveSettingsPageAction::OpenUrl(url) => {
-                ctx.open_url(url.as_str());
-            }
         }
     }
 }
@@ -130,7 +125,6 @@ impl From<ViewHandle<WarpDriveSettingsPageView>> for SettingsPageViewHandle {
 #[derive(Default)]
 struct WarpDriveToggleWidget {
     switch_state: SwitchStateHandle,
-    info_icon_mouse_state: MouseStateHandle,
 }
 
 impl SettingsWidget for WarpDriveToggleWidget {
@@ -154,14 +148,7 @@ impl SettingsWidget for WarpDriveToggleWidget {
 
         render_body_item::<WarpDriveSettingsPageAction>(
             "Drive".into(),
-            Some(AdditionalInfo {
-                mouse_state: self.info_icon_mouse_state.clone(),
-                on_click_action: Some(WarpDriveSettingsPageAction::OpenUrl(
-                    "https://docs.warp.dev/knowledge-and-collaboration/warp-drive".to_string(),
-                )),
-                secondary_text: None,
-                tooltip_override_text: None,
-            }),
+            None,
             LocalOnlyIconState::Hidden,
             ToggleState::Enabled,
             appearance,

@@ -20,13 +20,7 @@ pub fn banner_metadata(ctx: &AppContext) -> Option<WorkspaceBannerFields> {
                 are using fractional scaling."
                 .to_owned(),
             secondary_button: None,
-            button: Some(super::WorkspaceBannerButtonDetails {
-                text: "Learn More".to_owned(),
-                action: super::WorkspaceAction::DismissWaylandCrashRecoveryBannerAndOpenLink,
-                variant: super::BannerButtonVariant::Outlined,
-                icon: None,
-                more_info_button_action: None,
-            }),
+            button: None,
         }),
         // We're not showing anything to the user when we recover from a crash
         // by switching from preferring integrated to dedicated gpu due to the

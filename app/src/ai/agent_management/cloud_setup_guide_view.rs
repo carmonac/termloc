@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use serde::Serialize;
 use string_offset::CharCounter;
 use warp_completer::ParsedTokensSnapshot;
 use warp_completer::signatures::CommandRegistry;
@@ -12,12 +11,11 @@ use warpui::elements::new_scrollable::{ClippedAxisConfiguration, DualAxisConfig,
 use warpui::elements::{
     Align, Border, ClippedScrollStateHandle, ConstrainedBox, Container, CornerRadius,
     CrossAxisAlignment, Element, Empty, Expanded, Flex, Highlight, HighlightedRange,
-    MainAxisAlignment, MainAxisSize, MouseStateHandle, ParentElement, Radius, Text,
+    MainAxisAlignment, MainAxisSize, ParentElement, Radius, Text,
 };
 use warpui::fonts::{Properties, Weight};
 use warpui::prelude::ChildView;
 use warpui::text_layout::TextStyle;
-use warpui::ui_components::components::{UiComponent, UiComponentStyles};
 use warpui::{AppContext, Entity, SingletonEntity, TypedActionView, View, ViewContext, ViewHandle};
 
 use crate::ai::agent_management::telemetry::{AgentManagementTelemetryEvent, SetupGuideStep};
@@ -31,9 +29,6 @@ use crate::view_components::action_button::{ActionButton, SecondaryTheme};
 use crate::workflows::WorkflowType;
 use crate::workflows::workflow::{Argument, ArgumentType, Workflow};
 
-const DOCS_URL: &str = "https://docs.warp.dev/platform/";
-const ENV_DOCS_URL: &str =
-    "https://docs.warp.dev/reference/cli/integration-setup#creating-an-environment";
 const OZ_URL: &str = "https://oz.warp.dev";
 
 const CONTENT_MAX_WIDTH: f32 = 720.;
@@ -51,9 +46,6 @@ pub struct CloudSetupGuideView {
     create_env_cli_code_handles: CodeSnippetButtonHandles,
     create_slack_integration_code_handles: CodeSnippetButtonHandles,
     create_linear_integration_code_handles: CodeSnippetButtonHandles,
-    docs_link_mouse_state: MouseStateHandle,
-    env_docs_link_mouse_state: MouseStateHandle,
-    integration_docs_link_mouse_state: MouseStateHandle,
     visit_oz_button: ViewHandle<ActionButton>,
     parsed_tokens: HashMap<&'static str, ParsedTokensSnapshot>,
     vertical_scroll_state: ClippedScrollStateHandle,
@@ -71,17 +63,6 @@ pub enum CloudSetupGuideAction {
         step: SetupGuideStep,
     },
     VisitOz,
-    OpenDocs {
-        docs: SetupGuideDocs,
-    },
-}
-
-/// Which URL the user clicked in the setup guide (also used in telemetry)
-#[derive(Clone, Copy, Debug, Serialize)]
-pub enum SetupGuideDocs {
-    Main,
-    Environment,
-    Integration,
 }
 
 pub enum CloudSetupGuideEvent {
@@ -127,9 +108,6 @@ impl CloudSetupGuideView {
             create_env_cli_code_handles: CodeSnippetButtonHandles::default(),
             create_slack_integration_code_handles: CodeSnippetButtonHandles::default(),
             create_linear_integration_code_handles: CodeSnippetButtonHandles::default(),
-            docs_link_mouse_state: MouseStateHandle::default(),
-            env_docs_link_mouse_state: MouseStateHandle::default(),
-            integration_docs_link_mouse_state: MouseStateHandle::default(),
             visit_oz_button,
             parsed_tokens: HashMap::new(),
             vertical_scroll_state: ClippedScrollStateHandle::default(),
@@ -163,48 +141,6 @@ impl CloudSetupGuideView {
         .with_color(theme.nonactive_ui_text_color().into_solid())
         .finish();
         header_container.add_child(subtitle);
-
-        // Documentation link line.
-        let docs_line = Flex::row()
-            .with_child(
-                Text::new_inline(
-                    "Check out the ",
-                    appearance.ui_font_family(),
-                    subtitle_font_size,
-                )
-                .with_color(theme.nonactive_ui_text_color().into_solid())
-                .finish(),
-            )
-            .with_child(
-                appearance
-                    .ui_builder()
-                    .link(
-                        "Oz documentation".to_string(),
-                        None,
-                        Some(Box::new(|ctx| {
-                            ctx.dispatch_typed_action(CloudSetupGuideAction::OpenDocs {
-                                docs: SetupGuideDocs::Main,
-                            });
-                        })),
-                        self.docs_link_mouse_state.clone(),
-                    )
-                    .with_style(UiComponentStyles {
-                        font_size: Some(subtitle_font_size),
-                        ..Default::default()
-                    })
-                    .build()
-                    .finish(),
-            )
-            .with_child(
-                Text::new_inline(
-                    " to learn more.",
-                    appearance.ui_font_family(),
-                    subtitle_font_size,
-                )
-                .with_color(theme.nonactive_ui_text_color().into_solid())
-                .finish(),
-            );
-        header_container.add_child(docs_line.finish());
 
         header_container.finish()
     }
@@ -290,42 +226,9 @@ impl CloudSetupGuideView {
         .finish()
     }
 
-    /// Render a description that includes a link at the end
-    /// (e.g. "Use warp's environment setup command to have an agent help you through it. LINK[Visit docs]")
-    fn render_description_with_link(
-        prefix: &'static str,
-        link_text: &'static str,
-        link_mouse_state: MouseStateHandle,
-        telemetry_url: SetupGuideDocs,
-        appearance: &Appearance,
-    ) -> Box<dyn Element> {
-        let step_desc_font_size = 14.;
-        let link = appearance
-            .ui_builder()
-            .link(
-                link_text.to_string(),
-                None,
-                Some(Box::new(move |ctx| {
-                    ctx.dispatch_typed_action(CloudSetupGuideAction::OpenDocs {
-                        docs: telemetry_url,
-                    });
-                })),
-                link_mouse_state,
-            )
-            .with_style(UiComponentStyles {
-                font_size: Some(step_desc_font_size),
-                ..Default::default()
-            })
-            .build()
-            .finish();
-
-        Flex::row()
-            .with_child(
-                Text::new_inline(prefix, appearance.ui_font_family(), step_desc_font_size)
-                    .with_color(appearance.theme().nonactive_ui_text_color().into_solid())
-                    .finish(),
-            )
-            .with_child(link)
+    fn render_description(text: &'static str, appearance: &Appearance) -> Box<dyn Element> {
+        Text::new_inline(text, appearance.ui_font_family(), 14.)
+            .with_color(appearance.theme().nonactive_ui_text_color().into_solid())
             .finish()
     }
 
@@ -458,11 +361,8 @@ impl CloudSetupGuideView {
         .with_padding_left(46.)
         .finish();
 
-        let sub_description = Container::new(Self::render_description_with_link(
-            "Use Warp's environment setup command to have an agent help you through it. ",
-            "Visit docs",
-            self.env_docs_link_mouse_state.clone(),
-            SetupGuideDocs::Environment,
+        let sub_description = Container::new(Self::render_description(
+            "Use Warp's environment setup command to have an agent help you through it.",
             appearance,
         ))
         .with_padding_left(46.)
@@ -531,11 +431,8 @@ impl CloudSetupGuideView {
             )
             .finish();
 
-        let sub_description = Container::new(Self::render_description_with_link(
-            "Integrate Slack or Linear to assign Warp's Agent tasks with @Warp. ",
-            "Visit docs",
-            self.integration_docs_link_mouse_state.clone(),
-            SetupGuideDocs::Integration,
+        let sub_description = Container::new(Self::render_description(
+            "Integrate Slack or Linear to assign Warp's Agent tasks with @Warp.",
             appearance,
         ))
         .with_padding_left(46.)
@@ -664,18 +561,6 @@ impl TypedActionView for CloudSetupGuideView {
                     AgentManagementTelemetryEvent::SetupGuideStepRun {
                         step: SetupGuideStep::VisitOz
                     },
-                    ctx
-                );
-            }
-            CloudSetupGuideAction::OpenDocs { docs } => {
-                let url = match docs {
-                    SetupGuideDocs::Main => DOCS_URL,
-                    SetupGuideDocs::Environment => ENV_DOCS_URL,
-                    SetupGuideDocs::Integration => DOCS_URL,
-                };
-                ctx.open_url(url);
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::SetupGuideDocsLink { docs: *docs },
                     ctx
                 );
             }

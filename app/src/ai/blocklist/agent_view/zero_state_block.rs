@@ -46,8 +46,6 @@ use crate::ui_components::icon_with_status::{
 };
 use crate::util::time_format::format_approx_duration_from_now_utc;
 
-const CLOUD_AGENT_DOCS_URL: &str = "https://docs.warp.dev/platform/";
-
 const MAX_RECENT_CONVERSATION_COUNT: usize = 3;
 
 #[derive(Default)]
@@ -352,7 +350,7 @@ impl View for AgentViewZeroStateBlock {
         let header_props = if self.origin.is_cloud_agent() {
             HeaderProps {
                 title: "New cloud agent conversation".into(),
-                description: AgentViewDescription::CloudModeWithDocsLink,
+                description: AgentViewDescription::CloudMode,
                 icon: IconWithStatusVariant::OzAgent {
                     status: None,
                     is_ambient: true,
@@ -489,8 +487,8 @@ fn current_working_directory_for_zero_state(terminal_model: &TerminalModel) -> O
 enum AgentViewDescription {
     /// Plain text descriptions (used for local agent mode).
     PlainText(Vec<Cow<'static, str>>),
-    /// Cloud mode description with "Visit docs" hyperlink.
-    CloudModeWithDocsLink,
+    /// Cloud mode description.
+    CloudMode,
 }
 
 struct HeaderProps {
@@ -563,7 +561,7 @@ fn render_title_and_description(props: HeaderProps, app: &AppContext) -> Vec<Box
                     .finish()
             }));
         }
-        AgentViewDescription::CloudModeWithDocsLink => {
+        AgentViewDescription::CloudMode => {
             // First line: plain text.
             items.push(
                 Container::new(
@@ -579,28 +577,22 @@ fn render_title_and_description(props: HeaderProps, app: &AppContext) -> Vec<Box
                 .finish(),
             );
 
-            // Second line: text with "Visit docs" hyperlink.
-            let description_with_link = FormattedText::new([FormattedTextLine::Line(vec![
+            let description = FormattedText::new([FormattedTextLine::Line(vec![
                 FormattedTextFragment::plain_text(
-                    "Use cloud agents to run parallel agents, build agents that run autonomously, and check in on your agents from anywhere. ",
+                    "Use cloud agents to run parallel agents, build agents that run autonomously, and check in on your agents from anywhere.",
                 ),
-                FormattedTextFragment::hyperlink("Visit docs", CLOUD_AGENT_DOCS_URL),
             ])]);
 
             items.push(
                 Container::new(
                     FormattedTextElement::new(
-                        description_with_link,
+                        description,
                         appearance.monospace_font_size(),
                         appearance.ui_font_family(),
                         appearance.monospace_font_family(),
                         sub_text_color,
                         HighlightedHyperlink::default(),
                     )
-                    .with_hyperlink_font_color(theme.accent().into_solid())
-                    .register_default_click_handlers(|url, _, ctx| {
-                        ctx.open_url(&url.url);
-                    })
                     .finish(),
                 )
                 .with_margin_bottom(-12.)

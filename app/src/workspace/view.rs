@@ -414,8 +414,7 @@ use crate::terminal::view::load_ai_conversation::{
 use crate::terminal::view::ssh_file_upload::FileUploadId;
 use crate::terminal::view::{
     AgentOnboardingVersion, ConversationRestorationInNewPaneType, LeftPanelTargetView,
-    NOTIFICATIONS_TROUBLESHOOT_URL, OnboardingIntention, OnboardingVersion, SyncEvent,
-    SyncInputType, TerminalAction,
+    OnboardingIntention, OnboardingVersion, SyncEvent, SyncInputType, TerminalAction,
 };
 use crate::terminal::warpify::settings::WarpifySettings;
 use crate::terminal::{self, BlockListSettings, SizeInfo, TerminalModel, TerminalView};
@@ -445,7 +444,6 @@ use crate::util::file::external_editor::Editor;
 use crate::util::file::external_editor::EditorSettings;
 #[cfg(feature = "local_fs")]
 use crate::util::file::external_editor::settings::OpenConversationPreference;
-use crate::util::links;
 use crate::util::openable_file_type::FileTarget;
 #[cfg(feature = "local_fs")]
 use crate::util::openable_file_type::{EditorLayout, resolve_file_target_with_editor_choice};
@@ -6387,10 +6385,6 @@ impl Workspace {
         ctx.notify();
     }
 
-    fn view_user_docs(&mut self, ctx: &mut ViewContext<Self>) {
-        ctx.open_url(links::USER_DOCS_URL);
-    }
-
     #[cfg(not(target_family = "wasm"))]
     fn view_logs(&mut self, ctx: &mut ViewContext<Self>) {
         ctx.spawn(
@@ -6771,9 +6765,6 @@ impl Workspace {
                     open_in_active_window: false,
                 },
             ),
-            NewSessionMenuItem::OpenLaunchConfigDocs => {
-                ctx.open_url("https://docs.warp.dev/terminal/sessions/launch-configurations")
-            }
             #[cfg(feature = "local_fs")]
             NewSessionMenuItem::CreateNewTabConfig => {
                 self.create_and_open_new_tab_config(ctx);
@@ -8756,10 +8747,7 @@ impl Workspace {
         ctx.spawn(async { cli_install::install_oz() }, |view, result, ctx| {
             let command_name = ChannelState::channel().cli_command_name();
             let message = format!("Installed the Oz CLI globally. You can now run '{command_name}' from any terminal outside of Termloc.");
-            let toast = DismissibleToast::success(message).with_link(
-                ToastLink::new("Learn more".to_string())
-                    .with_href("https://docs.warp.dev/reference/cli".to_string()),
-            );
+            let toast = DismissibleToast::success(message);
             view.handle_cli_command_result(result, toast, "Failed to install Oz command", ctx);
         });
     }
@@ -9400,17 +9388,14 @@ impl Workspace {
             MenuItemFields::new("Keyboard shortcuts")
                 .with_on_select_action(WorkspaceAction::ToggleKeybindingsPage)
                 .into_item(),
-            MenuItem::Separator,
-            MenuItemFields::new("Documentation")
-                .with_on_select_action(WorkspaceAction::ViewUserDocs)
-                .into_item(),
         ]);
         #[cfg(not(target_family = "wasm"))]
-        items.push(
+        items.extend([
+            MenuItem::Separator,
             MenuItemFields::new("View Termloc logs")
                 .with_on_select_action(WorkspaceAction::ViewLogs)
                 .into_item(),
-        );
+        ]);
 
         items
     }
@@ -13817,15 +13802,10 @@ impl Workspace {
                     RequestPermissionsOutcome::Accepted => (),
                     RequestPermissionsOutcome::PermissionsDenied => {
                         // Show a helpful toast if the user denied permissions.
-                        let url = NOTIFICATIONS_TROUBLESHOOT_URL.to_string();
                         view.toast_stack.update(ctx, |toast_stack, ctx| {
                             let toast = DismissibleToast::error(
                                 "Termloc doesn't have permission to send desktop notifications."
                                     .to_string(),
-                            )
-                            .with_link(
-                                ToastLink::new("Troubleshoot notifications".to_string())
-                                    .with_href(url),
                             );
                             toast_stack.add_persistent_toast(toast, ctx);
                         });
@@ -23085,7 +23065,6 @@ impl TypedActionView for Workspace {
                 mode: palette_mode,
                 source,
             } => self.toggle_palette(*palette_mode, *source, ctx),
-            ViewUserDocs => self.view_user_docs(ctx),
             #[cfg(not(target_family = "wasm"))]
             ViewLogs => self.view_logs(ctx),
             ChangeCursor(cursor) => self.change_cursor(*cursor, ctx),
@@ -23975,11 +23954,6 @@ impl TypedActionView for Workspace {
             } => {
                 self.insert_in_input(content, *replace_buffer, false, *ensure_agent_mode, ctx);
                 ctx.notify();
-            }
-            #[cfg(all(enable_crash_recovery, target_os = "linux"))]
-            DismissWaylandCrashRecoveryBannerAndOpenLink => {
-                self.dismiss_workspace_banner(ctx, &WorkspaceBanner::WaylandCrashRecovery);
-                ctx.open_url("https://docs.warp.dev/terminal/more-features/linux#native-wayland");
             }
             FixInAgentMode { query } => {
                 self.active_tab_pane_group().update(ctx, |pane_group, ctx| {

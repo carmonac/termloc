@@ -2,14 +2,13 @@ use vec1::{Vec1, vec1};
 use warp_core::features::FeatureFlag;
 use warp_core::ui::builder::AnimatedButtonOptions;
 use warpui::elements::{
-    Align, Border, ConstrainedBox, Container, CrossAxisAlignment, Element, Flex, Icon,
-    MainAxisAlignment, MainAxisSize, MouseStateHandle, ParentElement, SavePosition, Shrinkable,
+    Align, ConstrainedBox, Container, CrossAxisAlignment, Element, Flex, MouseStateHandle,
+    ParentElement, SavePosition, Shrinkable,
 };
 use warpui::fonts::Weight;
 use warpui::platform::Cursor;
 use warpui::presenter::ChildView;
-use warpui::ui_components::button::ButtonVariant;
-use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
+use warpui::ui_components::components::{UiComponent, UiComponentStyles};
 use warpui::windowing::{StateEvent, WindowManager};
 use warpui::{
     AppContext, Entity, EntityId, FocusContext, ModelHandle, SingletonEntity, TypedActionView,
@@ -17,39 +16,13 @@ use warpui::{
 };
 
 use super::keybindings_page::KeybindingsEvent;
-use super::section_views::{
-    FOOTER_ICON_SIZE, HEADER_FONT_SIZE, ICON_PADDING, KEYBOARD_ICON_SIZE, SCROLLBAR_OFFSET,
-    SECTION_SPACING,
-};
+use super::section_views::{HEADER_FONT_SIZE, ICON_PADDING, KEYBOARD_ICON_SIZE};
 use super::{KeybindingsView, ResourceCenterMainEvent, ResourceCenterMainView, TipsCompleted};
 use crate::appearance::Appearance;
 use crate::ui_components::buttons::icon_button;
 use crate::ui_components::icons;
 use crate::ui_components::window_focus_dimming::WindowFocusDimming;
-use crate::util::links;
 use crate::workspace::{PANEL_HEADER_HEIGHT, WorkspaceAction};
-
-// Footer icons
-const DOCS_SVG_PATH: &str = "bundled/svg/gitbook-logo.svg";
-
-#[derive(Debug, Clone, Copy)]
-pub enum ResourceCenterFooterItem {
-    Docs,
-}
-
-impl ResourceCenterFooterItem {
-    pub fn ui_label(&self) -> &'static str {
-        match self {
-            ResourceCenterFooterItem::Docs => "Docs",
-        }
-    }
-
-    pub fn svg_path(&self) -> &'static str {
-        match self {
-            ResourceCenterFooterItem::Docs => DOCS_SVG_PATH,
-        }
-    }
-}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ResourceCenterPage {
@@ -74,8 +47,6 @@ struct MouseStateHandles {
     navigate_back: MouseStateHandle,
     open_keybindings: MouseStateHandle,
     close: MouseStateHandle,
-    // Footer mouse state handles
-    view_user_docs: MouseStateHandle,
 }
 
 pub enum ResourceCenterEvent {
@@ -95,7 +66,6 @@ pub struct ResourceCenterView {
 pub enum ResourceCenterAction {
     Close,
     NavigatePage(ResourceCenterPage),
-    FooterItemClick(ResourceCenterFooterItem),
 }
 
 impl ResourceCenterView {
@@ -226,16 +196,6 @@ impl ResourceCenterView {
             main_handle.update(ctx, |main_view, ctx| {
                 main_view.set_action_target(window_id, input_id, ctx);
             });
-        }
-    }
-
-    fn footer_item_click_action(
-        &mut self,
-        item: &ResourceCenterFooterItem,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match item {
-            ResourceCenterFooterItem::Docs => ctx.open_url(links::USER_DOCS_URL),
         }
     }
 
@@ -379,63 +339,6 @@ impl ResourceCenterView {
             app,
         )
     }
-
-    fn render_footer_button(
-        &self,
-        item: ResourceCenterFooterItem,
-        appearance: &Appearance,
-    ) -> Box<dyn Element> {
-        let mouse_state = match item {
-            ResourceCenterFooterItem::Docs => self.button_mouse_states.view_user_docs.clone(),
-        };
-
-        let icon = ConstrainedBox::new(
-            Icon::new(
-                item.svg_path(),
-                appearance.theme().active_ui_detail().into_solid(),
-            )
-            .finish(),
-        )
-        .with_height(FOOTER_ICON_SIZE)
-        .with_width(FOOTER_ICON_SIZE);
-
-        let button = appearance
-            .ui_builder()
-            .button(ButtonVariant::Text, mouse_state)
-            .with_text_label(item.ui_label().to_string())
-            .with_style(
-                UiComponentStyles::default().set_padding(Coords::default().left(SCROLLBAR_OFFSET)),
-            )
-            .build()
-            .on_click(move |ctx, _, _| {
-                ctx.dispatch_typed_action(ResourceCenterAction::FooterItemClick(item));
-            })
-            .with_cursor(Cursor::PointingHand)
-            .finish();
-
-        Flex::row()
-            .with_child(Align::new(icon.finish()).finish())
-            .with_child(button)
-            .with_cross_axis_alignment(CrossAxisAlignment::Center)
-            .finish()
-    }
-
-    fn render_footer(&self, appearance: &Appearance) -> Box<dyn Element> {
-        let docs_button = self.render_footer_button(ResourceCenterFooterItem::Docs, appearance);
-
-        let footer = Flex::row()
-            .with_child(docs_button)
-            .with_main_axis_size(MainAxisSize::Max)
-            .with_main_axis_alignment(MainAxisAlignment::SpaceEvenly)
-            .with_cross_axis_alignment(CrossAxisAlignment::Center)
-            .finish();
-
-        Container::new(footer)
-            .with_padding_top(SECTION_SPACING)
-            .with_padding_bottom(SECTION_SPACING)
-            .with_border(Border::top(1.).with_border_fill(appearance.theme().surface_2()))
-            .finish()
-    }
 }
 
 impl Entity for ResourceCenterView {
@@ -450,7 +353,6 @@ impl TypedActionView for ResourceCenterView {
         match action {
             Close => self.close(ctx),
             NavigatePage(new_page) => self.set_current_page(*new_page, ctx),
-            FooterItemClick(item) => self.footer_item_click_action(item, ctx),
         }
     }
 }
@@ -469,7 +371,6 @@ impl View for ResourceCenterView {
     fn render(&self, app: &AppContext) -> Box<dyn Element> {
         let appearance = Appearance::as_ref(app);
         let header = self.render_header(appearance, app);
-        let footer = self.render_footer(appearance);
         let resource_center_page = &self.page_views[self.current_view_index].page_view_handle;
 
         let body = match &resource_center_page {
@@ -484,7 +385,6 @@ impl View for ResourceCenterView {
         Flex::column()
             .with_child(header)
             .with_child(Shrinkable::new(1., body).finish())
-            .with_child(footer)
             .finish()
     }
 }

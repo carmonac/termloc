@@ -70,7 +70,7 @@ use crate::workflows::local_workflows::tail_command_for_shell;
 use crate::workspace::Workspace;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 
-const DESCRIPTION_TEXT: &str = "Add MCP servers to extend the Local Agent's capabilities. MCP servers expose data sources or tools to agents through a standardized interface, essentially acting like plugins. Add a custom server, or use the presets to get started with popular servers. You can also find team servers that have been shared with you here. ";
+const DESCRIPTION_TEXT: &str = "Add MCP servers to extend the Local Agent's capabilities. MCP servers expose data sources or tools to agents through a standardized interface, essentially acting like plugins. Add a custom server, or use the presets to get started with popular servers. You can also find team servers that have been shared with you here.";
 
 #[derive(Debug, Clone)]
 pub enum MCPServersListPageViewEvent {
@@ -1150,15 +1150,9 @@ impl MCPServersListPageView {
         static FILE_BASED_MCP_DESCRIPTION_FRAGMENTS: std::sync::LazyLock<
             Vec<FormattedTextFragment>,
         > = std::sync::LazyLock::new(|| {
-            vec![
-                FormattedTextFragment::plain_text(
-                    "Automatically detect and spawn MCP servers from globally-scoped third-party AI agent configuration files (e.g. in your home directory). Servers detected inside a repository are never spawned automatically and must be enabled individually in the \"Detected from\" sections below. ",
-                ),
-                FormattedTextFragment::hyperlink(
-                    "See supported providers.",
-                    "https://docs.warp.dev/agents/capabilities/mcp#file-based-mcp-servers",
-                ),
-            ]
+            vec![FormattedTextFragment::plain_text(
+                "Automatically detect and spawn MCP servers from globally-scoped third-party AI agent configuration files (e.g. in your home directory). Servers detected inside a repository are never spawned automatically and must be enabled individually in the \"Detected from\" sections below.",
+            )]
         });
 
         let description = FormattedTextElement::new(
@@ -1171,10 +1165,6 @@ impl MCPServersListPageView {
             blended_colors::text_sub(appearance.theme(), appearance.theme().surface_1()),
             HighlightedHyperlink::default(),
         )
-        .with_hyperlink_font_color(appearance.theme().accent().into_solid())
-        .register_default_click_handlers(|url, _, ctx| {
-            ctx.open_url(&url.url);
-        })
         .finish();
 
         let description_container = Container::new(description)
@@ -1190,13 +1180,7 @@ impl MCPServersListPageView {
     }
 
     fn render_page_body(&self, appearance: &Appearance, app: &AppContext) -> Box<dyn Element> {
-        let description_fragments = vec![
-            FormattedTextFragment::plain_text(DESCRIPTION_TEXT),
-            FormattedTextFragment::hyperlink(
-                "Learn more.",
-                "https://docs.warp.dev/agents/capabilities/mcp",
-            ),
-        ];
+        let description_fragments = vec![FormattedTextFragment::plain_text(DESCRIPTION_TEXT)];
 
         let description = FormattedTextElement::new(
             FormattedText::new([FormattedTextLine::Line(description_fragments)]),
@@ -1206,10 +1190,6 @@ impl MCPServersListPageView {
             blended_colors::text_sub(appearance.theme(), appearance.theme().surface_1()),
             HighlightedHyperlink::default(),
         )
-        .with_hyperlink_font_color(appearance.theme().accent().into_solid())
-        .register_default_click_handlers(|url, _, ctx| {
-            ctx.open_url(&url.url);
-        })
         .finish();
 
         let mut page = Flex::column()

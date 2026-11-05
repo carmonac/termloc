@@ -4598,9 +4598,7 @@ impl AgentDriver {
                     tags.cloud_agent = true,
                     "slow bootstrap"
                 );
-                eprintln!(
-                    "Warning: Terminal session is slow to bootstrap. See https://docs.warp.dev/support-and-community/troubleshooting-and-support/known-issues#shells to troubleshoot."
-                );
+                eprintln!("Warning: Terminal session is slow to bootstrap.");
             }
             TerminalDriverEvent::EstablishedSharedSession {
                 session_id,

@@ -9,9 +9,6 @@ pub enum AIAgentCitation {
     WarpDriveObject {
         uid: String,
     },
-    WarpDocumentation {
-        path: String,
-    },
     WebPage {
         url: String,
     },
@@ -29,9 +26,6 @@ impl Display for AIAgentCitation {
         match self {
             AIAgentCitation::WarpDriveObject { uid } => {
                 write!(f, "Drive Object: {uid}")
-            }
-            AIAgentCitation::WarpDocumentation { path } => {
-                write!(f, "Documentation: {path}")
             }
             AIAgentCitation::WebPage { url } => {
                 write!(f, "Web Page: {url}")
@@ -66,9 +60,7 @@ impl TryFrom<api::Citation> for AIAgentCitation {
             | api::DocumentType::Rule => Ok(AIAgentCitation::WarpDriveObject {
                 uid: citation.document_id,
             }),
-            api::DocumentType::WarpDocumentation => Ok(AIAgentCitation::WarpDocumentation {
-                path: citation.document_id,
-            }),
+            api::DocumentType::WarpDocumentation => Err(UnknownCitationTypeError),
             api::DocumentType::WebPage => Ok(AIAgentCitation::WebPage {
                 url: citation.document_id,
             }),

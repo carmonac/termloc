@@ -28,7 +28,7 @@ This PR template helps ensure that as we launch new features we appropriately co
 
 - [ ] Help content
 - [ ] Changelog entry (add entry below)
-- [ ] [Telemetry entry](https://docs.warp.dev/getting-started/privacy#exhaustive-telemetry-table) (if applicable)
+- [ ] Telemetry entry (if applicable)
 - [ ] Metrics dashboard in Metabase
 - [ ] Tweet (if appropriate)
 - [ ] Blog post (if appropriate)

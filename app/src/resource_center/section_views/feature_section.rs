@@ -30,7 +30,6 @@ pub enum FeatureSection {
     WhatsNew,
     GettingStarted,
     MaximizeWarp,
-    AdvancedSetup,
 }
 
 impl FeatureSection {
@@ -39,7 +38,6 @@ impl FeatureSection {
             FeatureSection::WhatsNew => "What's New?",
             FeatureSection::GettingStarted => "Getting Started",
             FeatureSection::MaximizeWarp => "Maximize Termloc",
-            FeatureSection::AdvancedSetup => "Advanced Setup",
         }
     }
 }
@@ -379,7 +377,6 @@ impl TypedActionView for FeatureSectionView {
                 ctx.emit(FeatureSectionEvent::ExpandSection(*section_name));
                 ctx.notify();
             }
-            _ => {}
         }
     }
 }
@@ -387,11 +384,6 @@ impl TypedActionView for FeatureSectionView {
 impl SectionView for FeatureSectionView {
     fn is_expanded(&self) -> bool {
         self.is_expanded
-    }
-
-    fn toggle_expanded(&mut self, ctx: &mut ViewContext<Self>) {
-        self.is_expanded = !self.is_expanded;
-        ctx.notify();
     }
 
     fn section_progress_indicator(

@@ -7,8 +7,8 @@ use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use warp_core::features::FeatureFlag;
 use warp_core::settings::ToggleableSetting as _;
 use warpui::elements::{
-    Container, Element, Flex, FormattedTextElement, HighlightedHyperlink, HyperlinkUrl,
-    MouseStateHandle, ParentElement,
+    Container, Element, Flex, FormattedTextElement, HighlightedHyperlink, MouseStateHandle,
+    ParentElement,
 };
 use warpui::keymap::ContextPredicate;
 use warpui::ui_components::switch::SwitchStateHandle;
@@ -27,8 +27,6 @@ use crate::settings::{AISettings, MemoryEnabled, RuleSuggestionsEnabled, WarpDri
 use crate::util::bindings;
 
 const PAGE_TITLE: &str = "Knowledge";
-
-const RULES_DOCS_URL: &str = "https://docs.warp.dev/agents/capabilities/rules";
 
 pub struct KnowledgePageView {
     page: PageType<Self>,
@@ -83,7 +81,6 @@ pub enum KnowledgePageAction {
     ToggleRuleSuggestions,
     ToggleWarpDriveContext,
     OpenAIFactCollection,
-    HyperlinkClick(HyperlinkUrl),
 }
 
 impl TypedActionView for KnowledgePageView {
@@ -115,10 +112,6 @@ impl TypedActionView for KnowledgePageView {
             }
             KnowledgePageAction::OpenAIFactCollection => {
                 ctx.emit(KnowledgePageEvent::OpenAIFactCollection)
-            }
-            KnowledgePageAction::HyperlinkClick(hyperlink) => {
-                ctx.notify();
-                ctx.open_url(&hyperlink.url);
             }
         }
     }
@@ -197,7 +190,6 @@ pub fn init_actions_from_parent_view<T: Action + Clone>(
 #[derive(Default)]
 struct RulesWidget {
     rules_toggle: SwitchStateHandle,
-    rules_link_index: HighlightedHyperlink,
 }
 
 impl SettingsWidget for RulesWidget {
@@ -224,12 +216,9 @@ impl SettingsWidget for RulesWidget {
             app,
         );
 
-        let rules_description = vec![
-            FormattedTextFragment::plain_text(
-                "Rules help the Local Agent follow your conventions, whether for codebases or specific workflows. ",
-            ),
-            FormattedTextFragment::hyperlink("Learn more", RULES_DOCS_URL),
-        ];
+        let rules_description = vec![FormattedTextFragment::plain_text(
+            "Rules help the Local Agent follow your conventions, whether for codebases or specific workflows.",
+        )];
         let description = Container::new(
             FormattedTextElement::new(
                 FormattedText::new([FormattedTextLine::Line(rules_description)]),
@@ -237,12 +226,8 @@ impl SettingsWidget for RulesWidget {
                 appearance.ui_font_family(),
                 appearance.ui_font_family(),
                 styles::description_font_color(ai_settings.is_any_ai_enabled(app), app).into(),
-                self.rules_link_index.clone(),
+                HighlightedHyperlink::default(),
             )
-            .with_hyperlink_font_color(appearance.theme().accent().into_solid())
-            .register_default_click_handlers(|url, ctx, _| {
-                ctx.dispatch_typed_action(KnowledgePageAction::HyperlinkClick(url));
-            })
             .finish(),
         )
         .with_margin_top(styles::DESCRIPTION_NEGATIVE_MARGIN_OFFSET)

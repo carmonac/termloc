@@ -1,10 +1,9 @@
-use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use settings::Setting as _;
 use warp_errors::report_if_error;
 use warpui::elements::{
-    Align, Border, Clipped, ConstrainedBox, Container, CornerRadius, Flex, FormattedTextElement,
-    HighlightedHyperlink, Hoverable, HyperlinkUrl, MainAxisAlignment, MainAxisSize,
-    MouseStateHandle, ParentElement, Radius, Shrinkable, Text, Wrap,
+    Align, Border, Clipped, ConstrainedBox, Container, CornerRadius, Flex, Hoverable,
+    MainAxisAlignment, MainAxisSize, MouseStateHandle, ParentElement, Radius, Shrinkable, Text,
+    Wrap,
 };
 use warpui::fonts::Weight;
 use warpui::platform::Cursor;
@@ -26,7 +25,6 @@ use crate::terminal::view::block_onboarding::util;
 const CONFIRM_MARGIN_TOP: f32 = 16.;
 
 pub struct OnboardingPromptBlock {
-    learn_more_highlight_index: HighlightedHyperlink,
     mouse_state_handle_look_incorrect: MouseStateHandle,
     mouse_state_handle_warp_prompt: MouseStateHandle,
     mouse_state_handle_existing_prompt: MouseStateHandle,
@@ -39,7 +37,6 @@ pub struct OnboardingPromptBlock {
 impl OnboardingPromptBlock {
     pub fn new(ps1_grid_info: Option<(BlockGrid, SizeInfo)>) -> Self {
         Self {
-            learn_more_highlight_index: Default::default(),
             mouse_state_handle_look_incorrect: Default::default(),
             mouse_state_handle_warp_prompt: Default::default(),
             mouse_state_handle_existing_prompt: Default::default(),
@@ -64,10 +61,7 @@ impl OnboardingPromptBlock {
         // Copy - https://docs.google.com/document/d/1zttBLI5Mw07kUupvrMQoC5aTwTXSHIUOIFFnxZ8GQEU/edit
         const LINE_ONE: &str = "Next, let’s set up your prompt. Termloc has a custom prompt builder or you can select PS1 to honor your pre-existing prompt configuration.";
         const LINE_TWO: &str =
-            "Termloc works with many custom prompts like oh-my-zsh, Starship, Powerlevel10K. ";
-        const LINK_TEXT: &str = "Learn more";
-        const LINK_DESTINATION: &str =
-            "https://docs.warp.dev/terminal/appearance/prompt#custom-prompt-compatibility-table";
+            "Termloc works with many custom prompts like oh-my-zsh, Starship, Powerlevel10K.";
 
         Flex::column()
             .with_children([
@@ -79,22 +73,9 @@ impl OnboardingPromptBlock {
                 .with_margin_top(14.)
                 .finish(),
                 Container::new(
-                    FormattedTextElement::new(
-                        FormattedText::new([FormattedTextLine::Line(vec![
-                            FormattedTextFragment::plain_text(LINE_TWO),
-                            FormattedTextFragment::hyperlink(LINK_TEXT, LINK_DESTINATION),
-                        ])]),
-                        font_size,
-                        font_family,
-                        font_family,
-                        font_color.into_solid(),
-                        self.learn_more_highlight_index.clone(),
-                    )
-                    .with_hyperlink_font_color(current_theme.accent().into_solid())
-                    .register_default_click_handlers(|url, ctx, _| {
-                        ctx.dispatch_typed_action(OnboardingPromptBlockAction::HyperlinkClick(url));
-                    })
-                    .finish(),
+                    Text::new(LINE_TWO, font_family, font_size)
+                        .with_color(font_color.into_solid())
+                        .finish(),
                 )
                 .with_margin_top(14.)
                 .finish(),
@@ -467,7 +448,6 @@ impl View for OnboardingPromptBlock {
 pub enum OnboardingPromptBlockAction {
     PromptSelected(OnboardingPromptType),
     PromptConfirmed,
-    HyperlinkClick(HyperlinkUrl),
 }
 
 impl TypedActionView for OnboardingPromptBlock {
@@ -512,10 +492,6 @@ impl TypedActionView for OnboardingPromptBlock {
             OnboardingPromptBlockAction::PromptConfirmed => {
                 self.block_completed = true;
                 ctx.notify();
-            }
-            OnboardingPromptBlockAction::HyperlinkClick(hyperlink) => {
-                ctx.notify();
-                ctx.open_url(&hyperlink.url);
             }
         }
     }

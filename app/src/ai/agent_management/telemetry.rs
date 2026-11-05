@@ -3,8 +3,6 @@ use serde_json::json;
 use strum_macros::{EnumDiscriminants, EnumIter};
 use warp_core::telemetry::{EnablementState, TelemetryEvent, TelemetryEventDesc};
 
-use crate::ai::agent_management::cloud_setup_guide_view::SetupGuideDocs;
-
 /// Which setup guide workflow step the user interacted with
 #[derive(Clone, Copy, Debug, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -72,8 +70,6 @@ pub enum AgentManagementTelemetryEvent {
     SetupGuideStepRun { step: SetupGuideStep },
     /// User copied a workflow step from the setup guide
     SetupGuideStepCopy { step: SetupGuideStep },
-    /// User clicked a URL in the setup guide
-    SetupGuideDocsLink { docs: SetupGuideDocs },
     /// User opened a conversation
     ConversationOpened {
         conversation_id: String,
@@ -145,9 +141,6 @@ impl TelemetryEvent for AgentManagementTelemetryEvent {
             }
             AgentManagementTelemetryEvent::SetupGuideStepCopy { step } => {
                 Some(json!({ "step": step }))
-            }
-            AgentManagementTelemetryEvent::SetupGuideDocsLink { docs } => {
-                Some(json!({ "docs": docs }))
             }
             AgentManagementTelemetryEvent::ConversationOpened {
                 conversation_id,
@@ -241,7 +234,6 @@ impl TelemetryEventDesc for AgentManagementTelemetryEventDiscriminants {
             Self::AgentTypeSelectorOpened => "AgentManagement.AgentTypeSelectorOpened",
             Self::SetupGuideStepRun => "AgentManagement.SetupGuideStepRun",
             Self::SetupGuideStepCopy => "AgentManagement.SetupGuideStepCopy",
-            Self::SetupGuideDocsLink => "AgentManagement.SetupGuideDocsLink",
             Self::ConversationOpened => "AgentManagement.ConversationOpened",
             Self::CloudRunOpened => "AgentManagement.CloudRunOpened",
             Self::ArtifactClicked => "AgentManagement.ArtifactClicked",
@@ -276,7 +268,6 @@ impl TelemetryEventDesc for AgentManagementTelemetryEventDiscriminants {
             }
             Self::SetupGuideStepRun => "User ran a workflow step from the setup guide",
             Self::SetupGuideStepCopy => "User copied a workflow step from the setup guide",
-            Self::SetupGuideDocsLink => "User clicked a docs URL in the setup guide",
             Self::ConversationOpened => "User opened a conversation",
             Self::CloudRunOpened => "User opened a cloud run",
             Self::ArtifactClicked => "User clicked an artifact button",

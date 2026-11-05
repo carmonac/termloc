@@ -4,7 +4,7 @@ use warp_core::ui::theme::Fill;
 use warpui::assets::asset_cache::AssetSource;
 use warpui::elements::{
     Align, CacheOption, ChildAnchor, ChildView, Clipped, ConstrainedBox, Container, CornerRadius,
-    CrossAxisAlignment, Empty, Expanded, Flex, Highlight, Image, MainAxisSize, OffsetPositioning,
+    CrossAxisAlignment, Expanded, Flex, Highlight, Image, MainAxisSize, OffsetPositioning,
     ParentAnchor, ParentElement, ParentOffsetBounds, Radius, Stack, Text,
 };
 use warpui::fonts::{Properties, Weight};
@@ -23,11 +23,9 @@ const MODAL_HEIGHT: f32 = 440.;
 const COLUMN_WIDTH: f32 = MODAL_WIDTH / 2.;
 const COLUMN_HORIZONTAL_PADDING: f32 = 32.;
 const COLUMN_VERTICAL_PADDING: f32 = 40.;
-const CONTENT_WIDTH: f32 = COLUMN_WIDTH - COLUMN_HORIZONTAL_PADDING * 2.;
 const CARD_RADIUS: f32 = 8.;
 const FEATURE_FONT_SIZE: f32 = 12.;
 const HERO_IMAGE_PATH: &str = "async/png/onboarding/agent_cli_launch_banner.png";
-const GET_STARTED_URL: &str = "https://docs.warp.dev/cli/quickstart/";
 
 fn modal_background(appearance: &Appearance) -> Fill {
     appearance.theme().surface_3()
@@ -95,7 +93,6 @@ pub fn init(app: &mut AppContext) {
 #[derive(Clone, Debug)]
 pub enum AgentCliLaunchModalAction {
     Close,
-    GetStarted,
 }
 
 #[derive(Clone, Debug)]
@@ -124,26 +121,8 @@ impl ActionButtonTheme for CloseButtonTheme {
     }
 }
 
-struct CtaButtonTheme;
-
-impl ActionButtonTheme for CtaButtonTheme {
-    fn background(&self, _hovered: bool, appearance: &Appearance) -> Option<Fill> {
-        Some(Fill::Solid(appearance.theme().foreground().into_solid()))
-    }
-
-    fn text_color(
-        &self,
-        _hovered: bool,
-        _background: Option<Fill>,
-        appearance: &Appearance,
-    ) -> ColorU {
-        appearance.theme().background().into_solid()
-    }
-}
-
 pub struct AgentCliLaunchModal {
     close_button: ViewHandle<ActionButton>,
-    get_started_button: ViewHandle<ActionButton>,
 }
 
 impl AgentCliLaunchModal {
@@ -155,16 +134,7 @@ impl AgentCliLaunchModal {
                 .on_click(|ctx| ctx.dispatch_typed_action(AgentCliLaunchModalAction::Close))
         });
 
-        let get_started_button = ctx.add_view(|_ctx| {
-            ActionButton::new("Get started", CtaButtonTheme)
-                .with_full_width(true)
-                .on_click(|ctx| ctx.dispatch_typed_action(AgentCliLaunchModalAction::GetStarted))
-        });
-
-        Self {
-            close_button,
-            get_started_button,
-        }
+        Self { close_button }
     }
 
     fn render_hero(&self) -> Box<dyn Element> {
@@ -303,12 +273,6 @@ impl AgentCliLaunchModal {
                     .with_margin_top(16.)
                     .finish(),
             )
-            .with_child(Expanded::new(1., Empty::new().finish()).finish())
-            .with_child(
-                ConstrainedBox::new(ChildView::new(&self.get_started_button).finish())
-                    .with_width(CONTENT_WIDTH)
-                    .finish(),
-            )
             .finish();
 
         ConstrainedBox::new(
@@ -368,10 +332,6 @@ impl TypedActionView for AgentCliLaunchModal {
     fn handle_action(&mut self, action: &Self::Action, ctx: &mut ViewContext<Self>) {
         match action {
             AgentCliLaunchModalAction::Close => {
-                ctx.emit(AgentCliLaunchModalEvent::Close);
-            }
-            AgentCliLaunchModalAction::GetStarted => {
-                ctx.open_url(GET_STARTED_URL);
                 ctx.emit(AgentCliLaunchModalEvent::Close);
             }
         }

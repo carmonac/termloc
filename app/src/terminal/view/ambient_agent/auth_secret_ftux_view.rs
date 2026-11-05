@@ -19,7 +19,6 @@ use warpui::{
 
 use crate::ai::auth_secret_types::{
     AuthSecretTypeInfo, auth_secret_types_for_harness, build_managed_secret_value,
-    learn_more_url_for_harness,
 };
 use crate::ai::harness_availability::{HarnessAvailabilityEvent, HarnessAvailabilityModel};
 use crate::ai::harness_display;
@@ -68,7 +67,6 @@ pub enum AuthSecretFtuxAction {
     /// Cancel an in-progress creation form and return to the dropdown.
     Back,
     /// Open the harness-specific documentation in a browser.
-    LearnMore(&'static str),
     /// Toggle the "Share with team" checkbox on the creation form.
     ToggleTeamScope,
     /// Toggle the compact-mode harness picker. Ignored when compact mode
@@ -128,7 +126,6 @@ pub struct AuthSecretFtuxView {
     back_button_mouse_state: MouseStateHandle,
     share_with_team: bool,
     continue_mouse_state: MouseStateHandle,
-    learn_more_mouse_state: MouseStateHandle,
     team_checkbox_mouse_state: MouseStateHandle,
     /// Suppresses the in-dropdown "Skip" item; default `false` (cloud mode
     /// keeps Skip, orchestration modal hides it).
@@ -264,7 +261,6 @@ impl AuthSecretFtuxView {
             back_button_mouse_state: MouseStateHandle::default(),
             share_with_team: false,
             continue_mouse_state: MouseStateHandle::default(),
-            learn_more_mouse_state: MouseStateHandle::default(),
             team_checkbox_mouse_state: MouseStateHandle::default(),
             skip_hidden: false,
             compact_mode: false,
@@ -752,7 +748,6 @@ impl AuthSecretFtuxView {
         let theme = appearance.theme();
         let font_family = appearance.ui_font_family();
         let sub_color = internal_colors::text_sub(theme, theme.surface_1());
-        let accent_color = theme.accent().into_solid();
 
         let main_text = {
             let description = if self.current_type_info().is_some() {
@@ -768,7 +763,7 @@ impl AuthSecretFtuxView {
         };
 
         let privacy_text = Text::new_inline(
-            "Your credentials are encrypted end-to-end. ".to_string(),
+            "Your credentials are encrypted end-to-end.".to_string(),
             font_family,
             TYPE_DESCRIPTION_FONT_SIZE,
         )
@@ -776,39 +771,9 @@ impl AuthSecretFtuxView {
         .soft_wrap(true)
         .finish();
 
-        let harness_name = harness_display::display_name(self.harness);
-        let learn_more_url = self
-            .current_type_info()
-            .map(|info| info.learn_more_url)
-            .unwrap_or_else(|| learn_more_url_for_harness(self.harness));
-        let learn_more_label =
-            format!("Learn more about authentication for {harness_name} in Warp.");
-        let learn_more = Hoverable::new(self.learn_more_mouse_state.clone(), move |state| {
-            let color = if state.is_hovered() {
-                accent_color
-            } else {
-                sub_color
-            };
-            Text::new_inline(
-                learn_more_label.clone(),
-                font_family,
-                TYPE_DESCRIPTION_FONT_SIZE,
-            )
-            .with_color(color)
-            .with_style(Properties::default().weight(Weight::Semibold))
-            .soft_wrap(true)
-            .finish()
-        })
-        .with_cursor(warpui::platform::Cursor::PointingHand)
-        .on_click(move |ctx, _, _| {
-            ctx.dispatch_typed_action(AuthSecretFtuxAction::LearnMore(learn_more_url));
-        })
-        .finish();
-
         let privacy_row = Wrap::row()
             .with_cross_axis_alignment(CrossAxisAlignment::Center)
             .with_child(privacy_text)
-            .with_child(learn_more)
             .finish();
 
         Flex::column()
@@ -1072,9 +1037,6 @@ impl TypedActionView for AuthSecretFtuxView {
             AuthSecretFtuxAction::Cancel => self.handle_cancel(ctx),
             AuthSecretFtuxAction::Continue => self.handle_continue(ctx),
             AuthSecretFtuxAction::Back => self.clear_creation_state(ctx),
-            AuthSecretFtuxAction::LearnMore(url) => {
-                ctx.open_url(url);
-            }
             AuthSecretFtuxAction::ToggleTeamScope => {
                 self.share_with_team = !self.share_with_team;
                 ctx.notify();

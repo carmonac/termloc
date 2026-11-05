@@ -937,9 +937,6 @@ pub enum AgentModeCitation {
         object_type: ObjectType,
         uid: ObjectUid,
     },
-    WarpDocs {
-        page: String,
-    },
     WebPage {
         // Don't serialize the URL to avoid leaking sensitive information.
         #[serde(skip_serializing)]

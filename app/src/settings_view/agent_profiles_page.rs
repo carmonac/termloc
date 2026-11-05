@@ -17,8 +17,8 @@ use warp_core::features::FeatureFlag;
 use warp_errors::{report_error, report_if_error};
 use warpui::elements::{
     ChildView, ConstrainedBox, Container, CrossAxisAlignment, Dismiss, Element, Flex,
-    FormattedTextElement, HighlightedHyperlink, HyperlinkLens, HyperlinkUrl, MainAxisAlignment,
-    MainAxisSize, MouseStateHandle, ParentElement, Shrinkable, Text,
+    FormattedTextElement, HighlightedHyperlink, HyperlinkLens, MainAxisAlignment, MainAxisSize,
+    MouseStateHandle, ParentElement, Shrinkable, Text,
 };
 use warpui::keymap::ContextPredicate;
 use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
@@ -1458,7 +1458,6 @@ impl Entity for AgentProfilesPageView {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AgentProfilesPageAction {
-    HyperlinkClick(HyperlinkUrl),
     ToggleCodebaseContext,
     RemoveFromCommandExecutionAllowlist(AgentModeCommandExecutionPredicate),
     RemoveFromCommandExecutionDenylist(AgentModeCommandExecutionPredicate),
@@ -1513,10 +1512,6 @@ impl TypedActionView for AgentProfilesPageView {
                     }
                 }
                 ctx.notify();
-            }
-            AgentProfilesPageAction::HyperlinkClick(hyperlink) => {
-                ctx.notify();
-                ctx.open_url(&hyperlink.url);
             }
             AgentProfilesPageAction::RemoveFromCommandExecutionAllowlist(cmd) => {
                 BlocklistAIPermissions::handle(ctx).update(ctx, |model, ctx| {
@@ -1854,7 +1849,6 @@ fn render_ai_list(
 #[derive(Default)]
 struct AgentsWidget {
     codebase_context_toggle: SwitchStateHandle,
-    codebase_context_link_index: HighlightedHyperlink,
     show_in_prompt_checkbox: MouseStateHandle,
 }
 
@@ -2285,7 +2279,6 @@ impl AgentsWidget {
         if !FeatureFlag::FullSourceCodeEmbedding.is_enabled() {
             let codebase_context = Self::render_codebase_context_outline_generation_setting(
                 self.codebase_context_toggle.clone(),
-                self.codebase_context_link_index.clone(),
                 view,
                 ai_settings,
                 appearance,
@@ -2558,7 +2551,6 @@ impl AgentsWidget {
 
     fn render_codebase_context_outline_generation_setting(
         codebase_context_toggle: SwitchStateHandle,
-        codebase_context_link_index: HighlightedHyperlink,
         view: &AgentProfilesPageView,
         ai_settings: &AISettings,
         appearance: &Appearance,
@@ -2575,15 +2567,9 @@ impl AgentsWidget {
             app,
         );
 
-        let codebase_context_description = vec![
-            FormattedTextFragment::plain_text(
-                "Allow the Local Agent to generate an outline of your codebase that can be used for context. No code is ever stored on our servers. ",
-            ),
-            FormattedTextFragment::hyperlink(
-                "Learn more",
-                "https://docs.warp.dev/agents/capabilities/codebase-context",
-            ),
-        ];
+        let codebase_context_description = vec![FormattedTextFragment::plain_text(
+            "Allow the Local Agent to generate an outline of your codebase that can be used for context. No code is ever stored on our servers.",
+        )];
         let description = Container::new(
             FormattedTextElement::new(
                 FormattedText::new([FormattedTextLine::Line(codebase_context_description)]),
@@ -2591,12 +2577,8 @@ impl AgentsWidget {
                 appearance.ui_font_family(),
                 appearance.ui_font_family(),
                 styles::description_font_color(ai_settings.is_any_ai_enabled(app), app).into(),
-                codebase_context_link_index,
+                HighlightedHyperlink::default(),
             )
-            .with_hyperlink_font_color(appearance.theme().accent().into_solid())
-            .register_default_click_handlers(|url, ctx, _| {
-                ctx.dispatch_typed_action(AgentProfilesPageAction::HyperlinkClick(url));
-            })
             .finish(),
         )
         .with_margin_top(styles::DESCRIPTION_NEGATIVE_MARGIN_OFFSET)
@@ -2656,11 +2638,7 @@ impl AgentsWidget {
                     "Add a server",
                     AgentProfilesPageAction::OpenMCPServerCollection,
                 ),
-                FormattedTextFragment::plain_text(" or "),
-                FormattedTextFragment::hyperlink(
-                    "learn more about MCPs.",
-                    "https://docs.warp.dev/agents/capabilities/mcp",
-                ),
+                FormattedTextFragment::plain_text("."),
             ];
 
             Container::new(
@@ -2674,22 +2652,12 @@ impl AgentsWidget {
                 )
                 .with_hyperlink_font_color(appearance.theme().accent().into_solid())
                 .register_default_click_handlers_with_action_support(|hyperlink_lens, ctx, _app| {
-                    match hyperlink_lens {
-                        HyperlinkLens::Url(url) => {
-                            ctx.dispatch_typed_action(AgentProfilesPageAction::HyperlinkClick(
-                                HyperlinkUrl {
-                                    url: url.to_owned(),
-                                },
-                            ));
-                        }
-                        HyperlinkLens::Action(action_ref) => {
-                            if let Some(action) = action_ref
-                                .as_any()
-                                .downcast_ref::<AgentProfilesPageAction>()
-                            {
-                                ctx.dispatch_typed_action(action.clone());
-                            }
-                        }
+                    if let HyperlinkLens::Action(action_ref) = hyperlink_lens
+                        && let Some(action) = action_ref
+                            .as_any()
+                            .downcast_ref::<AgentProfilesPageAction>()
+                    {
+                        ctx.dispatch_typed_action(action.clone());
                     }
                 })
                 .finish(),

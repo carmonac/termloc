@@ -493,7 +493,7 @@ fn run_cloud_help_lists_harness_and_auth_secret_flags() {
 
     // Surfaced harness values keep their per-value descriptions.
     assert!(
-        help.contains("Use Warp's built-in MAA infrastructure"),
+        help.contains("Use Termloc's built-in MAA infrastructure"),
         "help should describe the oz harness value:\n{help}"
     );
     assert!(

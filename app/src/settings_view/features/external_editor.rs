@@ -13,7 +13,7 @@ use crate::appearance::Appearance;
 use crate::send_telemetry_from_ctx;
 use crate::server::telemetry::TelemetryEvent;
 use crate::settings_view::settings_page::{
-    AdditionalInfo, LocalOnlyIconState, ToggleState, render_body_item, render_dropdown_item,
+    LocalOnlyIconState, ToggleState, render_body_item, render_dropdown_item,
 };
 use crate::util::file::external_editor::settings::{
     EditorChoice, EditorLayout, OpenCodePanelsFileEditor, OpenFileEditor, OpenFileLayout,
@@ -32,7 +32,6 @@ pub enum ExternalEditorAction {
     SetLayout(EditorLayout),
     TogglePreferMarkdownViewer,
     ToggleTabbedEditorView,
-    OpenUrl(String),
 }
 
 pub struct ExternalEditorView {
@@ -41,7 +40,6 @@ pub struct ExternalEditorView {
     layout_dropdown: ViewHandle<Dropdown<ExternalEditorAction>>,
     tabbed_editor_view_mouse_state: SwitchStateHandle,
     prefer_markdown_viewer_switch: SwitchStateHandle,
-    markdown_viewer_mouse_state: MouseStateHandle,
     local_only_icon_states: RefCell<HashMap<String, MouseStateHandle>>,
 }
 
@@ -108,7 +106,6 @@ impl ExternalEditorView {
             layout_dropdown,
             tabbed_editor_view_mouse_state: Default::default(),
             prefer_markdown_viewer_switch: Default::default(),
-            markdown_viewer_mouse_state: Default::default(),
             local_only_icon_states: Default::default(),
         }
     }
@@ -361,14 +358,7 @@ impl View for ExternalEditorView {
 
         column.add_child(render_body_item::<ExternalEditorAction>(
             "Open Markdown files in Termloc's Markdown Viewer by default".to_string(),
-            Some(AdditionalInfo {
-                mouse_state: self.markdown_viewer_mouse_state.clone(),
-                on_click_action: Some(ExternalEditorAction::OpenUrl(
-                    "https://docs.warp.dev/terminal/more-features/markdown-viewer".to_string(),
-                )),
-                secondary_text: None,
-                tooltip_override_text: None,
-            }),
+            None,
             LocalOnlyIconState::for_setting(
                 PreferMarkdownViewer::storage_key(),
                 PreferMarkdownViewer::sync_to_cloud(),
@@ -408,9 +398,6 @@ impl TypedActionView for ExternalEditorView {
             }
             ExternalEditorAction::ToggleTabbedEditorView => {
                 self.toggle_prefer_tabbed_editor_view(ctx);
-            }
-            ExternalEditorAction::OpenUrl(url) => {
-                ctx.open_url(url.as_str());
             }
         }
     }

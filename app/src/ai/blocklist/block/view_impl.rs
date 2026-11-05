@@ -658,11 +658,6 @@ pub fn render_citation(
                 item.display_name().unwrap_or(String::from("Untitled")),
             )
         }
-        AIAgentCitation::WarpDocumentation { .. } => {
-            let icon = Icon::Warp.to_warpui_icon(theme.foreground()).finish();
-            let name = String::from("Docs");
-            (Some(icon), name)
-        }
         AIAgentCitation::WebPage { url } => {
             let icon = Icon::LinkExternal
                 .to_warpui_icon(theme.foreground())

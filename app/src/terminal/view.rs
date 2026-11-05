@@ -198,7 +198,6 @@ use super::model::selection::ExpandedSelectionRange;
 use super::model::session::SessionBootstrappedEvent;
 use super::settings::AltScreenPaddingMode;
 use super::ssh::util::{InteractiveSshCommand, SshWarpifyCommand, parse_interactive_ssh_command};
-use super::warpify::WarpificationSource;
 use super::warpify::success_block::{WarpifySuccessBlock, WarpifySuccessBlockEvent};
 use super::warpify::trigger_state::{SshBlockState, WarpifyState};
 use super::{CLIAgent, GridType, cli_agent, should_right_click_paste};
@@ -654,16 +653,6 @@ const ENV_VAR_BOOTSTRAP_FAILED_DURATION: Duration = Duration::from_secs(60);
 const SLOW_BOOTSTRAP_BANNER_AUTO_DISMISS_DURATION: Duration = Duration::from_secs(30);
 /// Covers the terminal manager's 10-second PTY stop and 60-second replacement bootstrap deadlines.
 const SHELL_REPLACEMENT_TIMEOUT: Duration = Duration::from_secs(75);
-const KNOWN_ISSUES_URL: &str =
-    "https://docs.warp.dev/support-and-community/troubleshooting-and-support/known-issues";
-
-/// Link to supported custom prompts.
-const PROMPT_COMPATIBILITY_URL: &str =
-    "https://docs.warp.dev/terminal/appearance/prompt#custom-prompt-compatibility-table";
-
-/// Link to troubleshooting steps for ControlMaster errors.
-const CONTROLMASTER_ISSUES_URL: &str =
-    "https://docs.warp.dev/terminal/warpify/ssh-legacy#troubleshooting";
 
 /// Link to instructions on how to update p10k.
 const P10K_UPDATE_INSTRUCTIONS_URL: &str =
@@ -675,13 +664,6 @@ const CONTEXT_MENU_WIDTH: f32 = 280.;
 /// be a text-selection as opposed to mouse-drag noise.
 /// Roughly determined by trial-and-error.
 const MIN_DELTA_FOR_TEXT_SELECTION: f32 = 0.5;
-
-/// Notifications-specific info
-/// TODO (suraj): add documentation for notifications in docs
-const NOTIFICATIONS_LEARN_MORE_URL: &str =
-    "https://docs.warp.dev/terminal/more-features/notifications";
-pub const NOTIFICATIONS_TROUBLESHOOT_URL: &str =
-    "https://docs.warp.dev/terminal/more-features/notifications#troubleshooting-notifications";
 
 const DEBOUNCE_PERIOD: Duration = Duration::from_millis(40);
 
@@ -3936,12 +3918,9 @@ impl TerminalView {
 
         let slow_bootstrap_banner = ctx.add_typed_action_view(|_| {
             Banner::<TerminalAction>::new_with_buttons(
-                BannerTextContent::formatted_text(vec![
-                    FormattedTextFragment::plain_text(
-                        "Seems like your shell is taking a while to start...  ",
-                    ),
-                    FormattedTextFragment::hyperlink("More info", KNOWN_ISSUES_URL),
-                ]),
+                BannerTextContent::formatted_text(vec![FormattedTextFragment::plain_text(
+                    "Seems like your shell is taking a while to start...",
+                )]),
                 vec![BannerTextButton::new(
                     "Show initialization block".to_string(),
                     Rc::new(|event_ctx, _ctx, _position| {
@@ -3963,9 +3942,9 @@ impl TerminalView {
 
         let control_master_error_banner = ctx.add_typed_action_view(|_| {
             Banner::new_permanently_dismissible(BannerTextContent::formatted_text(vec![
-                FormattedTextFragment::plain_text("Seems like your completions are not working ("),
-                FormattedTextFragment::hyperlink("more info", CONTROLMASTER_ISSUES_URL),
-                FormattedTextFragment::plain_text("). Enabling the SSH extension in "),
+                FormattedTextFragment::plain_text(
+                    "Seems like your completions are not working. Enabling the SSH extension in ",
+                ),
                 FormattedTextFragment::hyperlink_action(
                     "settings",
                     TerminalAction::ShowWarpifySettings,
@@ -3981,9 +3960,8 @@ impl TerminalView {
         let incompatible_configuration_banner = ctx.add_typed_action_view(|_| {
             Banner::new(BannerTextContent::formatted_text(vec![
                 FormattedTextFragment::plain_text(
-                    "Your shell configuration is incompatible with Termloc...  ",
+                    "Your shell configuration is incompatible with Termloc.",
                 ),
-                FormattedTextFragment::hyperlink("More info", KNOWN_ISSUES_URL),
             ]))
         });
 
@@ -10385,7 +10363,6 @@ impl TerminalView {
             spawning_command,
             subshell_info,
             shell,
-            session_type,
             ..
         }: SessionBootstrappedEvent,
         ctx: &mut ViewContext<Self>,
@@ -10399,18 +10376,8 @@ impl TerminalView {
             });
         }
 
-        let warpification_source = match session_type {
-            BootstrapSessionType::WarpifiedRemote => WarpificationSource::Ssh,
-            BootstrapSessionType::Local => WarpificationSource::Subshell,
-        };
         let ssh_success_block_handle = ctx.add_typed_action_view(|ctx| {
-            WarpifySuccessBlock::new(
-                warpification_source,
-                spawning_command,
-                subshell_info,
-                shell,
-                ctx,
-            )
+            WarpifySuccessBlock::new(spawning_command, subshell_info, shell, ctx)
         });
         ctx.subscribe_to_view(&ssh_success_block_handle, move |me, _, event, ctx| {
             me.handle_ssh_success_block_events(event, ctx);
@@ -21274,9 +21241,6 @@ impl TerminalView {
                 AIAgentCitation::WarpDriveObject { uid } => {
                     ctx.emit(Event::OpenWarpDriveObjectInPane(uid.clone()));
                 }
-                AIAgentCitation::WarpDocumentation { path } => {
-                    ctx.open_url(&format!("https://docs.warp.dev/{path}"));
-                }
                 AIAgentCitation::WebPage { url } => {
                     ctx.open_url(url);
                 }
@@ -23301,9 +23265,8 @@ impl TerminalView {
                 Some(BannerTextContent::formatted_text(vec![
                     FormattedTextFragment::plain_text(
                         "Pure is not yet supported in Termloc. You might consider one of the \
-                        supported prompts as an alternative.  ",
+                        supported prompts as an alternative.",
                     ),
-                    FormattedTextFragment::hyperlink("Learn more", PROMPT_COMPATIBILITY_URL),
                 ]))
             } else {
                 None
@@ -26181,9 +26144,6 @@ impl TerminalView {
         use NotificationsErrorBannerAction::*;
 
         match action {
-            Troubleshoot => {
-                ctx.open_url(NOTIFICATIONS_TROUBLESHOOT_URL);
-            }
             Close => self.close_notification_error_banner(ctx),
             SetPermissions => {
                 ctx.request_desktop_notification_permissions(move |view, outcome, ctx| {
@@ -26224,12 +26184,6 @@ impl TerminalView {
         use NotificationsDiscoveryBannerAction::*;
 
         match action {
-            LearnMore => {
-                ctx.open_url(NOTIFICATIONS_LEARN_MORE_URL);
-            }
-            Troubleshoot => {
-                ctx.open_url(NOTIFICATIONS_TROUBLESHOOT_URL);
-            }
             TurnOn(trigger) => {
                 let current_settings = SessionSettings::as_ref(ctx).notifications.value().clone();
                 let new_settings = NotificationsSettings {

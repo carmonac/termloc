@@ -850,10 +850,10 @@ fn link_menu_item(title: &'static str, link: Cow<'static, str>) -> MenuItem {
 fn make_new_help_menu() -> Menu {
     Menu::new(
         "Help",
-        vec![
-            link_menu_item("Documentation...", links::USER_DOCS_URL.into()),
-            link_menu_item("GitHub Issues...", links::GITHUB_ISSUES_URL.into()),
-        ],
+        vec![link_menu_item(
+            "GitHub Issues...",
+            links::GITHUB_ISSUES_URL.into(),
+        )],
     )
 }
 
