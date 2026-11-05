@@ -31,26 +31,22 @@ use crate::workspace::{PANEL_HEADER_HEIGHT, WorkspaceAction};
 
 // Footer icons
 const DOCS_SVG_PATH: &str = "bundled/svg/gitbook-logo.svg";
-const SLACK_SVG_PATH: &str = "bundled/svg/slack-logo.svg";
 
 #[derive(Debug, Clone, Copy)]
 pub enum ResourceCenterFooterItem {
     Docs,
-    Slack,
 }
 
 impl ResourceCenterFooterItem {
     pub fn ui_label(&self) -> &'static str {
         match self {
             ResourceCenterFooterItem::Docs => "Docs",
-            ResourceCenterFooterItem::Slack => "Join our Slack community",
         }
     }
 
     pub fn svg_path(&self) -> &'static str {
         match self {
             ResourceCenterFooterItem::Docs => DOCS_SVG_PATH,
-            ResourceCenterFooterItem::Slack => SLACK_SVG_PATH,
         }
     }
 }
@@ -80,7 +76,6 @@ struct MouseStateHandles {
     close: MouseStateHandle,
     // Footer mouse state handles
     view_user_docs: MouseStateHandle,
-    join_slack: MouseStateHandle,
 }
 
 pub enum ResourceCenterEvent {
@@ -241,7 +236,6 @@ impl ResourceCenterView {
     ) {
         match item {
             ResourceCenterFooterItem::Docs => ctx.open_url(links::USER_DOCS_URL),
-            ResourceCenterFooterItem::Slack => ctx.open_url(links::SLACK_URL),
         }
     }
 
@@ -314,7 +308,7 @@ impl ResourceCenterView {
                 if FeatureFlag::AvatarInTabBar.is_enabled() {
                     String::new()
                 } else {
-                    "Warp Essentials".to_string()
+                    "Termloc Essentials".to_string()
                 }
             }
         };
@@ -393,7 +387,6 @@ impl ResourceCenterView {
     ) -> Box<dyn Element> {
         let mouse_state = match item {
             ResourceCenterFooterItem::Docs => self.button_mouse_states.view_user_docs.clone(),
-            ResourceCenterFooterItem::Slack => self.button_mouse_states.join_slack.clone(),
         };
 
         let icon = ConstrainedBox::new(
@@ -429,11 +422,9 @@ impl ResourceCenterView {
 
     fn render_footer(&self, appearance: &Appearance) -> Box<dyn Element> {
         let docs_button = self.render_footer_button(ResourceCenterFooterItem::Docs, appearance);
-        let slack_button = self.render_footer_button(ResourceCenterFooterItem::Slack, appearance);
 
         let footer = Flex::row()
             .with_child(docs_button)
-            .with_child(slack_button)
             .with_main_axis_size(MainAxisSize::Max)
             .with_main_axis_alignment(MainAxisAlignment::SpaceEvenly)
             .with_cross_axis_alignment(CrossAxisAlignment::Center)

@@ -28,6 +28,9 @@ use crate::channel::{Channel, ChannelState};
 /// repository workflows would be stored (in "./.warp/workflows").
 pub const WARP_CONFIG_DIR: &str = ".warp";
 
+/// The name of the home directory holding this build's global config and data.
+const TERMLOC_CONFIG_DIR: &str = ".termloc";
+
 /// The name of the folder that stores Warp execution logs and network logs.
 /// This is currently only used on Windows to maintain backwards compatibility.
 pub const WARP_LOGS_DIR: &str = "logs";
@@ -37,7 +40,7 @@ fn base_warp_config_dir_name() -> String {
         // Preview shares the same directory as Stable for backward
         // compatibility — existing users already have config in `.warp`.
         Channel::Stable | Channel::Preview => WARP_CONFIG_DIR.to_owned(),
-        Channel::Oss => format!("{WARP_CONFIG_DIR}-oss"),
+        Channel::Oss => TERMLOC_CONFIG_DIR.to_owned(),
         Channel::Dev => format!("{WARP_CONFIG_DIR}-dev"),
         Channel::Integration => format!("{WARP_CONFIG_DIR}-integration"),
         Channel::Local => format!("{WARP_CONFIG_DIR}-local"),
@@ -101,7 +104,7 @@ fn macos_config_dir_name_for(channel: Channel, data_profile: Option<&str>) -> St
     let base_dir_name = match channel {
         Channel::Stable => WARP_CONFIG_DIR.to_owned(),
         Channel::Preview => format!("{WARP_CONFIG_DIR}-preview"),
-        Channel::Oss => format!("{WARP_CONFIG_DIR}-oss"),
+        Channel::Oss => TERMLOC_CONFIG_DIR.to_owned(),
         Channel::Dev => format!("{WARP_CONFIG_DIR}-dev"),
         Channel::Integration => format!("{WARP_CONFIG_DIR}-integration"),
         Channel::Local => format!("{WARP_CONFIG_DIR}-local"),
@@ -130,13 +133,11 @@ pub fn data_dir() -> PathBuf {
 
 /// Returns the GUI application ID for the current channel.
 ///
-/// Most TUI channel binaries use the same application ID as the GUI. The OSS
-/// TUI is the exception: it uses `WarpTui`, while the corresponding GUI uses
-/// `WarpOss`.
+/// TUI channel binaries use the same application ID as the corresponding GUI.
 #[cfg(any(not(target_os = "macos"), test))]
 fn gui_app_id_for_channel(channel: Channel, current_app_id: AppId) -> AppId {
     match channel {
-        Channel::Oss => AppId::new("dev", "warp", "WarpOss"),
+        Channel::Oss => AppId::new("dev", "termloc", "Termloc"),
         Channel::Stable
         | Channel::Preview
         | Channel::Dev
@@ -206,13 +207,14 @@ pub fn gui_mcp_config_file_path() -> Option<PathBuf> {
 /// Returns the macOS config directory name for the TUI front-end (`warp-tui`)
 /// for the current channel.
 ///
-/// This mirrors [`macos_config_dir_name`] but under a `.warp_cli*` directory so
-/// the TUI keeps its settings separate from the GUI's `.warp*` directory. Like
-/// the GUI names, these are persisted on disk as directory names and must not be
-/// changed once established.
+/// This mirrors [`macos_config_dir_name`] but under a `.termloc_tui*` or `.warp_cli*` directory
+/// so the TUI keeps its settings separate from the GUI's directory. Like the GUI names, these are
+/// persisted on disk as directory names and must not be changed once established.
 #[cfg(target_os = "macos")]
 fn macos_tui_config_dir_name() -> String {
-    macos_config_dir_name().replacen(WARP_CONFIG_DIR, ".warp_cli", 1)
+    macos_config_dir_name()
+        .replacen(TERMLOC_CONFIG_DIR, ".termloc_tui", 1)
+        .replacen(WARP_CONFIG_DIR, ".warp_cli", 1)
 }
 
 /// Returns the path to the directory where non-portable configuration files for
@@ -220,7 +222,7 @@ fn macos_tui_config_dir_name() -> String {
 ///
 /// This is intentionally distinct from [`config_local_dir`] so the GUI and the
 /// TUI never share (and clobber) a settings file. On macOS it is a sibling
-/// `.warp_cli*` directory (mirroring the GUI's `.warp*`); on other platforms —
+/// directory (see `macos_tui_config_dir_name`); on other platforms —
 /// whose config dirs are already app-id based — it nests under a `cli`
 /// subdirectory of the standard config dir.
 pub fn tui_config_local_dir() -> PathBuf {
@@ -372,7 +374,6 @@ fn project_dirs_for_app_id(
             // match our Linux package name.
             let base_app_name = match app_id.application_name() {
                 "Warp" => "Warp-Terminal".to_owned(),
-                "WarpOss" => "Warp-Oss".to_owned(),
                 other if other.starts_with("Warp") => other.replace("Warp", "Warp-Terminal-"),
                 _ => app_id.application_name().to_owned(),
             };
@@ -404,7 +405,7 @@ pub fn app_group_container_path() -> Option<PathBuf> {
 
         let fm = NSFileManager::defaultManager();
         // Keep in sync with Entitlements.plist
-        let group_id = format!("{}.dev.warp", crate::macos::APPLE_TEAM_ID);
+        let group_id = format!("{}.dev.termloc", crate::macos::APPLE_TEAM_ID);
         let group_id = NSString::from_str(&group_id);
         // containerURLForSecurityApplicationGroupIdentifier always returns a value on macOS (unlike iOS).
         // We have to double-check that the path points to a directory we can actually use. In addition to

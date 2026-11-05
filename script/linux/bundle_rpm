@@ -19,7 +19,7 @@ set -e
 if [ "$ARTIFACT" = "cli" ]; then
   CHANNEL_SUFFIX="${BINARY_NAME#oz}"
 else
-  CHANNEL_SUFFIX="${BINARY_NAME#warp}"
+  CHANNEL_SUFFIX="${BINARY_NAME#termloc}"
 fi
 REPO_NAME="warpdotdev$CHANNEL_SUFFIX"
 
@@ -31,7 +31,7 @@ fi
 
 ARTIFACT="${ARTIFACT:-app}"
 if [ "$ARTIFACT" = "app" ]; then
-  PACKAGE_NAME="warp-terminal$CHANNEL_SUFFIX"
+  PACKAGE_NAME="termloc$CHANNEL_SUFFIX"
 elif [ "$ARTIFACT" = "cli" ]; then
   PACKAGE_NAME="oz$CHANNEL_SUFFIX"
 else
@@ -69,7 +69,8 @@ mkdir -p "$RPMBUILD_DIR"/{SPEC,RPMS}
 VERSION="$GIT_RELEASE_TAG"
 RELEASE="1"
 sed \
-    "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; \
+    "s#@@PACKAGE_NAME@@#$PACKAGE_NAME#g; \
+     s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; \
      s#@@BINARY_NAME@@#$BINARY_NAME#g; \
      s#@@VERSION@@#$VERSION#g; \
      s#@@RELEASE@@#$RELEASE#g; \

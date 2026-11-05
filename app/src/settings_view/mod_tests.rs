@@ -39,7 +39,7 @@ fn match_data_countable_zero_is_not_truthy() {
 
 #[test]
 fn subpage_display_names_are_correct() {
-    assert_eq!(SettingsSection::WarpAgent.to_string(), "Warp Agent");
+    assert_eq!(SettingsSection::WarpAgent.to_string(), "Local Agent");
     assert_eq!(SettingsSection::AgentProfiles.to_string(), "Profiles");
     assert_eq!(SettingsSection::AgentMCPServers.to_string(), "MCP servers");
     assert_eq!(SettingsSection::Knowledge.to_string(), "Knowledge");
@@ -136,11 +136,31 @@ fn slugs_were_seeded_from_the_display_labels_they_replaced() {
     // Slugs were seeded from the Display strings that used to double as the
     // persistence key, so no data migration was needed.
     for section in ALL_SECTIONS {
+        if matches!(
+            section,
+            SettingsSection::WarpDrive | SettingsSection::Warpify | SettingsSection::WarpAgent
+        ) {
+            continue;
+        }
         assert_eq!(
             section.slug(),
             section.to_string(),
             "{section:?} slug diverged from the Display label it was seeded from"
         );
+    }
+}
+
+#[test]
+fn from_slug_accepts_display_labels_and_their_older_spellings() {
+    for (label, section) in [
+        ("Drive", SettingsSection::WarpDrive),
+        ("Warp Drive", SettingsSection::WarpDrive),
+        ("Shell integration", SettingsSection::Warpify),
+        ("Warpify", SettingsSection::Warpify),
+        ("Local Agent", SettingsSection::WarpAgent),
+        ("Warp Agent", SettingsSection::WarpAgent),
+    ] {
+        assert_eq!(SettingsSection::from_slug(label), Some(section));
     }
 }
 

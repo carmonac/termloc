@@ -7,7 +7,7 @@ This file provides guidance when working with code in this repository.
 ### Build and Run
 - `cargo run` / `./script/run` - Build and run the GUI desktop app locally
 - `./script/run-tui` - Build and run the headless TUI front-end (`crates/warp_tui`)
-- `cargo bundle --bin warp-oss` - Bundle the main (GUI) app
+- `cargo bundle --bin termloc` - Bundle the main (GUI) app
 
 ### Testing
 - `cargo nextest run --no-fail-fast --workspace` - Run tests with nextest
@@ -53,11 +53,11 @@ Run the full presubmit only when the user, task, or approved spec explicitly req
 
 ## Local-only build
 
-This fork runs entirely on the user's machine: `warp-oss` is the only GUI binary, there are no Warp servers, no login and no telemetry, and all AI runs on Ollama. `ChannelState::is_local_only()` gates what remains of the cloud code, and is false in tests unless `ChannelState::override_local_only_for_test()` is held.
+This fork runs entirely on the user's machine: `termloc` is the only GUI binary, there are no servers, no login and no telemetry, and all AI runs on Ollama. `ChannelState::is_local_only()` gates what remains of the cloud code, and is false in tests unless `ChannelState::override_local_only_for_test()` is held.
 
 - Keep it that way: don't add outbound connections, and build every HTTP client with `egress::build_client` so the egress policy applies. Child processes aren't covered by that policy, so don't spawn ones that reach the network without being asked to.
 - `crates/local_agent` produces the `ResponseEvent` stream the server used to send; `app/src/ai/local.rs` connects it to the app.
-- `LocalObjectClient` stands in for the server in Warp Drive, whose objects live in SQLite.
+- `LocalObjectClient` stands in for the server in Drive, whose objects live in SQLite.
 - `LocalStore` stands in for the server in codebase indexing, with one embeddings log per Ollama model.
 
 ## Architecture Overview
@@ -66,7 +66,7 @@ This is a Rust-based terminal emulator with a custom UI framework called **WarpU
 
 ### Front-ends: GUI and TUI
 
-Warp has two front-ends that share the `warp_core`/`warpui` Entity/model core (App/Entity/`AppContext`, actions, `Appearance`, `FeatureFlag`, telemetry, logging) but differ in UI framework, rendering, input, and verification:
+termloc has two front-ends that share the `warp_core`/`warpui` Entity/model core (App/Entity/`AppContext`, actions, `Appearance`, `FeatureFlag`, telemetry, logging) but differ in UI framework, rendering, input, and verification:
 - **GUI desktop app** — the `app/` crate on the WarpUI pixel/GPU framework (`warpui`, `crates/warpui_core`): `Element`/`View` layout, GPU/WGSL rendering, mouse input, `.app` bundles. Run with `cargo run` / `./script/run`; verify visually with `computer_use` or the real-display integration framework (`crates/integration`).
 - **Headless TUI** — the `crates/warp_tui` crate: a console app (run with `./script/run-tui`; no `.app`/GPU) rendered with a parallel cell-grid element library at `crates/warpui_core/src/elements/tui` (the `TuiElement` trait), behind the `tui` cargo feature. Verify by running it in a real terminal and observing output; test with render-to-lines unit tests.
 
@@ -108,7 +108,7 @@ Warp has two front-ends that share the `warp_core`/`warpui` Entity/model core (A
 2. **Modular Structure**: Workspace contains multiple workspace configurations, each with terminals, notebooks, etc.
 3. **Cross-Platform**: Native implementations for macOS, Windows, Linux, plus WASM target
 4. **AI Integration**: Built-in AI assistant with context awareness and codebase indexing
-5. **Cloud Sync**: Objects can be synchronized across devices via Warp Drive
+5. **Cloud Sync**: Objects live on-device in Drive
 
 ### Development Guidelines
 
@@ -209,7 +209,7 @@ for itself.
 
 ### Feature Flags
 
-Warp uses compile-time feature flags with a small runtime plumbing layer.
+termloc uses compile-time feature flags with a small runtime plumbing layer.
 
 How to add a feature flag:
 - Add a new variant to `warp_core/src/features.rs` in the `FeatureFlag` enum

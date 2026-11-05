@@ -1,6 +1,6 @@
 ---
 name: oz-platform
-description: Use Warp's REST API and command line to run, configure, and inspect Oz cloud agents
+description: Use the Oz REST API and command line to run, configure, and inspect Oz cloud agents
 ---
 
 # oz-platform

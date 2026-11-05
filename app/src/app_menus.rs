@@ -51,8 +51,8 @@ const SHOW_BOOTSTRAP_BLOCK_MENU_ITEM_NAME: &str = "Show Initialization Block";
 const HIDE_BOOTSTRAP_BLOCK_MENU_ITEM_NAME: &str = "Hide Initialization Block";
 const SHOW_IN_BAND_COMMAND_BLOCKS_MENU_ITEM_NAME: &str = "Show In-band Command Blocks";
 const HIDE_IN_BAND_COMMAND_BLOCKS_MENU_ITEM_NAME: &str = "Hide In-band Command Blocks";
-const SHOW_SSH_COMMAND_BLOCKS_MENU_ITEM_NAME: &str = "Show Warpified SSH Blocks";
-const HIDE_SSH_COMMAND_BLOCKS_MENU_ITEM_NAME: &str = "Hide Warpified SSH Blocks";
+const SHOW_SSH_COMMAND_BLOCKS_MENU_ITEM_NAME: &str = "Show SSH Blocks with Shell Integration";
+const HIDE_SSH_COMMAND_BLOCKS_MENU_ITEM_NAME: &str = "Hide SSH Blocks with Shell Integration";
 const EXPORT_DEFAULT_SETTINGS_CSV_MENU_ITEM_NAME: &str =
     "Export Default Settings as CSV to home dir";
 
@@ -191,7 +191,7 @@ fn make_new_app_menu(ctx: &AppContext) -> Menu {
     menu_items.push(MenuItem::Standard(StandardAction::ShowAllApps));
     menu_items.push(MenuItem::Separator);
     menu_items.push(MenuItem::Custom(CustomMenuItem::new(
-        "Set Warp as Default Terminal",
+        "Set Termloc as Default Terminal",
         move |ctx| {
             DefaultTerminal::handle(ctx).update(ctx, |default_terminal, ctx| {
                 default_terminal.make_warp_default(ctx)
@@ -210,7 +210,7 @@ fn make_new_app_menu(ctx: &AppContext) -> Menu {
         None,
     )));
     menu_items.push(MenuItem::Standard(StandardAction::Quit));
-    Menu::new("Warp", menu_items)
+    Menu::new("Termloc", menu_items)
 }
 
 fn make_new_file_menu(ctx: &AppContext) -> Menu {
@@ -266,7 +266,7 @@ fn make_new_edit_menu(ctx: &AppContext) -> Menu {
     ];
     let group_5 = vec![
         MenuItem::Custom(CustomMenuItem::new(
-            "Use Warp's Prompt",
+            "Use Termloc's Prompt",
             move |ctx| ctx.dispatch_global_action("app:toggle_user_ps1", &()),
             move |_props, ctx| MenuItemPropertyChanges {
                 checked: Some(
@@ -851,7 +851,7 @@ fn make_new_help_menu() -> Menu {
     Menu::new(
         "Help",
         vec![
-            link_menu_item("Warp Documentation...", links::USER_DOCS_URL.into()),
+            link_menu_item("Documentation...", links::USER_DOCS_URL.into()),
             link_menu_item("GitHub Issues...", links::GITHUB_ISSUES_URL.into()),
         ],
     )

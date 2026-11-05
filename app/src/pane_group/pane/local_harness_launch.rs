@@ -84,7 +84,7 @@ pub(super) fn validate_local_harness_shell(shell_type: Option<ShellType>) -> Res
     }
 }
 
-const LOCAL_CLAUDE_CHILD_ORCHESTRATION_INSTRUCTIONS: &str = r#"You are a local Claude Code child agent launched by a lead agent in Warp.
+const LOCAL_CLAUDE_CHILD_ORCHESTRATION_INSTRUCTIONS: &str = r#"You are a local Claude Code child agent launched by a lead agent in Termloc.
 
 Coordinate with the lead agent through the Oz CLI messaging environment:
 - Your run id is in OZ_RUN_ID.

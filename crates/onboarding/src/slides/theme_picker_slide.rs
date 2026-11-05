@@ -51,8 +51,6 @@ pub enum ThemePickerSlideAction {
     PrivacySettingsClicked,
 }
 
-const TOS_URL: &str = "https://www.warp.dev/terms-of-service";
-
 #[derive(Debug, Clone)]
 struct ThemeOption {
     theme: WarpTheme,
@@ -65,7 +63,6 @@ pub struct ThemePickerSlide {
     selected_theme_index: usize,
     sync_with_os: bool,
     sync_with_os_mouse: MouseStateHandle,
-    tos_mouse_state: MouseStateHandle,
     privacy_settings_mouse_state: MouseStateHandle,
     back_button: button::Button,
     next_button: button::Button,
@@ -114,7 +111,6 @@ impl ThemePickerSlide {
             selected_theme_index,
             sync_with_os: false,
             sync_with_os_mouse: MouseStateHandle::default(),
-            tos_mouse_state: MouseStateHandle::default(),
             privacy_settings_mouse_state: MouseStateHandle::default(),
             back_button: button::Button::default(),
             next_button: button::Button::default(),
@@ -574,35 +570,11 @@ impl ThemePickerSlide {
             )
             .finish();
 
-        let tos_line = Flex::row()
-            .with_child(
-                ui_builder
-                    .span("By continuing, you agree to Warp's ")
-                    .with_style(disclaimer_styles)
-                    .build()
-                    .finish(),
-            )
-            .with_child(
-                ui_builder
-                    .link(
-                        "Terms of Service".into(),
-                        Some(TOS_URL.into()),
-                        None,
-                        self.tos_mouse_state.clone(),
-                    )
-                    .soft_wrap(false)
-                    .with_style(link_styles)
-                    .build()
-                    .finish(),
-            )
-            .finish();
-
         Container::new(
             Flex::column()
                 .with_main_axis_size(MainAxisSize::Min)
                 .with_cross_axis_alignment(CrossAxisAlignment::Start)
                 .with_child(privacy_line)
-                .with_child(Container::new(tos_line).with_margin_top(8.).finish())
                 .finish(),
         )
         .with_margin_top(24.)

@@ -127,7 +127,7 @@ if ($CARGO_PROFILE -eq 'dev') {
 } else {
     $CARGO_TARGET_OUTPUT_DIR = "$CARGO_TARGET_DIR" + '\' + $PLATFORM_TARGET + '\' + "$CARGO_PROFILE"
 }
-$BUNDLE_ID = "dev.warp.$app_name"
+$BUNDLE_ID = "dev.termloc.$app_name"
 
 # Update parameters based on the target release channel.
 #
@@ -155,15 +155,15 @@ if ("$CHANNEL" -eq 'local') {
     $BINARY_NAME = 'warp.exe'
     $APP_NAME = 'Warp'
 } elseif ("$CHANNEL" -eq 'oss') {
-    $WARP_BIN = 'warp-oss'
-    $BINARY_NAME = 'warp-oss.exe'
-    $APP_NAME = 'WarpOss'
+    $WARP_BIN = 'termloc'
+    $BINARY_NAME = 'termloc.exe'
+    $APP_NAME = 'Termloc'
 }
 
 if ($IS_TUI) {
     $WARP_BIN = switch ($CHANNEL) {
         'local' { 'warp-tui' }
-        'oss' { 'warp-tui-oss' }
+        'oss' { 'termloc-tui' }
         Default { "warp-tui-$CHANNEL" }
     }
     $BINARY_NAME = "$WARP_BIN.exe"
@@ -172,14 +172,14 @@ if ($IS_TUI) {
         'dev' { 'WarpAgentCLIDev' }
         'preview' { 'WarpAgentCLIPreview' }
         'stable' { 'WarpAgentCLI' }
-        'oss' { 'WarpAgentCLIOss' }
+        'oss' { 'TermlocTui' }
     }
     $CLI_NAME = switch ($CHANNEL) {
         'local' { 'warp' }
         'dev' { 'warp-dev' }
         'preview' { 'warp-preview' }
         'stable' { 'warp' }
-        'oss' { 'warp-oss' }
+        'oss' { 'termloc-tui' }
     }
     $INSTALL_DIR_NAME = switch ($CHANNEL) {
         'local' { 'tui-local' }
@@ -205,7 +205,7 @@ if ($IS_TUI) {
 }
 
 $BINARY_PATH = "$CARGO_TARGET_OUTPUT_DIR\$BINARY_NAME"
-$BUNDLE_ID = "dev.warp.$APP_NAME"
+$BUNDLE_ID = "dev.termloc.$APP_NAME"
 $INSTALLER_OUTPUT_DIR = "$WINDOWS_INSTALLER_DIR\Output"
 $INSTALLER_NAME = "$($APP_NAME)$($FILE_ENDING)"
 $INSTALLER_PATH = "$($INSTALLER_OUTPUT_DIR)\$($INSTALLER_NAME).exe"

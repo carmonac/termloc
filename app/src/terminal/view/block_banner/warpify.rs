@@ -46,7 +46,7 @@ impl WarpifyBannerState {
     }
 
     pub fn title(&self) -> &str {
-        "Warpify subshell"
+        "Enable shell integration"
     }
 
     pub fn action(&self) -> TerminalAction {

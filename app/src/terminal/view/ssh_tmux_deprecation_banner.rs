@@ -20,9 +20,9 @@ use crate::terminal::model::session::SessionId;
 use crate::terminal::warpify::render::SSH_DOCS_URL;
 use crate::ui_components::icons::Icon;
 
-const BANNER_TITLE: &str = "Tmux SSH warpification has been deprecated";
+const BANNER_TITLE: &str = "Tmux SSH shell integration has been deprecated";
 
-const BANNER_BODY: &str = "Warp now connects to remote sessions using the SSH extension, which is \
+const BANNER_BODY: &str = "Termloc now connects to remote sessions using the SSH extension, which is \
     more robust than the tmux-based flow. The tmux option has been removed.";
 
 const LEARN_MORE_LABEL: &str = "Learn more";

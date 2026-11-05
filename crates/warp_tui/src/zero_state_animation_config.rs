@@ -282,7 +282,7 @@ impl ZeroStateAnimationConfig {
                         "Could not load custom Warp Agent CLI zero-state ASCII art; using the built-in Warp logo"
                     ),
                     full: (
-                        "Could not load custom Warp Agent CLI zero-state ASCII art; using the built-in Warp logo: path={} error={error}",
+                        "Could not load custom Termloc TUI zero-state ASCII art; using the built-in logo: path={} error={error}",
                         path.display()
                     )
                 );
@@ -329,7 +329,7 @@ impl ZeroStateAnimationConfig {
                         "Could not reload custom Warp Agent CLI zero-state ASCII art; keeping the current object"
                     ),
                     full: (
-                        "Could not reload custom Warp Agent CLI zero-state ASCII art; keeping the current object: path={} error={error}",
+                        "Could not reload custom Termloc TUI zero-state ASCII art; keeping the current object: path={} error={error}",
                         path.display()
                     )
                 );

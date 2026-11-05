@@ -70,7 +70,7 @@ cleanup_dmg_files() {
         find "$target_dir" -name "rw.*.dmg" -type f -delete
     fi
     # Also check if any volumes are mounted and unmount them
-    hdiutil info | grep "/Volumes/Warp.*" | awk '{print $1}' | while read -r disk; do
+    hdiutil info | grep "/Volumes/Termloc.*" | awk '{print $1}' | while read -r disk; do
         echo "Unmounting disk image: $disk"
         hdiutil detach "$disk" -force || true
     done
@@ -428,10 +428,10 @@ elif [[ $RELEASE_CHANNEL = "stable" ]]; then
     # Enable heap usage tracking & profiling using jemalloc through pprof.
     FEATURES="$FEATURES,jemalloc_pprof,heap_usage_tracking"
 elif [[ $RELEASE_CHANNEL = "oss" ]]; then
-    WARP_BIN="warp-oss"
-    BUNDLE_ID="dev.warp.WarpOss"
-    WARP_APP_NAME="WarpOss"
-    WARP_SCHEME_NAME="warposs"
+    WARP_BIN="termloc"
+    BUNDLE_ID="dev.termloc.Termloc"
+    WARP_APP_NAME="Termloc"
+    WARP_SCHEME_NAME="termloc"
 fi
 
 OUT_DIR="target/$TARGET_PROFILE_DIR/bundle/osx"
@@ -505,7 +505,7 @@ elif [[ "$ARTIFACT" == tui ]]; then
   OPEN_AFTER_BUNDLE=false
   case "$RELEASE_CHANNEL" in
     local) WARP_BIN="warp-tui" ;;
-    oss) WARP_BIN="warp-tui-oss" ;;
+    oss) WARP_BIN="termloc-tui" ;;
     *) WARP_BIN="warp-tui-$RELEASE_CHANNEL" ;;
   esac
   WARP_TUI_FEATURES="release_bundle,standalone,voice_input"
@@ -716,7 +716,7 @@ if [[ "$ARTIFACT" == "app" ]]; then
   if [[ $RELEASE_CHANNEL = "stable" ]]; then
     CLI_SCRIPT_PATH="$BUNDLED_RESOURCES_DIR/bin/oz"
   elif [[ $RELEASE_CHANNEL = "oss" ]]; then
-    CLI_SCRIPT_PATH="$BUNDLED_RESOURCES_DIR/bin/warp-oss"
+    CLI_SCRIPT_PATH="$BUNDLED_RESOURCES_DIR/bin/termloc"
   else
     CLI_SCRIPT_PATH="$BUNDLED_RESOURCES_DIR/bin/oz-$RELEASE_CHANNEL"
   fi
@@ -741,7 +741,7 @@ EOF
     if [[ $RELEASE_CHANNEL = "stable" ]]; then
       WARPCTRL_COMMAND_NAME="warpctrl"
     elif [[ $RELEASE_CHANNEL = "oss" ]]; then
-      WARPCTRL_COMMAND_NAME="warpctrl-oss"
+      WARPCTRL_COMMAND_NAME="termlocctrl"
     else
       WARPCTRL_COMMAND_NAME="warpctrl-$RELEASE_CHANNEL"
     fi

@@ -22,7 +22,7 @@ set -e
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 cd "${REPO_ROOT}"
 
-BIN="warp-tui-oss"
+BIN="termloc-tui"
 CHANNEL="oss"
 
 # Split cargo arguments from binary arguments (after `--`), tracking the profile

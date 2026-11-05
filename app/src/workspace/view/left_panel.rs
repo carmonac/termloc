@@ -246,7 +246,7 @@ impl LeftPanelView {
         let (title, description) = match (view, availability) {
             (ToolPanelView::ConversationListView, ToolPanelAvailability::RequiresAi) => (
                 "Turn on AI to access Agent conversations",
-                "Enable Warp AI to access your conversation history.",
+                "Enable AI to access your conversation history.",
             ),
             (
                 ToolPanelView::ProjectExplorer
@@ -549,7 +549,7 @@ impl LeftPanelView {
                 ToolbeltButtonConfig {
                     icon: Icon::WarpDrive,
                     active_icon: None,
-                    tooltip_text: "Warp Drive".to_string(),
+                    tooltip_text: "Drive".to_string(),
                     action: LeftPanelAction::WarpDrive,
                     render_with_active_state: false,
                     tooltip_keybinding: toolbelt_tooltip_keybinding(&tooltip_keybinding_names, ctx),

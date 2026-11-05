@@ -303,7 +303,7 @@ impl ValueEnum for Harness {
     fn to_possible_value(&self) -> Option<PossibleValue> {
         let mut pv = match self {
             Harness::Oz => {
-                PossibleValue::new("oz").help("Use Warp's built-in MAA infrastructure (default)")
+                PossibleValue::new("oz").help("Use Termloc's built-in MAA infrastructure (default)")
             }
             Harness::Claude => PossibleValue::new("claude")
                 .alias("claude-code")
@@ -357,7 +357,7 @@ impl Harness {
 
     pub fn display_name(self) -> &'static str {
         match self {
-            Self::Oz => "Warp Agent",
+            Self::Oz => "Local Agent",
             Self::Claude => "Claude Code",
             Self::OpenCode => "OpenCode",
             Self::Gemini => "Gemini CLI",

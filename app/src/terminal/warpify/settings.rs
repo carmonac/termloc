@@ -32,7 +32,7 @@ maybe_define_setting!(SubshellCommandsDenylist, group: WarpifySettings, {
     surface: settings::SettingSurfaces::GUI,
     private: false,
     toml_path: "warpify.subshells.subshell_commands_denylist",
-    description: "Commands that should not trigger the subshell warpification prompt.",
+    description: "Commands that should not trigger the shell integration prompt for subshells.",
 });
 
 maybe_define_setting!(SshHostsDenylist, group: WarpifySettings, {
@@ -43,7 +43,7 @@ maybe_define_setting!(SshHostsDenylist, group: WarpifySettings, {
     surface: settings::SettingSurfaces::GUI,
     private: false,
     toml_path: "warpify.ssh.ssh_hosts_denylist",
-    description: "SSH hosts that should not trigger the warpification prompt.",
+    description: "SSH hosts that should not trigger the shell integration prompt.",
 });
 
 maybe_define_setting!(EnableSshWarpification, group: WarpifySettings, {
@@ -54,7 +54,7 @@ maybe_define_setting!(EnableSshWarpification, group: WarpifySettings, {
     surface: settings::SettingSurfaces::GUI,
     private: false,
     toml_path: "warpify.ssh.enable_ssh_warpification",
-    description: "Whether to enable Warp features in SSH sessions.",
+    description: "Whether to enable shell integration in SSH sessions.",
 });
 
 // NOTE: This setting has been unified into `enable_ssh_warpification` and is no
@@ -104,7 +104,7 @@ maybe_define_setting!(UseSshTmuxWrapper, group: WarpifySettings, {
     surface: settings::SettingSurfaces::GUI,
     private: false,
     toml_path: "warpify.ssh.use_ssh_tmux_wrapper",
-    description: "Deprecated: whether to use a tmux-based wrapper for SSH warpification.",
+    description: "Deprecated: whether to use a tmux-based wrapper for SSH shell integration.",
 });
 
 // When set, the user previously opted into the now-deprecated tmux SSH wrapper and should

@@ -90,7 +90,7 @@ impl IntroSlide {
         let base_color: ColorU = internal_colors::fg_overlay_4(theme).into();
         let shimmer_color: ColorU = theme.foreground().into();
         let title = ShimmeringTextElement::new(
-            "Welcome to Warp",
+            "Welcome to Termloc",
             appearance.ui_font_family(),
             32.,
             base_color,

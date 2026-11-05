@@ -1,9 +1,8 @@
-pkgname=warp-terminal@@CHANNEL_SUFFIX@@
+pkgname=@@PACKAGE_NAME@@
 pkgver=@@VERSION@@
 pkgrel=@@RELEASE@@
-pkgdesc="Warp, the Rust-based terminal for developers and teams"
+pkgdesc="Termloc, a local-only terminal with on-device AI"
 arch=('@@ARCH@@')
-url="https://warp.dev"
 license=('custom')
 depends=(
 	'curl'

@@ -92,7 +92,7 @@ use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::WorkspaceUid;
 use crate::{ObjectActions, send_telemetry_from_ctx};
 
-const WARP_DRIVE_TITLE: &str = "Warp Drive";
+const WARP_DRIVE_TITLE: &str = "Drive";
 
 // Team zero state consts
 const HINT_HORIZONTAL_PADDING: f32 = 18.;
@@ -2633,7 +2633,7 @@ impl DriveIndex {
                 if mouse_state.is_hovered() {
                     let tooltip = appearance
                         .ui_builder()
-                        .tool_tip(String::from("Syncing Warp Drive"));
+                        .tool_tip(String::from("Syncing Drive"));
 
                     stack.add_positioned_overlay_child(
                         tooltip.build().finish(),

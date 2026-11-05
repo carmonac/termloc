@@ -19,7 +19,7 @@ set -e
 if [ "$ARTIFACT" = "cli" ]; then
   CHANNEL_SUFFIX="${BINARY_NAME#oz}"
 else
-  CHANNEL_SUFFIX="${BINARY_NAME#warp}"
+  CHANNEL_SUFFIX="${BINARY_NAME#termloc}"
 fi
 
 # On Linux, we keep the `-stable` suffix for stable to avoid package conflicts.
@@ -29,7 +29,7 @@ if [ "$ARTIFACT" = "cli" -a "$RELEASE_CHANNEL" = "stable" ]; then
 fi
 
 if [ "$ARTIFACT" = "app" ]; then
-  PACKAGE_NAME="warp-terminal$CHANNEL_SUFFIX"
+  PACKAGE_NAME="termloc$CHANNEL_SUFFIX"
 elif [ "$ARTIFACT" = "cli" ]; then
   PACKAGE_NAME="oz$CHANNEL_SUFFIX"
 else
@@ -63,7 +63,7 @@ mkdir -p "$PKGDIR"
 
 # Bundle the base filesystem into an archive to be unpacked by makepkg.
 mkdir "$PKGDIR/stage"
-OPT_DIR="/opt/warpdotdev/$PACKAGE_NAME"
+OPT_DIR="/opt/termloc/$PACKAGE_NAME"
 source "$WORKSPACE_ROOT_DIR/script/linux/bundle_install" "$PKGDIR/stage"
 tar cvf "$PKGDIR/data.tar" -C "$PKGDIR/stage" .
 
@@ -71,14 +71,14 @@ tar cvf "$PKGDIR/data.tar" -C "$PKGDIR/stage" .
 VERSION="$GIT_RELEASE_TAG"
 RELEASE=1
 sed \
-    "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@VERSION@@#$VERSION#g; s#@@RELEASE@@#$RELEASE#g; s#@@ARCH@@#$ARCH#g; s#@@OUTDIR@@#$OUT_DIR#g; s#@@BINARY_NAME@@#$BINARY_NAME#g" \
+    "s#@@PACKAGE_NAME@@#$PACKAGE_NAME#g; s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@VERSION@@#$VERSION#g; s#@@RELEASE@@#$RELEASE#g; s#@@ARCH@@#$ARCH#g; s#@@OUTDIR@@#$OUT_DIR#g; s#@@BINARY_NAME@@#$BINARY_NAME#g" \
     < "$WORKSPACE_ROOT_DIR/resources/linux/arch/$ARTIFACT/PKGBUILD.template" \
     > "$PKGDIR/PKGBUILD"
 
 # Only create wrapper script for app artifact
 if [ "$ARTIFACT" = "app" ]; then
   sed \
-      "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@BINARY_NAME@@#$BINARY_NAME#g" \
+      "s#@@PACKAGE_NAME@@#$PACKAGE_NAME#g; s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@BINARY_NAME@@#$BINARY_NAME#g" \
       < "$WORKSPACE_ROOT_DIR/resources/linux/arch/$ARTIFACT/warp.sh.template" \
       > "$PKGDIR/$PACKAGE_NAME.sh"
 fi

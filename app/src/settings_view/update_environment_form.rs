@@ -3104,7 +3104,8 @@ impl UpdateEnvironmentForm {
             "Suggest image"
         };
 
-        let tooltip_text = "Warp will suggest a Docker image based on your selected repositories.";
+        let tooltip_text =
+            "Termloc will suggest a Docker image based on your selected repositories.";
 
         let button = Hoverable::new(
             self.suggest_image_button_mouse_state.clone(),

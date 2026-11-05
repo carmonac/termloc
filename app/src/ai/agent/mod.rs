@@ -744,7 +744,7 @@ pub enum RenderableAIError {
 
 impl RenderableAIError {
     const TRANSIENT_NETWORK_ERROR_MESSAGE: &'static str =
-        "Warp lost connection while receiving the agent response. This is usually temporary.";
+        "Termloc lost connection while receiving the agent response. This is usually temporary.";
     /// Creates a transient network error. `kind` is the structured cause (including the raw API
     /// error where one exists), preserved so user reports can disambiguate the different causes
     /// behind the shared user-facing copy.
@@ -884,9 +884,12 @@ impl Display for RenderableAIError {
                 }
             }
             Self::ServerOverloaded => {
-                write!(f, "Warp is currently overloaded. Please try again later.")
+                write!(
+                    f,
+                    "Termloc is currently overloaded. Please try again later."
+                )
             }
-            Self::InternalWarpError => write!(f, "Internal Warp error."),
+            Self::InternalWarpError => write!(f, "Internal Termloc error."),
             Self::ContextWindowExceeded(message) => {
                 write!(f, "Context window exceeded: {message}")
             }

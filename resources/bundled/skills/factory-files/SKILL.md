@@ -1,6 +1,6 @@
 ---
 name: factory-files
-description: Create and edit file-based Warp software factory definitions, in a repository tree rooted at a factory.yaml. Use when authoring or changing that factory.yaml, Agent, Automation, Scorer, Benchmark, Runner, or Webhook files under that root, or its factory and agent skill trees, and when fixing Factory file diagnostics. Do not use for agent-definition Markdown that belongs to another tool, for a tree with no factory.yaml, or to operate a live factory or hand work to one through Factory MCP.
+description: Create and edit file-based software factory definitions, in a repository tree rooted at a factory.yaml. Use when authoring or changing that factory.yaml, Agent, Automation, Scorer, Benchmark, Runner, or Webhook files under that root, or its factory and agent skill trees, and when fixing Factory file diagnostics. Do not use for agent-definition Markdown that belongs to another tool, for a tree with no factory.yaml, or to operate a live factory or hand work to one through Factory MCP.
 ---
 
 # Factory Files

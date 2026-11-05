@@ -243,8 +243,9 @@ impl Display for SettingsSection {
             SettingsSection::Keybindings => write!(f, "Keyboard shortcuts"),
             SettingsSection::Scripting => write!(f, "Scripting"),
             SettingsSection::LocalModels => write!(f, "Local models"),
-            SettingsSection::WarpDrive => write!(f, "Warp Drive"),
-            SettingsSection::WarpAgent => write!(f, "Warp Agent"),
+            SettingsSection::WarpDrive => write!(f, "Drive"),
+            SettingsSection::Warpify => write!(f, "Shell integration"),
+            SettingsSection::WarpAgent => write!(f, "Local Agent"),
             SettingsSection::AgentProfiles => write!(f, "Profiles"),
             SettingsSection::AgentMCPServers => write!(f, "MCP servers"),
             SettingsSection::Knowledge => write!(f, "Knowledge"),
@@ -309,10 +310,10 @@ impl SettingsSection {
             "Privacy" => Self::Privacy,
             "Scripting" => Self::Scripting,
             "Local models" => Self::LocalModels,
-            "Warp Drive" | "WarpDrive" => Self::WarpDrive,
-            "Warpify" => Self::Warpify,
-            // "Oz" and "AI" are older names for what is now the Warp Agent page.
-            "Warp Agent" | "Oz" | "AI" => Self::WarpAgent,
+            "Warp Drive" | "WarpDrive" | "Drive" => Self::WarpDrive,
+            "Warpify" | "Shell integration" => Self::Warpify,
+            // "Oz" and "AI" are older names for what is now the Local Agent page.
+            "Warp Agent" | "Local Agent" | "Oz" | "AI" => Self::WarpAgent,
             "Profiles" | "AgentProfiles" => Self::AgentProfiles,
             // "MCP Servers" named the standalone page before it moved under the
             // Agents umbrella; it differs from the current slug only by casing.

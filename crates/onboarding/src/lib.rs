@@ -28,7 +28,7 @@ pub use callout::{OnboardingCalloutView, OnboardingKeybindings};
 /// Shared by the intention slide's agent card checklist and the login slide's
 /// skip-login confirmation dialog so the two always stay in sync.
 pub const AI_FEATURES: &[&str] = &[
-    "Use frontier and open-weight models with Warp Agent",
+    "Use frontier and open-weight models with Local Agent",
     "Hand off agent work to cloud agents",
     "Automatically diagnose and fix terminal errors",
     "Agentic control of long-running commands and TUIs",

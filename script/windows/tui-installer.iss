@@ -1,7 +1,6 @@
 #include "environment.iss"
 
-#define MyAppPublisher "Denver Technologies, Inc."
-#define MyAppURL "https://www.warp.dev/"
+#define MyAppPublisher "Termloc"
 #ifndef MyAppName
   #define MyAppName "WarpAgentCLIDev"
 #endif
@@ -27,19 +26,16 @@
   #define WindowsAssetsDir "..\..\app\assets\windows\x64"
 #endif
 
-#define ProductRegistryKey "SOFTWARE\Warp.dev\WarpAgentCLI\" + ReleaseChannel
+#define ProductRegistryKey "SOFTWARE\Termloc\TermlocTui\" + ReleaseChannel
 
 [Setup]
-AppId=warp-agent-cli-{#ReleaseChannel}
+AppId=termloc-tui-{#ReleaseChannel}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
 UninstallDisplayIcon={app}\icon.ico
 AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
 DefaultDirName={code:GetDefaultInstallDir}
 UsePreviousAppDir=yes
 ArchitecturesAllowed={#Arch}
@@ -59,7 +55,7 @@ WizardImageFile="installer-images\warp-banner.bmp"
 SetupIconFile="..\..\app\channels\{#ReleaseChannel}\icon\no-padding\icon.ico"
 CloseApplications=no
 RestartApplications=no
-SetupMutex=Local\WarpAgentCLI{#ReleaseChannel}Setup
+SetupMutex=Local\TermlocTui{#ReleaseChannel}Setup
 MinVersion=10.0.18362
 ChangesEnvironment=true
 RedirectionGuard=no
@@ -119,17 +115,17 @@ end;
 function GetDefaultInstallDir(Param: string): string;
 begin
   if IsAdminInstallMode then
-    Result := ExpandConstant('{commonappdata}\Warp\{#InstallDirName}')
+    Result := ExpandConstant('{commonappdata}\Termloc\{#InstallDirName}')
   else
-    Result := ExpandConstant('{localappdata}\Warp\{#InstallDirName}');
+    Result := ExpandConstant('{localappdata}\Termloc\{#InstallDirName}');
 end;
 
 function GetDefaultBinDir(): string;
 begin
   if IsAdminInstallMode then
-    Result := ExpandConstant('{commonappdata}\Warp\bin')
+    Result := ExpandConstant('{commonappdata}\Termloc\bin')
   else
-    Result := ExpandConstant('{localappdata}\Warp\bin');
+    Result := ExpandConstant('{localappdata}\Termloc\bin');
 end;
 function GetRegisteredBinDir(var BinDir: string): Boolean;
 begin
@@ -295,7 +291,7 @@ begin
     not AllowDowngrade() then
   begin
     Result :=
-      'Warp Agent CLI ' + CurrentVersion +
+      'Termloc TUI ' + CurrentVersion +
       ' is newer than {#MyAppVersion}. Pass /allow_downgrade=1 to install an older version.';
     exit;
   end;
@@ -322,7 +318,7 @@ begin
     exit;
 
   if not IsCompleteVersionDir(VersionDir(ExpandConstant('{app}'), '{#MyAppVersion}')) then
-    RaiseException('The installed Warp Agent CLI payload is incomplete');
+    RaiseException('The installed Termloc TUI payload is incomplete');
 
   BinDir := GetBinDir('');
   if (PreviousBinDir <> '') and

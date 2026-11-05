@@ -787,7 +787,7 @@ impl WarpAgentPageView {
         let global_ai_switch_state = SwitchStateHandle::default();
         PageType::new_categorized(
             categories,
-            Some(PageTitle::new("Warp Agent").with_trailing_element(
+            Some(PageTitle::new("Local Agent").with_trailing_element(
                 move |_view, appearance, app| {
                     render_global_ai_toggle(&global_ai_switch_state, appearance, app)
                 },
@@ -2086,17 +2086,6 @@ impl NaturalLanguageDetectionWidget {
         let mut section = Flex::column();
 
         if FeatureFlag::AgentView.is_enabled() {
-            static AUTODETECTION_DESCRIPTION_FRAGMENTS: LazyLock<Vec<FormattedTextFragment>> =
-                LazyLock::new(|| {
-                    vec![
-                        FormattedTextFragment::plain_text("Encountered an incorrect detection? "),
-                        FormattedTextFragment::hyperlink(
-                            "Let us know",
-                            "https://warpdotdev.typeform.com/to/offrTIpq",
-                        ),
-                    ]
-                });
-
             section.add_children([
                 render_ai_setting_toggle::<NLDInTerminalEnabled>(
                     "Autodetect agent prompts in terminal input",
@@ -2116,44 +2105,14 @@ impl NaturalLanguageDetectionWidget {
                     &view.local_only_icon_tooltip_states,
                     app,
                 ),
-                Container::new(
-                    FormattedTextElement::new(
-                        FormattedText::new([FormattedTextLine::Line(
-                            (*AUTODETECTION_DESCRIPTION_FRAGMENTS).clone(),
-                        )]),
-                        CONTENT_FONT_SIZE,
-                        appearance.ui_font_family(),
-                        appearance.ui_font_family(),
-                        styles::description_font_color(is_toggleable, app).into(),
-                        incorrect_autodetection_highlight_index,
-                    )
-                    .with_hyperlink_font_color(appearance.theme().accent().into_solid())
-                    .register_default_click_handlers(|url, ctx, _| {
-                        ctx.dispatch_typed_action(WarpAgentPageAction::HyperlinkClick(url));
-                    })
-                    .finish(),
-                )
-                .with_margin_top(styles::DESCRIPTION_NEGATIVE_MARGIN_OFFSET)
-                .with_margin_bottom(styles::DESCRIPTION_MARGIN_BOTTOM)
-                .with_margin_right(styles::TOGGLE_WIDTH_MARGIN)
-                .finish(),
             ])
         } else {
             static NATURAL_LANGUAGE_DETECTION_DESCRIPTION_FRAGMENTS: LazyLock<
                 Vec<FormattedTextFragment>,
             > = LazyLock::new(|| {
-                vec![
-                    FormattedTextFragment::plain_text(
-                        "Enabling natural language detection will detect when natural language is written in the terminal input, and then automatically switch to Agent Mode for AI queries.",
-                    ),
-                    FormattedTextFragment::plain_text(
-                        " Encountered an incorrect input detection? ",
-                    ),
-                    FormattedTextFragment::hyperlink(
-                        "Let us know",
-                        "https://warpdotdev.typeform.com/to/offrTIpq",
-                    ),
-                ]
+                vec![FormattedTextFragment::plain_text(
+                    "Enabling natural language detection will detect when natural language is written in the terminal input, and then automatically switch to Agent Mode for AI queries.",
+                )]
             });
 
             section.add_children([
@@ -2238,7 +2197,7 @@ impl VoiceWidget {
 
         let voice_input_description_text_fragments = vec![
             FormattedTextFragment::plain_text(
-                "Voice input allows you to control Warp by speaking directly to your terminal (powered by ",
+                "Voice input allows you to control Termloc by speaking directly to your terminal (powered by ",
             ),
             FormattedTextFragment::hyperlink("Wispr Flow", WISPR_FLOW_URL),
             FormattedTextFragment::plain_text(")."),
@@ -2742,7 +2701,7 @@ impl SettingsWidget for AgentAttributionWidget {
         Flex::column()
             .with_child(toggle_row)
             .with_child(render_ai_setting_description(
-                "Warp Agent can add attribution to commit messages and pull requests it creates",
+                "Local Agent can add attribution to commit messages and pull requests it creates",
                 !state.is_disabled,
                 app,
             ))
@@ -2840,7 +2799,7 @@ impl SettingsWidget for CloudAgentComputerUseWidget {
         Flex::column()
             .with_child(toggle_row)
             .with_child(render_ai_setting_description(
-                "Enable computer use in cloud agent conversations started from the Warp app.",
+                "Enable computer use in cloud agent conversations started from the Termloc app.",
                 !is_disabled,
                 app,
             ))
@@ -2991,7 +2950,7 @@ impl SettingsWidget for AutoHandoffOnSleepWidget {
         Flex::column()
             .with_child(auto_handoff_on_sleep_row)
             .with_child(render_ai_setting_description(
-                "When macOS is about to sleep, automatically moves the most recently focused running local Warp Agent conversation to Cloud Mode so it can keep working.",
+                "When macOS is about to sleep, automatically moves the most recently focused running local Local Agent conversation to Cloud Mode so it can keep working.",
                 true,
                 app,
             ))

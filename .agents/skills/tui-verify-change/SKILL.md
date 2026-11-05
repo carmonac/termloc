@@ -49,7 +49,7 @@ path below.
   alongside the user. Just run **`./script/run-tui`** directly: it builds
   `warp_tui` and runs it, selecting the internal `local` channel when the
   `warp-channel-config` generator is available and falling back to
-  `warp-tui-oss` otherwise. **Do not reach for `WARP_API_KEY`** here — it's
+  `termloc-tui` otherwise. **Do not reach for `WARP_API_KEY`** here — it's
   generally **not set** in a local environment, and you don't need it: a local
   build reaches the authenticated state through the normal interactive
   device-auth login flow (or you're already signed in on this machine). The
@@ -60,7 +60,7 @@ path below.
   relies on the non-interactive `WARP_API_KEY` already in the environment. That
   does **not** mean bypassing `./script/run-tui`: when the `warp-channel-config`
   generator is available, `./script/run-tui` selects the internal `local`
-  binary; otherwise it falls back to `warp-tui-oss`. Both accept the inherited
+  binary; otherwise it falls back to `termloc-tui`. Both accept the inherited
   `WARP_API_KEY`, so prefer the maintained runner unless you need a specific
   binary or profile. In the cloud, the inherited key signs you in without the
   browser device-auth flow.
@@ -76,13 +76,13 @@ OOM the machine:
 
 ```bash
 cd <warp-repo-root>
-CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin warp-tui-oss
+CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin termloc-tui
 ```
 
-- `warp-tui-oss` is the OSS channel binary and the safest default (no internal
+- `termloc-tui` is the OSS channel binary and the safest default (no internal
   `warp-channel-config` generator required). `./script/run-tui` does the
   equivalent, selecting the internal `local` binary when the generator is
-  available and falling back to `warp-tui-oss` otherwise.
+  available and falling back to `termloc-tui` otherwise.
 - Fix all compile errors before running (see `fix-errors`). The first build of
   this tree takes a while; **incremental rebuilds after a one-line change are
   fast (~10s)**, so the edit → rebuild → re-capture loop below is quick.
@@ -125,7 +125,7 @@ changes.
 
 Key constraints:
 
-- **All channels are supported.** API-key login works with `warp-tui-oss` as
+- **All channels are supported.** API-key login works with `termloc-tui` as
   well as the Preview, Dev, Local, and Stable binaries.
 - **The key must already be in the environment.** In a sandbox where
   `WARP_API_KEY` is set, a freshly started `tmux` server inherits it. Never echo,
@@ -135,10 +135,10 @@ Key constraints:
 
 ```bash
 cd <warp-repo-root>
-CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin warp-tui-oss
+CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin termloc-tui
 tmux kill-session -t tuicheck 2>/dev/null
 # WARP_API_KEY is inherited from the environment by the new tmux server.
-tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/warp-tui-oss'
+tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/termloc-tui'
 sleep 20                                      # login + session start
 tmux capture-pane -t tuicheck -p              # expect the logged-in zero state
 ```
@@ -158,7 +158,7 @@ in a detached session with an explicit size (don't skip `-x`/`-y`; a degenerate
 ```bash
 cd <warp-repo-root>
 tmux kill-session -t tuicheck 2>/dev/null   # clear any prior run
-tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/warp-tui-oss'
+tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/termloc-tui'
 sleep 1                                       # let it draw + probe the terminal
 tmux capture-pane -t tuicheck -p              # <-- the rendered screen, as text
 ```
@@ -196,7 +196,7 @@ back:
   what renders. Installing tmux is optional, not a prerequisite.
 - **Cloud / no-tmux context:** run the built binary inside another PTY wrapper so
   you can still capture output — e.g. `script` (util-linux):
-  `script -qe -c './target/debug/warp-tui-oss' /tmp/tui.log`, then read
+  `script -qe -c './target/debug/termloc-tui' /tmp/tui.log`, then read
   `/tmp/tui.log`. If tmux is installable in your environment
   (`apt-get install -y tmux`) and that's cheaper, do that and use the flow above
   instead. If none of these work, run the binary directly, capture whatever
@@ -209,7 +209,7 @@ is identical whether or not tmux drove the run.
 ### Iterate loop
 
 Because incremental rebuilds are ~10s, iterate tightly: edit the TUI code →
-`cargo build -p warp_tui --bin warp-tui-oss` → `tmux kill-session` + restart the
+`cargo build -p warp_tui --bin termloc-tui` → `tmux kill-session` + restart the
 session → `capture-pane` and compare. Verified before/after example: changing the
 login placeholder string and rebuilding flips the captured line from
 `Sign in to continue` to the new text, visible directly in `capture-pane` output.
@@ -239,13 +239,13 @@ if the expected text isn't in the capture, the change isn't rendering.
   change:
   - **Build `--release`** — the validator is compiled out, so the TUI stays up
     and you can `send-keys`/`capture-pane` freely:
-    `cargo build --release -p warp_tui --bin warp-tui-oss` then run
-    `./target/release/warp-tui-oss`.
+    `cargo build --release -p warp_tui --bin termloc-tui` then run
+    `./target/release/termloc-tui`.
   - **Or poll `capture-pane` right after launch** on the debug build to grab the
     first frame before the panic:
 
     ```bash
-    tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/warp-tui-oss'
+    tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/termloc-tui'
     for i in $(seq 1 15); do
       frame=$(tmux capture-pane -t tuicheck -p | sed 's/[[:space:]]*$//' | grep .)
       [ -n "$frame" ] && { echo "$frame"; break; }
@@ -302,7 +302,7 @@ cd <warp-repo-root>
 tmux kill-session -t tuicap 2>/dev/null     # clear only THIS capture session (not kill-server)
 # asciinema records the TUI's PTY; -c runs the binary; --overwrite replaces a prior cast.
 tmux new-session -d -s tuicap -x 120 -y 40 \
-  'asciinema rec --overwrite -c "./target/debug/warp-tui-oss" /tmp/tui.cast'
+  'asciinema rec --overwrite -c "./target/debug/termloc-tui" /tmp/tui.cast'
 sleep 1                                     # let it draw + answer the theme probe
 # ...drive the interaction you want to show, e.g.:
 # tmux send-keys -t tuicap "hello" Enter && sleep 3
@@ -315,7 +315,7 @@ sleep 1
 ```
 
 For a **logged-in** capture, build/run `warp-tui-dev` with `WARP_API_KEY` per
-Step 1 instead of `warp-tui-oss`.
+Step 1 instead of `termloc-tui`.
 
 **Render the video (MP4).** Match the format Warp's `computer_use` screen
 recording uses — an **H.264 / yuv420p MP4** with `+faststart` (see

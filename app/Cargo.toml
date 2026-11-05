@@ -1,7 +1,7 @@
 [package]
-authors = ["Warp Team <dev@warp.dev>"]
-default-run = "warp-oss"
-description = "The cloud-backed terminal for individuals and teams"
+authors = ["Termloc contributors"]
+default-run = "termloc"
+description = "A local-only terminal with on-device AI"
 edition = "2024"
 autobins = false
 name = "warp"
@@ -18,7 +18,7 @@ path = "src/lib.rs"
 # flag overrides). Otherwise these binaries are exactly identical to our main binary.
 
 [[bin]]
-name = "warp-oss"
+name = "termloc"
 path = "src/bin/oss.rs"
 test = false
 
@@ -978,14 +978,14 @@ stored_screenshots = []
 cloud_agent_shell_respawn = []
 acp_harness = []
 
-[package.metadata.bundle.bin.warp-oss]
+[package.metadata.bundle.bin.termloc]
 category = "public.app-category.developer-tools"
 copyright = "© 2025, Denver Technologies, Inc"
-identifier = "dev.warp.WarpOss"
-name = "WarpOss"
+identifier = "dev.termloc.Termloc"
+name = "Termloc"
 resources = ["assets/onboarding"]
 icon = ["channels/oss/icon/no-padding/512x512.png", "channels/oss/icon/no-padding/icon.ico"]
-short_description = "The open-source, cloud-backed terminal for individuals and teams."
+short_description = "A local-only terminal with on-device AI."
 
 [package.metadata.cargo-udeps.ignore]
 normal = ["embed_plist"]

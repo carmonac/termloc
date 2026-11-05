@@ -16,8 +16,8 @@ fn main() -> Result<()> {
     let mut state = ChannelState::new(
         Channel::Oss,
         ChannelConfig {
-            app_id: AppId::new("dev", "warp", "WarpTui"),
-            logfile_name: "warp-tui.log".into(),
+            app_id: AppId::new("dev", "termloc", "Termloc"),
+            logfile_name: "termloc-tui.log".into(),
             server_config: WarpServerConfig::disabled(),
             oz_config: OzConfig::disabled(),
             mcp_static_config: None,

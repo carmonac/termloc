@@ -660,7 +660,7 @@ const MAX_WINDOW_TITLE_LENGTH: usize = 80;
 
 #[cfg(all(feature = "local_fs", not(target_family = "wasm")))]
 const AUTO_CLOUD_HANDOFF_PROMPT: &str =
-    "Continue this local Warp Agent task in the cloud from the current conversation state.";
+    "Continue this local Local Agent task in the cloud from the current conversation state.";
 
 /// The default display name used for the user if they have no associated display name.
 pub const DEFAULT_USER_DISPLAY_NAME: &str = "User";
@@ -6387,16 +6387,8 @@ impl Workspace {
         ctx.notify();
     }
 
-    fn join_slack(&mut self, ctx: &mut ViewContext<Self>) {
-        ctx.open_url(links::SLACK_URL);
-    }
-
     fn view_user_docs(&mut self, ctx: &mut ViewContext<Self>) {
         ctx.open_url(links::USER_DOCS_URL);
-    }
-
-    fn view_privacy_policy(&mut self, ctx: &mut ViewContext<Self>) {
-        ctx.open_url(links::PRIVACY_POLICY_URL);
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -8763,7 +8755,7 @@ impl Workspace {
     fn install_oz(&mut self, ctx: &mut ViewContext<Self>) {
         ctx.spawn(async { cli_install::install_oz() }, |view, result, ctx| {
             let command_name = ChannelState::channel().cli_command_name();
-            let message = format!("Installed the Oz CLI globally. You can now run '{command_name}' from any terminal outside of Warp.");
+            let message = format!("Installed the Oz CLI globally. You can now run '{command_name}' from any terminal outside of Termloc.");
             let toast = DismissibleToast::success(message).with_link(
                 ToastLink::new("Learn more".to_string())
                     .with_href("https://docs.warp.dev/reference/cli".to_string()),
@@ -8779,7 +8771,7 @@ impl Workspace {
             async { cli_install::uninstall_oz() },
             |view, result, ctx| {
                 let toast = DismissibleToast::success(
-                    "Removed the global Oz CLI installation — it still works inside Warp."
+                    "Removed the global Oz CLI installation — it still works inside Termloc."
                         .to_string(),
                 );
                 view.handle_cli_command_result(
@@ -8799,12 +8791,12 @@ impl Workspace {
             async { cli_install::install_warpctrl() },
             |view, result, ctx| {
                 let command_name = ChannelState::channel().warpctrl_command_name();
-                let message = format!("Installed the Warp Control CLI globally. You can now run '{command_name}' from any terminal outside of Warp.");
+                let message = format!("Installed the Termloc Control CLI globally. You can now run '{command_name}' from any terminal outside of Termloc.");
                 let toast = DismissibleToast::success(message);
                 view.handle_cli_command_result(
                     result,
                     toast,
-                    "Failed to install Warp Control command",
+                    "Failed to install Termloc Control command",
                     ctx,
                 );
             },
@@ -8818,13 +8810,13 @@ impl Workspace {
             async { cli_install::uninstall_warpctrl() },
             |view, result, ctx| {
                 let toast = DismissibleToast::success(
-                    "Removed the global Warp Control CLI installation — it still works inside Warp."
+                    "Removed the global Termloc Control CLI installation — it still works inside Termloc."
                         .to_string(),
                 );
                 view.handle_cli_command_result(
                     result,
                     toast,
-                    "Failed to uninstall Warp Control command",
+                    "Failed to uninstall Termloc Control command",
                     ctx,
                 );
             },
@@ -9415,7 +9407,7 @@ impl Workspace {
         ]);
         #[cfg(not(target_family = "wasm"))]
         items.push(
-            MenuItemFields::new("View Warp logs")
+            MenuItemFields::new("View Termloc logs")
                 .with_on_select_action(WorkspaceAction::ViewLogs)
                 .into_item(),
         );
@@ -13828,7 +13820,7 @@ impl Workspace {
                         let url = NOTIFICATIONS_TROUBLESHOOT_URL.to_string();
                         view.toast_stack.update(ctx, |toast_stack, ctx| {
                             let toast = DismissibleToast::error(
-                                "Warp doesn't have permission to send desktop notifications."
+                                "Termloc doesn't have permission to send desktop notifications."
                                     .to_string(),
                             )
                             .with_link(
@@ -15245,7 +15237,7 @@ impl Workspace {
                 "Your conversation hasn't synced to the cloud yet. Try sending another message, then hand off again."
             }
             HandoffPrepareError::InvalidModel => {
-                "Custom models can't run in the cloud. Switch to a Warp model to hand off."
+                "Custom models can't run in the cloud. Switch to a built-in model to hand off."
             }
             HandoffPrepareError::EmptySourceAndPrompt => {
                 "Nothing to hand off — start a conversation first."
@@ -17520,7 +17512,7 @@ impl Workspace {
                                         .contains_ai_document(&ai_doc_id, ctx)
                                 }) {
                                     new_toast = DismissibleToast::success(
-                                        "Plan synced to your Warp Drive".to_string(),
+                                        "Plan synced to your Drive".to_string(),
                                     )
                                     .with_object_id(object_id_clone)
                                     .with_link(
@@ -18237,8 +18229,8 @@ impl Workspace {
                 let command = code.trim().to_string();
                 let args_state =
                     ArgumentsState::for_command_workflow(&Default::default(), command.clone());
-                let workflow = Workflow::new("Command from Warp AI", command)
-                    .with_arguments(args_state.arguments);
+                let workflow =
+                    Workflow::new("Command from AI", command).with_arguments(args_state.arguments);
                 self.run_workflow_in_active_input(
                     &WorkflowType::AIGenerated {
                         workflow,
@@ -18919,7 +18911,7 @@ impl Workspace {
         let body = appearance
             .ui_builder()
             .wrappable_text(
-                "Ask Warp AI to explain errors, suggest commands or write scripts.".to_owned(),
+                "Ask AI to explain errors, suggest commands or write scripts.".to_owned(),
                 true,
             )
             .with_style(UiComponentStyles {
@@ -19595,7 +19587,7 @@ impl Workspace {
                     {
                         ToolPanelView::ProjectExplorer => "Project explorer",
                         ToolPanelView::GlobalSearch { .. } => "Global search",
-                        ToolPanelView::WarpDrive => "Warp Drive",
+                        ToolPanelView::WarpDrive => "Drive",
                         ToolPanelView::ConversationListView => "Agent conversations",
                     }
                 } else {
@@ -19649,7 +19641,7 @@ impl Workspace {
             {
                 ToolPanelView::ProjectExplorer => "Project explorer",
                 ToolPanelView::GlobalSearch { .. } => "Global search",
-                ToolPanelView::WarpDrive => "Warp Drive",
+                ToolPanelView::WarpDrive => "Drive",
                 ToolPanelView::ConversationListView => "Agent conversations",
             }
         } else {
@@ -20806,7 +20798,7 @@ impl Workspace {
                 icons::Icon::Lightbulb,
                 &self.mouse_states.resource_center_icon,
                 WorkspaceAction::ToggleResourceCenter,
-                "Warp Essentials".to_string(),
+                "Termloc Essentials".to_string(),
                 self.cached_keybindings[TOGGLE_RESOURCE_CENTER_KEYBINDING_NAME].clone(),
                 false,
                 false,
@@ -21146,7 +21138,7 @@ impl Workspace {
             AISettings::as_ref(app)
                 .is_any_ai_enabled(app)
                 .then(|| WorkspaceBannerButtonDetails {
-                    text: "Fix with Warp Agent".to_owned(),
+                    text: "Fix with Local Agent".to_owned(),
                     action: WorkspaceAction::FixSettingsWithOz {
                         error_description: error.to_string(),
                     },
@@ -22542,7 +22534,7 @@ impl Workspace {
             // Many users' browser settings will block Local Network Access so this will end up redirecting to download page,
             // even if they have the app installed.
             let toast_message = format!(
-                "Have Warp installed but redirecting to download page?\nEnable Local Network Access for {} in your browser.",
+                "Have Termloc installed but redirecting to download page?\nEnable Local Network Access for {} in your browser.",
                 ChannelState::server_root_url()
             );
             self.toast_stack.update(ctx, |toast_stack, ctx| {
@@ -23093,9 +23085,7 @@ impl TypedActionView for Workspace {
                 mode: palette_mode,
                 source,
             } => self.toggle_palette(*palette_mode, *source, ctx),
-            JoinSlack => self.join_slack(ctx),
             ViewUserDocs => self.view_user_docs(ctx),
-            ViewPrivacyPolicy => self.view_privacy_policy(ctx),
             #[cfg(not(target_family = "wasm"))]
             ViewLogs => self.view_logs(ctx),
             ChangeCursor(cursor) => self.change_cursor(*cursor, ctx),

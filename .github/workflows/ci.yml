@@ -88,9 +88,6 @@ jobs:
               # Only human-readable files in known documentation locations may skip builds.
               # Markdown elsewhere, including bundled skills, can affect shipped behavior.
               - '!AGENTS.md'
-              - '!CODE_OF_CONDUCT.md'
-              - '!CONTRIBUTING.md'
-              - '!FAQ.md'
               - '!README.md'
               - '!SECURITY.md'
               - '!.github/**/*.md'

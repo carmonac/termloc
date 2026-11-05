@@ -1919,7 +1919,7 @@ impl ProfileModelSelector {
         let theme = appearance.theme();
         let header = self.render_model_spec_header(
             "Model Specs".to_string(),
-            "Warp’s benchmarks for how well a model performs in our harness, the rate at which it consumes credits, and task speed.".to_string(),
+            "Termloc’s benchmarks for how well a model performs in our harness, the rate at which it consumes credits, and task speed.".to_string(),
             app,
         );
         let spec = self.render_all_model_spec_values(spec, internal_colors::neutral_3(theme), app);

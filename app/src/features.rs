@@ -519,6 +519,7 @@ fn enabled_features() -> HashSet<FeatureFlag> {
 
     if ChannelState::is_local_only() {
         for flag in [
+            FeatureFlag::AgentCliLaunchModal,
             FeatureFlag::AgentOnboarding,
             FeatureFlag::CocoaSentry,
             FeatureFlag::CrashReporting,
@@ -536,6 +537,8 @@ fn enabled_features() -> HashSet<FeatureFlag> {
             FeatureFlag::HandoffCloudCloud,
             FeatureFlag::HandoffLocalCloud,
             FeatureFlag::OzHandoff,
+            FeatureFlag::OpenWarpLaunchModal,
+            FeatureFlag::OrchestrationLaunchModal,
             FeatureFlag::OzLaunchModal,
             FeatureFlag::ScheduledAmbientAgents,
             FeatureFlag::SessionSharingAcls,

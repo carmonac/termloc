@@ -274,7 +274,7 @@ impl WarpManagedPathsWatcher {
                 data_dir.clone(),
                 WatchFilter::with_filter(filter.clone(), filter),
                 RecursiveMode::Recursive,
-                "Warp data directory",
+                "Termloc data directory",
             );
             if should_register_config_local_dir {
                 Self::register_path(
@@ -283,7 +283,7 @@ impl WarpManagedPathsWatcher {
                     config_local_dir.clone(),
                     WatchFilter::accept_all(),
                     RecursiveMode::Recursive,
-                    "Warp config directory",
+                    "Termloc config directory",
                 );
             }
             // Watch the TUI settings directory for that surface. On macOS it's
@@ -304,7 +304,7 @@ impl WarpManagedPathsWatcher {
                         tui_config_local_dir,
                         WatchFilter::accept_all(),
                         RecursiveMode::Recursive,
-                        "Warp TUI config directory",
+                        "Termloc TUI config directory",
                     );
                 }
             }
@@ -320,7 +320,7 @@ impl WarpManagedPathsWatcher {
                     warp_home_skills_dir,
                     WatchFilter::accept_all(),
                     RecursiveMode::Recursive,
-                    "Warp home skills directory",
+                    "Termloc home skills directory",
                 );
             }
             let active_mcp_config_path = active_mcp_config_file_path();
@@ -353,7 +353,7 @@ impl WarpManagedPathsWatcher {
                     active_mcp_config_dir,
                     WatchFilter::with_filter(Arc::new(|_: &Path| true), emit),
                     RecursiveMode::NonRecursive,
-                    "Warp MCP config directory",
+                    "Termloc MCP config directory",
                 );
             }
         }

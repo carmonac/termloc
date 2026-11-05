@@ -651,7 +651,7 @@ settings::macros::implement_setting_for_enum!(
     settings_value::SettingsValue,
 )]
 #[schemars(
-    description = "Which unit the usage entry displays in Warp Agent CLI.",
+    description = "Which unit the usage entry displays in Termloc TUI.",
     rename_all = "snake_case"
 )]
 pub enum TuiUsageDisplayMode {
@@ -670,7 +670,7 @@ settings::macros::implement_setting_for_enum!(
     surface: settings::SettingSurfaces::TUI,
     private: false,
     toml_path: "agents.usage_display_mode",
-    description: "Which unit the usage entry displays in Warp Agent CLI: credits or dollars.",
+    description: "Which unit the usage entry displays in Termloc TUI: credits or dollars.",
 );
 
 /// Unit for GUI usage and spend displays.
@@ -730,7 +730,7 @@ impl UsageDisplayUnit {
     settings_value::SettingsValue,
 )]
 #[schemars(
-    description = "A configurable item in the Warp Agent CLI statusline.",
+    description = "A configurable item in the Termloc TUI statusline.",
     rename_all = "snake_case"
 )]
 #[serde(rename_all = "snake_case")]
@@ -1539,7 +1539,7 @@ define_settings_group!(AISettings, settings: [
         surface: settings::SettingSurfaces::TUI,
         private: false,
         toml_path: "agents.statusline",
-        description: "Controls the order and visibility of Warp Agent CLI statusline items.",
+        description: "Controls the order and visibility of Termloc TUI statusline items.",
     },
     // Whether or not the profile-level command autoexecution speedbump has been shown.
     //
@@ -1663,7 +1663,7 @@ define_settings_group!(AISettings, settings: [
         surface: settings::SettingSurfaces::GUI,
         private: false,
         toml_path: "agents.knowledge.warp_drive_context_enabled",
-        description: "Whether Warp Drive context is included in AI requests.",
+        description: "Whether Drive context is included in AI requests.",
     }
 
     // Whether the codebase speedbump banner has been permanently dismissed for a given repo path.
@@ -2061,7 +2061,7 @@ define_settings_group!(AISettings, settings: [
         surface: settings::SettingSurfaces::GUI,
         private: false,
         toml_path: "agents.warp_agent.other.agent_attribution_enabled",
-        description: "Whether the Warp Agent adds an attribution co-author line to commit messages and pull requests it creates.",
+        description: "Whether the Local Agent adds an attribution co-author line to commit messages and pull requests it creates.",
     }
 
     should_force_disable_cloud_handoff: ShouldForceDisableCloudHandoff {
@@ -2094,7 +2094,7 @@ define_settings_group!(AISettings, settings: [
         surface: settings::SettingSurfaces::GUI,
         private: false,
         toml_path: "agents.warp_agent.other.auto_handoff_on_sleep_enabled",
-        description: "Whether Warp automatically hands off local agent conversations to cloud when the computer is about to sleep.",
+        description: "Whether Termloc automatically hands off local agent conversations to cloud when the computer is about to sleep.",
     }
 
     // This is not a user-visible setting - it's merely a one-time flag to track if the

@@ -234,7 +234,7 @@ impl CLIAgent {
                 "warp-preview",
                 "warp-dev",
                 "warp-tui",
-                "warp-tui-oss",
+                "termloc-tui",
                 "run-tui",
             ],
             CLIAgent::Grok => &["grok"],
@@ -298,7 +298,7 @@ impl CLIAgent {
             CLIAgent::Grok => "Grok Build",
             CLIAgent::Kiro => "Kiro CLI",
             CLIAgent::Muse => "Muse Code",
-            CLIAgent::WarpTui => "Warp TUI",
+            CLIAgent::WarpTui => "Termloc TUI",
             CLIAgent::Unknown => "CLI Agent",
         }
     }

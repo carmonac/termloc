@@ -2,8 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 #include "environment.iss"
 
-#define MyAppPublisher "Denver Technologies, Inc."
-#define MyAppURL "https://www.warp.dev/"
+#define MyAppPublisher "Termloc"
 #ifndef MyAppName
   #define MyAppName "WarpDev"
 #endif
@@ -30,21 +29,18 @@
   ((ReleaseChannel == "integration") ? "Integration" : \
   ((ReleaseChannel == "oss") ? "Oss" : \
   "Unknown")))))
-#define AppMutexName "Local\Warp" + ChannelPascalCase + "_SingleInstance"
+#define AppMutexName "Local\Termloc" + ChannelPascalCase + "_SingleInstance"
 
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId=warp-terminal-{#ReleaseChannel}
+AppId=termloc-{#ReleaseChannel}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 UninstallDisplayName={#MyAppName}
 AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 ArchitecturesAllowed={#Arch}
 ArchitecturesInstallIn64BitMode={#Arch}
@@ -108,8 +104,8 @@ Source: "{#AssetsDir}\{#Arch}\dxil.dll"; DestDir: "{app}"
 Source: "{#TargetProfileDir}\resources\*"; DestDir: "{app}\resources"; Flags: ignoreversion recursesubdirs
 
 [Registry]
-Root: HKCU; Subkey: "SOFTWARE\Warp.dev\{#MyAppName}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "SOFTWARE\Warp.dev\{#MyAppName}"; ValueType: string; ValueName: "InstallationPath"; ValueData: "{app}\{#MyAppExeName}"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "SOFTWARE\Termloc\{#MyAppName}"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "SOFTWARE\Termloc\{#MyAppName}"; ValueType: string; ValueName: "InstallationPath"; ValueData: "{app}\{#MyAppExeName}"; Flags: uninsdeletevalue
 Root: HKA; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\{#MyAppExeName}"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName}"; Flags: uninsdeletekey
 ; cleanup "Open Warp Here" registry entries
 Root: HKA; Subkey: "Software\Classes\Directory\shell\{#MyAppName}"; Flags: deletekey
@@ -132,16 +128,16 @@ Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#MyAppName}Wind
 Root: HKA; Subkey: "Software\Classes\Directory\Background\shell\{#MyAppName}Window\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""{#MyAppName}://action/new_window?path=%V"""
 
 [Tasks]
-Name: addToPath; Description: "Add Warp to PATH"
+Name: addToPath; Description: "Add {#MyAppName} to PATH"
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{userappdata}\warp\{#MyAppName}"
-Type: filesandordirs; Name: "{localappdata}\warp\{#MyAppName}"
+Type: filesandordirs; Name: "{userappdata}\termloc\{#MyAppName}"
+Type: filesandordirs; Name: "{localappdata}\termloc\{#MyAppName}"
 Type: filesandordirs; Name: "{app}\bin"
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"; AppUserModelID: "dev.warp.{#MyAppName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"; AppUserModelID: "dev.warp.{#MyAppName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"; AppUserModelID: "dev.termloc.{#MyAppName}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\icon.ico"; AppUserModelID: "dev.termloc.{#MyAppName}"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: postinstall runhidden nowait
@@ -246,7 +242,7 @@ begin
 #if ReleaseChannel == "stable"
     CmdScriptName := 'oz.cmd'
 #elif ReleaseChannel == "oss"
-    CmdScriptName := 'warp-oss.cmd';
+    CmdScriptName := 'termloc.cmd';
 #else
     CmdScriptName := 'oz-{#ReleaseChannel}.cmd';
 #endif

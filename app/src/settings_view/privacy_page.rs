@@ -54,8 +54,8 @@ const FONT_SIZE: f32 = 12.;
 
 const SAFE_MODE_TITLE: &str = "Secret redaction";
 static SAFE_MODE_DESCRIPTION: LazyLock<&'static str> = LazyLock::new(|| {
-    "When this setting is enabled, Warp will scan blocks, the contents of \
-        Warp Drive objects, and Oz prompts for potential sensitive \
+    "When this setting is enabled, Termloc will scan blocks, the contents of \
+        Drive objects, and Oz prompts for potential sensitive \
         information and prevent saving or sending this data to any \
         servers. You can customize this list via regexes."
 });
@@ -1317,7 +1317,7 @@ impl SettingsWidget for NetworkLogWidget {
                 ui_builder
                     .paragraph(
                         "We've built a native console that allows you to view all communications \
-                        from Warp to external servers to ensure you feel comfortable that your \
+                        from Termloc to external servers to ensure you feel comfortable that your \
                         work is always kept safe."
                             .to_owned(),
                     )

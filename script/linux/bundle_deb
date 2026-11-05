@@ -19,7 +19,7 @@ set -e
 if [ "$ARTIFACT" = "cli" ]; then
   CHANNEL_SUFFIX="${BINARY_NAME#oz}"
 else
-  CHANNEL_SUFFIX="${BINARY_NAME#warp}"
+  CHANNEL_SUFFIX="${BINARY_NAME#termloc}"
 fi
 REPO_NAME="warpdotdev$CHANNEL_SUFFIX"
 
@@ -31,7 +31,7 @@ fi
 
 case "$ARTIFACT" in
   app)
-    PACKAGE_NAME="warp-terminal$CHANNEL_SUFFIX"
+    PACKAGE_NAME="termloc$CHANNEL_SUFFIX"
     ;;
   cli)
     PACKAGE_NAME="oz$CHANNEL_SUFFIX"
@@ -79,7 +79,7 @@ mkdir -p "$PKGDIR"
 
 # Populate the directory with the package contents, in the appropriate
 # locations.
-OPT_DIR="/opt/warpdotdev/$PACKAGE_NAME"
+OPT_DIR="/opt/termloc/$PACKAGE_NAME"
 source "$WORKSPACE_ROOT_DIR/script/linux/bundle_install" "$PKGDIR"
 
 # Move the Debian-specific package metadata into the package directory.
@@ -87,11 +87,11 @@ DEBIAN_DIR="$PKGDIR/DEBIAN"
 VERSION="$(echo "$GIT_RELEASE_TAG" | sed -E "s/^v//; s/([a-z]+)_/\1./")"
 mkdir "$DEBIAN_DIR"
 sed \
-    "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@VERSION@@#$VERSION#g; s#@@ARCH@@#$ARCH#g" \
+    "s#@@PACKAGE_NAME@@#$PACKAGE_NAME#g; s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@VERSION@@#$VERSION#g; s#@@ARCH@@#$ARCH#g" \
     < "$TEMPLATE_DIR/control.template" \
     > "$DEBIAN_DIR/control"
 sed \
-    "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@BINARY_NAME@@#$BINARY_NAME#g; s#@@OPTDIR@@#$OPT_DIR#g; s#@@REPO_NAME@@#$REPO_NAME#g; s#@@CHANNEL@@#$RELEASE_CHANNEL#g; s#@@ARCH@@#$ARCH#g" \
+    "s#@@PACKAGE_NAME@@#$PACKAGE_NAME#g; s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@BINARY_NAME@@#$BINARY_NAME#g; s#@@OPTDIR@@#$OPT_DIR#g; s#@@REPO_NAME@@#$REPO_NAME#g; s#@@CHANNEL@@#$RELEASE_CHANNEL#g; s#@@ARCH@@#$ARCH#g" \
     < "$TEMPLATE_DIR/postinst.template" \
     > "$DEBIAN_DIR/postinst"
 sed \
@@ -99,7 +99,7 @@ sed \
     < "$WORKSPACE_ROOT_DIR/resources/linux/debian/common/postinst.repo.template" \
     >> "$DEBIAN_DIR/postinst"
 sed \
-    "s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@OPTDIR@@#$OPT_DIR#g; s#@@REPO_NAME@@#$REPO_NAME#g" \
+    "s#@@PACKAGE_NAME@@#$PACKAGE_NAME#g; s#@@CHANNEL_SUFFIX@@#$CHANNEL_SUFFIX#g; s#@@OPTDIR@@#$OPT_DIR#g; s#@@REPO_NAME@@#$REPO_NAME#g" \
     < "$TEMPLATE_DIR/postrm.template" \
     > "$DEBIAN_DIR/postrm"
 sed \
