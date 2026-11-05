@@ -2280,6 +2280,11 @@ impl AISettings {
             .get()
             .is_anonymous_or_logged_out();
 
+        #[cfg(not(target_family = "wasm"))]
+        if crate::ai::local::is_enabled() {
+            return *self.is_any_ai_enabled;
+        }
+
         *self.is_any_ai_enabled
             && !is_anonymous_or_logged_out
             && !self.is_ai_disabled_due_to_remote_session_org_policy(app)

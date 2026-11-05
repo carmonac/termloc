@@ -543,5 +543,15 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::AcpHarness,
     ]);
 
+    if ChannelState::is_local_only() {
+        for flag in [
+            FeatureFlag::ForceLogin,
+            FeatureFlag::AccountFirstOnboarding,
+            FeatureFlag::AgentOnboarding,
+        ] {
+            flags.remove(&flag);
+        }
+    }
+
     flags
 }

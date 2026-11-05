@@ -149,6 +149,13 @@ pub async fn generate_multi_agent_output(
         mcp_context: params.mcp_context.map(Into::into),
     };
 
+    #[cfg(not(target_family = "wasm"))]
+    if crate::ai::local::is_enabled()
+        && let Some(stream) = crate::ai::local::run_turn(request.clone())
+    {
+        return Ok(Box::pin(stream.map(Ok).take_until(cancellation_rx)));
+    }
+
     let response_stream = warp_multi_agent_client::generate_multi_agent_output(
         server_api.as_ref(),
         &request,

@@ -355,6 +355,11 @@ impl ChannelState {
         CHANNEL_STATE.lock().channel
     }
 
+    /// Whether this build runs entirely on the user's machine, with no accounts or Warp servers.
+    pub fn is_local_only() -> bool {
+        Self::channel() == Channel::Oss
+    }
+
     #[cfg(feature = "test-util")]
     pub fn app_version() -> Option<&'static str> {
         let version = APP_VERSION.lock();

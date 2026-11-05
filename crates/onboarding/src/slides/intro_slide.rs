@@ -1,6 +1,7 @@
 use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::vec2f;
 use ui_components::{Component as _, Options as _, button};
+use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_core::send_telemetry_from_ctx;
 use warp_core::ui::Icon;
@@ -110,15 +111,17 @@ impl View for IntroSlide {
 
         let mut stack = Stack::new();
         stack.add_child(centered);
-        stack.add_positioned_child(
-            login_row,
-            OffsetPositioning::offset_from_parent(
-                vec2f(0., -28.),
-                ParentOffsetBounds::ParentBySize,
-                ParentAnchor::BottomMiddle,
-                ChildAnchor::BottomMiddle,
-            ),
-        );
+        if !ChannelState::is_local_only() {
+            stack.add_positioned_child(
+                login_row,
+                OffsetPositioning::offset_from_parent(
+                    vec2f(0., -28.),
+                    ParentOffsetBounds::ParentBySize,
+                    ParentAnchor::BottomMiddle,
+                    ChildAnchor::BottomMiddle,
+                ),
+            );
+        }
         stack.finish()
     }
 }

@@ -636,7 +636,8 @@ fn requires_post_onboarding_login(
     ai_enabled: bool,
     warp_drive_enabled: bool,
 ) -> bool {
-    !is_logged_in
+    !ChannelState::is_local_only()
+        && !is_logged_in
         && (FeatureFlag::AccountFirstOnboarding.is_enabled() || ai_enabled || warp_drive_enabled)
 }
 
