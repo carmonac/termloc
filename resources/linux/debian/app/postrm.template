@@ -10,3 +10,6 @@ rm -f /usr/bin/@@PACKAGE_NAME@@
 if hash update-desktop-database 2>/dev/null; then
 	update-desktop-database
 fi
+
+# A failed cache refresh must not fail the package operation.
+exit 0
