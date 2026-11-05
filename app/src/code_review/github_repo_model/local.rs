@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use settings::Setting as _;
+use warp_core::channel::ChannelState;
 use warp_errors::report_if_error;
 use warpui::r#async::SpawnedFutureHandle;
 use warpui::{Entity, ModelContext, ModelHandle, SingletonEntity as _};
@@ -175,6 +176,10 @@ impl LocalGitHubRepoModel {
     /// complete, since those don't touch `.git/` so the filesystem watcher won't
     /// catch them.
     pub fn refresh_pr_info(&mut self, ctx: &mut ModelContext<Self>) {
+        // `gh` is a child process, so the egress policy can't stop it from reaching GitHub.
+        if ChannelState::is_local_only() {
+            return;
+        }
         let Some(branch) = self.branch.clone() else {
             return;
         };
@@ -221,6 +226,9 @@ impl LocalGitHubRepoModel {
     /// called from the branch-change path, so switching branches does not
     /// trigger a `gh repo view`.
     pub fn refresh_repository_info(&mut self, ctx: &mut ModelContext<Self>) {
+        if ChannelState::is_local_only() {
+            return;
+        }
         // Guard against overlapping fetches.
         if self.repository_info_abort_handle.is_some() {
             return;
