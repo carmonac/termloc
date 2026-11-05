@@ -1,7 +1,11 @@
 //! Runs agent turns on the user's Ollama instance and tracks the models it offers.
 use std::sync::{Arc, LazyLock};
 
+use ::ai::index::full_source_code_embedding::local_store::{Embedder, LocalStore};
+use ::ai::index::full_source_code_embedding::manager::CodebaseIndexManager;
+use ::ai::index::full_source_code_embedding::store_client::StoreClient;
 use anyhow::anyhow;
+use async_trait::async_trait;
 use futures::future::BoxFuture;
 use futures::{FutureExt as _, Stream};
 use local_agent::ollama::{ChatRequest, ChatStream};
@@ -11,7 +15,8 @@ use parking_lot::RwLock;
 use settings::Setting as _;
 use url::Url;
 use warp_core::channel::ChannelState;
-use warp_multi_agent_api::{Request, ResponseEvent};
+use warp_core::paths::state_dir;
+use warp_multi_agent_api::{Request, ResponseEvent, ToolType};
 use warpui::{Entity, ModelContext, SingletonEntity};
 
 use crate::ai::llms::LLMPreferences;
@@ -26,6 +31,8 @@ struct Runtime {
     models: Vec<LocalModel>,
     /// The model chosen for quick requests. Empty means the agent's default.
     quick_model: String,
+    /// The model that indexes code. Empty means indexing is off.
+    embedding_model: String,
 }
 
 impl Runtime {
@@ -119,9 +126,43 @@ pub(crate) async fn one_shot() -> anyhow::Result<OneShot> {
     ))
 }
 
+struct OllamaEmbedder;
+
+#[async_trait]
+impl Embedder for OllamaEmbedder {
+    fn model(&self) -> Option<String> {
+        Some(RUNTIME.read().embedding_model.clone()).filter(|model| !model.is_empty())
+    }
+
+    async fn embed(&self, model: &str, texts: Vec<String>) -> anyhow::Result<Vec<Vec<f32>>> {
+        let url = RUNTIME.read().url.clone();
+        OllamaClient::new(url).embed(model, texts).await
+    }
+}
+
+/// Where codebase indexes keep their embeddings.
+pub(crate) fn embedding_store() -> Arc<dyn StoreClient> {
+    Arc::new(LocalStore::new(
+        Arc::new(OllamaEmbedder),
+        state_dir().join("embeddings"),
+    ))
+}
+
+/// Code search needs an embedding model, so without one the model must not be offered the tool.
+fn drop_code_search(request: &mut Request) {
+    if let Some(settings) = request.settings.as_mut() {
+        settings
+            .supported_tools
+            .retain(|tool| *tool != ToolType::SearchCodebase as i32);
+    }
+}
+
 /// Starts a local turn.
-pub(crate) async fn run_turn(request: Request) -> impl Stream<Item = ResponseEvent> + Send {
+pub(crate) async fn run_turn(mut request: Request) -> impl Stream<Item = ResponseEvent> + Send {
     let runtime = current_runtime().await;
+    if runtime.embedding_model.is_empty() {
+        drop_code_search(&mut request);
+    }
     let models = agent_models(runtime.models.clone());
 
     let requested = request
@@ -174,6 +215,10 @@ pub struct LocalModels {
 impl LocalModels {
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
         ctx.subscribe_to_model(&AISettings::handle(ctx), |me, _, event, ctx| {
+            if matches!(event, AISettingsChangedEvent::LocalEmbeddingModel { .. }) {
+                me.refresh(ctx);
+                resync_indexes(ctx);
+            }
             if matches!(
                 event,
                 AISettingsChangedEvent::OllamaUrl { .. }
@@ -209,12 +254,14 @@ impl LocalModels {
         let url = settings.ollama_url.value().clone();
         let context_window = *settings.local_context_window.value();
         let quick_model = settings.local_quick_model.value().clone();
+        let embedding_model = settings.local_embedding_model.value().clone();
         allow_ollama_host(&url);
         {
             let mut runtime = RUNTIME.write();
             runtime.url = url.clone();
             runtime.context_window = context_window;
             runtime.quick_model = quick_model;
+            runtime.embedding_model = embedding_model;
         }
 
         self.state = LocalModelsState::Loading;
@@ -254,6 +301,16 @@ impl LocalModels {
         }
         ctx.emit(LocalModelsEvent::Changed);
     }
+}
+
+/// Vectors from one model can't be searched with another, so indexes start over on a new model.
+fn resync_indexes(ctx: &mut ModelContext<LocalModels>) {
+    CodebaseIndexManager::handle(ctx).update(ctx, |manager, ctx| {
+        let paths: Vec<_> = manager.get_codebase_paths().cloned().collect();
+        for path in paths {
+            manager.try_manual_resync_codebase(&path, ctx);
+        }
+    });
 }
 
 /// The user chose this server, so it counts as allowed even on another machine.

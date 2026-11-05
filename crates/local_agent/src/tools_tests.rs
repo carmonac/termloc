@@ -208,3 +208,77 @@ fn unsupported_tools_are_not_offered() {
     assert_eq!(definitions.len(), 1);
     assert_eq!(definitions[0]["function"]["name"], RUN_SHELL_COMMAND);
 }
+
+#[test]
+fn search_codebase_maps_to_its_query() {
+    let tool = parse_tool_call(
+        &call(SEARCH_CODEBASE, json!({ "query": "login flow" })),
+        None,
+    )
+    .unwrap();
+
+    let Tool::SearchCodebase(search) = tool else {
+        panic!("expected a codebase search");
+    };
+    assert_eq!(search.query, "login flow");
+    assert!(search.codebase_path.is_empty());
+}
+
+#[test]
+fn search_codebase_is_hidden_when_the_client_dropped_it() {
+    let names = |supported: Vec<i32>| {
+        let toolbox = Toolbox {
+            supported,
+            mcp_tools: Vec::new(),
+        };
+        toolbox.definitions().to_vec()
+    };
+
+    let without = names(vec![ToolType::Grep as i32]);
+    let with = names(vec![ToolType::SearchCodebase as i32]);
+
+    assert!(
+        !without
+            .iter()
+            .any(|tool| tool.to_string().contains(SEARCH_CODEBASE))
+    );
+    assert!(
+        with.iter()
+            .any(|tool| tool.to_string().contains(SEARCH_CODEBASE))
+    );
+}
+
+#[test]
+fn search_results_show_paths_and_code() {
+    let result = SearchCodebaseResult {
+        result: Some(search_codebase_result::Result::Success(
+            search_codebase_result::Success {
+                files: vec![FileContent {
+                    file_path: "src/auth.rs".to_owned(),
+                    content: "fn login() {}".to_owned(),
+                    ..Default::default()
+                }],
+            },
+        )),
+    };
+
+    let text = result_text(Some(&ToolResult::SearchCodebase(result)));
+
+    assert!(text.contains("src/auth.rs"));
+    assert!(text.contains("fn login() {}"));
+}
+
+#[test]
+fn search_errors_reach_the_model() {
+    let result = SearchCodebaseResult {
+        result: Some(search_codebase_result::Result::Error(
+            search_codebase_result::Error {
+                message: "not indexed".to_owned(),
+            },
+        )),
+    };
+
+    let text = result_text(Some(&ToolResult::SearchCodebase(result)));
+
+    assert!(text.contains("not indexed"));
+}

@@ -2374,12 +2374,22 @@ pub(crate) fn initialize_app(
         };
 
         let codebase_limits = AIRequestUsageModel::as_ref(ctx).codebase_context_limits();
+        #[cfg(not(target_family = "wasm"))]
+        let store_client: Arc<
+            dyn ::ai::index::full_source_code_embedding::store_client::StoreClient,
+        > = if crate::ai::local::is_enabled() {
+            crate::ai::local::embedding_store()
+        } else {
+            server_api_provider.as_ref(ctx).get()
+        };
+        #[cfg(target_family = "wasm")]
+        let store_client = server_api_provider.as_ref(ctx).get();
         let mut codebase_index_config = CodebaseIndexManagerConfig::new(
             indices_to_restore,
             codebase_limits.max_indices_allowed,
             codebase_limits.max_files_per_repo,
             codebase_limits.embedding_generation_batch_size,
-            server_api_provider.as_ref(ctx).get(),
+            store_client,
             launch_mode.supports_indexing(),
         );
         if matches!(launch_mode, LaunchMode::RemoteServerDaemon { .. }) {

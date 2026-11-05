@@ -62,6 +62,8 @@ pub struct BonusGrant {
 }
 
 /// The key for the corresponding entry in UserDefaults.
+/// Local indexes have no quota. This only keeps a huge tree from taking hours to embed.
+const LOCAL_MAX_FILES_PER_REPO: usize = 50_000;
 const REQUEST_LIMIT_INFO_CACHE_KEY: &str = "AIRequestLimitInfo";
 const AMBIENT_CREDITS_BANNER_DISMISSED_KEY: &str = "AmbientCreditsBannerDismissed";
 
@@ -556,6 +558,16 @@ impl AIRequestUsageModel {
     /// the user's tier allows them to index. If the user is allowed unlimited indices, then the
     /// max_indices_allowed is None.
     pub fn codebase_context_limits(&self) -> CodebaseContextUsageLimit {
+        if ChannelState::is_local_only() {
+            return CodebaseContextUsageLimit {
+                max_files_per_repo: LOCAL_MAX_FILES_PER_REPO,
+                max_indices_allowed: None,
+                embedding_generation_batch_size: self
+                    .request_limit_info
+                    .embedding_generation_batch_size,
+            };
+        }
+
         CodebaseContextUsageLimit {
             max_files_per_repo: self.request_limit_info.max_files_per_repo,
             max_indices_allowed: if self.request_limit_info.is_unlimited_codebase_indices {

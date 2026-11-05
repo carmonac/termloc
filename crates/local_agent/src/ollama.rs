@@ -88,6 +88,7 @@ pub struct LocalModel {
     pub supports_tools: bool,
     pub supports_vision: bool,
     pub supports_thinking: bool,
+    pub supports_embedding: bool,
     /// The model's context window in tokens, when Ollama reports it.
     pub context_length: Option<u32>,
     /// Size on disk in bytes.
@@ -128,11 +129,20 @@ impl ShowResponse {
             supports_tools: supports("tools"),
             supports_vision: supports("vision"),
             supports_thinking: supports("thinking"),
+            supports_embedding: supports("embedding"),
             context_length,
             size,
             name,
         }
     }
+}
+
+#[derive(Deserialize)]
+struct EmbedResponse {
+    #[serde(default)]
+    embeddings: Vec<Vec<f32>>,
+    #[serde(default)]
+    error: Option<String>,
 }
 
 pub type ChatStream = BoxStream<'static, anyhow::Result<ChatChunk>>;
@@ -174,6 +184,25 @@ impl OllamaClient {
             models.push(self.show_model(model).await?);
         }
         Ok(models)
+    }
+
+    /// Returns an embedding for each of `inputs`, in order.
+    pub async fn embed(&self, model: &str, inputs: Vec<String>) -> anyhow::Result<Vec<Vec<f32>>> {
+        let url = format!("{}/api/embed", self.base_url);
+        let response: EmbedResponse = self
+            .client
+            .post(url.as_str())
+            .json(&serde_json::json!({ "model": model, "input": inputs }))
+            .send()
+            .await
+            .with_context(|| format!("could not reach Ollama at {url}"))?
+            .json()
+            .await
+            .context("invalid Ollama embedding response")?;
+        match response.error {
+            Some(error) => Err(anyhow!("Ollama could not embed with {model}: {error}")),
+            None => Ok(response.embeddings),
+        }
     }
 
     async fn show_model(&self, model: TaggedModel) -> anyhow::Result<LocalModel> {

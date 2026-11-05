@@ -4,17 +4,18 @@ use serde_json::{Value, json};
 use warp_multi_agent_api::message::tool_call::apply_file_diffs::{FileDiff, NewFile};
 use warp_multi_agent_api::message::tool_call::read_files::File;
 use warp_multi_agent_api::message::tool_call::{
-    ApplyFileDiffs, FileGlobV2, Grep, ReadFiles, ReadShellCommandOutput, RunShellCommand, Tool,
-    read_shell_command_output,
+    ApplyFileDiffs, FileGlobV2, Grep, ReadFiles, ReadShellCommandOutput, RunShellCommand,
+    SearchCodebase, Tool, read_shell_command_output,
 };
 use warp_multi_agent_api::message::tool_call_result::Result as ToolResult;
 use warp_multi_agent_api::request::input::tool_call_result::Result as InputToolResult;
 use warp_multi_agent_api::{
     AskUserQuestion, AskUserQuestionResult, CallMcpToolResult, FileContentLineRange,
-    FileGlobV2Result, GrepResult, LongRunningShellCommandSnapshot, Request, ShellCommandFinished,
-    ToolType, any_file_content, apply_file_diffs_result, ask_user_question,
+    FileGlobV2Result, GrepResult, LongRunningShellCommandSnapshot, Request, SearchCodebaseResult,
+    ShellCommandFinished, ToolType, any_file_content, apply_file_diffs_result, ask_user_question,
     ask_user_question_result, call_mcp_tool_result, file_glob_v2_result, grep_result,
     read_files_result, read_shell_command_output_result, run_shell_command_result,
+    search_codebase_result,
 };
 
 use crate::events;
@@ -27,6 +28,7 @@ const EDIT_FILE: &str = "edit_file";
 const CREATE_FILE: &str = "create_file";
 const GREP: &str = "grep";
 const GLOB: &str = "glob";
+const SEARCH_CODEBASE: &str = "search_codebase";
 const READ_SHELL_OUTPUT: &str = "read_shell_output";
 const ASK_USER: &str = "ask_user";
 
@@ -114,6 +116,16 @@ fn builtin_definitions() -> Vec<(ToolType, Value)> {
                     "path",
                     "Directory to search. Defaults to the working directory.",
                 )],
+            ),
+        ),
+        (
+            ToolType::SearchCodebase,
+            definition(
+                SEARCH_CODEBASE,
+                "Find code by what it does, in the repository of the working directory. Use it \
+                 when you don't know the exact text to grep for.",
+                &[("query", "What the code does, in plain words.")],
+                &[],
             ),
         ),
         (
@@ -239,6 +251,10 @@ pub(crate) fn parse_tool_call(call: &ChatFunction, cwd: Option<&Path>) -> Result
         GREP => Ok(Tool::Grep(Grep {
             queries: vec![string_arg(call, "pattern")?],
             path: optional_path(call),
+        })),
+        SEARCH_CODEBASE => Ok(Tool::SearchCodebase(SearchCodebase {
+            query: string_arg(call, "query")?,
+            ..Default::default()
         })),
         GLOB => Ok(Tool::FileGlobV2(FileGlobV2 {
             patterns: vec![string_arg(call, "pattern")?],
@@ -427,6 +443,9 @@ pub(crate) fn chat_call_for_tool(tool: &Tool) -> Option<ChatToolCall> {
             GREP.to_owned(),
             json!({ "pattern": grep.queries.first(), "path": grep.path }),
         ),
+        Tool::SearchCodebase(search) => {
+            (SEARCH_CODEBASE.to_owned(), json!({ "query": search.query }))
+        }
         Tool::FileGlobV2(glob) => (
             GLOB.to_owned(),
             json!({ "pattern": glob.patterns.first(), "path": glob.search_dir }),
@@ -468,6 +487,7 @@ pub(crate) fn history_result(result: InputToolResult) -> Option<ToolResult> {
         }
         InputToolResult::Grep(result) => Some(ToolResult::Grep(result)),
         InputToolResult::FileGlobV2(result) => Some(ToolResult::FileGlobV2(result)),
+        InputToolResult::SearchCodebase(result) => Some(ToolResult::SearchCodebase(result)),
         InputToolResult::CallMcpTool(result) => Some(ToolResult::CallMcpTool(result)),
         InputToolResult::AskUserQuestion(result) => Some(ToolResult::AskUserQuestion(result)),
         _ => None,
@@ -498,6 +518,7 @@ pub(crate) fn result_text(result: Option<&ToolResult>) -> String {
         },
         Some(ToolResult::Grep(grep)) => grep_text(grep),
         Some(ToolResult::FileGlobV2(glob)) => glob_text(glob),
+        Some(ToolResult::SearchCodebase(search)) => search_codebase_text(search),
         Some(ToolResult::CallMcpTool(call)) => mcp_text(call),
         Some(ToolResult::AskUserQuestion(ask)) => ask_user_text(ask),
         Some(ToolResult::Cancel(_)) => "The user cancelled this tool call.".to_owned(),
@@ -534,6 +555,24 @@ fn running_text(snapshot: &LongRunningShellCommandSnapshot) -> String {
          user what to type in the terminal; you can't type into it. Output so far:\n{}",
         snapshot.command_id, snapshot.output
     )
+}
+
+fn search_codebase_text(search: &SearchCodebaseResult) -> String {
+    match &search.result {
+        Some(search_codebase_result::Result::Success(success)) if success.files.is_empty() => {
+            "No relevant code found.".to_owned()
+        }
+        Some(search_codebase_result::Result::Success(success)) => success
+            .files
+            .iter()
+            .map(|file| format!("{}\n{}", file.file_path, file.content))
+            .collect::<Vec<_>>()
+            .join("\n\n"),
+        Some(search_codebase_result::Result::Error(error)) => {
+            format!("Search failed: {}", error.message)
+        }
+        None => "The search finished with no result.".to_owned(),
+    }
 }
 
 fn grep_text(grep: &GrepResult) -> String {

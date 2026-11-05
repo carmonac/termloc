@@ -180,10 +180,9 @@ impl TeamUpdateManager {
         retry_policy: WorkspaceMetadataRetryPolicy,
         ctx: &mut ModelContext<Self>,
     ) -> impl Spawnable<Output = Result<()>> + use<> {
-        let team_client = AuthStateProvider::as_ref(ctx)
-            .get()
-            .is_logged_in()
-            .then(|| self.team_client.clone());
+        let team_client = (AuthStateProvider::as_ref(ctx).get().is_logged_in()
+            && !ChannelState::is_local_only())
+        .then(|| self.team_client.clone());
         let foreground = ctx.spawner();
 
         async move {

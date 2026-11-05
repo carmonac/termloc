@@ -1103,6 +1103,7 @@ fn local_models_report_the_ollama_provider() {
         supports_tools: true,
         supports_vision: true,
         supports_thinking: false,
+        supports_embedding: false,
         context_length: None,
         size: 0,
     });

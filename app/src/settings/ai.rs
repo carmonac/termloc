@@ -1623,6 +1623,16 @@ define_settings_group!(AISettings, settings: [
         toml_path: "agents.local_models.quick_model",
         description: "The local model for commands, suggestions and titles. Empty uses the agent's.",
     }
+    local_embedding_model: LocalEmbeddingModel {
+        type: String,
+        default: String::new(),
+        supported_platforms: SupportedPlatforms::DESKTOP,
+        sync_to_cloud: SyncToCloud::Never,
+        surface: settings::SettingSurfaces::GUI,
+        private: false,
+        toml_path: "agents.local_models.embedding_model",
+        description: "The local model that indexes code for search. Empty turns indexing off.",
+    }
     local_context_window: LocalContextWindow {
         type: u32,
         default: 16_384,

@@ -1626,6 +1626,14 @@ impl UserWorkspaces {
 
     /// Returns whether codebase context is enabled across all of the user's teams.
     pub fn is_codebase_context_enabled(&self, app: &AppContext) -> bool {
+        if ChannelState::is_local_only()
+            && AISettings::as_ref(app)
+                .local_embedding_model
+                .value()
+                .is_empty()
+        {
+            return false;
+        }
         let ai_globally_enabled = AISettings::as_ref(app).is_any_ai_enabled(app);
         match self.teams_allow_codebase_context() {
             AdminEnablementSetting::Enable => ai_globally_enabled,

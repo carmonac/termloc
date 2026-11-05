@@ -6,6 +6,7 @@ fn model(name: &str, supports_tools: bool, context_length: Option<u32>) -> Local
         supports_tools,
         supports_vision: false,
         supports_thinking: false,
+        supports_embedding: false,
         context_length,
         size: 0,
     }
@@ -61,6 +62,7 @@ fn quick_requests_use_the_chosen_model_or_the_largest_agent_model() {
             LocalModel {
                 size: 9,
                 supports_thinking: true,
+                supports_embedding: false,
                 ..model("large", true, None)
             },
             model("small", false, Some(4_096)),
@@ -76,4 +78,22 @@ fn quick_requests_use_the_chosen_model_or_the_largest_agent_model() {
     let quick = runtime.quick_model().unwrap();
     assert_eq!(quick.name, "small");
     assert_eq!(quick.num_ctx, 4_096);
+}
+
+#[test]
+fn dropping_code_search_keeps_other_tools() {
+    let mut request = Request {
+        settings: Some(warp_multi_agent_api::request::Settings {
+            supported_tools: vec![ToolType::Grep as i32, ToolType::SearchCodebase as i32],
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+
+    drop_code_search(&mut request);
+
+    assert_eq!(
+        request.settings.unwrap().supported_tools,
+        vec![ToolType::Grep as i32]
+    );
 }

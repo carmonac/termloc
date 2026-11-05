@@ -18,17 +18,21 @@ use super::{SettingsSection, ToggleState};
 use crate::ai::local::{LocalModels, LocalModelsState};
 use crate::appearance::Appearance;
 use crate::editor::{EditorView, Event as EditorEvent, SingleLineEditorOptions, TextOptions};
-use crate::settings::{AISettings, LocalContextWindow, LocalQuickModel, OllamaUrl};
+use crate::settings::{
+    AISettings, LocalContextWindow, LocalEmbeddingModel, LocalQuickModel, OllamaUrl,
+};
 use crate::view_components::{Dropdown, DropdownItem};
 
 const INPUT_WIDTH: f32 = 280.;
 const MIN_CONTEXT_WINDOW: u32 = 2_048;
 const AGENT_MODEL_LABEL: &str = "Same as the agent";
+const NO_EMBEDDING_MODEL_LABEL: &str = "Off";
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LocalModelsPageAction {
     Refresh,
     SetQuickModel(String),
+    SetEmbeddingModel(String),
 }
 
 pub struct LocalModelsPageView {
@@ -37,6 +41,7 @@ pub struct LocalModelsPageView {
     url_editor: ViewHandle<EditorView>,
     context_window_editor: ViewHandle<EditorView>,
     quick_model_dropdown: ViewHandle<Dropdown<LocalModelsPageAction>>,
+    embedding_model_dropdown: ViewHandle<Dropdown<LocalModelsPageAction>>,
 }
 
 fn is_valid_url(text: &str) -> bool {
@@ -77,9 +82,16 @@ impl LocalModelsPageView {
             dropdown.set_top_bar_max_width(INPUT_WIDTH);
             dropdown
         });
+        let embedding_model_dropdown = ctx.add_typed_action_view(|ctx| {
+            let mut dropdown = Dropdown::new(ctx);
+            dropdown.set_top_bar_max_width(INPUT_WIDTH);
+            dropdown
+        });
         Self::update_quick_model_dropdown(quick_model_dropdown.clone(), ctx);
+        Self::update_embedding_model_dropdown(embedding_model_dropdown.clone(), ctx);
         ctx.subscribe_to_model(&LocalModels::handle(ctx), |view, _, _, ctx| {
             Self::update_quick_model_dropdown(view.quick_model_dropdown.clone(), ctx);
+            Self::update_embedding_model_dropdown(view.embedding_model_dropdown.clone(), ctx);
             ctx.notify();
         });
 
@@ -87,6 +99,7 @@ impl LocalModelsPageView {
             Box::new(OllamaUrlWidget),
             Box::new(ContextWindowWidget),
             Box::new(QuickModelWidget),
+            Box::new(EmbeddingModelWidget),
             Box::new(InstalledModelsWidget::default()),
         ];
         Self {
@@ -95,7 +108,39 @@ impl LocalModelsPageView {
             url_editor,
             context_window_editor,
             quick_model_dropdown,
+            embedding_model_dropdown,
         }
+    }
+
+    fn update_embedding_model_dropdown(
+        dropdown: ViewHandle<Dropdown<LocalModelsPageAction>>,
+        ctx: &mut ViewContext<Self>,
+    ) {
+        let selected = AISettings::as_ref(ctx)
+            .local_embedding_model
+            .value()
+            .clone();
+        let mut items = vec![DropdownItem::new(
+            NO_EMBEDDING_MODEL_LABEL,
+            LocalModelsPageAction::SetEmbeddingModel(String::new()),
+        )];
+        items.extend(
+            LocalModels::as_ref(ctx)
+                .installed_models()
+                .iter()
+                .filter(|model| model.supports_embedding)
+                .map(|model| {
+                    DropdownItem::new(
+                        model.name.as_str(),
+                        LocalModelsPageAction::SetEmbeddingModel(model.name.clone()),
+                    )
+                }),
+        );
+        dropdown.update(ctx, |dropdown, ctx| {
+            dropdown.set_items(items, ctx);
+            dropdown
+                .set_selected_by_action(LocalModelsPageAction::SetEmbeddingModel(selected), ctx);
+        });
     }
 
     fn update_quick_model_dropdown(
@@ -111,6 +156,7 @@ impl LocalModelsPageView {
             LocalModels::as_ref(ctx)
                 .installed_models()
                 .iter()
+                .filter(|model| !model.supports_embedding)
                 .map(|model| {
                     DropdownItem::new(
                         model.name.as_str(),
@@ -181,6 +227,11 @@ impl TypedActionView for LocalModelsPageView {
             LocalModelsPageAction::SetQuickModel(model) => {
                 AISettings::handle(ctx).update(ctx, |settings, ctx| {
                     report_if_error!(settings.local_quick_model.set_value(model.clone(), ctx));
+                });
+            }
+            LocalModelsPageAction::SetEmbeddingModel(model) => {
+                AISettings::handle(ctx).update(ctx, |settings, ctx| {
+                    report_if_error!(settings.local_embedding_model.set_value(model.clone(), ctx));
                 });
             }
         }
@@ -306,6 +357,42 @@ impl SettingsWidget for ContextWindowWidget {
             Some(
                 "Maximum tokens per request. Larger values use more memory, and each model has \
                  its own limit."
+                    .to_owned(),
+            ),
+        )
+    }
+}
+
+struct EmbeddingModelWidget;
+
+impl SettingsWidget for EmbeddingModelWidget {
+    type View = LocalModelsPageView;
+
+    fn search_terms(&self) -> &str {
+        "local models embedding indexing code search codebase semantic"
+    }
+
+    fn render(
+        &self,
+        view: &Self::View,
+        appearance: &Appearance,
+        app: &AppContext,
+    ) -> Box<dyn Element> {
+        render_body_item::<LocalModelsPageAction>(
+            "Model for code search".into(),
+            None,
+            LocalOnlyIconState::for_setting(
+                LocalEmbeddingModel::storage_key(),
+                LocalEmbeddingModel::sync_to_cloud(),
+                &mut view.local_only_icon_tooltip_states.borrow_mut(),
+                app,
+            ),
+            ToggleState::Enabled,
+            appearance,
+            ChildView::new(&view.embedding_model_dropdown).finish(),
+            Some(
+                "Lets the agent find code by meaning. Needs an embedding model, for example \
+                 `ollama pull nomic-embed-text`."
                     .to_owned(),
             ),
         )

@@ -58,6 +58,7 @@ This fork runs entirely on the user's machine: `warp-oss` is the only GUI binary
 - Keep it that way: don't add outbound connections, and build every HTTP client with `egress::build_client` so the egress policy applies. Child processes aren't covered by that policy, so don't spawn ones that reach the network without being asked to.
 - `crates/local_agent` produces the `ResponseEvent` stream the server used to send; `app/src/ai/local.rs` connects it to the app.
 - `LocalObjectClient` stands in for the server in Warp Drive, whose objects live in SQLite.
+- `LocalStore` stands in for the server in codebase indexing, with one embeddings log per Ollama model.
 
 ## Architecture Overview
 

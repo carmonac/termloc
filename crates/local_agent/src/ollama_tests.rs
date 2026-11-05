@@ -59,3 +59,16 @@ fn model_details_expose_capabilities_and_context() {
     assert!(!model.supports_vision);
     assert_eq!(model.context_length, Some(40_960));
 }
+
+#[test]
+fn reads_the_embedding_capability() {
+    let response = ShowResponse {
+        capabilities: vec!["embedding".to_owned()],
+        ..Default::default()
+    };
+
+    let model = response.into_model("nomic-embed-text".to_owned(), 1);
+
+    assert!(model.supports_embedding);
+    assert!(!model.supports_tools);
+}

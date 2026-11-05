@@ -2,6 +2,8 @@ mod changed_files;
 mod chunker;
 mod codebase_index;
 mod fragment_metadata;
+#[cfg(not(target_family = "wasm"))]
+pub mod local_store;
 pub mod manager;
 mod merkle_tree;
 mod priority_queue;
