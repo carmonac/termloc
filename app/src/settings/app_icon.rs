@@ -1,6 +1,5 @@
 use enum_iterator::Sequence;
 use serde::{Deserialize, Serialize};
-use warp_core::channel::{Channel, ChannelState};
 use warp_core::settings::macros::define_settings_group;
 use warp_core::settings::{SupportedPlatforms, SyncToCloud};
 
@@ -25,98 +24,21 @@ use warp_core::settings::{SupportedPlatforms, SyncToCloud};
     rename_all = "snake_case"
 )]
 pub enum AppIcon {
-    /// Current default: White glyph on blue/black gradient blackground, set in Dec 2024.
     #[default]
     #[schemars(description = "Default")]
     Default,
-    #[schemars(description = "Aurora")]
-    Aurora,
-    #[schemars(description = "Classic 1")]
-    Classic1,
-    #[schemars(description = "Classic 2")]
-    Classic2,
-    #[schemars(description = "Classic 3")]
-    Classic3,
-    #[schemars(description = "Comets")]
-    Comets,
-    /// Cow icon, for Code on Warp launch.
-    #[schemars(description = "Cow")]
-    Cow,
-    #[schemars(description = "Glass Sky")]
-    GlassSky,
-    #[schemars(description = "Glitch")]
-    Glitch,
-    /// White glyph on black background with blue/green glow on the side, set in Oct 2024 brand refresh.
-    #[schemars(description = "Glow")]
-    Glow,
-    #[schemars(description = "Holographic")]
-    Holographic,
-    #[schemars(description = "Mono")]
-    Mono,
-    #[schemars(description = "Neon")]
-    Neon,
-    /// Blue/green glyph on black background.
-    #[schemars(description = "Original")]
-    Original,
-    #[schemars(description = "Starburst")]
-    Starburst,
-    #[schemars(description = "Sticker")]
-    Sticker,
-    /// Previous default icon with solid blue background.
-    #[schemars(description = "Blue")]
-    WarpOne,
 }
 
 impl std::fmt::Display for AppIcon {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = match &self {
-            AppIcon::Default => "Default",
-            AppIcon::Aurora => "Aurora",
-            AppIcon::Classic1 => "Classic 1",
-            AppIcon::Classic2 => "Classic 2",
-            AppIcon::Classic3 => "Classic 3",
-            AppIcon::Comets => "Comets",
-            AppIcon::GlassSky => "Glass Sky",
-            AppIcon::Glitch => "Glitch",
-            AppIcon::Cow => "Cow",
-            AppIcon::Glow => "Glow",
-            AppIcon::Holographic => "Holographic",
-            AppIcon::Mono => "Mono",
-            AppIcon::Neon => "Neon",
-            AppIcon::Original => "Original",
-            AppIcon::Starburst => "Starburst",
-            AppIcon::Sticker => "Sticker",
-            AppIcon::WarpOne => "Blue",
-        };
-        write!(f, "{value}")
+        write!(f, "Default")
     }
 }
 
 impl AppIconSettings {
     pub fn get_base_icon_file_name(icon: AppIcon) -> &'static str {
         match icon {
-            AppIcon::Aurora => "aurora",
-            AppIcon::Default => match ChannelState::channel() {
-                Channel::Dev => "dev",
-                Channel::Preview => "preview",
-                Channel::Local => "local",
-                _ => "warp_2",
-            },
-            AppIcon::Classic1 => "classic_1",
-            AppIcon::Classic2 => "classic_2",
-            AppIcon::Classic3 => "classic_3",
-            AppIcon::Comets => "comets",
-            AppIcon::GlassSky => "glass_sky",
-            AppIcon::Glitch => "glitch",
-            AppIcon::Cow => "cow",
-            AppIcon::Glow => "glow",
-            AppIcon::Holographic => "holographic",
-            AppIcon::Mono => "mono",
-            AppIcon::Neon => "neon",
-            AppIcon::Original => "original",
-            AppIcon::Starburst => "starburst",
-            AppIcon::Sticker => "sticker",
-            AppIcon::WarpOne => "blue",
+            AppIcon::Default => "warp_2",
         }
     }
 }

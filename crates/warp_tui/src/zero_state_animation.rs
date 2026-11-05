@@ -76,34 +76,67 @@ const MAX_INTERACTIVE_RADIANS_PER_SECOND: f64 =
     MAX_INTERACTIVE_REVOLUTIONS_PER_SECOND * std::f64::consts::TAU;
 const MOMENTUM_SETTLE_DURATION: Duration = Duration::from_secs(3);
 
-/// Approximate visible bounds of the bundled Warp logo SVG.
-const SVG_MIN_X: f64 = 35.0;
-const SVG_MAX_X: f64 = 216.155;
-const SVG_MIN_Y: f64 = 25.5701;
-const SVG_MAX_Y: f64 = 170.489;
+/// Visible bounds of the logo outlines below.
+const SVG_MIN_X: f64 = 0.0;
+const SVG_MAX_X: f64 = 685.0;
+const SVG_MIN_Y: f64 = 0.0;
+const SVG_MAX_Y: f64 = 461.0;
 
-/// The upper-right and lower-left faces from `warp-logo-light.svg`.
-///
-/// Rounded corners are intentionally squared off: at terminal-cell resolution,
-/// preserving the diagonal cut and offset silhouette contributes much more to
-/// recognition than sub-cell corner curvature.
-const UPPER_FACE: &[(f64, f64)] = &[
-    (127.725, 25.5701),
-    (196.111, 25.5701),
-    (216.155, 46.2824),
-    (216.155, 126.695),
-    (196.111, 147.407),
-    (98.2486, 147.407),
+/// The `$` and `>` outlines from `warp-logo-light.svg`, coarsened for terminal-cell resolution.
+const DOLLAR_SIGN: &[(f64, f64)] = &[
+    (151.0, 0.0),
+    (192.0, 1.5),
+    (194.0, 49.5),
+    (240.8, 60.2),
+    (281.8, 84.0),
+    (299.8, 104.2),
+    (315.0, 141.0),
+    (314.0, 159.0),
+    (241.0, 159.0),
+    (222.8, 127.2),
+    (176.0, 111.0),
+    (108.2, 119.2),
+    (84.0, 141.0),
+    (82.0, 158.0),
+    (98.0, 177.5),
+    (255.8, 211.2),
+    (297.8, 234.2),
+    (322.0, 272.0),
+    (324.0, 308.0),
+    (311.8, 341.8),
+    (290.8, 367.0),
+    (258.8, 387.8),
+    (194.0, 403.5),
+    (190.0, 461.0),
+    (128.2, 459.8),
+    (126.2, 403.2),
+    (69.2, 389.8),
+    (41.2, 373.8),
+    (14.2, 343.8),
+    (0.0, 297.0),
+    (76.0, 292.0),
+    (97.2, 327.8),
+    (146.0, 344.0),
+    (208.0, 338.0),
+    (238.8, 316.8),
+    (243.0, 294.0),
+    (226.8, 274.2),
+    (56.2, 235.8),
+    (18.0, 208.8),
+    (2.0, 177.0),
+    (4.0, 133.0),
+    (21.2, 100.2),
+    (69.2, 64.2),
+    (126.2, 49.8),
 ];
-const LOWER_FACE: &[(f64, f64)] = &[
-    (109.963, 48.652),
-    (54.8733, 48.652),
-    (35.0, 69.3643),
-    (35.0, 149.777),
-    (54.8733, 170.489),
-    (122.676, 170.489),
-    (125.395, 159.154),
-    (83.4561, 159.154),
+const CHEVRON: &[(f64, f64)] = &[
+    (401.2, 95.0),
+    (685.0, 226.0),
+    (681.8, 269.8),
+    (401.0, 395.5),
+    (400.2, 327.2),
+    (584.0, 245.8),
+    (401.2, 164.8),
 ];
 
 #[derive(Clone, Copy)]
@@ -1459,7 +1492,7 @@ fn bool_as_scalar(value: bool) -> f64 {
 fn warp_logo_contains(x: f64, y: f64) -> bool {
     let svg_x = SVG_MIN_X + (x + 1.0) * 0.5 * (SVG_MAX_X - SVG_MIN_X);
     let svg_y = SVG_MIN_Y + (y + 1.0) * 0.5 * (SVG_MAX_Y - SVG_MIN_Y);
-    point_in_polygon(svg_x, svg_y, UPPER_FACE) || point_in_polygon(svg_x, svg_y, LOWER_FACE)
+    point_in_polygon(svg_x, svg_y, DOLLAR_SIGN) || point_in_polygon(svg_x, svg_y, CHEVRON)
 }
 
 fn point_in_polygon(x: f64, y: f64, polygon: &[(f64, f64)]) -> bool {

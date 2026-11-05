@@ -422,7 +422,7 @@ impl TuiUiBuilder {
         self.warping_base_fill().into_solid()
     }
 
-    /// The peak color the "Warping" shimmer band lerps toward: a theme text
+    /// The peak color the "Working" shimmer band lerps toward: a theme text
     /// color selected for contrast against the resolved terminal background.
     pub(crate) fn warping_shimmer_color(&self) -> ColorU {
         self.warp_theme

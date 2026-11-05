@@ -172,11 +172,11 @@ impl TuiView for AnimationTestView {
 }
 
 #[test]
-fn logo_mask_preserves_the_offset_warp_faces() {
-    assert!(warp_logo_contains(0.25, -0.65));
-    assert!(warp_logo_contains(-0.55, 0.45));
-    assert!(!warp_logo_contains(-0.85, -0.85));
-    assert!(!warp_logo_contains(0.0, 0.9));
+fn logo_mask_preserves_the_dollar_sign_and_chevron() {
+    assert!(warp_logo_contains(-0.53, -0.95));
+    assert!(warp_logo_contains(0.9, 0.07));
+    assert!(!warp_logo_contains(-0.95, -0.95));
+    assert!(!warp_logo_contains(0.9, -0.9));
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn full_face_frame_is_recognizable_and_centered() {
     let occupied = frame.iter_cells().count();
 
     assert!(
-        (90..220).contains(&occupied),
+        (90..260).contains(&occupied),
         "expected a sparse logo outline, got {occupied} cells"
     );
     assert!(

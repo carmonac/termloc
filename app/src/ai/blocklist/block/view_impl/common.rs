@@ -102,7 +102,7 @@ pub const STATUS_FOOTER_VERTICAL_PADDING: f32 = 4.;
 pub const WAITING_FOR_USER_INPUT_MESSAGE: &str = "Agent waiting for instructions...";
 const IMAGE_SOURCE_LINK_LINE_INDEX: usize = 1;
 
-pub const LOAD_OUTPUT_MESSAGE: &str = "Warping...";
+pub const LOAD_OUTPUT_MESSAGE: &str = "Working...";
 /// The trailing ellipsis every in-progress status message ends with.
 pub const STATUS_MESSAGE_ELLIPSIS: &str = "...";
 pub const LOAD_OUTPUT_MESSAGE_FOR_ADJUSTING: &str = "Adjusting tasks...";
@@ -584,7 +584,7 @@ pub fn render_warping_indicator_base(
     // Unicode code point for the Warp glyph that is embedded in the version of Roboto we bundle
     // into the app. This code point MUST be rendered using Roboto (the default ui font) or else the
     // glyph may not be rendered.
-    const WARP_GLYPH: &str = "\u{E500}";
+    const WARP_GLYPH: &str = "$>";
 
     let appearance = Appearance::as_ref(app);
 
