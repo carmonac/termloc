@@ -1663,6 +1663,16 @@ define_settings_group!(AISettings, settings: [
         toml_path: "agents.local_models.ollama_url",
         description: "The URL of the Ollama server that runs AI features.",
     }
+    local_quick_model: LocalQuickModel {
+        type: String,
+        default: String::new(),
+        supported_platforms: SupportedPlatforms::DESKTOP,
+        sync_to_cloud: SyncToCloud::Never,
+        surface: settings::SettingSurfaces::GUI,
+        private: false,
+        toml_path: "agents.local_models.quick_model",
+        description: "The local model for commands, suggestions and titles. Empty uses the agent's.",
+    }
     local_context_window: LocalContextWindow {
         type: u32,
         default: 16_384,
@@ -2411,6 +2421,7 @@ impl AISettings {
     pub fn is_voice_input_enabled(&self, app: &warpui::AppContext) -> bool {
         // Voice input is conditionally-compiled because it requires additional dependencies on some platforms.
         cfg!(feature = "voice_input")
+            && !warp_core::channel::ChannelState::is_local_only()
             && self.is_any_ai_enabled(app)
             && *self.voice_input_enabled_internal
     }

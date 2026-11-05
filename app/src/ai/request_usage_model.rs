@@ -161,9 +161,9 @@ pub struct RequestUsageInfo {
     pub bonus_grants: Vec<BonusGrant>,
 }
 
-#[cfg(feature = "agent_mode_evals")]
 impl RequestLimitInfo {
-    pub fn new_for_evals() -> Self {
+    /// Limits that can't be reached, for builds that don't meter requests.
+    pub fn unlimited() -> Self {
         Self {
             limit: 999999,
             num_requests_used_since_refresh: 0,

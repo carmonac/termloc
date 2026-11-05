@@ -125,6 +125,17 @@ impl From<GeneratedCommand> for AIGeneratedCommand {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
+impl From<local_agent::oneshot::GeneratedCommand> for AIGeneratedCommand {
+    fn from(value: local_agent::oneshot::GeneratedCommand) -> Self {
+        AIGeneratedCommand {
+            command: value.command,
+            description: value.description,
+            parameters: Vec::new(),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum GenerateCommandsFromNaturalLanguageError {
     BadPrompt,

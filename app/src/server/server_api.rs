@@ -434,6 +434,33 @@ pub struct ServerApi {
     last_server_time: Arc<Mutex<Option<ServerTime>>>,
 }
 
+#[cfg(not(target_family = "wasm"))]
+async fn local_input_suggestions(
+    request: &GenerateAIInputSuggestionsRequest,
+) -> Result<generate_ai_input_suggestions::GenerateAIInputSuggestionsResponseV2, AIApiError> {
+    let context = local_agent::oneshot::NextCommandContext {
+        recent_blocks: request.context_messages.clone(),
+        history: request.history_context.clone(),
+        system: request.system_context.clone(),
+        rejected: request.rejected_suggestions.clone(),
+        prefix: request.prefix.clone(),
+    };
+    let client = crate::ai::local::one_shot()
+        .await
+        .map_err(AIApiError::Other)?;
+    let command = client
+        .next_command(&context)
+        .await
+        .map_err(AIApiError::Other)?;
+    Ok(
+        generate_ai_input_suggestions::GenerateAIInputSuggestionsResponseV2 {
+            most_likely_action: command.clone().unwrap_or_default(),
+            commands: command.into_iter().collect(),
+            ai_queries: Vec::new(),
+        },
+    )
+}
+
 impl ServerApi {
     fn new(
         auth_state: Arc<AuthState>,
@@ -1082,6 +1109,11 @@ impl ServerApi {
         team_scope: RequestTeamScope,
     ) -> Result<generate_ai_input_suggestions::GenerateAIInputSuggestionsResponseV2, AIApiError>
     {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return local_input_suggestions(request).await;
+        }
+
         let auth_token = self.get_or_refresh_access_token().await?;
 
         let mut request_builder = self.base_client.http_client().post(format!(
@@ -1141,6 +1173,10 @@ impl ServerApi {
         request: &GenerateAMQuerySuggestionsRequest,
         team_scope: RequestTeamScope,
     ) -> Result<generate_am_query_suggestions::GenerateAMQuerySuggestionsResponse, AIApiError> {
+        if ChannelState::is_local_only() {
+            return Ok(Default::default());
+        }
+
         let auth_token = self.get_or_refresh_access_token().await?;
 
         cfg_if::cfg_if! {
@@ -1180,6 +1216,12 @@ impl ServerApi {
         request: &PredictAMQueriesRequest,
         team_scope: RequestTeamScope,
     ) -> Result<PredictAMQueriesResponse, AIApiError> {
+        if ChannelState::is_local_only() {
+            return Ok(PredictAMQueriesResponse {
+                suggestion: String::new(),
+            });
+        }
+
         let auth_token = self.get_or_refresh_access_token().await?;
         let mut request_builder = self.base_client.http_client().post(format!(
             "{}/ai/predict_am_queries",

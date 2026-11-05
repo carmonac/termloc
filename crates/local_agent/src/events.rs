@@ -3,7 +3,7 @@ use std::time::SystemTime;
 use prost_types::FieldMask;
 use uuid::Uuid;
 use warp_multi_agent_api::client_action::{
-    Action, AddMessagesToTask, AppendToMessageContent, CreateTask,
+    Action, AddMessagesToTask, AppendToMessageContent, CreateTask, UpdateTaskDescription,
 };
 use warp_multi_agent_api::message::Message as MessageKind;
 use warp_multi_agent_api::response_event::{
@@ -62,6 +62,13 @@ pub(crate) struct TurnEvents {
 }
 
 impl TurnEvents {
+    pub(crate) fn update_description(&self, description: String) -> ResponseEvent {
+        actions(vec![Action::UpdateTaskDescription(UpdateTaskDescription {
+            task_id: self.task_id.clone(),
+            description,
+        })])
+    }
+
     pub(crate) fn message(&self, kind: MessageKind) -> Message {
         Message {
             id: new_id(),

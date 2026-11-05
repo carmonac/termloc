@@ -59,6 +59,9 @@ pub struct ChatRequest {
     pub stream: bool,
     /// How long Ollama keeps the model loaded, so a turn's steps don't each reload it.
     pub keep_alive: &'static str,
+    /// Turns a model's reasoning on or off. Ollama rejects it for models that don't reason.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub think: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -84,6 +87,7 @@ pub struct LocalModel {
     pub name: String,
     pub supports_tools: bool,
     pub supports_vision: bool,
+    pub supports_thinking: bool,
     /// The model's context window in tokens, when Ollama reports it.
     pub context_length: Option<u32>,
     /// Size on disk in bytes.
@@ -123,6 +127,7 @@ impl ShowResponse {
         LocalModel {
             supports_tools: supports("tools"),
             supports_vision: supports("vision"),
+            supports_thinking: supports("thinking"),
             context_length,
             size,
             name,
@@ -201,7 +206,8 @@ impl ChatBackend for OllamaClient {
                 .with_context(|| format!("could not reach Ollama at {url}"))?;
             let status = response.status();
             if !status.is_success() {
-                return Err(anyhow!("Ollama returned {status} for {url}"));
+                let body = response.text().await.unwrap_or_default();
+                return Err(anyhow!("Ollama returned {status} for {url}: {body}"));
             }
             let bytes = response.bytes_stream().map(|chunk| {
                 chunk

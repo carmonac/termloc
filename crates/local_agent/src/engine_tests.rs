@@ -86,6 +86,7 @@ fn config() -> LocalAgentConfig {
     LocalAgentConfig {
         model: "test-model".to_owned(),
         num_ctx: 4096,
+        title_model: None,
     }
 }
 
@@ -478,6 +479,7 @@ fn oversized_history_gets_summarized_before_continuing() {
             LocalAgentConfig {
                 model: "test".to_owned(),
                 num_ctx: 16_000,
+                title_model: None,
             },
             user_request("next", vec![task]),
         )
@@ -516,6 +518,7 @@ fn history_too_big_to_summarize_reports_the_context_window() {
             LocalAgentConfig {
                 model: "test".to_owned(),
                 num_ctx: 4_000,
+                title_model: None,
             },
             user_request("next", vec![task]),
         )
@@ -537,6 +540,7 @@ fn live_model_calls_a_tool() {
     let config = LocalAgentConfig {
         model,
         num_ctx: 4096,
+        title_model: None,
     };
     let request = user_request("Use a tool to run the command `ls`.", Vec::new());
     let events: Vec<ResponseEvent> = block_on(run_turn(backend, config, request).collect());
@@ -576,4 +580,30 @@ fn is_reasoning_append(event: &ResponseEvent) -> bool {
             }
             _ => false,
         })
+}
+
+#[test]
+fn new_conversations_get_a_title_after_the_first_turn() {
+    let backend = FakeBackend::scripted(vec![vec![text("done")], vec![text("\"Greeting\"")]]);
+    let config = LocalAgentConfig {
+        title_model: Some(QuickModel {
+            name: "quick".to_owned(),
+            thinks: false,
+            num_ctx: 4_096,
+        }),
+        ..config()
+    };
+
+    let events: Vec<ResponseEvent> =
+        block_on(run_turn(backend.clone(), config, user_request("hi", Vec::new())).collect());
+
+    assert_eq!(backend.request(1).model, "quick");
+    assert!(matches!(finish_reason(&events), Reason::Done(_)));
+    assert!(events.iter().any(|event| {
+        matches!(&event.r#type, Some(Type::ClientActions(client_actions))
+        if client_actions.actions.iter().any(|action| matches!(
+            &action.action,
+            Some(Action::UpdateTaskDescription(update)) if update.description == "Greeting"
+        )))
+    }));
 }

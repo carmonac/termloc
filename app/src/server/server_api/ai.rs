@@ -169,7 +169,6 @@ use crate::ai::llms::{
     AvailableLLMs, DisableReason, LLMContextWindow, LLMInfo, LLMModelHost, LLMSpec,
     LLMUsageMetadata, ModelsByFeature, RoutingHostConfig,
 };
-#[cfg(feature = "agent_mode_evals")]
 use crate::ai::request_usage_model::RequestLimitInfo;
 use crate::ai::{AICreditAvailability, RequestUsageInfo};
 use crate::ai_assistant::execution_context::WarpAiExecutionContext;
@@ -1275,6 +1274,61 @@ pub struct UpdateMemoryResponse {
     pub version_id: String,
 }
 
+#[cfg(not(target_family = "wasm"))]
+async fn local_commands_from_natural_language(
+    prompt: &str,
+) -> Result<Vec<AIGeneratedCommand>, GenerateCommandsFromNaturalLanguageError> {
+    let client = crate::ai::local::one_shot()
+        .await
+        .map_err(|_| GenerateCommandsFromNaturalLanguageError::AiProviderError)?;
+    let commands = client.generate_commands(prompt).await.map_err(|error| {
+        log::warn!("Local command generation failed: {error:#}");
+        GenerateCommandsFromNaturalLanguageError::AiProviderError
+    })?;
+    Ok(commands.into_iter().map(Into::into).collect())
+}
+
+#[cfg(not(target_family = "wasm"))]
+async fn local_dialogue_answer(
+    transcript: &[TranscriptPart],
+    prompt: &str,
+) -> anyhow::Result<GenerateDialogueResult> {
+    let history: Vec<(String, String)> = transcript
+        .iter()
+        .map(|part| {
+            (
+                part.user.raw.clone(),
+                part.assistant.formatted_message.raw.clone(),
+            )
+        })
+        .collect();
+    let client = crate::ai::local::one_shot().await?;
+    let answer = client.answer(&history, prompt).await?;
+    Ok(GenerateDialogueResult::Success {
+        answer,
+        truncated: false,
+        request_limit_info: RequestLimitInfo::unlimited(),
+        transcript_summarized: false,
+    })
+}
+
+#[cfg(not(target_family = "wasm"))]
+async fn local_metadata_for_command(
+    command: &str,
+) -> Result<GeneratedCommandMetadata, GeneratedCommandMetadataError> {
+    let client = crate::ai::local::one_shot()
+        .await
+        .map_err(|_| GeneratedCommandMetadataError::AiProviderError)?;
+    client
+        .command_metadata(command)
+        .await
+        .map(Into::into)
+        .map_err(|error| {
+            log::warn!("Local command metadata failed: {error:#}");
+            GeneratedCommandMetadataError::BadCommand
+        })
+}
+
 #[cfg_attr(test, automock)]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
@@ -2046,6 +2100,11 @@ impl AIClient for ServerApi {
         // TODO: use relevant context from RequestContext and deprecate usage of ai_execution_context
         _ai_execution_context: Option<WarpAiExecutionContext>,
     ) -> Result<Vec<AIGeneratedCommand>, GenerateCommandsFromNaturalLanguageError> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return local_commands_from_natural_language(&prompt).await;
+        }
+
         let default_err = GenerateCommandsFromNaturalLanguageError::Other;
 
         let variables = GenerateCommandsVariables {
@@ -2085,6 +2144,11 @@ impl AIClient for ServerApi {
         // TODO: use relevant context from RequestContext and deprecate usage of ai_execution_context
         _ai_execution_context: Option<WarpAiExecutionContext>,
     ) -> anyhow::Result<GenerateDialogueResult> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return local_dialogue_answer(&transcript, &prompt).await;
+        }
+
         let graphql_transcript: Vec<TranscriptPartGraphql> = transcript
             .into_iter()
             .map(|part| TranscriptPartGraphql {
@@ -2137,6 +2201,11 @@ impl AIClient for ServerApi {
         &self,
         command: String,
     ) -> Result<GeneratedCommandMetadata, GeneratedCommandMetadataError> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return local_metadata_for_command(&command).await;
+        }
+
         let default_err = GeneratedCommandMetadataError::Other;
         let variables = GenerateMetadataForCommandVariables {
             input: GenerateMetadataForCommandInput { command },
@@ -2173,13 +2242,21 @@ impl AIClient for ServerApi {
     #[cfg(feature = "agent_mode_evals")]
     async fn get_request_limit_info(&self) -> Result<RequestUsageInfo, anyhow::Error> {
         Ok(RequestUsageInfo {
-            request_limit_info: RequestLimitInfo::new_for_evals(),
+            request_limit_info: RequestLimitInfo::unlimited(),
             bonus_grants: vec![],
         })
     }
 
     #[cfg(not(feature = "agent_mode_evals"))]
     async fn get_request_limit_info(&self) -> Result<RequestUsageInfo, anyhow::Error> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return Ok(RequestUsageInfo {
+                request_limit_info: RequestLimitInfo::unlimited(),
+                bonus_grants: vec![],
+            });
+        }
+
         let variables = GetRequestLimitInfoVariables {
             request_context: get_request_context(),
         };
@@ -2241,6 +2318,11 @@ impl AIClient for ServerApi {
 
     #[cfg(not(feature = "agent_mode_evals"))]
     async fn get_ai_credit_availability(&self) -> Result<AICreditAvailability, anyhow::Error> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return Ok(AICreditAvailability::available_with_source(None));
+        }
+
         let variables = GetAICreditAvailabilityVariables {
             request_context: get_request_context(),
         };
@@ -2261,6 +2343,11 @@ impl AIClient for ServerApi {
     }
 
     async fn get_chatgpt_connection(&self) -> Result<ChatGPTConnectionStatus, anyhow::Error> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return Ok(ChatGPTConnectionStatus::NotConnected);
+        }
+
         use warp_graphql::queries::get_chatgpt_connection::UserResult;
 
         let operation = GetChatGPTConnection::build(GetChatGPTConnectionVariables {
@@ -2319,6 +2406,11 @@ impl AIClient for ServerApi {
         limit: Option<i32>,
         last_updated_end_timestamp: Option<warp_graphql::scalars::Time>,
     ) -> Result<Vec<ConversationUsage>, anyhow::Error> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return Ok(Vec::new());
+        }
+
         let operation = GetConversationUsage::build(GetConversationUsageVariables {
             request_context: get_request_context(),
             days,
@@ -2354,6 +2446,11 @@ impl AIClient for ServerApi {
     }
 
     async fn get_available_harnesses(&self) -> Result<Vec<HarnessAvailability>, anyhow::Error> {
+        #[cfg(not(target_family = "wasm"))]
+        if ChannelState::is_local_only() {
+            return Ok(Vec::new());
+        }
+
         let variables = GetAvailableHarnessesVariables {
             request_context: get_request_context(),
         };

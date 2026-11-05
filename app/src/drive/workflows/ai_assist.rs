@@ -50,6 +50,26 @@ impl From<GenerateMetadataForCommandSuccess> for GeneratedCommandMetadata {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
+impl From<local_agent::oneshot::CommandMetadata> for GeneratedCommandMetadata {
+    fn from(value: local_agent::oneshot::CommandMetadata) -> Self {
+        GeneratedCommandMetadata {
+            command: value.parameterized_command,
+            title: value.title,
+            description: value.description,
+            arguments: value
+                .parameters
+                .into_iter()
+                .map(|p| GeneratedArgument {
+                    name: p.name,
+                    description: p.description,
+                    default_value: p.value,
+                })
+                .collect_vec(),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum GeneratedCommandMetadataError {
     /// OpenAI failed to generate a parsable response.

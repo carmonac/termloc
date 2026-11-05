@@ -17,6 +17,7 @@ use warp_multi_agent_api::{InputContext, Message, Request, ResponseEvent, Task};
 use crate::events::{self, AGENT_OUTPUT_TEXT_PATH, AGENT_REASONING_TEXT_PATH, TurnEvents};
 use crate::history;
 use crate::ollama::{ChatBackend, ChatMessage, ChatOptions, ChatRequest, ChatToolCall};
+use crate::oneshot::{OneShot, QuickModel};
 use crate::prompt;
 use crate::tools::{self, Toolbox};
 
@@ -36,6 +37,8 @@ const SUMMARIZE_AT_PERCENT: usize = 80;
 pub struct LocalAgentConfig {
     pub model: String,
     pub num_ctx: u32,
+    /// Writes the title of new conversations.
+    pub title_model: Option<QuickModel>,
 }
 
 /// Runs one agent turn: a model response plus any tool calls for the client to execute. The client
@@ -203,6 +206,13 @@ pub fn run_turn(
                     if !parsed.is_empty() {
                         yield turn.add_messages(tool_call_messages(&turn, parsed));
                     }
+                    if existing_task.is_none()
+                        && let Some(model) = config.title_model.clone()
+                        && let Some(query) = first_query(&chat)
+                        && let Ok(title) = OneShot::new(backend.clone(), model).title(&query).await
+                    {
+                        yield turn.update_description(title);
+                    }
                     yield events::finished(Reason::Done(stream_finished::Done {}));
                     return;
                 }
@@ -220,6 +230,12 @@ pub fn run_turn(
             }
         }
     }
+}
+
+fn first_query(chat: &[ChatMessage]) -> Option<String> {
+    chat.iter()
+        .find(|message| message.role == "user")
+        .map(|message| message.content.clone())
 }
 
 fn available_context_tokens(num_ctx: u32) -> usize {
@@ -332,6 +348,7 @@ fn chat_request(
         },
         stream: true,
         keep_alive: KEEP_ALIVE,
+        think: None,
     }
 }
 

@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use futures::future::BoxFuture;
 use futures::{FutureExt as _, Stream};
 use local_agent::ollama::{ChatRequest, ChatStream};
+use local_agent::oneshot::{OneShot, QuickModel};
 use local_agent::{ChatBackend, LocalAgentConfig, LocalModel, OllamaClient};
 use parking_lot::RwLock;
 use settings::Setting as _;
@@ -21,7 +22,30 @@ use crate::settings::{AISettings, AISettingsChangedEvent};
 struct Runtime {
     url: String,
     context_window: u32,
+    /// Every installed model, including those the agent can't use.
     models: Vec<LocalModel>,
+    /// The model chosen for quick requests. Empty means the agent's default.
+    quick_model: String,
+}
+
+impl Runtime {
+    fn quick_model(&self) -> Option<QuickModel> {
+        let model = self
+            .models
+            .iter()
+            .find(|model| model.name == self.quick_model)
+            .or_else(|| {
+                self.models
+                    .iter()
+                    .filter(|model| model.supports_tools)
+                    .max_by_key(|model| model.size)
+            })?;
+        Some(QuickModel {
+            name: model.name.clone(),
+            thinks: model.supports_thinking,
+            num_ctx: context_window(self.context_window, model),
+        })
+    }
 }
 
 static RUNTIME: LazyLock<RwLock<Runtime>> = LazyLock::new(Default::default);
@@ -70,16 +94,35 @@ fn context_window(limit: u32, model: &LocalModel) -> u32 {
         .map_or(limit, |length| length.min(limit))
 }
 
-/// Starts a local turn. Ollama may have started after the app did, so an empty model list is
+/// Reads the runtime state. Ollama may have started after the app did, so an empty model list is
 /// checked again first.
-pub(crate) async fn run_turn(request: Request) -> impl Stream<Item = ResponseEvent> + Send {
+async fn current_runtime() -> Runtime {
     let mut runtime = RUNTIME.read().clone();
     if runtime.models.is_empty()
         && let Ok(models) = OllamaClient::new(runtime.url.clone()).list_models().await
     {
-        runtime.models = agent_models(models);
+        runtime.models = models;
         RUNTIME.write().models = runtime.models.clone();
     }
+    runtime
+}
+
+/// The client for single-request features, when a model is available.
+pub(crate) async fn one_shot() -> anyhow::Result<OneShot> {
+    let runtime = current_runtime().await;
+    let model = runtime
+        .quick_model()
+        .ok_or_else(|| anyhow!(unavailable_message(&runtime.url)))?;
+    Ok(OneShot::new(
+        Arc::new(OllamaClient::new(runtime.url)),
+        model,
+    ))
+}
+
+/// Starts a local turn.
+pub(crate) async fn run_turn(request: Request) -> impl Stream<Item = ResponseEvent> + Send {
+    let runtime = current_runtime().await;
+    let models = agent_models(runtime.models.clone());
 
     let requested = request
         .settings
@@ -88,12 +131,13 @@ pub(crate) async fn run_turn(request: Request) -> impl Stream<Item = ResponseEve
         .map(|config| config.base.as_str())
         .unwrap_or_default();
     let (backend, config): (Arc<dyn ChatBackend>, LocalAgentConfig) =
-        match select_model(&runtime.models, requested) {
+        match select_model(&models, requested) {
             Some(model) => (
                 Arc::new(OllamaClient::new(runtime.url.clone())),
                 LocalAgentConfig {
                     model: model.name.clone(),
                     num_ctx: context_window(runtime.context_window, model),
+                    title_model: runtime.quick_model(),
                 },
             ),
             None => (
@@ -101,6 +145,7 @@ pub(crate) async fn run_turn(request: Request) -> impl Stream<Item = ResponseEve
                 LocalAgentConfig {
                     model: String::new(),
                     num_ctx: runtime.context_window,
+                    title_model: None,
                 },
             ),
         };
@@ -121,7 +166,9 @@ pub enum LocalModelsEvent {
 /// The models installed in Ollama, kept in sync with the user's settings.
 pub struct LocalModels {
     state: LocalModelsState,
+    /// The models that can run the agent, best first.
     models: Vec<LocalModel>,
+    installed_models: Vec<LocalModel>,
 }
 
 impl LocalModels {
@@ -131,6 +178,7 @@ impl LocalModels {
                 event,
                 AISettingsChangedEvent::OllamaUrl { .. }
                     | AISettingsChangedEvent::LocalContextWindow { .. }
+                    | AISettingsChangedEvent::LocalQuickModel { .. }
             ) {
                 me.refresh(ctx);
             }
@@ -138,6 +186,7 @@ impl LocalModels {
         let mut me = Self {
             state: LocalModelsState::Loading,
             models: Vec::new(),
+            installed_models: Vec::new(),
         };
         me.refresh(ctx);
         me
@@ -151,15 +200,21 @@ impl LocalModels {
         &self.models
     }
 
+    pub fn installed_models(&self) -> &[LocalModel] {
+        &self.installed_models
+    }
+
     pub fn refresh(&mut self, ctx: &mut ModelContext<Self>) {
         let settings = AISettings::as_ref(ctx);
         let url = settings.ollama_url.value().clone();
         let context_window = *settings.local_context_window.value();
+        let quick_model = settings.local_quick_model.value().clone();
         allow_ollama_host(&url);
         {
             let mut runtime = RUNTIME.write();
             runtime.url = url.clone();
             runtime.context_window = context_window;
+            runtime.quick_model = quick_model;
         }
 
         self.state = LocalModelsState::Loading;
@@ -181,15 +236,16 @@ impl LocalModels {
         ctx: &mut ModelContext<Self>,
     ) {
         let url = RUNTIME.read().url.clone();
-        (self.models, self.state) = match result.map(agent_models) {
-            Ok(models) if models.is_empty() => (
-                Vec::new(),
+        (self.installed_models, self.state) = match result {
+            Ok(models) if agent_models(models.clone()).is_empty() => (
+                models,
                 LocalModelsState::Unavailable(unavailable_message(&url)),
             ),
             Ok(models) => (models, LocalModelsState::Ready),
             Err(message) => (Vec::new(), LocalModelsState::Unavailable(message)),
         };
-        RUNTIME.write().models = self.models.clone();
+        RUNTIME.write().models = self.installed_models.clone();
+        self.models = agent_models(self.installed_models.clone());
         if !self.models.is_empty() {
             let models = self.models.clone();
             LLMPreferences::handle(ctx).update(ctx, |preferences, ctx| {

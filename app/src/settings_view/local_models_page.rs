@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use settings::Setting as _;
 use url::Url;
 use warp_errors::report_if_error;
-use warpui::elements::{Element, MouseStateHandle};
+use warpui::elements::{ChildView, Element, MouseStateHandle};
 use warpui::ui_components::button::ButtonVariant;
 use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
 use warpui::{AppContext, Entity, SingletonEntity, TypedActionView, View, ViewContext, ViewHandle};
@@ -18,14 +18,17 @@ use super::{SettingsSection, ToggleState};
 use crate::ai::local::{LocalModels, LocalModelsState};
 use crate::appearance::Appearance;
 use crate::editor::{EditorView, Event as EditorEvent, SingleLineEditorOptions, TextOptions};
-use crate::settings::{AISettings, LocalContextWindow, OllamaUrl};
+use crate::settings::{AISettings, LocalContextWindow, LocalQuickModel, OllamaUrl};
+use crate::view_components::{Dropdown, DropdownItem};
 
 const INPUT_WIDTH: f32 = 280.;
 const MIN_CONTEXT_WINDOW: u32 = 2_048;
+const AGENT_MODEL_LABEL: &str = "Same as the agent";
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LocalModelsPageAction {
     Refresh,
+    SetQuickModel(String),
 }
 
 pub struct LocalModelsPageView {
@@ -33,6 +36,7 @@ pub struct LocalModelsPageView {
     local_only_icon_tooltip_states: RefCell<HashMap<String, MouseStateHandle>>,
     url_editor: ViewHandle<EditorView>,
     context_window_editor: ViewHandle<EditorView>,
+    quick_model_dropdown: ViewHandle<Dropdown<LocalModelsPageAction>>,
 }
 
 fn is_valid_url(text: &str) -> bool {
@@ -68,11 +72,21 @@ impl LocalModelsPageView {
                 me.save_context_window(ctx);
             }
         });
-        ctx.subscribe_to_model(&LocalModels::handle(ctx), |_, _, _, ctx| ctx.notify());
+        let quick_model_dropdown = ctx.add_typed_action_view(|ctx| {
+            let mut dropdown = Dropdown::new(ctx);
+            dropdown.set_top_bar_max_width(INPUT_WIDTH);
+            dropdown
+        });
+        Self::update_quick_model_dropdown(quick_model_dropdown.clone(), ctx);
+        ctx.subscribe_to_model(&LocalModels::handle(ctx), |view, _, _, ctx| {
+            Self::update_quick_model_dropdown(view.quick_model_dropdown.clone(), ctx);
+            ctx.notify();
+        });
 
         let widgets: Vec<Box<dyn SettingsWidget<View = Self>>> = vec![
             Box::new(OllamaUrlWidget),
             Box::new(ContextWindowWidget),
+            Box::new(QuickModelWidget),
             Box::new(InstalledModelsWidget::default()),
         ];
         Self {
@@ -80,7 +94,34 @@ impl LocalModelsPageView {
             local_only_icon_tooltip_states: RefCell::new(HashMap::new()),
             url_editor,
             context_window_editor,
+            quick_model_dropdown,
         }
+    }
+
+    fn update_quick_model_dropdown(
+        dropdown: ViewHandle<Dropdown<LocalModelsPageAction>>,
+        ctx: &mut ViewContext<Self>,
+    ) {
+        let selected = AISettings::as_ref(ctx).local_quick_model.value().clone();
+        let mut items = vec![DropdownItem::new(
+            AGENT_MODEL_LABEL,
+            LocalModelsPageAction::SetQuickModel(String::new()),
+        )];
+        items.extend(
+            LocalModels::as_ref(ctx)
+                .installed_models()
+                .iter()
+                .map(|model| {
+                    DropdownItem::new(
+                        model.name.as_str(),
+                        LocalModelsPageAction::SetQuickModel(model.name.clone()),
+                    )
+                }),
+        );
+        dropdown.update(ctx, |dropdown, ctx| {
+            dropdown.set_items(items, ctx);
+            dropdown.set_selected_by_action(LocalModelsPageAction::SetQuickModel(selected), ctx);
+        });
     }
 
     fn add_editor(ctx: &mut ViewContext<Self>) -> ViewHandle<EditorView> {
@@ -136,6 +177,11 @@ impl TypedActionView for LocalModelsPageView {
         match action {
             LocalModelsPageAction::Refresh => {
                 LocalModels::handle(ctx).update(ctx, |models, ctx| models.refresh(ctx));
+            }
+            LocalModelsPageAction::SetQuickModel(model) => {
+                AISettings::handle(ctx).update(ctx, |settings, ctx| {
+                    report_if_error!(settings.local_quick_model.set_value(model.clone(), ctx));
+                });
             }
         }
     }
@@ -260,6 +306,42 @@ impl SettingsWidget for ContextWindowWidget {
             Some(
                 "Maximum tokens per request. Larger values use more memory, and each model has \
                  its own limit."
+                    .to_owned(),
+            ),
+        )
+    }
+}
+
+struct QuickModelWidget;
+
+impl SettingsWidget for QuickModelWidget {
+    type View = LocalModelsPageView;
+
+    fn search_terms(&self) -> &str {
+        "local models quick fast commands suggestions titles natural language"
+    }
+
+    fn render(
+        &self,
+        view: &Self::View,
+        appearance: &Appearance,
+        app: &AppContext,
+    ) -> Box<dyn Element> {
+        render_body_item::<LocalModelsPageAction>(
+            "Model for quick tasks".into(),
+            None,
+            LocalOnlyIconState::for_setting(
+                LocalQuickModel::storage_key(),
+                LocalQuickModel::sync_to_cloud(),
+                &mut view.local_only_icon_tooltip_states.borrow_mut(),
+                app,
+            ),
+            ToggleState::Enabled,
+            appearance,
+            ChildView::new(&view.quick_model_dropdown).finish(),
+            Some(
+                "Used for natural language commands, suggestions and titles. A small model \
+                 answers faster."
                     .to_owned(),
             ),
         )

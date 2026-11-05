@@ -5,6 +5,7 @@ fn model(name: &str, supports_tools: bool, context_length: Option<u32>) -> Local
         name: name.to_owned(),
         supports_tools,
         supports_vision: false,
+        supports_thinking: false,
         context_length,
         size: 0,
     }
@@ -50,4 +51,29 @@ fn context_window_never_exceeds_what_the_model_supports() {
         16_384
     );
     assert_eq!(context_window(16_384, &model("a", true, None)), 16_384);
+}
+
+#[test]
+fn quick_requests_use_the_chosen_model_or_the_largest_agent_model() {
+    let mut runtime = Runtime {
+        context_window: 16_384,
+        models: vec![
+            LocalModel {
+                size: 9,
+                supports_thinking: true,
+                ..model("large", true, None)
+            },
+            model("small", false, Some(4_096)),
+        ],
+        ..Default::default()
+    };
+
+    let quick = runtime.quick_model().unwrap();
+    assert_eq!(quick.name, "large");
+    assert!(quick.thinks);
+
+    runtime.quick_model = "small".to_owned();
+    let quick = runtime.quick_model().unwrap();
+    assert_eq!(quick.name, "small");
+    assert_eq!(quick.num_ctx, 4_096);
 }

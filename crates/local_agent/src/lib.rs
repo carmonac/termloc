@@ -5,6 +5,7 @@ mod events;
 mod history;
 mod mcp;
 pub mod ollama;
+pub mod oneshot;
 mod prompt;
 mod tools;
 
