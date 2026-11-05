@@ -154,7 +154,7 @@ fn native_shell_completions_queues_the_generator_command_for_the_active_sessions
             assert_eq!(*shell_type, ShellType::Fish);
             assert_eq!(
                 command,
-                " warp_run_generator_command_native_completions 676974206368"
+                " termloc_run_generator_command_native_completions 676974206368"
             );
         });
 

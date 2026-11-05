@@ -112,7 +112,7 @@ pub static SKILL_PROVIDER_DEFINITIONS: LazyLock<Vec<SkillProviderDefinition>> =
             },
             SkillProviderDefinition {
                 provider: SkillProvider::Warp,
-                skills_path: PathBuf::from(".warp").join("skills"),
+                skills_path: PathBuf::from(".termloc").join("skills"),
             },
             SkillProviderDefinition {
                 provider: SkillProvider::Claude,

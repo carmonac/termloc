@@ -511,7 +511,7 @@ fn run_cloud_help_lists_harness_and_auth_secret_flags() {
 fn help_hides_api_key_env_value() {
     const API_KEY: &str = "warp-cli-test-api-key-NOT-REAL";
 
-    let previous_api_key = set_env_var("WARP_API_KEY", API_KEY);
+    let previous_api_key = set_env_var("TERMLOC_API_KEY", API_KEY);
 
     let mut command = <Args as clap::CommandFactory>::command();
     let top_level_help = command.render_long_help().to_string();
@@ -522,11 +522,11 @@ fn help_hides_api_key_env_value() {
         .to_string();
     let args = Args::try_parse_from(["warp", "whoami"]).expect("API key env var should parse");
 
-    restore_env_var("WARP_API_KEY", previous_api_key);
+    restore_env_var("TERMLOC_API_KEY", previous_api_key);
 
     for help in [&top_level_help, &runner_help] {
         assert!(
-            help.contains("WARP_API_KEY"),
+            help.contains("TERMLOC_API_KEY"),
             "help should identify the API key environment variable:\n{help}"
         );
         assert!(

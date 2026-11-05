@@ -77,7 +77,7 @@ fn driver_without_a_task_keeps_preparation_inputs_without_run_state() {
             working_dir: root.path().to_path_buf(),
             environment_variables: HashMap::from([
                 ("WARP_FACTORY_REPO_DIR".into(), "factory".into()),
-                ("WARP_SKILL_DIRS".into(), "ignored".into()),
+                ("TERMLOC_SKILL_DIRS".into(), "ignored".into()),
             ]),
             secrets: HashMap::from([(
                 "WARP_PREPARATION_TEST_SECRET".into(),
@@ -102,7 +102,7 @@ fn driver_without_a_task_keeps_preparation_inputs_without_run_state() {
                 "factory"
             );
             assert_eq!(
-                driver.resolved_env_vars[&OsString::from("WARP_SKILL_DIRS")],
+                driver.resolved_env_vars[&OsString::from("TERMLOC_SKILL_DIRS")],
                 "skills"
             );
             assert_eq!(

@@ -55,7 +55,7 @@ fn tui_scope_database_path_is_tui_subdirectory_of_app_database_dir() {
     assert_ne!(tui_path, app_path);
     assert_eq!(
         tui_path,
-        warp_core::paths::tui_state_dir().join("warp.sqlite")
+        warp_core::paths::tui_state_dir().join("termloc.sqlite")
     );
 
     // The TUI database lives in a `tui` subdirectory of the same base
@@ -91,7 +91,7 @@ fn remote_server_daemon_scope_database_path_uses_identity_data_dir() {
     assert!(path.is_absolute());
     assert_eq!(
         path,
-        PathBuf::from(shellexpand::tilde(&expected_data_dir).into_owned()).join("warp.sqlite")
+        PathBuf::from(shellexpand::tilde(&expected_data_dir).into_owned()).join("termloc.sqlite")
     );
 }
 
@@ -104,7 +104,7 @@ fn remote_server_daemon_scope_database_path_handles_empty_identity_key() {
 
     assert_eq!(
         path,
-        PathBuf::from(shellexpand::tilde(&expected_data_dir).into_owned()).join("warp.sqlite")
+        PathBuf::from(shellexpand::tilde(&expected_data_dir).into_owned()).join("termloc.sqlite")
     );
 }
 
@@ -116,7 +116,7 @@ fn remote_server_daemon_database_permissions_are_owner_only() {
 
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
     let daemon_dir = tempdir.path().join("daemon");
-    let database_path = daemon_dir.join("warp.sqlite");
+    let database_path = daemon_dir.join("termloc.sqlite");
 
     std::fs::create_dir_all(&daemon_dir).expect("daemon dir should be created");
     std::fs::set_permissions(&daemon_dir, Permissions::from_mode(0o755))
@@ -144,7 +144,7 @@ fn test_codebase_metadata(path: &str) -> WorkspaceMetadata {
 #[test]
 fn sqlite_read_restores_app_state_and_codebase_metadata() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let app_state = AppState {
@@ -174,7 +174,7 @@ fn sqlite_read_restores_app_state_and_codebase_metadata() {
 #[test]
 fn tui_database_in_tui_subdirectory_round_trips_data() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("tui").join("warp.sqlite");
+    let database_path = tempdir.path().join("tui").join("termloc.sqlite");
     std::fs::create_dir_all(
         database_path
             .parent()
@@ -244,7 +244,7 @@ fn tui_database_in_tui_subdirectory_round_trips_data() {
 #[test]
 fn sqlite_writer_reuses_codebase_index_metadata_events() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let conn = setup_database(&database_path).expect("database should initialize");
 
     let writer = start_writer(conn, database_path.clone()).expect("writer should start");
@@ -424,7 +424,7 @@ fn test_terminal_window_snapshot(vertical_tabs_panel_open: bool) -> WindowSnapsh
 #[test]
 fn test_sqlite_round_trips_vertical_tabs_panel_open() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let app_state = AppState {
@@ -458,7 +458,7 @@ fn test_sqlite_round_trips_vertical_tabs_panel_open() {
 #[test]
 fn test_sqlite_round_trips_window_team_uid() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
     let team_uid = ServerId::from(123);
     let mut assigned_window = test_terminal_window_snapshot(false);
@@ -485,7 +485,7 @@ fn test_sqlite_round_trips_window_team_uid() {
 #[test]
 fn test_sqlite_round_trips_custom_vertical_tabs_title() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let app_state = AppState {
@@ -562,7 +562,7 @@ fn test_sqlite_round_trips_custom_vertical_tabs_title() {
 #[test]
 fn test_sqlite_round_trips_code_pane_with_multiple_tabs() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let app_state = AppState {
@@ -652,7 +652,7 @@ fn test_sqlite_round_trips_code_pane_with_multiple_tabs() {
 #[test]
 fn test_sqlite_round_trips_tab_groups() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let group_id = TabGroupId::new();
@@ -774,7 +774,7 @@ fn test_sqlite_round_trips_tab_groups() {
 #[test]
 fn test_sqlite_round_trips_pinned_state() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let pinned_group_id = TabGroupId::new();
@@ -1021,7 +1021,7 @@ fn test_sqlite_drops_too_small_bounds_on_save() {
     use crate::persistence::schema::windows;
 
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     let mut snapshot = test_terminal_window_snapshot(false);
@@ -1058,13 +1058,13 @@ fn test_sqlite_drops_too_small_bounds_on_save() {
     );
 }
 
-// Regression: GH#10083. Users whose warp.sqlite already contains a 1px row
+// Regression: GH#10083. Users whose termloc.sqlite already contains a 1px row
 // (because they hit the bug on an earlier build) must still recover to default
 // geometry on next launch rather than restoring the sliver.
 #[test]
 fn test_sqlite_drops_too_small_bounds_on_read() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let mut conn = setup_database(&database_path).expect("database should initialize");
 
     // Save with no bounds so a row exists, then corrupt it directly to bypass
@@ -1099,7 +1099,7 @@ fn test_sqlite_drops_too_small_bounds_on_read() {
 #[test]
 fn team_member_is_disabled_round_trips_through_sqlite_cache() {
     let tempdir = tempfile::tempdir().expect("tempdir should be created");
-    let database_path = tempdir.path().join("warp.sqlite");
+    let database_path = tempdir.path().join("termloc.sqlite");
     let conn = setup_database(&database_path).expect("database should initialize");
 
     let team = Team::from_local_cache(

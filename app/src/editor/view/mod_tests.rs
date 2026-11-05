@@ -473,12 +473,12 @@ fn test_select_word_with_smart_select() {
 
         app.add_window(WindowStyle::NotStealFocus, |ctx| {
             let mut editor = EditorView::new_with_base_text(
-                "word ~/.warp/themes/foo-bar.yaml thing",
+                "word ~/.termloc/themes/foo-bar.yaml thing",
                 Default::default(),
                 ctx,
             );
             editor.select_word(&DisplayPoint::new(0, 8), ctx);
-            assert_eq!(editor.selected_text(ctx), "~/.warp/themes/foo-bar.yaml");
+            assert_eq!(editor.selected_text(ctx), "~/.termloc/themes/foo-bar.yaml");
             editor
         });
     });
@@ -504,12 +504,12 @@ fn test_select_word_with_custom_boundaries() {
 
         app.add_window(WindowStyle::NotStealFocus, |ctx| {
             let mut editor = EditorView::new_with_base_text(
-                "word ~/.warp/themes/foo-bar.yaml thing",
+                "word ~/.termloc/themes/foo-bar.yaml thing",
                 Default::default(),
                 ctx,
             );
             editor.select_word(&DisplayPoint::new(0, 8), ctx);
-            assert_eq!(editor.selected_text(ctx), "/.warp/themes/foo-bar.yaml");
+            assert_eq!(editor.selected_text(ctx), "/.termloc/themes/foo-bar.yaml");
             editor
         });
     });
@@ -529,15 +529,15 @@ fn test_smart_select_with_drag() {
 
         app.add_window(WindowStyle::NotStealFocus, |ctx| {
             let mut editor = EditorView::new_with_base_text(
-                "word ~/.warp/themes/foo-bar.yaml andy@warp.dev",
+                "word ~/.termloc/themes/foo-bar.yaml andy@warp.dev",
                 Default::default(),
                 ctx,
             );
             editor.select_word(&DisplayPoint::new(0, 8), ctx);
-            editor.update_selection(DisplayPoint::new(0, 34), Vector2F::zero(), ctx);
+            editor.update_selection(DisplayPoint::new(0, 37), Vector2F::zero(), ctx);
             assert_eq!(
                 editor.selected_text(ctx),
-                "~/.warp/themes/foo-bar.yaml andy"
+                "~/.termloc/themes/foo-bar.yaml andy"
             );
             editor
         });

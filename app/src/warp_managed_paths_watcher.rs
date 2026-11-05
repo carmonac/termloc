@@ -287,7 +287,7 @@ impl WarpManagedPathsWatcher {
                 );
             }
             // Watch the TUI settings directory for that surface. On macOS it's
-            // a sibling `.warp_cli*` directory outside `config_local_dir`; on
+            // a sibling `.termloc_tui*` directory outside `config_local_dir`; on
             // other platforms it nests under `config_local_dir` and is already
             // covered by the recursive watch above (the `starts_with` guard
             // skips the redundant registration).

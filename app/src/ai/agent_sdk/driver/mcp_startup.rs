@@ -1338,7 +1338,7 @@ impl AgentDriver {
         })
     }
 
-    /// Await the one-time initial global home-config MCP scan (e.g. `~/.warp/.mcp.json`,
+    /// Await the one-time initial global home-config MCP scan (e.g. `~/.termloc/.mcp.json`,
     /// `~/.claude.json`, `~/.codex/config.toml`), returning the UUIDs of servers that were
     /// actually auto-start requested while it ran.
     ///

@@ -2568,7 +2568,7 @@ fn ctrl_t_handoff_cancel_restores_cursor_captured_by_a_real_trigger() {
 
         let started = input.update(&mut app, |input, ctx| {
             input.trigger_external_shell_widget_handoff(
-                "warp_run_external_ctrl_t_widget",
+                "termloc_run_external_ctrl_t_widget",
                 ShellWidgetApplyMode::Splice,
                 true,
                 ctx,
@@ -2587,7 +2587,9 @@ fn ctrl_t_handoff_cancel_restores_cursor_captured_by_a_real_trigger() {
         input.update(&mut app, |input, ctx| {
             input.handle_block_completed_event(
                 BlockCompletedEvent {
-                    block_type: user_block_completed_for_test(" warp_run_external_ctrl_t_widget"),
+                    block_type: user_block_completed_for_test(
+                        " termloc_run_external_ctrl_t_widget",
+                    ),
                     num_secrets_obfuscated: 0,
                     block_index: BlockIndex::zero(),
                     block_id,

@@ -2,7 +2,7 @@
 //! Codex, Gemini) by symlinking them into a skill root each harness already searches
 //! on its own.
 //!
-//! Oz reads `WARP_SKILL_DIRS` directly (see
+//! Oz reads `TERMLOC_SKILL_DIRS` directly (see
 //! `crate::ai::agent_sdk::driver::AgentDriver::load_skills_dirs`). Third-party
 //! harnesses discover skills from their own skill roots instead, so this
 //! module receives the same skill directories and symlinks each
@@ -193,8 +193,8 @@ where
             Ok(entries) => entries,
             Err(err) => {
                 safe_warn!(
-                    safe: ("WARP_SKILL_DIRS publish: skipping an unreadable source directory"),
-                    full: ("WARP_SKILL_DIRS publish: skipping '{}' — {err}", source_dir.display())
+                    safe: ("TERMLOC_SKILL_DIRS publish: skipping an unreadable source directory"),
+                    full: ("TERMLOC_SKILL_DIRS publish: skipping '{}' — {err}", source_dir.display())
                 );
                 continue;
             }
@@ -204,9 +204,9 @@ where
                 Ok(entry) => entry,
                 Err(err) => {
                     safe_warn!(
-                        safe: ("WARP_SKILL_DIRS publish: failed to read a directory entry"),
+                        safe: ("TERMLOC_SKILL_DIRS publish: failed to read a directory entry"),
                         full: (
-                            "WARP_SKILL_DIRS publish: failed to read an entry in '{}': {err}",
+                            "TERMLOC_SKILL_DIRS publish: failed to read an entry in '{}': {err}",
                             source_dir.display()
                         )
                     );
@@ -282,9 +282,9 @@ pub(super) fn exclude_published_skill_paths_from_git(
     }
     if let Err(err) = write_published_skill_paths_to_git_exclude(working_dir, published_paths) {
         safe_warn!(
-            safe: ("WARP_SKILL_DIRS publish: failed to exclude generated skill links from Git"),
+            safe: ("TERMLOC_SKILL_DIRS publish: failed to exclude generated skill links from Git"),
             full: (
-                "WARP_SKILL_DIRS publish: failed to exclude generated skill links under '{}': {err:#}",
+                "TERMLOC_SKILL_DIRS publish: failed to exclude generated skill links under '{}': {err:#}",
                 working_dir.display()
             )
         );
@@ -504,9 +504,9 @@ pub(super) fn publish_skill(
             )
         })?;
         safe_warn!(
-            safe: ("WARP_SKILL_DIRS publish: replaced a conflicting skill entry in a sandbox, backing up the original"),
+            safe: ("TERMLOC_SKILL_DIRS publish: replaced a conflicting skill entry in a sandbox, backing up the original"),
             full: (
-                "WARP_SKILL_DIRS publish: replaced skill '{skill_name}' at {} with {}, backing up the original to {}",
+                "TERMLOC_SKILL_DIRS publish: replaced skill '{skill_name}' at {} with {}, backing up the original to {}",
                 target.display(), source_dir.display(), backup.display()
             )
         );
@@ -520,9 +520,9 @@ pub(super) fn publish_skill(
     match inspect_target(&alt_target, source_dir)? {
         TargetOutcome::Foreign => {
             safe_warn!(
-                safe: ("WARP_SKILL_DIRS publish: a skill conflict outside a sandbox also collided under its alternate name; the skill was not published"),
+                safe: ("TERMLOC_SKILL_DIRS publish: a skill conflict outside a sandbox also collided under its alternate name; the skill was not published"),
                 full: (
-                    "WARP_SKILL_DIRS publish: skill '{skill_name}' conflicts with an existing entry at {} (left untouched); the alternate name {} is also occupied, so the skill from {} was not published under either name",
+                    "TERMLOC_SKILL_DIRS publish: skill '{skill_name}' conflicts with an existing entry at {} (left untouched); the alternate name {} is also occupied, so the skill from {} was not published under either name",
                     target.display(), alt_target.display(), source_dir.display()
                 )
             );
@@ -535,9 +535,9 @@ pub(super) fn publish_skill(
         }
         TargetOutcome::Missing => {
             safe_warn!(
-                safe: ("WARP_SKILL_DIRS publish: a skill conflicted outside a sandbox; the original was left as-is and the skill was published under an alternate name"),
+                safe: ("TERMLOC_SKILL_DIRS publish: a skill conflicted outside a sandbox; the original was left as-is and the skill was published under an alternate name"),
                 full: (
-                    "WARP_SKILL_DIRS publish: skill '{skill_name}' conflicts with an existing entry at {} (left untouched); published {} as {} instead",
+                    "TERMLOC_SKILL_DIRS publish: skill '{skill_name}' conflicts with an existing entry at {} (left untouched); published {} as {} instead",
                     target.display(), source_dir.display(), alt_target.display()
                 )
             );

@@ -123,7 +123,7 @@ diesel::define_sql_function! {
 const CHANNEL_SIZE: usize = 1024;
 const COMMANDS_COUNT_LIMIT: i64 = 10000;
 
-const WARP_SQLITE_FILE_NAME: &str = "warp.sqlite";
+const TERMLOC_SQLITE_FILE_NAME: &str = "termloc.sqlite";
 
 /// Runs any migrations and creates the Sqlite database if it doesn't exist.
 /// Reads from the sqlite database to get the app state for session restoration.
@@ -335,7 +335,7 @@ pub(super) fn init_db(scope: &PersistenceScope) -> Result<SqliteConnection> {
 }
 
 fn migrate_old_sqlite_into_secure_container_if_needed(db_path: &Path) {
-    let old_db_path = warp_core::paths::state_dir().join(WARP_SQLITE_FILE_NAME);
+    let old_db_path = warp_core::paths::state_dir().join(TERMLOC_SQLITE_FILE_NAME);
     if old_db_path == db_path || !old_db_path.exists() || db_path.exists() {
         return;
     }
@@ -428,17 +428,17 @@ pub fn database_file_path_for_current_scope() -> PathBuf {
 fn app_database_file_path() -> PathBuf {
     warp_core::paths::secure_state_dir()
         .unwrap_or_else(warp_core::paths::state_dir)
-        .join(WARP_SQLITE_FILE_NAME)
+        .join(TERMLOC_SQLITE_FILE_NAME)
 }
 
 fn tui_database_file_path() -> PathBuf {
-    warp_core::paths::tui_state_dir().join(WARP_SQLITE_FILE_NAME)
+    warp_core::paths::tui_state_dir().join(TERMLOC_SQLITE_FILE_NAME)
 }
 
 fn remote_server_daemon_database_file_path(identity_key: &str) -> PathBuf {
     let data_dir = remote_server::setup::remote_server_daemon_data_dir(identity_key);
     let expanded_data_dir = shellexpand::tilde(&data_dir).into_owned();
-    PathBuf::from(expanded_data_dir).join(WARP_SQLITE_FILE_NAME)
+    PathBuf::from(expanded_data_dir).join(TERMLOC_SQLITE_FILE_NAME)
 }
 
 #[cfg(unix)]
@@ -2579,7 +2579,7 @@ fn read_sqlite_data(
 
                     // The origin and size of the bound should be all null or all non-null.
                     // Reject bounds smaller than the platform minimum window size so users
-                    // with an already-corrupted warp.sqlite (see GH#10083) restore to
+                    // with an already-corrupted termloc.sqlite (see GH#10083) restore to
                     // default geometry instead of a sliver.
                     let bounds = match (
                         window.window_width,

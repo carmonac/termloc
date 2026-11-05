@@ -148,7 +148,7 @@ fn write_secret_file(path: &std::path::Path, content: &str) -> Result<()> {
 }
 
 fn azure_devops_auth_dir(home: &Path) -> PathBuf {
-    home.join(".warp").join(AZURE_DEVOPS_AUTH_DIR)
+    home.join(".termloc").join(AZURE_DEVOPS_AUTH_DIR)
 }
 
 fn azure_cli_wrapper_path(home: &Path) -> PathBuf {

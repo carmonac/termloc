@@ -13,7 +13,7 @@ If the user hasn't specified, ask whether they want to configure the server **gl
 
 Config file paths:
 - **Global (user-scoped):** `~/.termloc/.mcp.json`
-- **Project-scoped:** `{repo_root}/.warp/.mcp.json`
+- **Project-scoped:** `{repo_root}/.termloc/.mcp.json`
 
 ## Step 2: Gather Server Details
 
@@ -62,7 +62,7 @@ Check whether the target config file exists.
 ```
 
 By default, Termloc spawns stdio servers from the directory the config was discovered in:
-- Project-scoped configs (`{repo_root}/.warp/.mcp.json`) run from the repo root.
+- Project-scoped configs (`{repo_root}/.termloc/.mcp.json`) run from the repo root.
 - Global configs (`~/.termloc/.mcp.json`, `~/.claude.json`, etc.) run from the home directory.
 
 If the server's `command` or `args` are relative paths (e.g. `./tooling/mcp/server.js`) or the server expects a specific cwd, set `working_directory` to override the default:

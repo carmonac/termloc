@@ -1,4 +1,4 @@
-# WARP.md
+# TERMLOC.md
 
 ## Visual Sanity Check for Table Example Screenshots
 This project can auto-generate screenshots of the table example demos and then sanity check them using computer vision. The goal is to quickly catch apparent rendering bugs (e.g., empty cells, obvious misalignment, missing headers) before committing or opening a PR.

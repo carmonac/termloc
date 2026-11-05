@@ -41,7 +41,7 @@ The core pieces are:
 - `crates/integration/tests/common/mod.rs`
   - The outer Rust test harness used by `cargo test` and `cargo nextest`.
   - Shells out to the integration binary.
-  - Forwards a limited set of env vars (`PATH`, `RUST_*`, `WARP_*`, `WARPUI_*`, `WGPU_*`, display-related vars).
+  - Forwards a limited set of env vars (`PATH`, `RUST_*`, `TERMLOC_*`, `WARPUI_*`, `WGPU_*`, display-related vars).
   - Re-runs tests up to 10 times when the integration binary exits with the special rerun code.
 - `crates/integration/src/test.rs`
   - Module hub for integration tests.
@@ -394,7 +394,7 @@ WARPUI_PAUSE_INTEGRATION_TEST_AT_EVERY_STEP=1 cargo run -p integration --bin int
 
 ### Video and screenshots
 
-If the task is specifically about recording a test, collecting screenshots, or validating overlay/video artifacts, also use the `gui-integration-test-video` skill (located at `.warp/skills/gui-integration-test-video/SKILL.md`).
+If the task is specifically about recording a test, collecting screenshots, or validating overlay/video artifacts, also use the `gui-integration-test-video` skill (located at `.termloc/skills/gui-integration-test-video/SKILL.md`).
 
 ### Environment variable gotcha
 

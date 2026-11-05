@@ -175,7 +175,7 @@ fn entries_resolve_by_name_path_and_glob_and_excludes_apply_last() {
             Source::Skills(&[
                 "",
                 ".claude/skills/safe",
-                ".warp/skills/safe",
+                ".termloc/skills/safe",
                 "tools/notes",
                 "web/buttons",
                 "web/forms",
@@ -195,7 +195,7 @@ fn entries_resolve_by_name_path_and_glob_and_excludes_apply_last() {
     assert_eq!(
         loaded(file),
         [
-            ".warp/skills/safe",
+            ".termloc/skills/safe",
             "tools/notes",
             "web/buttons",
             ".claude/skills/old-a",

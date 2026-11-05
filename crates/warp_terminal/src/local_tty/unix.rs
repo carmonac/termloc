@@ -324,7 +324,7 @@ fn build_host_shell_command(
 
     // Specify terminal name and capabilities.
     builder.env("TERM", "xterm-256color");
-    builder.env("TERM_PROGRAM", "WarpTerminal");
+    builder.env("TERM_PROGRAM", "Termloc");
     // Advertise 24-bit color support.
     builder.env("COLORTERM", "truecolor");
 
@@ -358,15 +358,15 @@ fn build_host_shell_command(
 
     // Set whether or not we should utilize the SSH wrapper in this shell.
     if enable_ssh_wrapper {
-        builder.env("WARP_USE_SSH_WRAPPER", "1");
+        builder.env("TERMLOC_USE_SSH_WRAPPER", "1");
     } else {
-        builder.env("WARP_USE_SSH_WRAPPER", "0");
+        builder.env("TERMLOC_USE_SSH_WRAPPER", "0");
     }
 
     // Whether the SSH wrapper should attach to an existing ControlMaster
     // for the destination host instead of always creating its own.
     builder.env(
-        "WARP_SSH_REUSE_CONTROL_MASTER",
+        "TERMLOC_SSH_REUSE_CONTROL_MASTER",
         if reuse_ssh_control_master { "1" } else { "0" },
     );
 
@@ -378,7 +378,7 @@ fn build_host_shell_command(
 
     // We currently don't support bootstrapping recursive SSH sessions so we will only run the SSH
     // logic if this flag is set.
-    builder.env("WARP_IS_LOCAL_SHELL_SESSION", "1");
+    builder.env("TERMLOC_IS_LOCAL_SHELL_SESSION", "1");
 
     // Only advertise the protocol version when the HOA notifications feature is enabled.
     // Without it, Warp can't render structured CLI agent notifications,
@@ -391,19 +391,19 @@ fn build_host_shell_command(
     }
 
     if shell_debug_mode {
-        builder.env("WARP_SHELL_DEBUG_MODE", "1");
+        builder.env("TERMLOC_SHELL_DEBUG_MODE", "1");
     }
     if honor_ps1 {
-        builder.env("WARP_HONOR_PS1", "1");
+        builder.env("TERMLOC_HONOR_PS1", "1");
     } else {
-        builder.env("WARP_HONOR_PS1", "0");
+        builder.env("TERMLOC_HONOR_PS1", "0");
     }
 
     // Gate the shell's per-prompt `node --version` detection on whether the
     // Node.js Version chip is enabled. The bootstrap treats any value other than
     // "0" as enabled, so we only ever set "0" to disable it.
     builder.env(
-        "WARP_PROMPT_NODE_VERSION_ENABLED",
+        "TERMLOC_PROMPT_NODE_VERSION_ENABLED",
         if node_version_chip_enabled { "1" } else { "0" },
     );
 
@@ -411,7 +411,7 @@ fn build_host_shell_command(
     let path_append = extra_path_entries()
         .map(|p| p.to_string_lossy().into_owned())
         .join(":");
-    builder.env("WARP_PATH_APPEND", path_append);
+    builder.env("TERMLOC_PATH_APPEND", path_append);
 
     if matches!(shell_starter.shell_type(), ShellType::Bash) {
         // Set initial very large values so bash imports the user's existing
@@ -420,8 +420,8 @@ fn build_host_shell_command(
         builder.env("HISTSIZE", BASH_HISTORY_SIZE_SENTINEL);
         // Set second environment variables that we can use to know whether
         // the user rcfiles set these variables or not.
-        builder.env("WARP_INITIAL_HISTFILESIZE", BASH_HISTORY_SIZE_SENTINEL);
-        builder.env("WARP_INITIAL_HISTSIZE", BASH_HISTORY_SIZE_SENTINEL);
+        builder.env("TERMLOC_INITIAL_HISTFILESIZE", BASH_HISTORY_SIZE_SENTINEL);
+        builder.env("TERMLOC_INITIAL_HISTSIZE", BASH_HISTORY_SIZE_SENTINEL);
     }
 
     // Pass the desired initial working directory as an environment variable
@@ -434,7 +434,7 @@ fn build_host_shell_command(
     // directory could be on a network filesystem; deferring the `cd` to
     // shell bootstrap avoids that.
     if let Some(start_dir) = start_dir {
-        builder.env("WARP_INITIAL_WORKING_DIR", start_dir);
+        builder.env("TERMLOC_INITIAL_WORKING_DIR", start_dir);
     }
 
     // Apply any caller-provided environment overrides last, so they win.
@@ -848,8 +848,8 @@ fn build_docker_sandbox_command(
     // TODO(advait): audit this list. It currently mirrors what the
     // pre-refactor host-shell `spawn` set when the starter happened to
     // be a Docker sandbox, so behaviour is unchanged from before the
-    // split. Many of these (e.g. `WARP_USE_SSH_WRAPPER`,
-    // `SSH_SOCKET_DIR`, `HISTFILESIZE`, `WARP_IS_LOCAL_SHELL_SESSION`)
+    // split. Many of these (e.g. `TERMLOC_USE_SSH_WRAPPER`,
+    // `SSH_SOCKET_DIR`, `HISTFILESIZE`, `TERMLOC_IS_LOCAL_SHELL_SESSION`)
     // are set on the *host* `sbx` process and may or may not propagate
     // into the container depending on `sbx`'s env passthrough rules.
     // Once we've validated what the container bootstrap actually needs,
@@ -866,7 +866,7 @@ fn build_docker_sandbox_command(
     }
     builder.env("HOME", &home_dir);
     builder.env("TERM", "xterm-256color");
-    builder.env("TERM_PROGRAM", "WarpTerminal");
+    builder.env("TERM_PROGRAM", "Termloc");
     builder.env("COLORTERM", "truecolor");
     builder.env_remove("DESKTOP_STARTUP_ID");
     if let Some(version) = ChannelState::app_version() {
@@ -880,15 +880,15 @@ fn build_docker_sandbox_command(
         builder.env("WINDOWID", format!("{window_id}"));
     }
     builder.env(
-        "WARP_USE_SSH_WRAPPER",
+        "TERMLOC_USE_SSH_WRAPPER",
         if enable_ssh_wrapper { "1" } else { "0" },
     );
     builder.env(
-        "WARP_SSH_REUSE_CONTROL_MASTER",
+        "TERMLOC_SSH_REUSE_CONTROL_MASTER",
         if reuse_ssh_control_master { "1" } else { "0" },
     );
     builder.env("SSH_SOCKET_DIR", ssh_socket_dir());
-    builder.env("WARP_IS_LOCAL_SHELL_SESSION", "1");
+    builder.env("TERMLOC_IS_LOCAL_SHELL_SESSION", "1");
     if FeatureFlag::HOANotifications.is_enabled() {
         builder.env(
             WARP_CLI_AGENT_PROTOCOL_VERSION_ENV,
@@ -896,24 +896,24 @@ fn build_docker_sandbox_command(
         );
     }
     if shell_debug_mode {
-        builder.env("WARP_SHELL_DEBUG_MODE", "1");
+        builder.env("TERMLOC_SHELL_DEBUG_MODE", "1");
     }
-    builder.env("WARP_HONOR_PS1", if honor_ps1 { "1" } else { "0" });
+    builder.env("TERMLOC_HONOR_PS1", if honor_ps1 { "1" } else { "0" });
     builder.env(
-        "WARP_PROMPT_NODE_VERSION_ENABLED",
+        "TERMLOC_PROMPT_NODE_VERSION_ENABLED",
         if node_version_chip_enabled { "1" } else { "0" },
     );
     let path_append = extra_path_entries()
         .map(|p| p.to_string_lossy().into_owned())
         .join(":");
-    builder.env("WARP_PATH_APPEND", path_append);
+    builder.env("TERMLOC_PATH_APPEND", path_append);
     // Sandbox shell is always bash (per the container image convention),
     // matching the host-shell path's behavior for bash shells.
     builder.env("HISTFILESIZE", BASH_HISTORY_SIZE_SENTINEL);
     builder.env("HISTSIZE", BASH_HISTORY_SIZE_SENTINEL);
-    builder.env("WARP_INITIAL_HISTFILESIZE", BASH_HISTORY_SIZE_SENTINEL);
-    builder.env("WARP_INITIAL_HISTSIZE", BASH_HISTORY_SIZE_SENTINEL);
-    // Intentionally do NOT set `WARP_INITIAL_WORKING_DIR` for sandboxes:
+    builder.env("TERMLOC_INITIAL_HISTFILESIZE", BASH_HISTORY_SIZE_SENTINEL);
+    builder.env("TERMLOC_INITIAL_HISTSIZE", BASH_HISTORY_SIZE_SENTINEL);
+    // Intentionally do NOT set `TERMLOC_INITIAL_WORKING_DIR` for sandboxes:
     // the container's init script cds into the sandbox home dir, not
     // the host's startup dir.
 

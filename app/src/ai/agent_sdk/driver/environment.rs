@@ -249,7 +249,7 @@ pub(crate) struct WorkspaceConfiguration {
     pub source_repos: Vec<SourceRepo>,
     pub deferred_repos: Vec<ResolvedRepository>,
     pub setup_commands: Vec<String>,
-    /// Overrides `WARP_SKILL_DIRS` when present, including an empty list.
+    /// Overrides `TERMLOC_SKILL_DIRS` when present, including an empty list.
     pub factory_skill_dirs: Option<Vec<PathBuf>>,
     /// The server-provided Factory definition folders within `factory_skill_dirs`, before
     /// configured-skill folders are merged in. Only these are scanned for skill reference files.

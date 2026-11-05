@@ -40,11 +40,11 @@ cargo run -p integration --bin integration -- test_video_recording
 
 That is the command shown by the sample test in `integration/src/test/video_recording.rs`.
 
-If you want the driver to auto-record a test or set of tests, add `WARP_INTEGRATION_TEST_VIDEO`:
+If you want the driver to auto-record a test or set of tests, add `TERMLOC_INTEGRATION_TEST_VIDEO`:
 
 ```bash
 WARPUI_USE_REAL_DISPLAY_IN_INTEGRATION_TESTS=1 \
-WARP_INTEGRATION_TEST_VIDEO=test_video_recording \
+TERMLOC_INTEGRATION_TEST_VIDEO=test_video_recording \
 cargo run -p integration --bin integration -- test_video_recording
 ```
 
@@ -52,7 +52,7 @@ For broader integration test runs, the same env vars work with the normal test r
 
 ```bash
 WARPUI_USE_REAL_DISPLAY_IN_INTEGRATION_TESTS=1 \
-WARP_INTEGRATION_TEST_VIDEO=test_foo,test_bar \
+TERMLOC_INTEGRATION_TEST_VIDEO=test_foo,test_bar \
 cargo nextest run --no-fail-fast --workspace test_foo
 ```
 
@@ -63,7 +63,7 @@ cargo nextest run --no-fail-fast --workspace test_foo
 - Use it for screenshot/video workflows and manual visual verification.
 - Without a real display, expect recording workflows to be incomplete or unusable.
 
-### `WARP_INTEGRATION_TEST_VIDEO`
+### `TERMLOC_INTEGRATION_TEST_VIDEO`
 This is the main env var that controls driver-managed video recording in `ui/src/integration/driver.rs`.
 
 Behavior:
@@ -75,19 +75,19 @@ Examples:
 
 ```bash
 # Record every test in the run
-WARP_INTEGRATION_TEST_VIDEO=all
+TERMLOC_INTEGRATION_TEST_VIDEO=all
 ```
 
 ```bash
 # Record only specific tests
-WARP_INTEGRATION_TEST_VIDEO=test_foo,test_bar
+TERMLOC_INTEGRATION_TEST_VIDEO=test_foo,test_bar
 ```
 
 Important nuance:
-- You do not need `WARP_INTEGRATION_TEST_VIDEO` if the test itself explicitly calls `with_start_recording()` and `with_stop_recording()`.
+- You do not need `TERMLOC_INTEGRATION_TEST_VIDEO` if the test itself explicitly calls `with_start_recording()` and `with_stop_recording()`.
 - Use the env var when you want whole-test recording without changing the test code.
 
-### `WARP_INTEGRATION_TEST_ARTIFACTS_DIR`
+### `TERMLOC_INTEGRATION_TEST_ARTIFACTS_DIR`
 This controls the root artifact directory used by `TestArtifacts` in `ui/src/integration/artifacts.rs`.
 
 If unset, artifacts go under:
@@ -104,14 +104,14 @@ Each run gets a timestamped directory:
 
 This is the main directory to inspect for screenshots, logs, and the final `recording.mp4`.
 
-### `WARP_INTEGRATION_TEST_VIDEO_DIR`
+### `TERMLOC_INTEGRATION_TEST_VIDEO_DIR`
 This env var exists in `ui/src/integration/video_recorder.rs` as the lower-level recorder output root helper, defaulting to:
 
 ```text
 $TMPDIR/warp_integration_video_captures
 ```
 
-On this branch, the normal integration driver flow writes the finalized video into the test artifacts directory instead, so `WARP_INTEGRATION_TEST_ARTIFACTS_DIR` is the one you usually care about when reviewing results.
+On this branch, the normal integration driver flow writes the finalized video into the test artifacts directory instead, so `TERMLOC_INTEGRATION_TEST_ARTIFACTS_DIR` is the one you usually care about when reviewing results.
 
 ## How to specify which tests to record
 
@@ -121,7 +121,7 @@ There are two modes:
 Use `TestStep::with_start_recording()` and `TestStep::with_stop_recording()` inside the test itself. This is best when you only want to capture a specific span of the test.
 
 ### 2. Record from the environment
-Set `WARP_INTEGRATION_TEST_VIDEO` to:
+Set `TERMLOC_INTEGRATION_TEST_VIDEO` to:
 - `all`
 - `1`
 - or a comma-separated list like `test_a,test_b`
@@ -205,7 +205,7 @@ The sample test does exactly that.
 The normal output location is:
 
 ```text
-${WARP_INTEGRATION_TEST_ARTIFACTS_DIR:-$TMPDIR/warp_integration_test_artifacts}/<test_name>/<timestamp>/
+${TERMLOC_INTEGRATION_TEST_ARTIFACTS_DIR:-$TMPDIR/warp_integration_test_artifacts}/<test_name>/<timestamp>/
 ```
 
 Common artifacts in that directory:
@@ -264,7 +264,7 @@ If you want full-test auto-recording from the environment as well, use:
 
 ```bash
 WARPUI_USE_REAL_DISPLAY_IN_INTEGRATION_TESTS=1 \
-WARP_INTEGRATION_TEST_VIDEO=test_video_recording \
+TERMLOC_INTEGRATION_TEST_VIDEO=test_video_recording \
 cargo run -p integration --bin integration -- test_video_recording
 ```
 
@@ -272,7 +272,7 @@ cargo run -p integration --bin integration -- test_video_recording
 
 When asked to record or debug an integration test with video:
 1. Identify the exact test name.
-2. Decide whether recording should be explicit in the test or enabled via `WARP_INTEGRATION_TEST_VIDEO`.
+2. Decide whether recording should be explicit in the test or enabled via `TERMLOC_INTEGRATION_TEST_VIDEO`.
 3. Ensure the run uses `WARPUI_USE_REAL_DISPLAY_IN_INTEGRATION_TESTS=1`.
 4. If the user wants visible interaction overlays, make sure the test dispatches mouse and keyboard events while recording is active.
 5. After the run, inspect the timestamped artifact directory and report the output paths back to the user.

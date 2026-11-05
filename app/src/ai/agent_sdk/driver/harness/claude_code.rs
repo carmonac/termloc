@@ -747,7 +747,7 @@ pub(crate) fn prepare_claude_environment_config(
     Ok(())
 }
 
-/// Publish `WARP_SKILL_DIRS` and eligible bundled skills under
+/// Publish `TERMLOC_SKILL_DIRS` and eligible bundled skills under
 /// `<harness_working_dir>/.claude/skills`.
 ///
 /// Relative source directories are resolved from the workspace root, matching

@@ -58,7 +58,7 @@ struct TuiArgs {
     auto_approve: bool,
 
     /// API key for non-interactive authentication.
-    #[arg(long, env = "WARP_API_KEY")]
+    #[arg(long, env = "TERMLOC_API_KEY")]
     api_key: Option<String>,
 }
 

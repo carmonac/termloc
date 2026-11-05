@@ -330,7 +330,7 @@ impl InBandCommandExecutor {
                 let in_band_command = match shell.shell_type() {
                     ShellType::PowerShell => {
                         format!(
-                            "Warp-Run-GeneratorCommand {id} '{escaped_command}' -ErrorAction Ignore"
+                            "Termloc-Run-GeneratorCommand {id} '{escaped_command}' -ErrorAction Ignore"
                         )
                     }
                     ShellType::Fish => {
@@ -339,10 +339,10 @@ impl InBandCommandExecutor {
                         // specifying command patterns to be omitted from history. Ignoring
                         // commands with a leading space is default, non-configurable behavior in
                         // fish.
-                        format!(" warp_run_generator_command {id} '{escaped_command}'")
+                        format!(" termloc_run_generator_command {id} '{escaped_command}'")
                     }
                     _ => {
-                        format!("warp_run_generator_command {id} '{escaped_command}'")
+                        format!("termloc_run_generator_command {id} '{escaped_command}'")
                     }
                 };
 
@@ -384,7 +384,7 @@ impl CommandExecutor for InBandCommandExecutor {
     /// the `pty_controller` passed to this executor during construction.
     ///
     /// The given `command` is executed in the active session using the
-    /// `warp_run_generator_command`/`Warp-Run-GeneratorCommand` shell script API that is declared as
+    /// `termloc_run_generator_command`/`Termloc-Run-GeneratorCommand` shell script API that is declared as
     /// part of Warp's bootstrap script.
     ///
     /// Internally, `command` is added to a queue of commands to be executed serially (this is to
@@ -417,8 +417,8 @@ impl CommandExecutor for InBandCommandExecutor {
     /// "Cancels" active in-band commands.
     ///
     /// In reality, this does not cancel command execution (that is, however, actually done on the
-    /// shell side in `warp_preexec`). This merely clears the running and pending command IDs from
-    /// the executor's, such that subsequently calling `handle_executed_command_event` with
+    /// shell side in `termloc_preexec`). This merely clears the running and pending command IDs
+    /// from the executor's, such that subsequently calling `handle_executed_command_event` with
     /// a cleared command ID is a no-op.
     fn cancel_active_commands(&self) {
         Self::cancel_active_commands(
@@ -443,8 +443,8 @@ impl CommandExecutor for InBandCommandExecutor {
 /// fish's command history.  Thus we strip leading whitespace before matching the `command`.
 pub fn is_in_band_command(command: &str) -> bool {
     let trimmed = command.trim_start();
-    trimmed.starts_with("Warp-Run-GeneratorCommand")
-        || trimmed.starts_with("warp_run_generator_command")
+    trimmed.starts_with("Termloc-Run-GeneratorCommand")
+        || trimmed.starts_with("termloc_run_generator_command")
 }
 
 #[cfg(test)]

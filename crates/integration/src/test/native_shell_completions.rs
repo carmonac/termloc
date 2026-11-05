@@ -265,7 +265,7 @@ fn write_spec_command_marker_override_rc_files(dir: impl AsRef<Path>) {
 
 /// Asserts no user-visible block holds the generator command. Its own block is hidden (zero
 /// height), so a non-zero-height block carrying it is the ghost block this guards against. The name
-/// is normalized to match both `warp_run_generator_command*` and `Warp-Run-GeneratorCommand*`.
+/// is normalized to match both `termloc_run_generator_command*` and `Termloc-Run-GeneratorCommand*`.
 fn assert_no_visible_generator_block()
 -> impl Fn(&mut warpui_core::App, warpui_core::WindowId) -> warpui_core::integration::AssertionOutcome
 {

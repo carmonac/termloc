@@ -417,8 +417,8 @@ pub fn get_input_box_top_border_width() -> f32 {
     }
 }
 
-/// The host the cloud-mode selector defaults to: the `WARP_CLOUD_MODE_DEFAULT_HOST` override when
-/// set, otherwise the window's team default.
+/// The host the cloud-mode selector defaults to: the `TERMLOC_CLOUD_MODE_DEFAULT_HOST` override
+/// when set, otherwise the window's team default.
 ///
 /// Takes the selector's handle, not `Input`'s: this runs inside `Input::new` before `Input` is in
 /// `view_to_window`, so an `Input` handle would resolve no window here while the already-built
@@ -427,7 +427,7 @@ fn effective_default_host(
     host_selector: &WeakViewHandle<HostSelector>,
     app: &AppContext,
 ) -> Option<String> {
-    if let Some(slug) = std::env::var("WARP_CLOUD_MODE_DEFAULT_HOST")
+    if let Some(slug) = std::env::var("TERMLOC_CLOUD_MODE_DEFAULT_HOST")
         .ok()
         .filter(|slug| !slug.is_empty())
     {

@@ -701,7 +701,7 @@ const DEFAULT_AI_BLOCK_HEIGHT: f32 = 96.;
 
 pub const DEFAULT_ASK_AI_AUTOSUGGESTION_TEXT: &str = "What happened here?";
 
-const WARP_MD_PATH: &str = "WARP.md";
+const TERMLOC_MD_PATH: &str = "TERMLOC.md";
 
 /// `shell_plugins` tags reported by bootstrap when ctrl-r identifies a supported shell plugin.
 /// fzf provides ctrl-r, ctrl-t, and alt-c, while atuin only provides ctrl-r.
@@ -711,16 +711,16 @@ const ATUIN_PLUGIN_TAG: &str = "atuin";
 /// Name of the bootstrap-installed shell function invoked to hand ctrl-r off to the shell's
 /// own external history widget. Must match the function name defined in
 /// `app/assets/bundled/bootstrap/zsh_body.sh`.
-const EXTERNAL_CTRL_R_HELPER_COMMAND: &str = "warp_run_external_ctrl_r_widget";
+const EXTERNAL_CTRL_R_HELPER_COMMAND: &str = "termloc_run_external_ctrl_r_widget";
 
 /// Name of the bootstrap-installed shell function invoked to hand ctrl-t off to the shell's own
 /// external file-search widget. Must match the function name defined in
 /// `app/assets/bundled/bootstrap/zsh_body.sh`.
-const EXTERNAL_CTRL_T_HELPER_COMMAND: &str = "warp_run_external_ctrl_t_widget";
+const EXTERNAL_CTRL_T_HELPER_COMMAND: &str = "termloc_run_external_ctrl_t_widget";
 
 /// Name of the bootstrap-installed shell function invoked to hand alt-c off to fzf's directory
 /// search widget.
-const EXTERNAL_ALT_C_HELPER_COMMAND: &str = "warp_run_external_alt_c_widget";
+const EXTERNAL_ALT_C_HELPER_COMMAND: &str = "termloc_run_external_alt_c_widget";
 
 fn ctrl_t_apply_mode(shell_type: ShellType) -> ShellWidgetApplyMode {
     match shell_type {
@@ -28419,12 +28419,12 @@ impl TypedActionView for TerminalView {
             }
             OpenProjectRulesPane => {
                 if let Some(current_dir) = self.pwd() {
-                    let mut warp_md_path = PathBuf::from(&current_dir);
-                    warp_md_path.push(WARP_MD_PATH);
+                    let mut termloc_md_path = PathBuf::from(&current_dir);
+                    termloc_md_path.push(TERMLOC_MD_PATH);
                     #[cfg(feature = "local_fs")]
                     ctx.emit(Event::OpenCodeInWarp {
                         source: CodeSource::ProjectRules {
-                            location: LocalOrRemotePath::Local(warp_md_path),
+                            location: LocalOrRemotePath::Local(termloc_md_path),
                         },
                         layout: *crate::util::file::external_editor::EditorSettings::as_ref(ctx)
                             .open_file_layout

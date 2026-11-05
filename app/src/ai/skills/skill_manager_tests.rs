@@ -860,7 +860,7 @@ fn get_skills_for_working_directory_respects_location() {
         path: LocalOrRemotePath::Remote(RemotePath::new(
             same_host_id.clone(),
             StandardizedPath::try_new(
-                "/home/user/.warp/remote-server/bundled_resources/bundled/skills/remote-bundled/SKILL.md",
+                "/home/user/.termloc/remote-server/bundled_resources/bundled/skills/remote-bundled/SKILL.md",
             )
             .unwrap(),
         )),

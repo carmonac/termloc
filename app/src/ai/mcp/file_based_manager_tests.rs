@@ -432,7 +432,7 @@ fn test_update_file_based_servers_removes_unreferenced_servers() {
     });
 }
 
-/// A Warp-global installation detected from the managed `~/.warp*/.mcp.json`
+/// A Warp-global installation detected from the managed `~/.termloc*/.mcp.json`
 /// watcher uses the home directory as its logical root and still always
 /// auto-spawns.
 #[test]
@@ -953,7 +953,7 @@ fn initial_global_scan_result_pending_until_watcher_signals_completion() {
             // also must not be counted toward the initial scan.
             m.handle_watcher_event(
                 &FileMCPWatcherEvent::ConfigParsed {
-                    config_path: project_root.join(".warp/.mcp.json"),
+                    config_path: project_root.join(".termloc/.mcp.json"),
                     root_path: project_root.clone(),
                     provider: MCPProvider::Warp,
                     servers: project_parsed,

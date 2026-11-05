@@ -1,6 +1,6 @@
 ---
 name: tui-verify-change
-description: Verify a change to Warp's headless TUI front-end (crates/warp_tui) by running it — locally via ./script/run-tui, or in a headless cloud runner via a WARP_API_KEY dogfood build — and reading the rendered screen back (under tmux when it's installed, otherwise directly). Use whenever you change TUI UI, rendering, input, or behavior and need to confirm the real on-screen result.
+description: Verify a change to Warp's headless TUI front-end (crates/warp_tui) by running it — locally via ./script/run-tui, or in a headless cloud runner via a TERMLOC_API_KEY dogfood build — and reading the rendered screen back (under tmux when it's installed, otherwise directly). Use whenever you change TUI UI, rendering, input, or behavior and need to confirm the real on-screen result.
 ---
 
 # tui-verify-change
@@ -42,26 +42,26 @@ wrong skill — use the GUI verification path instead.
 ## Local vs cloud verification (pick your context first)
 
 *How* you build, run, and log in depends on **where you're running**. Decide this
-up front — it determines whether you use `./script/run-tui` or the `WARP_API_KEY`
+up front — it determines whether you use `./script/run-tui` or the `TERMLOC_API_KEY`
 path below.
 
 - **Local context** — you're working in a local dev checkout, typically
   alongside the user. Just run **`./script/run-tui`** directly: it builds
   `warp_tui` and runs it, selecting the internal `local` channel when the
   `warp-channel-config` generator is available and falling back to
-  `termloc-tui` otherwise. **Do not reach for `WARP_API_KEY`** here — it's
+  `termloc-tui` otherwise. **Do not reach for `TERMLOC_API_KEY`** here — it's
   generally **not set** in a local environment, and you don't need it: a local
   build reaches the authenticated state through the normal interactive
   device-auth login flow (or you're already signed in on this machine). The
-  non-interactive `WARP_API_KEY` login below is a *cloud-runner* affordance, not
+  non-interactive `TERMLOC_API_KEY` login below is a *cloud-runner* affordance, not
   a local one, so don't let a missing key block you locally.
 - **Cloud context** — you're a headless cloud agent (e.g. the factory-client
   runner) with no browser for device-auth, so reaching a **signed-in** surface
-  relies on the non-interactive `WARP_API_KEY` already in the environment. That
+  relies on the non-interactive `TERMLOC_API_KEY` already in the environment. That
   does **not** mean bypassing `./script/run-tui`: when the `warp-channel-config`
   generator is available, `./script/run-tui` selects the internal `local`
   binary; otherwise it falls back to `termloc-tui`. Both accept the inherited
-  `WARP_API_KEY`, so prefer the maintained runner unless you need a specific
+  `TERMLOC_API_KEY`, so prefer the maintained runner unless you need a specific
   binary or profile. In the cloud, the inherited key signs you in without the
   browser device-auth flow.
 
@@ -110,16 +110,16 @@ transcript / input** surface, you must reach the authenticated state (see the
 next section), or your change will sit behind the login gate and you'll only ever
 see `Sign in to continue`.
 
-### Logging in non-interactively (`WARP_API_KEY`) — cloud context
+### Logging in non-interactively (`TERMLOC_API_KEY`) — cloud context
 
 **This is the cloud path.** In a local checkout, skip it: run `./script/run-tui`
 and log in interactively (see **Local vs cloud verification** above), since
-`WARP_API_KEY` usually isn't set locally. Use the flow here when you're a
+`TERMLOC_API_KEY` usually isn't set locally. Use the flow here when you're a
 headless cloud runner where the key *is* set and there's no browser for
 device-auth.
 
 You can reach the authenticated (`LoggedIn`) state headlessly — no browser, no
-device-auth flow — by launching any TUI channel binary with a `WARP_API_KEY` in
+device-auth flow — by launching any TUI channel binary with a `TERMLOC_API_KEY` in
 the environment. This is the fast way to verify live terminal/transcript/input
 changes.
 
@@ -128,7 +128,7 @@ Key constraints:
 - **All channels are supported.** API-key login works with `termloc-tui` as
   well as the Preview, Dev, Local, and Stable binaries.
 - **The key must already be in the environment.** In a sandbox where
-  `WARP_API_KEY` is set, a freshly started `tmux` server inherits it. Never echo,
+  `TERMLOC_API_KEY` is set, a freshly started `tmux` server inherits it. Never echo,
   print, or inline the secret value in a command — just rely on the inherited
   environment variable. (`--api-key <key>` on the command line also works but
   would expose the secret, so prefer the env var.)
@@ -137,7 +137,7 @@ Key constraints:
 cd <warp-repo-root>
 CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin termloc-tui
 tmux kill-session -t tuicheck 2>/dev/null
-# WARP_API_KEY is inherited from the environment by the new tmux server.
+# TERMLOC_API_KEY is inherited from the environment by the new tmux server.
 tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/termloc-tui'
 sleep 20                                      # login + session start
 tmux capture-pane -t tuicheck -p              # expect the logged-in zero state
@@ -314,7 +314,7 @@ tmux send-keys -t tuicap C-c && sleep 0.5 && tmux send-keys -t tuicap C-c 2>/dev
 sleep 1
 ```
 
-For a **logged-in** capture, build/run `warp-tui-dev` with `WARP_API_KEY` per
+For a **logged-in** capture, build/run `warp-tui-dev` with `TERMLOC_API_KEY` per
 Step 1 instead of `termloc-tui`.
 
 **Render the video (MP4).** Match the format Warp's `computer_use` screen
@@ -358,7 +358,7 @@ Capture pitfalls:
 - **Don't take the still from the first or last video frame.** The first frame
   is the blank terminal *before* the TUI draws, and once you quit the TUI the alt
   screen is restored — so the final frames show the normal terminal (e.g. the
-  OSS `WARP_API_KEY ... IGNORED` startup warning), **not** the TUI surface.
+  OSS `TERMLOC_API_KEY ... IGNORED` startup warning), **not** the TUI surface.
   Extract a mid-recording timestamp (when the surface is up), or stop recording
   while the surface is still displayed so the last frame *is* the surface.
 - **Keep it short.** A few seconds at 120x40 renders to tens of KB; downstream

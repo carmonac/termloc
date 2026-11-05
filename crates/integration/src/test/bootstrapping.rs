@@ -92,7 +92,7 @@ pub fn test_cloud_agent_fallback_commands_survive_profile_path_reset() -> Builde
                 fs::set_permissions(&tool, fs::Permissions::from_mode(0o755))
                     .expect("fixture command should be executable");
             }
-            utils.set_env("WARP_CLOUD_AGENT_FALLBACK_BIN", Some(&fallback));
+            utils.set_env("TERMLOC_CLOUD_AGENT_FALLBACK_BIN", Some(&fallback));
             utils.set_env(
                 "PATH",
                 Some(format!(

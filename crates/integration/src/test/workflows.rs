@@ -83,13 +83,13 @@ pub fn test_create_team_workflow_pane_from_command_palette() -> Builder {
         )
 }
 
-/// Adds a workflow file, containing two workflows, to a `.warp/workflows`
+/// Adds a workflow file, containing two workflows, to a `.termloc/workflows`
 /// directory under a git repository and verifies that the workflows appear
 /// in the workflow menu.
 pub fn test_loading_project_workflows() -> Builder {
     new_builder()
         .with_setup(move |utils| {
-            utils.set_env("WARP_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
+            utils.set_env("TERMLOC_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
         })
         .with_step(wait_until_bootstrapped_single_pane_for_tab(0))
         .with_step(
@@ -124,7 +124,7 @@ pub fn test_loading_project_workflows() -> Builder {
                     "test_workflow.yaml",
                     &utils
                         .test_dir()
-                        .join("repo/.warp/workflows/test_workflow.yaml"),
+                        .join("repo/.termloc/workflows/test_workflow.yaml"),
                 );
             }),
         )

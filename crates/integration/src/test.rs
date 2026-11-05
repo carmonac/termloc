@@ -240,7 +240,7 @@ fn new_builder() -> Builder {
 pub fn test_add_workflows_to_warp_config() -> Builder {
     new_builder()
         .with_setup(move |utils| {
-            utils.set_env("WARP_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
+            utils.set_env("TERMLOC_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
 
             std::fs::create_dir_all(integration_testing::workflow::workflows_dir())
                 .expect("Should be able to create workflows dir");
@@ -294,7 +294,7 @@ pub fn test_add_workflows_to_warp_config() -> Builder {
 pub fn test_launch_warp_with_theme_in_warp_config() -> Builder {
     new_builder()
         .with_setup(move |utils| {
-            utils.set_env("WARP_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
+            utils.set_env("TERMLOC_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
 
             integration_testing::create_file_from_assets(
                 TEST_ONLY_ASSETS,
@@ -310,7 +310,7 @@ pub fn test_launch_warp_with_theme_in_warp_config() -> Builder {
 pub fn test_add_theme_to_warp_config() -> Builder {
     new_builder()
         .with_setup(move |utils| {
-            utils.set_env("WARP_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
+            utils.set_env("TERMLOC_CONFIG_WATCHER_DELAY_MS", Some((10).to_string()));
 
             std::fs::create_dir_all(integration_testing::themes::themes_dir())
                 .expect("Should be able to create themes dir");
@@ -3384,14 +3384,14 @@ pub fn test_warp_auto_title_disabled() -> Builder {
             write_rc_files_for_test(
                 &dir,
                 r#"
-WARP_DISABLE_AUTO_TITLE="1"
+TERMLOC_DISABLE_AUTO_TITLE="1"
 "#,
                 [ShellRcType::Bash],
             );
             write_rc_files_for_test(
                 &dir,
                 r#"
-WARP_DISABLE_AUTO_TITLE="true"
+TERMLOC_DISABLE_AUTO_TITLE="true"
 "#,
                 [ShellRcType::Zsh],
             );
@@ -5613,7 +5613,7 @@ pub fn test_terminal_announces_capabilities_to_shell() -> Builder {
             0,
             format!("echo ${var_prefix}TERM_PROGRAM"),
             ExpectedExitStatus::Success,
-            "WarpTerminal",
+            "Termloc",
         ))
         .with_step(execute_command_for_single_terminal_in_tab(
             0,

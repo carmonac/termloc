@@ -334,22 +334,22 @@ pub fn parse_uname_output(
 
 /// Returns the remote directory where the binary is installed, keyed by channel.
 ///
-/// - stable:      `~/.warp/remote-server`
-/// - preview:     `~/.warp-preview/remote-server`
-/// - dev:         `~/.warp-dev/remote-server`
-/// - local:       `~/.warp-local/remote-server`
-/// - integration: `~/.warp-dev/remote-server`
-/// - warp-oss:    `~/.warp-oss/remote-server`
+/// - stable:      `~/.termloc/remote-server`
+/// - preview:     `~/.termloc-preview/remote-server`
+/// - dev:         `~/.termloc-dev/remote-server`
+/// - local:       `~/.termloc-local/remote-server`
+/// - integration: `~/.termloc-dev/remote-server`
+/// - oss:         `~/.termloc-dev/remote-server`
 pub fn remote_server_dir() -> String {
     let warp_dir = match ChannelState::channel() {
-        Channel::Stable => ".warp",
-        Channel::Preview => ".warp-preview",
-        Channel::Dev | Channel::Integration => ".warp-dev",
-        Channel::Local => ".warp-local",
+        Channel::Stable => ".termloc",
+        Channel::Preview => ".termloc-preview",
+        Channel::Dev | Channel::Integration => ".termloc-dev",
+        Channel::Local => ".termloc-local",
         Channel::Oss => {
             // TODO(alokedesai): need to figure out how remote server works with warp-oss
             // For now, return what Dev returns.
-            ".warp-dev"
+            ".termloc-dev"
         }
     };
     format!("~/{warp_dir}/remote-server")

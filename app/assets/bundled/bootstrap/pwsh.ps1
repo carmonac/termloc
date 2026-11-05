@@ -1,11 +1,11 @@
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Scope = 'Function', Target = 'Warp-*', Justification = 'Warp-* functions are ours')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Scope = 'Function', Target = 'Termloc-*', Justification = 'Termloc-* functions are ours')]
 param()
 
 # Wrap things in a module to avoid cluttering the global scope. We assign it to '$null' to suppress
 # the console output from creating the module.
 # NOTE: If you do need a function to be global and also have access to variables in this scope, add
 # the function name to the 'Export-ModuleMember' call at the end.
-$null = New-Module -Name Warp-Module -ScriptBlock {
+$null = New-Module -Name Termloc-Module -ScriptBlock {
     # Byte sequence used to signal the start of an OSC for Warp JSON messages.
     $oscStart = "$([char]0x1b)]9278;"
 
@@ -18,20 +18,20 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     $oscEnd = "$([char]0x07)"
 
     # Writes a hex-encoded JSON message to the PTY.
-    function Warp-Send-JsonMessage([System.Collections.Hashtable]$table) {
+    function Termloc-Send-JsonMessage([System.Collections.Hashtable]$table) {
         $json = ConvertTo-Json -InputObject $table -Compress
         # Sends a message to the controlling terminal as an OSC control sequence.
         # TODO(CORE-2718): Determine if we need to hex encode the payload.
         # Note that because the JSON string may contain characters that we don't control (including
         # unicode), we encode it as hexadecimal string to avoid prematurely calling unhook if
         # one of the bytes in JSON is 9c (ST) or other (CAN, SUB, ESC).
-        $encodedMessage = Warp-Encode-HexString $json
+        $encodedMessage = Termloc-Encode-HexString $json
         Write-Host -NoNewline "$oscStart$oscJsonMarker$oscParamSeparator$encodedMessage$oscEnd"
     }
 
     # This script block contains commands and constants that are needed in background threads.
     # If you want to be able to use it in a background thread, stick it in this block
-    $warpCommon = {
+    $termlocCommon = {
         # OSC used to mark the start of in-band command output.
         #
         # Printable characters received this OSC and oscEndGeneratorOutput are parsed and handled as
@@ -46,13 +46,13 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
         $oscResetGrid = "$([char]0x1b)]9279$oscEnd"
 
-        function Warp-Send-ResetGridOSC() {
+        function Termloc-Send-ResetGridOSC() {
             Write-Host -NoNewline $oscResetGrid
         }
 
         # Safely attempt to get Node.js version if available. Avoid literal 'node' invocation
         # to satisfy PSUseCompatibleCommands across target platforms.
-        function Warp-TryGet-NodeVersion {
+        function Termloc-TryGet-NodeVersion {
             try {
                 $cmd = Get-Command -CommandType Application node 2>$null
                 if ($null -eq $cmd) { return '' }
@@ -68,11 +68,11 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
 
         # Encode a string as hex-encoded UTF-8.
-        function Warp-Encode-HexString([string]$str) {
+        function Termloc-Encode-HexString([string]$str) {
             [BitConverter]::ToString([System.Text.Encoding]::UTF8.GetBytes($str)).Replace('-', '')
         }
 
-        function Warp-Decode-HexString([string]$hex) {
+        function Termloc-Decode-HexString([string]$hex) {
             # Guard empty/missing input: otherwise the loop leaves $bytes null and GetString throws.
             if ([string]::IsNullOrEmpty($hex)) {
                 return ''
@@ -87,18 +87,18 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         # sequences for generator output.
         #
         # The payload of the OSC is "<content_length>;<hex-encoded content>".
-        function Warp-Send-GeneratorOutputOsc {
+        function Termloc-Send-GeneratorOutputOsc {
             param([string]$message)
 
-            $hexEncodedMessage = Warp-Encode-HexString $message
+            $hexEncodedMessage = Termloc-Encode-HexString $message
             $byteCount = [System.Text.Encoding]::ASCII.GetByteCount($hexEncodedMessage)
 
             Write-Host -NoNewline "$oscStartGeneratorOutput$byteCount;$hexEncodedMessage$oscEndGeneratorOutput"
-            Warp-Send-ResetGridOSC
+            Termloc-Send-ResetGridOSC
         }
 
         # Do not run this in the main thread. It mucks around with some env vars
-        function Warp-Run-InBandGenerator {
+        function Termloc-Run-InBandGenerator {
             [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'We actually need it')]
             param([string]$commandId, [string]$command)
 
@@ -126,7 +126,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                 $stringifiedOutput = $rawOutput -join "$([char]0x0a)"
 
                 # This is a best-effort attempt to get an error code.
-                # We cannot duplicate our error code logic from Warp-Precmd
+                # We cannot duplicate our error code logic from Termloc-Precmd
                 # b/c Invoke-Expression will swallow the value of $? and always
                 # return true. So we do our best to return a legit error code
                 Write-Output "$commandId;$stringifiedOutput;$exitCode"
@@ -139,14 +139,14 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     }
 
     # Load the Warp Common functions in the current session
-    . $warpCommon
+    . $termlocCommon
 
     function Get-EpochTime {
         [decimal]([DateTime]::UtcNow - [DateTime]::new(1970, 1, 1, 0, 0, 0, 0)).Ticks / 1e7
     }
 
-    function Warp-Bootstrapped {
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'WARP_BOOTSTRAPPED', Justification = 'False positive as we are assigning to global')]
+    function Termloc-Bootstrapped {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'TERMLOC_BOOTSTRAPPED', Justification = 'False positive as we are assigning to global')]
         param([decimal]$rcStartTime, [decimal]$rcEndTime)
 
         $envVarNames = (Get-ChildItem env: | Select-Object -ExpandProperty Name | ForEach-Object { 'env:' + $_ }) + `
@@ -170,7 +170,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
             'PSWorkflowUtility'        # Legacy workflow utility (Windows PS 5)
         )
         $functionNamesRaw = Get-Command -CommandType Function -Module $corePsModules |
-            Where-Object { -not $_.Name.StartsWith('Warp') } |
+            Where-Object { -not $_.Name.StartsWith('Termloc') } |
             Select-Object -ExpandProperty Name
         $functionNames = $functionNamesRaw -join [Environment]::NewLine
         $builtinsRaw = Get-Command -CommandType Cmdlet -Module $corePsModules | Select-Object -ExpandProperty Name
@@ -229,7 +229,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         $bootstrappedMsg = @{
             hook = 'Bootstrapped'
             value = @{
-                session_id = $global:_warpSessionId
+                session_id = $global:_termlocSessionId
                 histfile = $(Get-PSReadLineOption).HistorySavePath
                 shell = 'pwsh'
                 home_dir = "$HOME"
@@ -252,48 +252,48 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                 shell_path = (Get-Process -Id $PID).Path
             }
         }
-        Warp-Send-JsonMessage $bootstrappedMsg
-        $global:WARP_BOOTSTRAPPED = 1
+        Termloc-Send-JsonMessage $bootstrappedMsg
+        $global:TERMLOC_BOOTSTRAPPED = 1
     }
 
-    function Warp-Preexec([string]$command) {
+    function Termloc-Preexec([string]$command) {
         $HOST.UI.RawUI.WindowTitle = $command
         $preexecMsg = @{
             hook = 'Preexec'
             value = @{
-                session_id = $global:_warpSessionId
+                session_id = $global:_termlocSessionId
                 command = $command
             }
         }
-        Warp-Send-JsonMessage $preexecMsg
-        Warp-Send-ResetGridOSC
+        Termloc-Send-JsonMessage $preexecMsg
+        Termloc-Send-ResetGridOSC
 
         # If this preexec is called for user command, kill ongoing generator command jobs and clean
         # up the bookkeeping temp files used to bookkeep.
-        if (-not "$command" -match '^Warp-Run-GeneratorCommand') {
-            Warp-Stop-ActiveThread
+        if (-not "$command" -match '^Termloc-Run-GeneratorCommand') {
+            Termloc-Stop-ActiveThread
         }
 
         # Clean up any completed warp jobs so they do not show up on the user's 'get-job'
         # commands
-        Warp-Clean-CompletedThread
+        Termloc-Clean-CompletedThread
 
-        # Remove any instance of the 'Warp-Run-GeneratorCommand' call from the user's history
-        Clear-History -CommandLine 'Warp-Run-GeneratorCommand*'
+        # Remove any instance of the 'Termloc-Run-GeneratorCommand' call from the user's history
+        Clear-History -CommandLine 'Termloc-Run-GeneratorCommand*'
     }
 
-    function Warp-Finish-Update([string]$updateId) {
+    function Termloc-Finish-Update([string]$updateId) {
         $updateMsg = @{
             hook = 'FinishUpdate'
             value = @{
-                session_id = $global:_warpSessionId
+                session_id = $global:_termlocSessionId
                 update_id = $updateId
             }
         }
-        Warp-Send-JsonMessage $updateMsg
+        Termloc-Send-JsonMessage $updateMsg
     }
 
-    function Warp-Handle-DistUpgrade {
+    function Termloc-Handle-DistUpgrade {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingInvokeExpression', '', Justification = 'We actually need it')]
         param([string]$sourceFileName)
 
@@ -325,7 +325,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     #    an escape sequence '^[i'. Since it made it more convenient to have a wrapper
     #    function anyway, I have not investigated this, but in case someone is working
     #    on this in the future, beware attempting to inline this function.
-    function Warp-Git {
+    function Termloc-Git {
         $GIT_OPTIONAL_LOCKS = $env:GIT_OPTIONAL_LOCKS
         $env:GIT_OPTIONAL_LOCKS = 0
         try {
@@ -341,7 +341,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     #
     # Make sure when you call this you call it with -ErrorAction SilentlyContinue
     # or it will print out error information when it is invoked.
-    function Warp-Restore-ErrorStatus {
+    function Termloc-Restore-ErrorStatus {
         [CmdletBinding()]
         param([boolean]$status, [int]$code)
 
@@ -349,7 +349,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         if ($status -eq $false) {
             $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                     [Exception]::new("$([char]0x00)"),
-                    'warp-reset-error',
+                    'termloc-reset-error',
                     [System.Management.Automation.ErrorCategory]::NotSpecified,
                     $null
                 ))
@@ -358,13 +358,13 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
     # Tracks whether or not powershell is unable to find a command.
     # See the $ExecutionContext.InvokeCommand.CommandNotFoundAction where it is set to $true,
-    # and both $ExecutionContext.InvokeCommand.PostCommandLookupAction and Warp-Precmd where
+    # and both $ExecutionContext.InvokeCommand.PostCommandLookupAction and Termloc-Precmd where
     # it is set to $false.
     $script:commandNotFound = $false
 
     $script:viEditModeOverridden = $false
 
-    function Warp-Configure-PSReadLine {
+    function Termloc-Configure-PSReadLine {
         if ((Get-PSReadLineOption).EditMode -eq 'Vi') {
             $script:viEditModeOverridden = $true
             Set-PSReadLineOption -EditMode Emacs
@@ -384,11 +384,11 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
             $inputBufferMsg = @{
                 hook = 'InputBuffer'
                 value = @{
-                    session_id = $global:_warpSessionId
+                    session_id = $global:_termlocSessionId
                     buffer = $inputBuffer
                 }
             }
-            Warp-Send-JsonMessage $inputBufferMsg
+            Termloc-Send-JsonMessage $inputBufferMsg
             [Microsoft.PowerShell.PSConsoleReadLine]::BackwardDeleteLine()
             # This is triggered after precmd, so output here goes to the "early output" handler,
             # i.e. the background block. This clears the line the cursor is on. We clear it out b/c
@@ -402,35 +402,35 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
 
         # Sets the prompt mode to custom prompt (PS1)
-        # Is the equivalent of warp_change_prompt_modes_to_ps1 in other shells
+        # Is the equivalent of termloc_change_prompt_modes_to_ps1 in other shells
         Set-PSReadLineKeyHandler -Chord 'Alt+p' -ScriptBlock {
-            $env:WARP_HONOR_PS1 = '1'
-            Warp-Redraw-Prompt
+            $env:TERMLOC_HONOR_PS1 = '1'
+            Termloc-Redraw-Prompt
         }
 
         # Sets the prompt mode to warp prompt
-        # Is the equivalent of warp_change_prompt_modes_to_warp_prompt in other shells
+        # Is the equivalent of termloc_change_prompt_modes_to_termloc_prompt in other shells
         Set-PSReadLineKeyHandler -Chord 'Alt+w' -ScriptBlock {
-            $env:WARP_HONOR_PS1 = '0'
-            Warp-Redraw-Prompt
+            $env:TERMLOC_HONOR_PS1 = '0'
+            Termloc-Redraw-Prompt
         }
 
         Set-PSReadLineOption -AddToHistoryHandler {
             param([string]$line)
 
-            if ($line -match '^Warp-Run-GeneratorCommand') {
+            if ($line -match '^Termloc-Run-GeneratorCommand') {
                 return $false
             }
             return $true
         }
 
-        Warp-Disable-PSPrediction
+        Termloc-Disable-PSPrediction
     }
 
     # Force use of the Inline PredictionViewStyle. The ListView style can occasionally cause some
     # flickering when using Warp and it doesn't matter what the value of this setting is because
     # Warp has its own input editor.
-    function Warp-Disable-PSPrediction {
+    function Termloc-Disable-PSPrediction {
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseCompatibleCommands', '', Justification = 'Errors are ignored')]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingEmptyCatchBlock', '', Justification = 'Errors expected')]
         param()
@@ -441,8 +441,8 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
     }
 
-    function Warp-Precmd {
-        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '', Justification = 'Warp-Git should use positionals')]
+    function Termloc-Precmd {
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingPositionalParameters', '', Justification = 'Termloc-Git should use positionals')]
         param([bool]$status, [int]$code)
         # Our logic here is:
         #
@@ -454,12 +454,12 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         #
         # Note that this is not going to be 100% accurate, as some cmdlets will fail
         # without setting a $LASTEXITCODE, meaning the $LASTEXITCODE will be stale.
-        $warpCommandNotFound = $script:commandNotFound
+        $termlocCommandNotFound = $script:commandNotFound
         $script:commandNotFound = $false
 
         $exitCode = if ($status) {
             0
-        } elseif ($warpCommandNotFound) {
+        } elseif ($termlocCommandNotFound) {
             127
         } elseif ($code -eq 0) {
             1
@@ -475,19 +475,19 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         $HOST.UI.RawUI.WindowTitle = $newTitle
 
         $blockId = $script:nextBlockId++
-        $nextBlockId = "precmd-${global:_warpSessionId}-$blockId"
+        $nextBlockId = "precmd-${global:_termlocSessionId}-$blockId"
         $commandFinishedMsg = @{
             hook = 'CommandFinished'
             value = @{
-                session_id = $global:_warpSessionId
+                session_id = $global:_termlocSessionId
                 exit_code = $exitCode
                 next_block_id = $nextBlockId
             }
         }
-        Warp-Send-JsonMessage $commandFinishedMsg
-        Warp-Send-ResetGridOSC
+        Termloc-Send-JsonMessage $commandFinishedMsg
+        Termloc-Send-ResetGridOSC
 
-        Warp-Configure-PSReadLine
+        Termloc-Configure-PSReadLine
 
         # If this is being called for a generator command, short circuit and send an unpopulated
         # precmd payload (except for pwd), since we don't re-render the prompt after generator commands
@@ -508,11 +508,11 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                     git_branch = ''
                     virtual_env = ''
                     conda_env = ''
-                    session_id = $global:_warpSessionId
+                    session_id = $global:_termlocSessionId
                     is_after_in_band_command = $true
                 }
             }
-            Warp-Send-JsonMessage $precmdMsg
+            Termloc-Send-JsonMessage $precmdMsg
         } else {
             # TODO(CORE-2678): Figure out resetting bindkeys here
 
@@ -527,7 +527,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
             # blocks created during the bootstrap process don't have visible
             # prompts, and we don't want to invoke 'git' before we've sourced the
             # user's rcfiles and have a fully-populated PATH.
-            if ($global:WARP_BOOTSTRAPPED -eq 1) {
+            if ($global:TERMLOC_BOOTSTRAPPED -eq 1) {
                 if (Test-Path env:VIRTUAL_ENV) {
                     $virtualEnv = $env:VIRTUAL_ENV
                 }
@@ -539,17 +539,17 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                 }
 
                 # Compute the Node.js version only when the Node.js Version chip is enabled
-                # (WARP_PROMPT_NODE_VERSION_ENABLED is '0' when the chip is not shown; default
+                # (TERMLOC_PROMPT_NODE_VERSION_ENABLED is '0' when the chip is not shown; default
                 # enabled when unset) and node is available. Cache the result keyed on the
                 # current location + PATH so we only spawn node when the directory or PATH
                 # changes (PATH changes on version-manager switches like `nvm use`).
-                $nodeChipEnabled = "$env:WARP_PROMPT_NODE_VERSION_ENABLED" -ne '0'
+                $nodeChipEnabled = "$env:TERMLOC_PROMPT_NODE_VERSION_ENABLED" -ne '0'
                 $hasNodeCommand = if ($nodeChipEnabled) { Get-Command -CommandType Application node 2>$null } else { $null }
                 if ($hasNodeCommand) {
                     try {
                         $nodeCacheKey = "$($PWD.Path)|$env:PATH"
-                        if ($nodeCacheKey -eq $script:warpNodeVersionCacheKey) {
-                            $nodeVersion = $script:warpNodeVersionCacheValue
+                        if ($nodeCacheKey -eq $script:termlocNodeVersionCacheKey) {
+                            $nodeVersion = $script:termlocNodeVersionCacheValue
                         } else {
                             # Walk up from the current directory to find a package.json
                             $dir = Get-Item -LiteralPath $PWD.Path
@@ -578,12 +578,12 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                                 }
 
                                 if ($inGitRepo) {
-                                    $nodeVersion = Warp-TryGet-NodeVersion
+                                    $nodeVersion = Termloc-TryGet-NodeVersion
                                 }
                             }
 
-                            $script:warpNodeVersionCacheKey = $nodeCacheKey
-                            $script:warpNodeVersionCacheValue = $nodeVersion
+                            $script:termlocNodeVersionCacheKey = $nodeCacheKey
+                            $script:termlocNodeVersionCacheValue = $nodeVersion
                         }
                     } catch {
                         # Log at verbose level so the catch block is not empty and diagnostics are available when needed.
@@ -598,12 +598,12 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                 $hasGitCommand = Get-Command -CommandType Application git 2>$null
                 if ($hasGitCommand) {
                     # This is deliberately not using || b/c || only works in Powershell >=7
-                    $gitBranchTmp = Warp-Git symbolic-ref --short HEAD 2>$null
+                    $gitBranchTmp = Termloc-Git symbolic-ref --short HEAD 2>$null
                     if ($null -ne $gitBranchTmp) {
                         $gitBranch = $gitBranchTmp
                         $gitHead = $gitBranchTmp
                     } else {
-                        $gitHeadTmp = Warp-Git rev-parse --short HEAD 2>$null
+                        $gitHeadTmp = Termloc-Git rev-parse --short HEAD 2>$null
                         if ($null -ne $gitHeadTmp) {
                             $gitHead = $gitHeadTmp
                         }
@@ -611,7 +611,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                 }
             }
 
-            $honor_ps1 = "$env:WARP_HONOR_PS1" -eq '1'
+            $honor_ps1 = "$env:TERMLOC_HONOR_PS1" -eq '1'
 
             $precmdMsg = @{
                 hook = 'Precmd'
@@ -631,11 +631,11 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                     virtual_env = $virtualEnv
                     conda_env = $condaEnv
                     node_version = $nodeVersion
-                    session_id = $global:_warpSessionId
+                    session_id = $global:_termlocSessionId
                     kube_config = $kubeConfig
                 }
             }
-            Warp-Send-JsonMessage $precmdMsg
+            Termloc-Send-JsonMessage $precmdMsg
         }
     }
 
@@ -665,14 +665,14 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     $script:outerRunspacePool.ThreadOptions = 'ReuseThread'
     $script:outerRunspacePool.Open() | Out-Null
 
-    class WarpGeneratorCommand {
+    class TermlocGeneratorCommand {
         [string]$CommandId
         [string]$Command
     }
 
-    function Warp-Run-GeneratorCommandImpl {
+    function Termloc-Run-GeneratorCommandImpl {
         param(
-            [WarpGeneratorCommand[]]$commands
+            [TermlocGeneratorCommand[]]$commands
         )
 
         $jobNumber = $script:inBandCommandCount++
@@ -687,14 +687,14 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
             # executes the in-band generator in the current directory
             $ps = [powershell]::Create()
             $ps.RunspacePool = $script:innerRunspacePool
-            $ps.AddScript($warpCommon) | Out-Null
+            $ps.AddScript($termlocCommon) | Out-Null
             $ps.AddScript({
                     param([string]$loc, [string]$commandId, [string]$command)
                     Set-Location $loc
-                    Warp-Run-InBandGenerator -commandId $commandId -command "$command"
+                    Termloc-Run-InBandGenerator -commandId $commandId -command "$command"
                 }).AddParameters(@($PWD.Path, $commandId, "$command")) | Out-Null
 
-            $script:threadInner["Warp-Inner-$jobNumber-$batchNumber"] = $psInner
+            $script:threadInner["Termloc-Inner-$jobNumber-$batchNumber"] = $psInner
             $batchNumber++
 
             @{
@@ -707,7 +707,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         # and then sends the results back to Warp via OSC
         $psOuter = [powershell]::Create()
         $psOuter.RunspacePool = $script:outerRunspacePool
-        $psOuter.AddScript($warpCommon) | Out-Null
+        $psOuter.AddScript($termlocCommon) | Out-Null
         $psOuter.AddScript({
                 param([object[]]$jobs)
 
@@ -731,7 +731,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                     } catch {
                         $output = "$commandId;1;"
                     }
-                    Warp-Send-GeneratorOutputOsc $output
+                    Termloc-Send-GeneratorOutputOsc $output
                 }
             }).AddParameters(@($jobs)) | Out-Null
 
@@ -739,16 +739,16 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         # not stopping it as we do not want to block the main thread.
         $async = $psOuter.BeginInvoke()
 
-        $script:threadOuter["Warp-Outer-$jobNumber"] = $psOuter
+        $script:threadOuter["Termloc-Outer-$jobNumber"] = $psOuter
     }
 
-    function Warp-Stop-ActiveThread {
+    function Termloc-Stop-ActiveThread {
         $script:threadInner.values | ForEach-Object {
             $_.Stop()
         }
     }
 
-    function Warp-Clean-CompletedThread {
+    function Termloc-Clean-CompletedThread {
         # Powershell instances states > 2 are terminal.
         # See https://learn.microsoft.com/en-us/dotnet/api/system.management.automation.psinvocationstate
         if ($script:threadInner.Count -gt 0) {
@@ -773,7 +773,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
     }
 
-    function Warp-Run-GeneratorCommand {
+    function Termloc-Run-GeneratorCommand {
         [CmdletBinding()]
         param(
             [parameter(ValueFromRemainingArguments = $true)][string[]]$passedArgs
@@ -782,7 +782,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         $status = $?
         $code = $global:LASTEXITCODE
 
-        # Setting this environment variable prevents warp_precmd from emitting the
+        # Setting this environment variable prevents termloc_precmd from emitting the
         # 'Block started' hook to the Rust app.
         $script:generatorCommand = $true
 
@@ -790,15 +790,15 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         # (which doesn't really exist in powershell, but :shrug:), we need
         # to properly handle them here like we do in bashzshfish
 
-        # Converts the passed in args to WarpGeneratorCommand objects to group them together
+        # Converts the passed in args to TermlocGeneratorCommand objects to group them together
         # note that if an odd number of arguments is passed in, the last arg will be silently ignored
-        [WarpGeneratorCommand[]] $jobs = @()
+        [TermlocGeneratorCommand[]] $jobs = @()
         for ($i = 0; $i -lt $passedArgs.Length; $i += 2) {
             $commandId = $passedArgs[$i]
             $command = $passedArgs[$i + 1]
 
             if ($null -ne $command) {
-                $jobs += [WarpGeneratorCommand]@{
+                $jobs += [TermlocGeneratorCommand]@{
                     commandId = $commandId
                     command = $command
                 }
@@ -806,15 +806,15 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
 
         try {
-            Warp-Run-GeneratorCommandImpl -commands $jobs
+            Termloc-Run-GeneratorCommandImpl -commands $jobs
         } finally {
-            # NOTE: for some reason the Warp-Restore-ErrorStatus does not work
+            # NOTE: for some reason the Termloc-Restore-ErrorStatus does not work
             # for this function, so we are inlining it in here.
             $global:LASTEXITCODE = $code
             if ($status -eq $false) {
                 $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                         [Exception]::new("$([char]0x00)"),
-                        'warp-reset-error',
+                        'termloc-reset-error',
                         [System.Management.Automation.ErrorCategory]::NotSpecified,
                         $null
                     ))
@@ -825,7 +825,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
     # Computes native shell completions for a command line and emits them over the OSC 9280 wire
     # protocol.
-    function Warp-Run-GeneratorCommand-NativeCompletion {
+    function Termloc-Run-GeneratorCommand-NativeCompletion {
         [CmdletBinding()]
         param([string]$hexEncodedLine)
 
@@ -835,7 +835,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
         Write-Host -NoNewline "$([char]0x1b)]9280;A$oscEnd"
         try {
-            $line = Warp-Decode-HexString $hexEncodedLine
+            $line = Termloc-Decode-HexString $hexEncodedLine
 
             # An empty line has no useful completions.
             if (-not [string]::IsNullOrEmpty($line)) {
@@ -854,11 +854,11 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
                     Write-Host -NoNewline "$([char]0x1b)]9280;S;$replacementStartBytes,$($replacementEndBytes - $replacementStartBytes)$oscEnd"
                 }
                 foreach ($match in $completion.CompletionMatches) {
-                    Write-Host -NoNewline "$([char]0x1b)]9280;C;$(Warp-Encode-HexString $match.CompletionText)$oscEnd"
+                    Write-Host -NoNewline "$([char]0x1b)]9280;C;$(Termloc-Encode-HexString $match.CompletionText)$oscEnd"
                     if (-not [string]::IsNullOrEmpty($match.ToolTip) -and $match.ToolTip -ne $match.CompletionText) {
                         # Cmdlet/parameter tooltips can span multiple lines; collapse to one line.
                         $description = ($match.ToolTip -split '\r?\n' | Where-Object { $_.Trim() -ne '' }) -join ' '
-                        Write-Host -NoNewline "$([char]0x1b)]9280;D?description;$(Warp-Encode-HexString $description)$oscEnd"
+                        Write-Host -NoNewline "$([char]0x1b)]9280;D?description;$(Termloc-Encode-HexString $description)$oscEnd"
                     }
                 }
             }
@@ -871,7 +871,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
             if ($status -eq $false) {
                 $PSCmdlet.WriteError([System.Management.Automation.ErrorRecord]::new(
                         [Exception]::new("$([char]0x00)"),
-                        'warp-reset-error',
+                        'termloc-reset-error',
                         [System.Management.Automation.ErrorCategory]::NotSpecified,
                         $null
                     ))
@@ -879,7 +879,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
     }
 
-    function Warp-Render-Prompt {
+    function Termloc-Render-Prompt {
         param([bool]$status, [int]$code, [bool]$isGeneratorCommand)
 
         # If this is a generator command, we do not want to recompute
@@ -897,13 +897,13 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
 
         # Compute prompt and cache it as the last rendered prompt
-        $basePrompt = & $global:_warpOriginalPrompt
+        $basePrompt = & $global:_termlocOriginalPrompt
         $script:lastRenderedPrompt = $basePrompt
 
         return $basePrompt
     }
 
-    function Warp-Decorate-Prompt {
+    function Termloc-Decorate-Prompt {
         param([string]$basePrompt)
 
         $e = "$([char]0x1b)"
@@ -911,7 +911,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         # Wrap prompt in Prompt Marker OSCs
         $startPromptMarker = "$e]133;A$oscEnd"
         $startRPromptMarker = "$e]133;P;k=r$oscEnd"
-        if ("$env:WARP_HONOR_PS1" -eq '0') {
+        if ("$env:TERMLOC_HONOR_PS1" -eq '0') {
             $endPromptMarker = "$e]133;B$oscEnd$oscResetGrid"
         } else {
             $endPromptMarker = "$e]133;B$oscEnd"
@@ -936,7 +936,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     $script:dontRunPrecmdForPrompt = $false
     # Redraws the prompt. Since our prompt also triggers the precmd hook
     # we need to signal that we do not want that to happen
-    function Warp-Redraw-Prompt {
+    function Termloc-Redraw-Prompt {
         param()
 
         $y = $Host.UI.RawUI.CursorPosition.Y
@@ -948,27 +948,27 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
     }
 
-    function Warp-Prompt {
+    function Termloc-Prompt {
         param()
 
         # We need to capture all the data related to exit codes and such
         # as soon as possible for a few reasons
         # 1. We need to make sure that these values are as fresh as possible
         #    and are not impacted by our Warp- functions
-        # 2. After we finish running Warp-Precmd and Warp-Render-Prompt, we want to set these values
+        # 2. After we finish running Termloc-Precmd and Termloc-Render-Prompt, we want to set these values
         #    back to what they were originally
         $status = $?
         $code = $LASTEXITCODE
         $isGeneratorCommand = [bool]($script:generatorCommand -eq $true)
 
         if ($script:dontRunPrecmdForPrompt -ne $true) {
-            Warp-Precmd -status $status -code $code
+            Termloc-Precmd -status $status -code $code
         }
 
         $script:preexecHandled = $false
 
-        $renderedPrompt = Warp-Render-Prompt -status $status -code $code -isGeneratorCommand $isGeneratorCommand
-        $decoratedPrompt = Warp-Decorate-Prompt -basePrompt $renderedPrompt
+        $renderedPrompt = Termloc-Render-Prompt -status $status -code $code -isGeneratorCommand $isGeneratorCommand
+        $decoratedPrompt = Termloc-Decorate-Prompt -basePrompt $renderedPrompt
         $extraLines = ($decoratedPrompt -split "$([char]0x0a)").Length - 1
         Set-PSReadLineOption -ExtraPromptLineCount $extraLines
 
@@ -981,9 +981,9 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         return $decoratedPrompt
     }
 
-    if ((Test-Path env:WARP_INITIAL_WORKING_DIR) -and -not [String]::IsNullOrEmpty($env:WARP_INITIAL_WORKING_DIR)) {
-        Set-Location $env:WARP_INITIAL_WORKING_DIR 2> $null
-        Remove-Item -Path env:WARP_INITIAL_WORKING_DIR
+    if ((Test-Path env:TERMLOC_INITIAL_WORKING_DIR) -and -not [String]::IsNullOrEmpty($env:TERMLOC_INITIAL_WORKING_DIR)) {
+        Set-Location $env:TERMLOC_INITIAL_WORKING_DIR 2> $null
+        Remove-Item -Path env:TERMLOC_INITIAL_WORKING_DIR
     }
 
     # In some cases, the Clear-Host command will not interface properly with the blocklist.
@@ -1004,8 +1004,8 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
     # 1. B/c our other bootstrap scripts (bash, zsh, fish) do not.
 
     # If we ever want to call the underlying clear command, we could do so by:
-    # 1. Capturing it with '$_warp_original_clear = (Get-Command Clear-Host).Definition'
-    # 2. Invoking it with 'Invoke-Expression $_warp_original_clear'
+    # 1. Capturing it with '$_termloc_original_clear = (Get-Command Clear-Host).Definition'
+    # 2. Invoking it with 'Invoke-Expression $_termloc_original_clear'
 
     # TODO(PLAT-781): On windows, these two functions should both clear the visible screen
     # AND the scrollback
@@ -1013,25 +1013,25 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         $inputBufferMsg = @{
             hook = 'Clear'
             value = @{
-                session_id = $global:_warpSessionId
+                session_id = $global:_termlocSessionId
             }
         }
-        Warp-Send-JsonMessage $inputBufferMsg
+        Termloc-Send-JsonMessage $inputBufferMsg
     }
 
     function clear() {
         $inputBufferMsg = @{
             hook = 'Clear'
             value = @{
-                session_id = $global:_warpSessionId
+                session_id = $global:_termlocSessionId
             }
         }
-        Warp-Send-JsonMessage $inputBufferMsg
+        Termloc-Send-JsonMessage $inputBufferMsg
     }
 
-    function Warp-Finish-Bootstrap {
+    function Termloc-Finish-Bootstrap {
         param([decimal]$rcStartTime, [decimal]$rcEndTime)
-        Warp-Configure-PSReadLine
+        Termloc-Configure-PSReadLine
 
         # This is the closest we can get in PowerShell to a proper preexec hook. We wrap the
         # invocation of PSConsoleHostReadline, and call our preexec hook before returning the
@@ -1041,7 +1041,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         $function:global:PSConsoleHostReadLine = {
             $line = & $script:oldPSConsoleHostReadLine
 
-            Warp-Preexec "$line"
+            Termloc-Preexec "$line"
 
             $line
         }
@@ -1058,7 +1058,7 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
             # and the stuff we set during this bootstrap. So, add a condition to prevent preexec from
             # triggering in those cases. Note that we prefix our own functions with the "Warp-" prefix
             # so that we can ignore them here.
-            if ($EventArgs.CommandOrigin -ne 'Runspace' -or ($commandLine -match '^prompt$|^Warp-')) {
+            if ($EventArgs.CommandOrigin -ne 'Runspace' -or ($commandLine -match '^prompt$|^Termloc-')) {
                 return
             }
             $script:commandNotFound = $true
@@ -1066,8 +1066,8 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
         # This sets up our wrapper around $function:prompt, which runs the precmd hook
         # and computes the user's custom prompt.
-        $function:global:prompt = (Get-Command Warp-Prompt).ScriptBlock
-        Warp-Bootstrapped -rcStartTime $rcStartTime -rcEndTime $rcEndTime
+        $function:global:prompt = (Get-Command Termloc-Prompt).ScriptBlock
+        Termloc-Bootstrapped -rcStartTime $rcStartTime -rcEndTime $rcEndTime
     }
 
     ###########################################################
@@ -1076,13 +1076,13 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
     # Send a precmd message to the terminal to differentiate between the warp
     # bootstrap logic pasted into the PTY and the output of shell startup files.
-    Warp-Precmd -status $global:? -code $global:LASTEXITCODE
+    Termloc-Precmd -status $global:? -code $global:LASTEXITCODE
 
-    Export-ModuleMember -Function clear, Clear-Host, Get-EpochTime, Warp-Finish-Update, Warp-Handle-DistUpgrade, Warp-Run-GeneratorCommand, Warp-Run-GeneratorCommand-NativeCompletion, Warp-Finish-Bootstrap
+    Export-ModuleMember -Function clear, Clear-Host, Get-EpochTime, Termloc-Finish-Update, Termloc-Handle-DistUpgrade, Termloc-Run-GeneratorCommand, Termloc-Run-GeneratorCommand-NativeCompletion, Termloc-Finish-Bootstrap
 }
 
 # Finally, get ready to source the user's RC files. This must be done in the global scope (not
-# inside Warp-Module) in order to obey the expected scoping in PowerShell's typical startup process.
+# inside Termloc-Module) in order to obey the expected scoping in PowerShell's typical startup process.
 . {
     $rcStartTime = Get-EpochTime
     # Source the user's RC files
@@ -1099,11 +1099,11 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
         }
     }
 
-    # Append additional PATH entries if provided via WARP_PATH_APPEND.
+    # Append additional PATH entries if provided via TERMLOC_PATH_APPEND.
     # This happens after we source RC files in case they reset PATH.
-    if (-not [String]::IsNullOrEmpty($env:WARP_PATH_APPEND)) {
-        $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, $env:WARP_PATH_APPEND
-        Remove-Item -Path env:WARP_PATH_APPEND
+    if (-not [String]::IsNullOrEmpty($env:TERMLOC_PATH_APPEND)) {
+        $env:PATH = '{0}{1}{2}' -f $env:PATH, [IO.Path]::PathSeparator, $env:TERMLOC_PATH_APPEND
+        Remove-Item -Path env:TERMLOC_PATH_APPEND
     }
 
     # This is a workaround for oh-my-posh's "transient prompt" feature. When enabled, it causes the
@@ -1123,13 +1123,13 @@ $null = New-Module -Name Warp-Module -ScriptBlock {
 
     # Capture the current prompt (potentially modified by a profile),
     # and then reset the prompt to our current noop prompt.
-    $global:_warpOriginalPrompt = $function:global:prompt
+    $global:_termlocOriginalPrompt = $function:global:prompt
 
-    Warp-Finish-Bootstrap -rcStartTime $rcStartTime -rcEndTime $rcEndTime
+    Termloc-Finish-Bootstrap -rcStartTime $rcStartTime -rcEndTime $rcEndTime
     Remove-Variable -Name enterHandler, ctrlcHandler, rcStartTime, rcEndTime -Scope global -ErrorAction Ignore
 
     # Restore the process's original execution policy now that the user's RC files have been loaded.
-    if ($global:_warp_PSProcessExecPolicy -ne $null) {
-        Set-ExecutionPolicy -Scope Process -ExecutionPolicy $global:_warp_PSProcessExecPolicy
+    if ($global:_termloc_PSProcessExecPolicy -ne $null) {
+        Set-ExecutionPolicy -Scope Process -ExecutionPolicy $global:_termloc_PSProcessExecPolicy
     }
 }

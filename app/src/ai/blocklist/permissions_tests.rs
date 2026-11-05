@@ -590,7 +590,7 @@ fn test_can_write_files_mcp_config_always_denied() {
 
         let mcp_config_paths = vec![
             PathBuf::from("/project/.mcp.json"),
-            PathBuf::from("/project/.warp/.mcp.json"),
+            PathBuf::from("/project/.termloc/.mcp.json"),
             PathBuf::from("/project/.codex/config.toml"),
         ];
 
@@ -627,7 +627,7 @@ fn cloud_mcp_config_writes_follow_profile_permissions() {
         state.permissions.read(&app, |permissions, ctx| {
             let result = permissions.can_write_files(
                 &state.convo_id,
-                &[PathBuf::from("/project/.warp/.mcp.json")],
+                &[PathBuf::from("/project/.termloc/.mcp.json")],
                 Some(state.terminal_view_id),
                 &test_scope(),
                 ctx,
@@ -665,7 +665,7 @@ fn cloud_auto_approve_allows_mcp_config_writes() {
         state.permissions.read(&app, |permissions, ctx| {
             let result = permissions.can_write_files(
                 &state.convo_id,
-                &[PathBuf::from("/project/.warp/.mcp.json")],
+                &[PathBuf::from("/project/.termloc/.mcp.json")],
                 Some(state.terminal_view_id),
                 &test_scope(),
                 ctx,
@@ -692,7 +692,7 @@ fn local_app_auto_approve_requires_mcp_config_approval() {
         state.permissions.read(&app, |permissions, ctx| {
             let result = permissions.can_write_files(
                 &state.convo_id,
-                &[PathBuf::from("/project/.warp/.mcp.json")],
+                &[PathBuf::from("/project/.termloc/.mcp.json")],
                 Some(state.terminal_view_id),
                 &test_scope(),
                 ctx,
@@ -719,7 +719,7 @@ fn local_cli_auto_approve_requires_mcp_config_approval() {
         state.permissions.read(&app, |permissions, ctx| {
             let result = permissions.can_write_files(
                 &state.convo_id,
-                &[PathBuf::from("/project/.warp/.mcp.json")],
+                &[PathBuf::from("/project/.termloc/.mcp.json")],
                 Some(state.terminal_view_id),
                 &test_scope(),
                 ctx,

@@ -99,7 +99,7 @@ fn denylisted_commands_and_protected_writes_are_refused_everything_else_allowed(
                     "a command the user would merely be asked about runs unattended"
                 );
                 assert!(matches!(
-                    evaluate(PolicyRequest::write("/repo/.warp/.mcp.json"), ctx),
+                    evaluate(PolicyRequest::write("/repo/.termloc/.mcp.json"), ctx),
                     PolicyDecision::Deny { .. }
                 ));
                 assert_eq!(

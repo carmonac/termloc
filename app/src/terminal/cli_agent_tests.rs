@@ -643,7 +643,8 @@ fn test_warp_tui_matches_with_env_var_prefix() {
     // Env-var assignments before the command are skipped when an escape char is
     // provided (mirrors `CLIAgent::detect`).
     assert!(
-        CLIAgent::WarpTui.matches_command("WARP_API_KEY=secret warp", Some(EscapeChar::Backslash),)
+        CLIAgent::WarpTui
+            .matches_command("TERMLOC_API_KEY=secret warp", Some(EscapeChar::Backslash),)
     );
 }
 

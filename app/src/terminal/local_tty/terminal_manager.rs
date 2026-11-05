@@ -1238,8 +1238,8 @@ impl<S> TerminalManager<S> {
         };
 
         // `enable_ssh_warpification` is the single source of truth for whether the SSH
-        // wrapper is active. The bootstrap scripts check `WARP_USE_SSH_WRAPPER` (derived
-        // from this value) before invoking `warp_ssh_helper`, which spawns the ControlMaster
+        // wrapper is active. The bootstrap scripts check `TERMLOC_USE_SSH_WRAPPER` (derived
+        // from this value) before invoking `termloc_ssh_helper`, which spawns the ControlMaster
         // and opens agent-protocol channels.
         let enable_ssh_wrapper = *WarpifySettings::as_ref(ctx)
             .enable_ssh_warpification

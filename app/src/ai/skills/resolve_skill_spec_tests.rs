@@ -22,7 +22,7 @@ fn write_skill_file(path: &Path, name: &str, description: &str, body: &str) -> R
 #[test]
 fn resolve_from_skill_dirs_by_directory_scan_resolves_home_skill_dir() -> Result<()> {
     let temp_dir = tempfile::TempDir::new().context("Failed to create temp dir")?;
-    let skill_dir = temp_dir.path().join(".warp").join("skills");
+    let skill_dir = temp_dir.path().join(".termloc").join("skills");
     let skill_path = skill_dir.join("my-skill").join("SKILL.md");
 
     write_skill_file(
@@ -49,7 +49,7 @@ fn resolve_from_root_path_by_directory_scan_respects_directory_precedence() -> R
 
     let spec = SkillSpec::without_repo("my-skill".to_string());
     let agents_skill = root.join(".agents/skills/my-skill/SKILL.md");
-    let warp_skill = root.join(".warp/skills/my-skill/SKILL.md");
+    let warp_skill = root.join(".termloc/skills/my-skill/SKILL.md");
 
     let claude_skill = root.join(".claude/skills/my-skill/SKILL.md");
     let codex_skill = root.join(".codex/skills/my-skill/SKILL.md");
@@ -70,7 +70,7 @@ fn resolve_from_root_path_by_directory_scan_respects_directory_precedence() -> R
         &claude_skill,
         "my-skill",
         "desc",
-        "# Claude version\n\nDo not pick this when .warp exists.",
+        "# Claude version\n\nDo not pick this when .termloc exists.",
     )?;
     write_skill_file(
         &codex_skill,
@@ -188,7 +188,7 @@ fn resolve_simple_name_uses_directory_precedence() -> Result<()> {
     let root = temp_dir.path();
 
     // Create skills with same name in different directories
-    // Note: .agents/skills has highest precedence, followed by .warp, then .claude.
+    // Note: .agents/skills has highest precedence, followed by .termloc, then .claude.
     let agents_skill = root.join(".agents/skills/my-skill/SKILL.md");
     write_skill_file(
         &agents_skill,
@@ -197,7 +197,7 @@ fn resolve_simple_name_uses_directory_precedence() -> Result<()> {
         "# Agents version\n\nThis should be picked by precedence.",
     )?;
 
-    let warp_skill = root.join(".warp/skills/my-skill/SKILL.md");
+    let warp_skill = root.join(".termloc/skills/my-skill/SKILL.md");
     write_skill_file(
         &warp_skill,
         "my-skill",

@@ -412,12 +412,12 @@ fn ai_agent_context_round_trips_tagged_variants() {
         AIAgentContext::ProjectRules {
             root_path: "/tmp/project".to_string(),
             active_rules: vec![FileContext::new(
-                "WARP.md".to_string(),
+                "TERMLOC.md".to_string(),
                 AnyFileContent::StringContent("Be nice.".to_string()),
                 None,
                 None,
             )],
-            additional_rule_paths: vec!["sub/WARP.md".to_string()],
+            additional_rule_paths: vec!["sub/TERMLOC.md".to_string()],
         },
         AIAgentContext::File(FileContext::new(
             "a.txt".to_string(),

@@ -891,7 +891,7 @@ fn prepared_file() -> HashMap<String, AIAgentAttachment> {
         AIAgentAttachment::FilePathReference {
             file_id: "attachment-id".into(),
             file_name: "event-payload.json".into(),
-            file_path: "/workspace/.warp/attachments/attachment-id_event-payload.json".into(),
+            file_path: "/workspace/.termloc/attachments/attachment-id_event-payload.json".into(),
         },
     )])
 }
@@ -955,7 +955,7 @@ fn prepared_file_prompt_steers_without_interrupting_or_redownloading() {
                 referenced_attachments.get("event-payload.json"),
                 Some(AIAgentAttachment::FilePathReference { file_id, file_path, .. })
                     if file_id == "attachment-id"
-                        && file_path == "/workspace/.warp/attachments/attachment-id_event-payload.json"
+                        && file_path == "/workspace/.termloc/attachments/attachment-id_event-payload.json"
             ));
             assert_eq!(controller.get_current_response_initiator(), Some(participant));
             assert!(!QueuedQueryModel::as_ref(ctx).has_queue(id));

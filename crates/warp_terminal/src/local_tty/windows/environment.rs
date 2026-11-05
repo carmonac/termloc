@@ -19,16 +19,16 @@ use crate::focus_env::{FOCUS_URL_ENV, TERMINAL_SESSION_UUID_ENV};
 use crate::local_tty::PtyOptions;
 use crate::local_tty::shell::{ShellStarter, extra_path_entries, ssh_socket_dir};
 
-const HONOR_PS1_NAME: &str = "WARP_HONOR_PS1";
-const PROMPT_NODE_VERSION_ENABLED_NAME: &str = "WARP_PROMPT_NODE_VERSION_ENABLED";
-const INITIAL_WORKING_DIR_NAME: &str = "WARP_INITIAL_WORKING_DIR";
-const USE_SSH_WRAPPER_NAME: &str = "WARP_USE_SSH_WRAPPER";
-const SSH_REUSE_CONTROL_MASTER_NAME: &str = "WARP_SSH_REUSE_CONTROL_MASTER";
-const SHELL_DEBUG_MODE_NAME: &str = "WARP_SHELL_DEBUG_MODE";
+const HONOR_PS1_NAME: &str = "TERMLOC_HONOR_PS1";
+const PROMPT_NODE_VERSION_ENABLED_NAME: &str = "TERMLOC_PROMPT_NODE_VERSION_ENABLED";
+const INITIAL_WORKING_DIR_NAME: &str = "TERMLOC_INITIAL_WORKING_DIR";
+const USE_SSH_WRAPPER_NAME: &str = "TERMLOC_USE_SSH_WRAPPER";
+const SSH_REUSE_CONTROL_MASTER_NAME: &str = "TERMLOC_SSH_REUSE_CONTROL_MASTER";
+const SHELL_DEBUG_MODE_NAME: &str = "TERMLOC_SHELL_DEBUG_MODE";
 const TERM_PROGRAM_NAME: &str = "TERM_PROGRAM";
-const IS_LOCAL_SESSION_NAME: &str = "WARP_IS_LOCAL_SHELL_SESSION";
+const IS_LOCAL_SESSION_NAME: &str = "TERMLOC_IS_LOCAL_SHELL_SESSION";
 const SSH_SOCKET_DIR: &str = "SSH_SOCKET_DIR";
-const PATH_APPEND_NAME: &str = "WARP_PATH_APPEND";
+const PATH_APPEND_NAME: &str = "TERMLOC_PATH_APPEND";
 const WSLENV: &str = "WSLENV";
 const HISTIGNORE: &str = "HISTIGNORE";
 
@@ -114,7 +114,7 @@ pub(super) fn get_shell_environment_variables(options: &PtyOptions) -> Vec<u16> 
         map_key(TERM_PROGRAM_NAME.into()),
         EnvEntry {
             preferred_key: TERM_PROGRAM_NAME.into(),
-            value: "WarpTerminal".into(),
+            value: "Termloc".into(),
         },
     );
 
@@ -154,7 +154,7 @@ pub(super) fn get_shell_environment_variables(options: &PtyOptions) -> Vec<u16> 
         },
     );
 
-    // Set WARP_PATH_APPEND with additional PATH entries to append
+    // Set TERMLOC_PATH_APPEND with additional PATH entries to append
     let path_append = extra_path_entries()
         .map(|p| p.to_string_lossy().into_owned())
         .join(";");

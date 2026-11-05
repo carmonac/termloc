@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-use ai::skills::{ParsedSkill, WARP_SKILL_DIRS_ENV, parse_skills_dirs_env};
+use ai::skills::{ParsedSkill, TERMLOC_SKILL_DIRS_ENV, parse_skills_dirs_env};
 use anyhow::{Context as _, anyhow};
 use chrono::{DateTime, Utc};
 use futures::FutureExt as _;
@@ -864,7 +864,7 @@ fn split_run_options(
     .map_err(AgentDriverError::ConfigBuildFailed)?;
     if let Some(dirs) = &workspace.factory_skill_dirs {
         env_vars.insert(
-            OsString::from(WARP_SKILL_DIRS_ENV),
+            OsString::from(TERMLOC_SKILL_DIRS_ENV),
             OsString::from(dirs.iter().map(|dir| dir.to_string_lossy()).join(",")),
         );
     }
@@ -1156,7 +1156,7 @@ pub enum AgentDriverError {
     #[error("Agent profile \"{0}\" not found")]
     ProfileError(String),
     #[error(
-        "Failed to authenticate with server - please log in via 'oz login', provide an API key via '--api-key <key>', or set the WARP_API_KEY environment variable"
+        "Failed to authenticate with server - please log in via 'oz login', provide an API key via '--api-key <key>', or set the TERMLOC_API_KEY environment variable"
     )]
     NotLoggedIn,
     #[error("Saved prompt not found for id {0}")]

@@ -395,13 +395,13 @@ impl ShellType {
     pub fn native_completions_generator_command(self, hex_encoded_line: &str) -> String {
         match self {
             ShellType::Zsh | ShellType::Bash => {
-                format!("warp_run_generator_command_native_completions {hex_encoded_line}")
+                format!("termloc_run_generator_command_native_completions {hex_encoded_line}")
             }
             ShellType::Fish => {
-                format!(" warp_run_generator_command_native_completions {hex_encoded_line}")
+                format!(" termloc_run_generator_command_native_completions {hex_encoded_line}")
             }
             ShellType::PowerShell => {
-                format!("Warp-Run-GeneratorCommand-NativeCompletion {hex_encoded_line}")
+                format!("Termloc-Run-GeneratorCommand-NativeCompletion {hex_encoded_line}")
             }
         }
     }

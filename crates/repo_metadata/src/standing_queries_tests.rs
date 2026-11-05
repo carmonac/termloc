@@ -21,7 +21,7 @@ fn records_provider_skill_files_and_project_rules() {
     let mut results = StandingQueryResults::default();
     let skills_provider = repo_path(".agents/skills");
     let skill_file = repo_path(".agents/skills/review/SKILL.md");
-    let root_rule = repo_path("WARP.md");
+    let root_rule = repo_path("TERMLOC.md");
     let nested_rule = repo_path("packages/api/AGENTS.md");
 
     results.record_path(&skills_provider, true, &definitions);
@@ -92,8 +92,8 @@ fn support_file_beneath_skill_does_not_synthesize_provider_update() {
 /// Emulates the open `AGENTS.md` discovery contract that non-Warp agents follow:
 /// walk from a working directory up to the repository root, collecting any
 /// `AGENTS.md` rule files via the same predicate Warp uses to index project
-/// rules. Guards the `WARP.md` → `AGENTS.md` rename so the repo-root agent
-/// context file stays present, non-empty, and discoverable.
+/// rules. Guards that the repo-root agent context file stays present, non-empty, and
+/// discoverable.
 #[test]
 fn repo_root_agents_md_is_discovered_by_rule_file_contract() {
     let definitions = StandingQueryDefinitions::default();
@@ -126,11 +126,5 @@ fn repo_root_agents_md_is_discovered_by_rule_file_contract() {
     assert!(
         !contents.trim().is_empty(),
         "repo-root AGENTS.md should not be empty"
-    );
-
-    // Clean rename: the repo no longer ships a root WARP.md.
-    assert!(
-        !repo_root.join("WARP.md").exists(),
-        "repo-root WARP.md should have been renamed to AGENTS.md"
     );
 }

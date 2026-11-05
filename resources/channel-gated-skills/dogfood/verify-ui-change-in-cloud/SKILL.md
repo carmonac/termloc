@@ -58,10 +58,10 @@ font size relative to other text, and color.
 ```
 
 ```
-I added a migration that symlinks config from ~/.warp into ~/.warp-preview on first launch.
+I added a migration that symlinks config from ~/.termloc into ~/.termloc-preview on first launch.
 The migration is gated on Channel::Preview. Before building, hardcode the migration to run
-regardless of channel by removing the channel check. Also create a fake ~/.warp directory
-with test files. After launching Warp, verify the symlinks were created in ~/.warp-preview.
+regardless of channel by removing the channel check. Also create a fake ~/.termloc directory
+with test files. After launching Warp, verify the symlinks were created in ~/.termloc-preview.
 ```
 
 ### Hardcoding to reach the code path under test

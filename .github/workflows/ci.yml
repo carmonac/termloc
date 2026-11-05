@@ -320,7 +320,7 @@ jobs:
           # Unit tests may end up spawning a shell, but shouldn't care which
           # shell it is.  We'll use zsh, as it has the shortest bootstrap times
           # and tends to be the most reliable.
-          WARP_SHELL_PATH: ${{ steps.echo_default_shell.outputs.default_shell_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_default_shell.outputs.default_shell_path }}
 
       - name: Upload results of unit tests to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -345,7 +345,7 @@ jobs:
         env:
           # We run shell-agnostic tests against zsh, as it has the shortest
           # bootstrap times and tends to be the most reliable.
-          WARP_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.zsh_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.zsh_path }}
 
       - name: Upload results of shell-agnostic integration tests to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -368,7 +368,7 @@ jobs:
         with:
           run: cargo nextest run ${{ env.WORKSPACE_TEST_ARGS }} -E "package(integration) and test(shell_integration_tests)${{ env.EXCLUDE_SSH_TESTS_FILTER }}${{ env.EXCLUDE_REMOTE_SERVER_TESTS_FILTER }}"
         env:
-          WARP_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.default_bash_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.default_bash_path }}
 
       - name: Upload results of shell integration tests against default version of bash to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -394,7 +394,7 @@ jobs:
         with:
           run: cargo nextest run ${{ env.WORKSPACE_TEST_ARGS }} -E "package(integration) and test(shell_integration_tests)${{ env.EXCLUDE_SSH_TESTS_FILTER }}${{ env.EXCLUDE_REMOTE_SERVER_TESTS_FILTER }}"
         env:
-          WARP_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.latest_bash_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.latest_bash_path }}
 
       - name: Upload results of shell integration tests against latest version of bash to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -417,7 +417,7 @@ jobs:
         with:
           run: cargo nextest run ${{ env.WORKSPACE_TEST_ARGS }} -E "package(integration) and test(shell_integration_tests)${{ env.EXCLUDE_SSH_TESTS_FILTER }}${{ env.EXCLUDE_REMOTE_SERVER_TESTS_FILTER }}"
         env:
-          WARP_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.fish_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.fish_path }}
 
       - name: Upload results of shell integration tests against fish to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -440,7 +440,7 @@ jobs:
         with:
           run: cargo nextest run ${{ env.WORKSPACE_TEST_ARGS }} -E "package(integration) and test(shell_integration_tests)${{ env.EXCLUDE_SSH_TESTS_FILTER }}${{ env.EXCLUDE_REMOTE_SERVER_TESTS_FILTER }}"
         env:
-          WARP_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.zsh_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.zsh_path }}
 
       - name: Upload results of shell integration tests against zsh to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -463,7 +463,7 @@ jobs:
         with:
           run: cargo nextest run ${{ env.WORKSPACE_TEST_ARGS }} -E "package(integration) and test(shell_integration_tests)${{ env.EXCLUDE_SSH_TESTS_FILTER }}${{ env.EXCLUDE_REMOTE_SERVER_TESTS_FILTER }}"
         env:
-          WARP_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.powershell_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_shells_unix.outputs.powershell_path }}
 
       - name: Upload results of shell integration tests against powershell to trunk.io
         # Run this step even when the tests fail. Skip if the workflow is cancelled.
@@ -563,7 +563,7 @@ jobs:
         with:
           run: cargo nextest run ${{ env.WORKSPACE_TEST_ARGS }} -E "package(integration) and test(/remote_server/)"
         env:
-          WARP_SHELL_PATH: ${{ steps.echo_bash.outputs.default_bash_path }}
+          TERMLOC_SHELL_PATH: ${{ steps.echo_bash.outputs.default_bash_path }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload results of remote-server integration tests to trunk.io

@@ -516,7 +516,7 @@ pub struct RunAgentArgs {
     ///
     /// Format: `skill_name`, `repo:skill_name`, or `org/repo:skill_name`
     ///
-    /// Skills are searched in `.agents/skills/`, `.warp/skills/`, `.claude/skills/`, and `.codex/skills/` directories.
+    /// Skills are searched in `.agents/skills/`, `.termloc/skills/`, `.claude/skills/`, and `.codex/skills/` directories.
     /// If a repo is specified, searches only that repo. If org is also specified,
     /// validates the repo's git remote matches the expected org.
     ///
@@ -741,7 +741,7 @@ pub struct RunCloudArgs {
     ///
     /// Format: `skill_name`, `repo:skill_name`, or `org/repo:skill_name`
     ///
-    /// Skills are searched in `.agents/skills/`, `.warp/skills/`, `.claude/skills/`, and `.codex/skills/` directories.
+    /// Skills are searched in `.agents/skills/`, `.termloc/skills/`, `.claude/skills/`, and `.codex/skills/` directories.
     /// If a repo is specified, searches only that repo. If org is also specified,
     /// validates the repo's git remote matches the expected org.
     ///

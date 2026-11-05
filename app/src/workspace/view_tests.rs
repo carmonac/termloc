@@ -1205,7 +1205,7 @@ fn test_worktree_sidecar_search_editor_enter_executes_selection() {
 }
 
 /// RAII guard that removes tab config TOML files whose name starts with
-/// `prefix` from `~/.warp/tab_configs/` on drop. Because `Drop` runs even
+/// `prefix` from `~/.termloc/tab_configs/` on drop. Because `Drop` runs even
 /// when a test panics, this prevents stale worktree configs from leaking
 /// into Warp dev.
 #[cfg(feature = "local_fs")]

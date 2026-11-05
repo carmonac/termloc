@@ -65,7 +65,7 @@ fn custom_theme_path_under_theme_root_storage_helper_returns_relative_path() {
 
 #[test]
 fn custom_theme_relative_path_resolves_under_local_theme_root() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from("catppuccin/catppuccin_latte.yml");
 
     assert_eq!(
@@ -76,7 +76,7 @@ fn custom_theme_relative_path_resolves_under_local_theme_root() {
 
 #[test]
 fn custom_theme_relative_parent_dir_path_is_preserved() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from("../outside.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
@@ -84,7 +84,7 @@ fn custom_theme_relative_parent_dir_path_is_preserved() {
 
 #[test]
 fn custom_theme_relative_parent_dir_path_is_not_portable() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
 
     assert!(!custom_theme_path_is_portable(
         &PathBuf::from("../outside.yml"),
@@ -95,7 +95,7 @@ fn custom_theme_relative_parent_dir_path_is_not_portable() {
 #[test]
 fn custom_theme_absolute_parent_dir_path_under_theme_root_storage_helper_preserves_path_and_rejects_portability()
  {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let path = root.join("../outside.yml");
 
     assert_eq!(custom_theme_path_from_storage(&path, &root), path);
@@ -111,7 +111,7 @@ fn custom_theme_legacy_macos_path_is_preserved_even_when_local_file_exists() {
     std::fs::create_dir_all(local.parent().unwrap()).unwrap();
     std::fs::write(&local, "").unwrap();
 
-    let stored = PathBuf::from("/Users/example/.warp/themes/catppuccin/catppuccin_mocha.yml");
+    let stored = PathBuf::from("/Users/example/.termloc/themes/catppuccin/catppuccin_mocha.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
 }
@@ -124,7 +124,7 @@ fn custom_theme_legacy_parent_dir_path_is_preserved() {
     std::fs::create_dir_all(local.parent().unwrap()).unwrap();
     std::fs::write(&local, "").unwrap();
 
-    let stored = PathBuf::from("/Users/example/.warp/themes/../outside.yml");
+    let stored = PathBuf::from("/Users/example/.termloc/themes/../outside.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
 }
@@ -132,7 +132,7 @@ fn custom_theme_legacy_parent_dir_path_is_preserved() {
 #[test]
 fn custom_theme_legacy_linux_path_is_preserved_even_when_local_file_exists() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".warp/themes");
+    let root = temp.path().join(".termloc/themes");
     let local = root.join("catppuccin/catppuccin_latte.yml");
     std::fs::create_dir_all(local.parent().unwrap()).unwrap();
     std::fs::write(&local, "").unwrap();
@@ -147,15 +147,15 @@ fn custom_theme_legacy_linux_path_is_preserved_even_when_local_file_exists() {
 #[test]
 fn custom_theme_unmatched_legacy_absolute_path_is_preserved() {
     let temp = tempfile::tempdir().unwrap();
-    let root = temp.path().join(".warp/themes");
-    let stored = PathBuf::from("/Users/example/.warp/themes/missing.yml");
+    let root = temp.path().join(".termloc/themes");
+    let stored = PathBuf::from("/Users/example/.termloc/themes/missing.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
 }
 
 #[test]
 fn custom_theme_windows_absolute_path_string_is_preserved() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"C:\Users\example\AppData\Roaming\warp\Warp\data\themes\mocha.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
@@ -163,7 +163,7 @@ fn custom_theme_windows_absolute_path_string_is_preserved() {
 
 #[test]
 fn custom_theme_windows_absolute_path_string_is_not_portable() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"C:\Users\example\AppData\Roaming\warp\Warp\data\themes\mocha.yml");
 
     assert!(!custom_theme_path_is_portable(&stored, &root));
@@ -171,7 +171,7 @@ fn custom_theme_windows_absolute_path_string_is_not_portable() {
 
 #[test]
 fn custom_theme_windows_absolute_path_string_storage_helper_preserves_path() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"C:\Users\example\AppData\Roaming\warp\Warp\data\themes\mocha.yml");
 
     assert_eq!(custom_theme_path_for_storage(&stored, &root), stored);
@@ -179,7 +179,7 @@ fn custom_theme_windows_absolute_path_string_storage_helper_preserves_path() {
 
 #[test]
 fn custom_theme_windows_unc_path_string_is_preserved() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"\\server\share\warp\themes\mocha.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
@@ -188,7 +188,7 @@ fn custom_theme_windows_unc_path_string_is_preserved() {
 #[test]
 #[cfg(not(windows))]
 fn custom_theme_relative_backslash_path_is_preserved() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"catppuccin\mocha.yml");
 
     assert_eq!(custom_theme_path_from_storage(&stored, &root), stored);
@@ -197,7 +197,7 @@ fn custom_theme_relative_backslash_path_is_preserved() {
 #[test]
 #[cfg(not(windows))]
 fn custom_theme_relative_backslash_path_is_not_portable() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"catppuccin\mocha.yml");
 
     assert!(!custom_theme_path_is_portable(&stored, &root));
@@ -206,7 +206,7 @@ fn custom_theme_relative_backslash_path_is_not_portable() {
 #[test]
 #[cfg(not(windows))]
 fn custom_theme_relative_backslash_path_storage_helper_preserves_path() {
-    let root = PathBuf::from("/Users/example/.warp/themes");
+    let root = PathBuf::from("/Users/example/.termloc/themes");
     let stored = PathBuf::from(r"catppuccin\mocha.yml");
 
     assert_eq!(custom_theme_path_for_storage(&stored, &root), stored);

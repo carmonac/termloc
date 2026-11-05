@@ -1076,7 +1076,7 @@ impl AmbientAgentViewModel {
     /// Builds the default `AgentConfigSnapshot` for spawning a cloud agent from this pane.
     ///
     /// Reads the user's preferred model, computer-use autonomy, optional self-hosted
-    /// host (`WARP_CLOUD_MODE_DEFAULT_HOST`), and the pane's currently-selected env
+    /// host (`TERMLOC_CLOUD_MODE_DEFAULT_HOST`), and the pane's currently-selected env
     /// and harness. Shared by `spawn_agent` and the local-to-cloud handoff path so
     /// both flows route to the same worker host and inherit the same defaults.
     pub(crate) fn build_default_spawn_config(

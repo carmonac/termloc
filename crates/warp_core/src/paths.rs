@@ -22,14 +22,12 @@ use directories::BaseDirs;
 use crate::AppId;
 use crate::channel::{Channel, ChannelState};
 
-/// The name of the directory in which to put non-global Warp-specific files.
+/// The name of the directory holding this build's project-level files, and its global config and
+/// data under the home directory.
 ///
 /// This should be used, for example, as the base directory under which
-/// repository workflows would be stored (in "./.warp/workflows").
-pub const WARP_CONFIG_DIR: &str = ".warp";
-
-/// The name of the home directory holding this build's global config and data.
-const TERMLOC_CONFIG_DIR: &str = ".termloc";
+/// repository workflows would be stored (in "./.termloc/workflows").
+pub const TERMLOC_CONFIG_DIR: &str = ".termloc";
 
 /// The name of the folder that stores Warp execution logs and network logs.
 /// This is currently only used on Windows to maintain backwards compatibility.
@@ -37,19 +35,16 @@ pub const WARP_LOGS_DIR: &str = "logs";
 
 fn base_warp_config_dir_name() -> String {
     match ChannelState::channel() {
-        // Preview shares the same directory as Stable for backward
-        // compatibility — existing users already have config in `.warp`.
-        Channel::Stable | Channel::Preview => WARP_CONFIG_DIR.to_owned(),
-        Channel::Oss => TERMLOC_CONFIG_DIR.to_owned(),
-        Channel::Dev => format!("{WARP_CONFIG_DIR}-dev"),
-        Channel::Integration => format!("{WARP_CONFIG_DIR}-integration"),
-        Channel::Local => format!("{WARP_CONFIG_DIR}-local"),
+        Channel::Stable | Channel::Preview | Channel::Oss => TERMLOC_CONFIG_DIR.to_owned(),
+        Channel::Dev => format!("{TERMLOC_CONFIG_DIR}-dev"),
+        Channel::Integration => format!("{TERMLOC_CONFIG_DIR}-integration"),
+        Channel::Local => format!("{TERMLOC_CONFIG_DIR}-local"),
     }
 }
 
 /// Returns the home-relative Warp config directory name for the current channel and data profile.
 ///
-/// This preserves the historical `.warp*` directory shape while still isolating dev, local,
+/// This keeps a `.termloc*` directory per channel, isolating dev, local,
 /// integration, oss, and optional development profiles.
 pub fn warp_home_config_dir_name() -> String {
     let base_dir_name = base_warp_config_dir_name();
@@ -64,7 +59,7 @@ pub fn warp_home_config_dir_name() -> String {
 /// Returns the home-relative Warp config directory for the current channel and data profile.
 ///
 /// Unlike [`data_dir`] and [`config_local_dir`] on non-macOS platforms, this intentionally keeps
-/// Warp-authored, user-facing config under a `.warp*` directory in the home directory instead of
+/// Warp-authored, user-facing config under a `.termloc*` directory in the home directory instead of
 /// using the platform XDG/AppData project directories.
 pub fn warp_home_config_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|home_dir| home_dir.join(warp_home_config_dir_name()))
@@ -81,8 +76,8 @@ pub fn warp_home_mcp_config_file_path() -> Option<PathBuf> {
 /// Returns the macOS config directory name for the current channel and data
 /// profile.
 ///
-/// Stable uses `.warp`, while other channels include a channel suffix
-/// (e.g., `.warp-dev`, `.warp-local`).
+/// Stable uses `.termloc`, while other channels include a channel suffix
+/// (e.g., `.termloc-dev`, `.termloc-local`).
 ///
 /// Development data profiles append a further `-{profile}` suffix. Without it,
 /// every profile of a channel would share this directory — and with it the
@@ -102,12 +97,11 @@ fn macos_config_dir_name() -> String {
 #[cfg(target_os = "macos")]
 fn macos_config_dir_name_for(channel: Channel, data_profile: Option<&str>) -> String {
     let base_dir_name = match channel {
-        Channel::Stable => WARP_CONFIG_DIR.to_owned(),
-        Channel::Preview => format!("{WARP_CONFIG_DIR}-preview"),
-        Channel::Oss => TERMLOC_CONFIG_DIR.to_owned(),
-        Channel::Dev => format!("{WARP_CONFIG_DIR}-dev"),
-        Channel::Integration => format!("{WARP_CONFIG_DIR}-integration"),
-        Channel::Local => format!("{WARP_CONFIG_DIR}-local"),
+        Channel::Stable | Channel::Oss => TERMLOC_CONFIG_DIR.to_owned(),
+        Channel::Preview => format!("{TERMLOC_CONFIG_DIR}-preview"),
+        Channel::Dev => format!("{TERMLOC_CONFIG_DIR}-dev"),
+        Channel::Integration => format!("{TERMLOC_CONFIG_DIR}-integration"),
+        Channel::Local => format!("{TERMLOC_CONFIG_DIR}-local"),
     };
     match data_profile {
         Some(profile) => format!("{base_dir_name}-{profile}"),
@@ -172,7 +166,7 @@ pub fn config_local_dir() -> PathBuf {
 /// This differs from [`config_local_dir`] when the active process uses a
 /// frontend-specific application ID, as the OSS TUI does on Linux and Windows.
 /// On macOS, development data profiles do not have an unambiguous corresponding
-/// GUI `.warp*` directory, so this fails closed instead of selecting a source
+/// GUI `.termloc*` directory, so this fails closed instead of selecting a source
 /// profile implicitly.
 pub fn gui_config_local_dir() -> Option<PathBuf> {
     cfg_if! {
@@ -207,14 +201,12 @@ pub fn gui_mcp_config_file_path() -> Option<PathBuf> {
 /// Returns the macOS config directory name for the TUI front-end (`warp-tui`)
 /// for the current channel.
 ///
-/// This mirrors [`macos_config_dir_name`] but under a `.termloc_tui*` or `.warp_cli*` directory
-/// so the TUI keeps its settings separate from the GUI's directory. Like the GUI names, these are
-/// persisted on disk as directory names and must not be changed once established.
+/// This mirrors [`macos_config_dir_name`] but under a `.termloc_tui*` directory so the TUI keeps
+/// its settings separate from the GUI's directory. Like the GUI names, these are persisted on disk
+/// as directory names and must not be changed once established.
 #[cfg(target_os = "macos")]
 fn macos_tui_config_dir_name() -> String {
-    macos_config_dir_name()
-        .replacen(TERMLOC_CONFIG_DIR, ".termloc_tui", 1)
-        .replacen(WARP_CONFIG_DIR, ".warp_cli", 1)
+    macos_config_dir_name().replacen(TERMLOC_CONFIG_DIR, ".termloc_tui", 1)
 }
 
 /// Returns the path to the directory where non-portable configuration files for

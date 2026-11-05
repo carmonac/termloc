@@ -135,7 +135,7 @@ impl AgentDriver {
                     .map_err(AgentDriverError::SkillResolutionFailed)
             })
             .collect::<Result<Vec<_>, _>>()?;
-        runtime_env.insert("WARP_API_KEY".into(), api_key);
+        runtime_env.insert("TERMLOC_API_KEY".into(), api_key);
         runtime_env.insert(
             "WARP_SANDBOX_DEADLINE".into(),
             expires_at.timestamp().to_string(),

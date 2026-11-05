@@ -50,9 +50,9 @@ pub const OZ_CLI_ENV: &str = "OZ_CLI";
 pub const WARP_CLI_ENV: &str = "WARP_CLI";
 pub const OZ_HARNESS_ENV: &str = "OZ_HARNESS";
 pub const WARP_HARNESS_ENV: &str = "WARP_HARNESS";
-pub const SERVER_ROOT_URL_OVERRIDE_ENV: &str = "WARP_SERVER_ROOT_URL";
-pub const WS_SERVER_URL_OVERRIDE_ENV: &str = "WARP_WS_SERVER_URL";
-pub const SESSION_SHARING_SERVER_URL_OVERRIDE_ENV: &str = "WARP_SESSION_SHARING_SERVER_URL";
+pub const SERVER_ROOT_URL_OVERRIDE_ENV: &str = "TERMLOC_SERVER_ROOT_URL";
+pub const WS_SERVER_URL_OVERRIDE_ENV: &str = "TERMLOC_WS_SERVER_URL";
+pub const SESSION_SHARING_SERVER_URL_OVERRIDE_ENV: &str = "TERMLOC_SESSION_SHARING_SERVER_URL";
 pub const PREWARMED_SANDBOX_CONTROL_URL_OVERRIDE_ENV: &str = "WARP_PREWARMED_SANDBOX_CONTROL_URL";
 pub const WARP_PREWARMED_SANDBOX_ID_ENV: &str = "WARP_PREWARMED_SANDBOX_ID";
 
@@ -104,7 +104,7 @@ pub struct GlobalOptions {
     #[arg(
         long = "api-key",
         global = true,
-        env = "WARP_API_KEY",
+        env = "TERMLOC_API_KEY",
         hide_env_values = true
     )]
     pub api_key: Option<String>,
@@ -115,7 +115,7 @@ pub struct GlobalOptions {
         global = true,
         value_enum,
         default_value_t = OutputFormat::Pretty,
-        env = "WARP_OUTPUT_FORMAT"
+        env = "TERMLOC_OUTPUT_FORMAT"
     )]
     pub output_format: OutputFormat,
 }
@@ -152,7 +152,7 @@ pub struct Args {
         long = "server-root-url",
         global = true,
         hide = true,
-        env = "WARP_SERVER_ROOT_URL"
+        env = "TERMLOC_SERVER_ROOT_URL"
     )]
     server_root_url: Option<String>,
 
@@ -161,7 +161,7 @@ pub struct Args {
         long = "ws-server-url",
         global = true,
         hide = true,
-        env = "WARP_WS_SERVER_URL"
+        env = "TERMLOC_WS_SERVER_URL"
     )]
     ws_server_url: Option<String>,
 
@@ -170,7 +170,7 @@ pub struct Args {
         long = "session-sharing-server-url",
         global = true,
         hide = true,
-        env = "WARP_SESSION_SHARING_SERVER_URL"
+        env = "TERMLOC_SESSION_SHARING_SERVER_URL"
     )]
     session_sharing_server_url: Option<String>,
 

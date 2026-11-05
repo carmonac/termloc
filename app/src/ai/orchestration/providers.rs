@@ -19,7 +19,7 @@ use crate::workspaces::user_workspaces::{TeamScope, UserWorkspaces};
 
 /// Env var override for the workspace default host (developer testing).
 /// Mirrors the single-agent ambient flow.
-const DEFAULT_HOST_ENV_VAR: &str = "WARP_CLOUD_MODE_DEFAULT_HOST";
+const DEFAULT_HOST_ENV_VAR: &str = "TERMLOC_CLOUD_MODE_DEFAULT_HOST";
 
 pub const ORCHESTRATION_WARP_WORKER_HOST: &str = WARP_WORKER_HOST;
 pub const ORCHESTRATION_ENV_NONE_LABEL: &str = "Empty environment";
@@ -83,7 +83,7 @@ pub fn first_filtered_model_id(harness_type: &str, ctx: &AppContext) -> Option<S
 }
 
 /// Resolves the default host slug configured for `scope`'s team, honoring the
-/// `WARP_CLOUD_MODE_DEFAULT_HOST` env var override for developer
+/// `TERMLOC_CLOUD_MODE_DEFAULT_HOST` env var override for developer
 /// testing. Mirrors the single-agent ambient flow.
 pub fn resolve_default_host_slug<S: TeamScope + ?Sized>(
     scope: &S,

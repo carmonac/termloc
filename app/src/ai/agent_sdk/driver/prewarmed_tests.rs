@@ -94,7 +94,7 @@ fn assert_third_party_assignment(
         configuration.factory_skill_dirs = vec![".agents/skills".into()];
         let runtime_env = HashMap::from([
             ("WARP_HARNESS_TRANSPORT".into(), transport_name),
-            ("WARP_API_KEY".into(), "run-key".into()),
+            ("TERMLOC_API_KEY".into(), "run-key".into()),
             ("RUN_SETTING".into(), "assigned".into()),
         ]);
         validate_assignment(&configuration).unwrap();
@@ -141,7 +141,7 @@ fn assert_third_party_assignment(
                 .apply_prewarmed_run_configuration(terminal_inputs, run_config, ctx)
                 .unwrap();
             assert_eq!(
-                driver.resolved_env_vars[OsStr::new("WARP_API_KEY")],
+                driver.resolved_env_vars[OsStr::new("TERMLOC_API_KEY")],
                 "run-key"
             );
             assert_eq!(
@@ -353,7 +353,7 @@ fn prewarmed_config_conversion_and_state_binding_preserve_run_settings() {
         configuration.factory_skill_dirs = vec![".agents/skills".into()];
         configuration.snapshot_disabled = true;
         let runtime_env = HashMap::from([
-            ("WARP_API_KEY".into(), "assigned-key".into()),
+            ("TERMLOC_API_KEY".into(), "assigned-key".into()),
             ("WARP_FACTORY_ID".into(), "factory-id".into()),
             ("WARP_METADATA_TICKET_ID".into(), "ENG-42".into()),
         ]);
@@ -396,7 +396,7 @@ fn prewarmed_config_conversion_and_state_binding_preserve_run_settings() {
                     .unwrap_or_default()
                     .to_owned()
             };
-            assert_eq!(value("WARP_API_KEY"), "assigned-key");
+            assert_eq!(value("TERMLOC_API_KEY"), "assigned-key");
             assert_eq!(value("WARP_RUN_ID"), TASK_ID);
             assert_eq!(value("WARP_METADATA_TICKET_ID"), "ENG-42");
             assert_eq!(value(MODE_ENV), "execution");

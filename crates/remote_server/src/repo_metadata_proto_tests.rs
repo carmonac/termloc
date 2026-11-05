@@ -17,7 +17,7 @@ fn standing_delta() -> StandingQueryResultsDelta {
         removed_project_skills: vec![StandingQueryContent::directory(path(
             "/repo/.claude/skills",
         ))],
-        upserted_project_rules: vec![StandingQueryContent::file(path("/repo/WARP.md"))],
+        upserted_project_rules: vec![StandingQueryContent::file(path("/repo/TERMLOC.md"))],
         removed_project_rules: vec![StandingQueryContent::file(path(
             "/repo/packages/api/AGENTS.md",
         ))],

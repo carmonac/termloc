@@ -1,8 +1,8 @@
 //! Mock recorder for exercising the recording UI on macOS, where real capture
 //! is unsupported.
 //!
-//! Enabled by setting `WARP_MOCK_RECORDER`; `stop` publishes a copy of the MP4
-//! at `WARP_MOCK_RECORDING_FIXTURE`, and `WARP_MOCK_RECORDING_STOPPED_EARLY`
+//! Enabled by setting `TERMLOC_MOCK_RECORDER`; `stop` publishes a copy of the MP4
+//! at `TERMLOC_MOCK_RECORDING_FIXTURE`, and `TERMLOC_MOCK_RECORDING_STOPPED_EARLY`
 //! exercises the partial-recording copy.
 
 use std::path::PathBuf;
@@ -59,9 +59,9 @@ impl crate::Recorder for Recorder {
             .map(|started| started.elapsed())
             .unwrap_or_default();
 
-        let fixture = std::env::var("WARP_MOCK_RECORDING_FIXTURE").map_err(|_| {
+        let fixture = std::env::var("TERMLOC_MOCK_RECORDING_FIXTURE").map_err(|_| {
             RecordingError::Environment {
-                reason: "WARP_MOCK_RECORDING_FIXTURE is not set".to_string(),
+                reason: "TERMLOC_MOCK_RECORDING_FIXTURE is not set".to_string(),
             }
         })?;
         let path =
@@ -71,11 +71,12 @@ impl crate::Recorder for Recorder {
         })?;
         let size_bytes = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
 
-        let completion_status = if std::env::var_os("WARP_MOCK_RECORDING_STOPPED_EARLY").is_some() {
-            RecordingCompletionStatus::StoppedEarly
-        } else {
-            RecordingCompletionStatus::Completed
-        };
+        let completion_status =
+            if std::env::var_os("TERMLOC_MOCK_RECORDING_STOPPED_EARLY").is_some() {
+                RecordingCompletionStatus::StoppedEarly
+            } else {
+                RecordingCompletionStatus::Completed
+            };
 
         Ok(RecordingOutput {
             path,

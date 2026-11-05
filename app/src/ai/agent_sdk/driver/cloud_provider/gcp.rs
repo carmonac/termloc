@@ -133,7 +133,7 @@ impl CloudProvider for GcpCloudProvider {
                 .await
                 .map_err(|error| CloudProviderSetupError::new(Self::PROVIDER_NAME, error))?
             {
-                command.env("WARP_API_KEY", api_key);
+                command.env("TERMLOC_API_KEY", api_key);
             }
             if let Some(run_id) = &self.run_id {
                 command.env(warp_cli::OZ_RUN_ID_ENV, run_id);

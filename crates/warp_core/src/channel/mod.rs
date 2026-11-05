@@ -35,7 +35,7 @@ impl Channel {
     }
 
     /// Whether this channel honors the `--server-root-url` / `--ws-server-url` /
-    /// `--session-sharing-server-url` flags (and their `WARP_*` env-var equivalents).
+    /// `--session-sharing-server-url` flags (and their `TERMLOC_*` env-var equivalents).
     ///
     /// Release channels (`Stable`, `Preview`, `Oss`) ignore these overrides so shipped
     /// builds can't be redirected away from their baked-in server URLs. Internal-only channels

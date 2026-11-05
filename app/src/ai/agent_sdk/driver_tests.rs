@@ -1551,7 +1551,7 @@ fn write_skill_file(repo: &Path, name: &str) {
 }
 
 /// Write a minimal SKILL.md at `{skills_dir}/{name}/SKILL.md`.
-/// This is the flat layout expected by `WARP_SKILL_DIRS` (no `.agents/skills` wrapper).
+/// This is the flat layout expected by `TERMLOC_SKILL_DIRS` (no `.agents/skills` wrapper).
 fn write_flat_skill(skills_dir: &Path, name: &str) {
     let skill_dir = skills_dir.join(name);
     fs::create_dir_all(&skill_dir).unwrap();
@@ -1562,7 +1562,7 @@ fn write_flat_skill(skills_dir: &Path, name: &str) {
     .unwrap();
 }
 
-/// Verifies that `load_skills_dirs` reads skills from the `WARP_SKILL_DIRS` environment
+/// Verifies that `load_skills_dirs` reads skills from the `TERMLOC_SKILL_DIRS` environment
 /// variable and registers them in the personal (home) bucket so they are always in scope,
 /// regardless of the current working directory.
 #[test]
@@ -1581,10 +1581,10 @@ fn warp_skill_dirs_env_loads_skills_as_home_tier() {
         write_flat_skill(&skills_dir_a, "env-skill-a2");
         write_flat_skill(&skills_dir_b, "env-skill-b1");
 
-        // Point WARP_SKILL_DIRS at both directories.
+        // Point TERMLOC_SKILL_DIRS at both directories.
         let skills_dirs_value = format!("{},{}", skills_dir_a.display(), skills_dir_b.display());
         // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { std::env::set_var("WARP_SKILL_DIRS", &skills_dirs_value) };
+        unsafe { std::env::set_var("TERMLOC_SKILL_DIRS", &skills_dirs_value) };
 
         let terminal_view = add_window_with_terminal(&mut app, None);
         let driver_handle = app.add_model(|ctx| {
@@ -1607,9 +1607,9 @@ fn warp_skill_dirs_env_loads_skills_as_home_tier() {
         done_rx.await.expect("loading task should complete");
 
         // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { std::env::remove_var("WARP_SKILL_DIRS") };
+        unsafe { std::env::remove_var("TERMLOC_SKILL_DIRS") };
 
-        // Skills from WARP_SKILL_DIRS are home-tier, so they appear for any working directory.
+        // Skills from TERMLOC_SKILL_DIRS are home-tier, so they appear for any working directory.
         // Use None cwd — home skills are included regardless of is_cloud_environment.
         let skill_names = SkillManager::handle(&app).read(&app, |manager: &SkillManager, ctx| {
             manager
@@ -1621,15 +1621,15 @@ fn warp_skill_dirs_env_loads_skills_as_home_tier() {
 
         assert!(
             skill_names.contains(&"env-skill-a1".to_string()),
-            "'env-skill-a1' from WARP_SKILL_DIRS should be loaded; got: {skill_names:?}"
+            "'env-skill-a1' from TERMLOC_SKILL_DIRS should be loaded; got: {skill_names:?}"
         );
         assert!(
             skill_names.contains(&"env-skill-a2".to_string()),
-            "'env-skill-a2' from WARP_SKILL_DIRS should be loaded; got: {skill_names:?}"
+            "'env-skill-a2' from TERMLOC_SKILL_DIRS should be loaded; got: {skill_names:?}"
         );
         assert!(
             skill_names.contains(&"env-skill-b1".to_string()),
-            "'env-skill-b1' from WARP_SKILL_DIRS should be loaded; got: {skill_names:?}"
+            "'env-skill-b1' from TERMLOC_SKILL_DIRS should be loaded; got: {skill_names:?}"
         );
 
         // Verify the skills have Home scope (personal tier).
@@ -1643,12 +1643,12 @@ fn warp_skill_dirs_env_loads_skills_as_home_tier() {
         });
         assert!(
             scope_check,
-            "all WARP_SKILL_DIRS skills must have SkillScope::Home"
+            "all TERMLOC_SKILL_DIRS skills must have SkillScope::Home"
         );
     });
 }
 
-/// Verifies that relative `WARP_SKILL_DIRS` entries are resolved against the driver's
+/// Verifies that relative `TERMLOC_SKILL_DIRS` entries are resolved against the driver's
 /// working directory rather than the process's current working directory (which
 /// `prepare_environment` may have changed).
 #[test]
@@ -1666,7 +1666,7 @@ fn warp_skill_dirs_env_relative_entries_resolve_against_working_dir() {
         write_flat_skill(&working_dir.join("rel-skills"), "env-skill-rel");
 
         // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { std::env::set_var("WARP_SKILL_DIRS", "rel-skills") };
+        unsafe { std::env::set_var("TERMLOC_SKILL_DIRS", "rel-skills") };
 
         let terminal_view = add_window_with_terminal(&mut app, None);
         let driver_handle = app.add_model(|ctx| {
@@ -1689,7 +1689,7 @@ fn warp_skill_dirs_env_relative_entries_resolve_against_working_dir() {
         done_rx.await.expect("loading task should complete");
 
         // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { std::env::remove_var("WARP_SKILL_DIRS") };
+        unsafe { std::env::remove_var("TERMLOC_SKILL_DIRS") };
 
         let skill_names = SkillManager::handle(&app).read(&app, |manager: &SkillManager, ctx| {
             manager
@@ -1701,7 +1701,7 @@ fn warp_skill_dirs_env_relative_entries_resolve_against_working_dir() {
 
         assert!(
             skill_names.contains(&"env-skill-rel".to_string()),
-            "'env-skill-rel' should load via a relative WARP_SKILL_DIRS entry resolved against the driver's working dir; got: {skill_names:?}"
+            "'env-skill-rel' should load via a relative TERMLOC_SKILL_DIRS entry resolved against the driver's working dir; got: {skill_names:?}"
         );
     });
 }
@@ -2106,8 +2106,9 @@ fn prepared_native_followup_starts_before_the_last_queued_row_allows_exit() {
                     AIAgentAttachment::FilePathReference {
                         file_id: "attachment-id".into(),
                         file_name: "event-payload.json".into(),
-                        file_path: "/workspace/.warp/attachments/attachment-id_event-payload.json"
-                            .into(),
+                        file_path:
+                            "/workspace/.termloc/attachments/attachment-id_event-payload.json"
+                                .into(),
                     },
                 )]),
                 ctx,

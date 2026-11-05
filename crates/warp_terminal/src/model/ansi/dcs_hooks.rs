@@ -658,8 +658,8 @@ pub struct PromptMetadata {
 impl PromptMetadata {
     /// Returns `true` if this prompt metadata was emitted after the completion of an in-band command.
     ///
-    /// This relies on the assumption that the warp_precmd shell function (responsible for writing
-    /// this to the PTY from the shell) does not populate `pwd` or `ps1` when the previous command
+    /// This relies on the assumption that the termloc_precmd shell function (responsible for
+    /// writing this to the PTY from the shell) does not populate `pwd` or `ps1` when the previous command
     /// was an in-band command; for all other cases these fields should always be populated.
     pub fn was_sent_after_in_band_command(&self) -> bool {
         self.is_after_in_band_command || (self.pwd.is_none() && self.ps1.is_none())
@@ -1023,7 +1023,7 @@ pub struct ClearValue {
     pub session_id: HookSessionId,
 }
 
-/// Received from the pty when warp_finish_update is called at the end of an
+/// Received from the pty when termloc_finish_update is called at the end of an
 /// assisted auto-update.
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct FinishUpdateValue {

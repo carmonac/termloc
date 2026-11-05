@@ -36,7 +36,7 @@ pub struct ControlArgs {
         global = true,
         value_enum,
         default_value_t = OutputFormat::Pretty,
-        env = "WARP_OUTPUT_FORMAT"
+        env = "TERMLOC_OUTPUT_FORMAT"
     )]
     pub output_format: OutputFormat,
 
