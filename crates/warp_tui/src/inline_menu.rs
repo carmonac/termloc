@@ -17,7 +17,6 @@ use warpui_core::elements::tui::{
 use warpui_core::elements::{CrossAxisAlignment, MouseStateHandle};
 use warpui_core::{AppContext, ModelHandle};
 
-use crate::api_keys_menu::TuiApiKeysMenuModel;
 use crate::completion_menu::TuiCompletionAcceptance;
 use crate::conversation_menu::TuiConversationMenuModel;
 use crate::input_suggestions_mode::TuiInputSuggestionsMode;
@@ -415,29 +414,6 @@ pub(crate) enum TuiInlineMenuAccepted {
     Completion(TuiCompletionAcceptance),
 }
 
-/// Who owns the shared TUI editor while an inline menu is active.
-///
-/// The variants are exhaustive so ownership and masking cannot disagree.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TuiInlineMenuInputOwnership {
-    /// The composer owns editor behavior; the menu only observes input and handles menu actions.
-    Composer,
-    /// The inline menu owns ordinary plaintext editor behavior.
-    InlineMenuPlainText,
-    /// The inline menu owns editor behavior, with masked rendering and clipboard export disabled.
-    InlineMenuMasked,
-}
-
-impl TuiInlineMenuInputOwnership {
-    pub(crate) fn inline_menu_owns_input(self) -> bool {
-        matches!(self, Self::InlineMenuPlainText | Self::InlineMenuMasked)
-    }
-
-    pub(crate) fn is_masked(self) -> bool {
-        matches!(self, Self::InlineMenuMasked)
-    }
-}
-
 /// Type alias for mouse-interaction callbacks stored in the element tree.
 type InlineMenuAcceptFn = dyn Fn(usize, &mut TuiEventContext<'_>, &AppContext);
 type InlineMenuScrollFn = dyn Fn(isize, &mut TuiEventContext<'_>, &AppContext);
@@ -453,10 +429,6 @@ pub(crate) trait TuiInlineMenuHandle {
     fn mode(&self) -> TuiInputSuggestionsMode;
     /// Returns whether this menu is open.
     fn is_open(&self, ctx: &AppContext) -> bool;
-    /// Returns who owns the shared editor while this menu is active.
-    fn input_ownership(&self, _ctx: &AppContext) -> TuiInlineMenuInputOwnership {
-        TuiInlineMenuInputOwnership::Composer
-    }
     /// Opens the menu when it supports explicit opening.
     fn open(&self, _ctx: &mut AppContext) {}
     /// Returns the input range highlighted by this menu.
@@ -524,9 +496,6 @@ impl TuiInlineMenu {
 
     pub(crate) fn mode(&self) -> TuiInputSuggestionsMode {
         self.handle.mode()
-    }
-    pub(crate) fn input_ownership(&self, ctx: &AppContext) -> TuiInlineMenuInputOwnership {
-        self.handle.input_ownership(ctx)
     }
 
     /// Renders the menu without mouse interactions (used in tests and other
@@ -617,69 +586,6 @@ impl TuiInlineMenu {
 
     fn snapshot(&self, ctx: &AppContext) -> Option<TuiInlineMenuSnapshot> {
         self.handle.snapshot(ctx)
-    }
-}
-
-impl TuiInlineMenuHandle for ModelHandle<TuiApiKeysMenuModel> {
-    fn mode(&self) -> TuiInputSuggestionsMode {
-        TuiInputSuggestionsMode::ApiKeys
-    }
-
-    fn is_open(&self, ctx: &AppContext) -> bool {
-        self.as_ref(ctx).is_open(ctx)
-    }
-
-    fn input_ownership(&self, ctx: &AppContext) -> TuiInlineMenuInputOwnership {
-        self.as_ref(ctx).input_ownership(ctx)
-    }
-
-    fn open(&self, ctx: &mut AppContext) {
-        self.update(ctx, |model, ctx| model.open(ctx));
-    }
-
-    fn input_highlight_range(&self, _ctx: &AppContext) -> Option<Range<CharOffset>> {
-        None
-    }
-
-    fn input_argument_hint_text(&self, _ctx: &AppContext) -> Option<&'static str> {
-        None
-    }
-
-    fn select_previous(&self, ctx: &mut AppContext) {
-        self.update(ctx, |model, ctx| model.select_previous(ctx));
-    }
-
-    fn select_next(&self, ctx: &mut AppContext) {
-        self.update(ctx, |model, ctx| model.select_next(ctx));
-    }
-
-    fn accept(&self, ctx: &mut AppContext) -> Option<TuiInlineMenuAccepted> {
-        self.update(ctx, |model, ctx| model.accept_selected(ctx));
-        None
-    }
-
-    fn dismiss(&self, ctx: &mut AppContext) {
-        self.update(ctx, |model, ctx| model.dismiss(ctx));
-    }
-
-    fn snapshot(&self, ctx: &AppContext) -> Option<TuiInlineMenuSnapshot> {
-        self.as_ref(ctx).snapshot(ctx)
-    }
-
-    fn select_by_snapshot_index(&self, index: usize, ctx: &mut AppContext) -> bool {
-        self.update(ctx, |model, ctx| model.select_at_snapshot_index(index, ctx))
-    }
-
-    fn scroll_by_delta(&self, delta: isize, ctx: &mut AppContext) {
-        self.update(ctx, |model, ctx| model.scroll_by_delta(delta, ctx));
-    }
-
-    fn can_clear_selected(&self, ctx: &AppContext) -> bool {
-        self.as_ref(ctx).can_clear_selected(ctx)
-    }
-
-    fn clear_selected(&self, ctx: &mut AppContext) {
-        self.update(ctx, |model, ctx| model.clear_selected(ctx));
     }
 }
 

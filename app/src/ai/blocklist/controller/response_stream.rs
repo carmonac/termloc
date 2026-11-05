@@ -7,8 +7,6 @@ use chrono::{DateTime, Local, TimeDelta};
 use futures::channel::oneshot;
 use uuid::Uuid;
 use warp_errors::report_error;
-#[cfg(not(target_family = "wasm"))]
-use warp_multi_agent_api as maa_api;
 use warp_multi_agent_api::response_event;
 use warpui::r#async::Timer;
 use warpui::{Entity, ModelContext, SingletonEntity};
@@ -33,17 +31,6 @@ use crate::workspaces::user_workspaces::TeamlessScopeForTest;
 /// rolling server deploy that one attempt lands inside the same window of transport resets
 /// that killed the original request.
 const MAX_RECOVERY_ATTEMPTS: usize = 3;
-
-/// Maximum time to wait for a request-time Grok OAuth token refresh before
-/// sending with the currently stored token. Bounded so a hung refresh can't
-/// stall the request.
-#[cfg(not(target_family = "wasm"))]
-const GROK_REFRESH_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
-
-/// How long a request will hold for a request-time GEAP credential mint before
-/// giving up and sending anyway.
-#[cfg(not(target_family = "wasm"))]
-const GEAP_REFRESH_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// The recovery budget for one request and the retries and resumes that recover it,
 /// carried forward across each of those attempts.
@@ -382,7 +369,7 @@ impl ResponseStream {
         let start_time = Local::now();
 
         let request_id = Uuid::new_v4();
-        Self::spawn_request(request_id, params.clone(), team_scope, cancellation_rx, ctx);
+        Self::spawn_generate(request_id, params.clone(), team_scope, cancellation_rx, ctx);
         Self {
             id: ResponseStreamId(Uuid::new_v4().to_string()),
             params,
@@ -467,7 +454,7 @@ impl ResponseStream {
         if self.suppress_request_spawn {
             return;
         }
-        Self::spawn_request(
+        Self::spawn_generate(
             request_id,
             self.params.clone(),
             self.team_scope,
@@ -561,166 +548,6 @@ impl ResponseStream {
             self.recovery.attempts_used() + 1,
             self.failed_request_label(),
         );
-    }
-
-    /// Sends the request for `request_id`. When the request's model is served by
-    /// the connected Grok subscription or may route to Gemini Enterprise, and
-    /// that credential is already past hard expiry, this first blocks on a
-    /// single shared refresh (owned by `ApiKeyManager`, so only one runs at a
-    /// time) before sending. Requests with valid credentials, and requests for
-    /// other providers, are sent directly.
-    fn spawn_request(
-        request_id: Uuid,
-        params: api::RequestParams,
-        team_scope: RequestTeamScope,
-        cancellation_rx: oneshot::Receiver<()>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        // The Grok subscription and its OAuth refresh are native-only.
-        #[cfg(not(target_family = "wasm"))]
-        {
-            use ::ai::api_keys::{ApiKeyManager, GeapRefreshOutcome, GrokRefreshOutcome};
-            use warpui::r#async::FutureExt as _;
-
-            use crate::ai::llms::{LLMModelHost, LLMPreferences, LLMProvider};
-            use crate::workspaces::user_workspaces::UserWorkspaces;
-
-            // Only touch the Grok token for requests that actually use the Grok
-            // subscription. The subscription is the only client-side source of
-            // xAI auth (there's no BYO xAI key), so a base model whose provider
-            // is xAI is exactly a subscription request.
-            let uses_grok_subscription = LLMPreferences::as_ref(ctx)
-                .get_llm_info(&params.model, ctx)
-                .is_some_and(|info| info.provider == LLMProvider::Xai);
-            if uses_grok_subscription {
-                // Both halves, because this branch writes a member credential into `api_keys`,
-                // which stays `Some(..)` for org-level credentials even when the team disallows
-                // member BYO. Gating here also skips refreshing a token that won't be sent.
-                let byo_allowed = params.member_byo_credentials_allowed
-                    && UserWorkspaces::as_ref(ctx).is_byo_api_key_enabled(ctx);
-                // Reserve + start the shared refresh on `ApiKeyManager`'s context;
-                // the in-flight guard is released there even if this stream is
-                // dropped mid-refresh. `None` means the token is already usable.
-                let refresh_rx = ApiKeyManager::handle(ctx).update(ctx, |manager, ctx| {
-                    manager.begin_expired_grok_refresh(byo_allowed, ctx)
-                });
-                if let Some(refresh_rx) = refresh_rx {
-                    let _ = ctx.spawn(
-                        async move {
-                            // Block on the shared refresh, bounded so a hung
-                            // refresh can't stall the request forever.
-                            refresh_rx.with_timeout(GROK_REFRESH_REQUEST_TIMEOUT).await
-                        },
-                        move |me, result, ctx| {
-                            // Cancelled or superseded while refreshing — drop this attempt.
-                            if me.current_request_id != Some(request_id) {
-                                return;
-                            }
-                            if matches!(result, Ok(Ok(GrokRefreshOutcome::Refreshed))) {
-                                // Send with the freshly refreshed token.
-                                if let Some(access_token) = ApiKeyManager::as_ref(ctx)
-                                    .grok_tokens()
-                                    .and_then(|tokens| tokens.access_token_for_request())
-                                    .map(str::to_owned)
-                                    && let Some(keys) = me.params.api_keys.as_mut()
-                                {
-                                    keys.grok_oauth_access_token = access_token;
-                                }
-                                Self::spawn_generate(
-                                    request_id,
-                                    me.params.clone(),
-                                    team_scope,
-                                    cancellation_rx,
-                                    ctx,
-                                );
-                            } else {
-                                // The refresh failed or timed out: don't send with
-                                // the dead token — surface a terminal error asking
-                                // the user to reconnect their subscription.
-                                me.surface_grok_refresh_failure(request_id, ctx);
-                            }
-                        },
-                    );
-                    return;
-                }
-            }
-
-            let uses_geap = LLMPreferences::as_ref(ctx)
-                .get_llm_info(&params.model, ctx)
-                .is_some_and(|info| {
-                    info.host_configs
-                        .get(&LLMModelHost::GeminiEnterprise)
-                        .is_some_and(|host| host.enabled)
-                });
-            if uses_geap
-                && let Some(binding) =
-                    crate::ai::geap_credentials::current_geap_policy_for_any_team(ctx)
-                        .mint_binding()
-            {
-                let refresh_binding = binding.clone();
-                let refresh_rx = ApiKeyManager::handle(ctx).update(ctx, |manager, ctx| {
-                    manager.begin_expired_geap_refresh(&binding, ctx, |manager, waiter, ctx| {
-                        crate::ai::geap_credentials::start_geap_refresh_for_waiter(
-                            manager, waiter, ctx,
-                        );
-                    })
-                });
-                if let Some(refresh_rx) = refresh_rx {
-                    let _ = ctx.spawn(
-                        async move { refresh_rx.with_timeout(GEAP_REFRESH_REQUEST_TIMEOUT).await },
-                        move |me, result, ctx| {
-                            // Cancelled or superseded while waiting — drop this attempt.
-                            if me.current_request_id != Some(request_id) {
-                                return;
-                            }
-                            // `RequestParams` snapshotted the credentials before
-                            // the wait, so re-read just the GEAP credential and
-                            // leave every other key alone.
-                            //
-                            // Unlike the Grok branch above, a mint failure, a
-                            // timeout, or a dropped sender is never surfaced as a
-                            // terminal error — the request goes out with the
-                            // snapshot untouched, and it is the job of the server
-                            // to respond with an error if the GEAP credentials are bad.
-                            if matches!(result, Ok(Ok(GeapRefreshOutcome::Refreshed)))
-                                && let Some(credentials) = ApiKeyManager::as_ref(ctx)
-                                    .geap_credentials_for_request(&refresh_binding)
-                            {
-                                apply_geap_refresh_to_params(&mut me.params, Some(credentials));
-                            }
-                            Self::spawn_generate(
-                                request_id,
-                                me.params.clone(),
-                                team_scope,
-                                cancellation_rx,
-                                ctx,
-                            );
-                        },
-                    );
-                    return;
-                }
-            }
-        }
-
-        Self::spawn_generate(request_id, params, team_scope, cancellation_rx, ctx);
-    }
-
-    /// Emits a terminal, user-visible error for a failed request-time Grok token
-    /// refresh instead of sending the request with an expired token. Mirrors the
-    /// terminal-error emission in [`Self::handle_response_stream_result`].
-    #[cfg(not(target_family = "wasm"))]
-    fn surface_grok_refresh_failure(&mut self, request_id: Uuid, ctx: &mut ModelContext<Self>) {
-        let error = Arc::new(AIApiError::GrokSubscriptionTokenRefreshFailed);
-        self.error_event_emitted = true;
-        self.report_request_failure(
-            &error,
-            NetworkStatus::as_ref(ctx).is_online(),
-            self.recovery.attempts_used(),
-        );
-        ctx.emit(ResponseStreamEvent::ReceivedEvent(Consumable::new(Err(
-            error,
-        ))));
-        self.on_response_stream_complete(request_id, ctx);
     }
 
     /// Spawns the actual multi-agent request send for `request_id`.
@@ -970,21 +797,6 @@ impl ResponseStream {
                 me.retry(ctx);
             },
         );
-    }
-}
-
-/// Applies the result of a request-time GEAP mint to the request snapshot.
-///
-/// A successful mint swaps in the fresh credential.
-#[cfg(not(target_family = "wasm"))]
-fn apply_geap_refresh_to_params(
-    params: &mut api::RequestParams,
-    fresh_credentials: Option<maa_api::request::settings::api_keys::GoogleCloudCredentials>,
-) {
-    if let Some(credentials) = fresh_credentials
-        && let Some(keys) = params.api_keys.as_mut()
-    {
-        keys.google_cloud_credentials = Some(credentials);
     }
 }
 

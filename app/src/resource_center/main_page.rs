@@ -1,13 +1,10 @@
-use pathfinder_geometry::vector::vec2f;
 use warpui::elements::{
-    Align, ClippedScrollStateHandle, ClippedScrollable, Container, CornerRadius, Element, Empty,
-    Fill, Flex, Hoverable, Icon, MainAxisAlignment, MainAxisSize, MouseStateHandle, ParentElement,
-    Radius, Shrinkable,
+    Align, ClippedScrollStateHandle, ClippedScrollable, Container, Element, Empty, Fill, Flex,
+    Hoverable, MouseStateHandle, ParentElement, Shrinkable,
 };
 use warpui::platform::Cursor;
 use warpui::presenter::ChildView;
-use warpui::ui_components::button::{ButtonVariant, TextAndIcon, TextAndIconAlignment};
-use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
+use warpui::ui_components::components::{UiComponent, UiComponentStyles};
 use warpui::{
     AppContext, Entity, EntityId, ModelHandle, SingletonEntity, TypedActionView, View, ViewContext,
     ViewHandle, WindowId,
@@ -15,32 +12,21 @@ use warpui::{
 
 use super::section_views::feature_section::FeatureSectionEvent;
 use super::section_views::{
-    BUTTON_PADDING, DETAIL_FONT_SIZE, FOOTER_ICON_SIZE, SCROLLBAR_OFFSET, SCROLLBAR_WIDTH,
-    SECTION_SPACING, SECTION_SPACING_BOTTOM, SectionViewHandle,
+    DETAIL_FONT_SIZE, SCROLLBAR_OFFSET, SCROLLBAR_WIDTH, SECTION_SPACING, SectionViewHandle,
 };
 use super::sections::sections;
 use super::{
-    ChangelogSectionView, ContentSectionData, ContentSectionView, FeatureSection,
-    FeatureSectionData, FeatureSectionView, Section, TipsCompleted,
+    ContentSectionData, ContentSectionView, FeatureSection, FeatureSectionData, FeatureSectionView,
+    Section, TipsCompleted,
 };
 use crate::appearance::Appearance;
-use crate::auth::AuthStateProvider;
-use crate::changelog_model::ChangelogModel;
-use crate::channel::ChannelState;
 use crate::features::FeatureFlag;
 use crate::resource_center::skip_tips_and_write_to_user_defaults;
 use crate::send_telemetry_from_ctx;
 use crate::server::telemetry::TelemetryEvent;
-use crate::settings::Settings;
-use crate::themes::theme::{Blend, Fill as FillTheme};
-use crate::workspace::WorkspaceAction;
-
-const SEND_SVG_PATH: &str = "bundled/svg/send.svg";
 
 #[derive(Default)]
 struct MouseStateHandles {
-    copy_version: MouseStateHandle,
-    invite_people: MouseStateHandle,
     skip_tips: MouseStateHandle,
 }
 
@@ -62,18 +48,10 @@ pub enum ResourceCenterMainAction {
 }
 
 impl ResourceCenterMainView {
-    pub fn new(
-        ctx: &mut ViewContext<Self>,
-        tips_completed: ModelHandle<TipsCompleted>,
-        changelog_model_handle: ModelHandle<ChangelogModel>,
-    ) -> Self {
+    pub fn new(ctx: &mut ViewContext<Self>, tips_completed: ModelHandle<TipsCompleted>) -> Self {
         let action_target = ctx.add_model(|_| ActionTarget::None);
-        let section_views = Self::initialize_section_views(
-            tips_completed.clone(),
-            action_target.clone(),
-            ctx,
-            changelog_model_handle.clone(),
-        );
+        let section_views =
+            Self::initialize_section_views(tips_completed.clone(), action_target.clone(), ctx);
         Self {
             button_mouse_states: Default::default(),
             clipped_scroll_state: Default::default(),
@@ -86,7 +64,6 @@ impl ResourceCenterMainView {
         tips_completed: ModelHandle<TipsCompleted>,
         action_target: ModelHandle<ActionTarget>,
         ctx: &mut ViewContext<Self>,
-        changelog_model_handle: ModelHandle<ChangelogModel>,
     ) -> Vec<SectionViewHandle> {
         let sections = sections(ctx);
 
@@ -124,26 +101,10 @@ impl ResourceCenterMainView {
                     let is_expanded = match data.section_name {
                         // Always show What's New section
                         FeatureSection::WhatsNew => true,
-                        FeatureSection::GettingStarted => match ChannelState::app_version() {
-                            Some(version) => {
-                                match Settings::has_changelog_been_shown(version, ctx) {
-                                    true => !is_tips_completed && !is_onboarded,
-                                    false => false,
-                                }
-                            }
-                            None => !is_tips_completed && !is_onboarded,
-                        },
+                        FeatureSection::GettingStarted => !is_tips_completed && !is_onboarded,
                         // Expand Maximize Warp section once user has completed welcome tips,
                         // and keep open after users have completed/skipped all tips
-                        FeatureSection::MaximizeWarp => match ChannelState::app_version() {
-                            Some(version) => {
-                                match Settings::has_changelog_been_shown(version, ctx) {
-                                    true => is_tips_completed || is_onboarded,
-                                    false => false,
-                                }
-                            }
-                            None => is_tips_completed || is_onboarded,
-                        },
+                        FeatureSection::MaximizeWarp => is_tips_completed || is_onboarded,
                         _ => false,
                     };
 
@@ -162,9 +123,6 @@ impl ResourceCenterMainView {
                 Section::Content(data) => {
                     SectionViewHandle::Content(Self::build_content_section_view(data, ctx))
                 }
-                Section::Changelog() => SectionViewHandle::Changelog(
-                    Self::build_changelog_section_view(changelog_model_handle.clone(), ctx),
-                ),
             })
             .collect()
     }
@@ -221,7 +179,6 @@ impl ResourceCenterMainView {
                             }
                         }
                         SectionViewHandle::Content(_) => {}
-                        SectionViewHandle::Changelog(_) => {}
                     }
                 }
                 ctx.notify();
@@ -234,20 +191,6 @@ impl ResourceCenterMainView {
         ctx: &mut ViewContext<ResourceCenterMainView>,
     ) -> ViewHandle<ContentSectionView> {
         ctx.add_typed_action_view(|ctx| ContentSectionView::new(section_data.clone(), false, ctx))
-    }
-
-    fn build_changelog_section_view(
-        changelog_model_handle: ModelHandle<ChangelogModel>,
-        ctx: &mut ViewContext<ResourceCenterMainView>,
-    ) -> ViewHandle<ChangelogSectionView> {
-        let showing_new_changelog = match ChannelState::app_version() {
-            Some(version) => !Settings::has_changelog_been_shown(version, ctx),
-            None => false,
-        };
-
-        ctx.add_typed_action_view(|ctx: &mut ViewContext<_>| {
-            ChangelogSectionView::new(changelog_model_handle, showing_new_changelog, ctx)
-        })
     }
 
     pub fn set_action_target(
@@ -264,7 +207,6 @@ impl ResourceCenterMainView {
                     });
                 }
                 SectionViewHandle::Content(_) => {}
-                SectionViewHandle::Changelog(_) => {}
             }
         }
     }
@@ -280,9 +222,6 @@ impl ResourceCenterMainView {
                 SectionViewHandle::Content(section_view_handle) => {
                     body.add_child(ChildView::new(section_view_handle).finish());
                 }
-                SectionViewHandle::Changelog(section_view_handle) => {
-                    body.add_child(ChildView::new(section_view_handle).finish());
-                }
             }
         }
 
@@ -296,118 +235,6 @@ impl ResourceCenterMainView {
             theme.main_text_color(theme.background()).into(),
             Fill::None,
         )
-        .finish()
-    }
-
-    fn render_current_version(&self, appearance: &Appearance) -> Box<dyn Element> {
-        // Use a dummy string for git release tag which is not available on local env
-        let version = ChannelState::app_version().unwrap_or("v0.local.testing.string_00");
-
-        let style = UiComponentStyles {
-            font_color: Some(appearance.theme().nonactive_ui_text_color().into()),
-            ..Default::default()
-        };
-
-        let text = appearance
-            .ui_builder()
-            .wrappable_text(version, true)
-            .with_style(style)
-            .build()
-            .finish();
-
-        let copy_icon = appearance
-            .ui_builder()
-            .copy_button(
-                FOOTER_ICON_SIZE,
-                self.button_mouse_states.copy_version.clone(),
-            )
-            .build()
-            .on_click(move |ctx, _, _| {
-                ctx.dispatch_typed_action(WorkspaceAction::CopyVersion(version))
-            })
-            .finish();
-
-        Container::new(
-            Flex::row()
-                .with_child(Shrinkable::new(1., Align::new(text).left().finish()).finish())
-                .with_child(Shrinkable::new(0.2, Align::new(copy_icon).finish()).finish())
-                .with_main_axis_size(MainAxisSize::Max)
-                .finish(),
-        )
-        .with_margin_left(SECTION_SPACING)
-        .with_margin_bottom(BUTTON_PADDING)
-        .with_uniform_padding(BUTTON_PADDING)
-        .finish()
-    }
-
-    fn render_invite_button(&self, appearance: &Appearance) -> Box<dyn Element> {
-        let default_styles = UiComponentStyles {
-            font_size: Some(DETAIL_FONT_SIZE),
-            font_family_id: Some(appearance.ui_font_family()),
-            font_color: Some(appearance.theme().accent().into()),
-            border_radius: Some(CornerRadius::with_all(Radius::Percentage(20.))),
-            border_width: Some(1.),
-            border_color: Some(appearance.theme().accent().into()),
-            padding: Some(Coords {
-                top: BUTTON_PADDING,
-                bottom: BUTTON_PADDING,
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
-
-        let hovered_styles = UiComponentStyles {
-            background: Some(appearance.theme().accent().into()),
-            font_color: Some(
-                appearance
-                    .theme()
-                    .main_text_color(appearance.theme().accent())
-                    .into_solid(),
-            ),
-            ..default_styles
-        };
-
-        let clicked_color = appearance.theme().accent().blend(
-            &FillTheme::black().with_opacity(*appearance.theme().details().button_click_opacity()),
-        );
-        let clicked_styles = UiComponentStyles {
-            background: Some(clicked_color.into()),
-            border_color: Some(clicked_color.into()),
-            ..hovered_styles
-        };
-
-        Container::new(
-            appearance
-                .ui_builder()
-                .button_with_custom_styles(
-                    ButtonVariant::Outlined,
-                    self.button_mouse_states.invite_people.clone(),
-                    default_styles,
-                    Some(hovered_styles),
-                    Some(clicked_styles),
-                    None,
-                )
-                .with_text_and_icon_label(
-                    TextAndIcon::new(
-                        TextAndIconAlignment::IconFirst,
-                        "Invite a friend to Warp",
-                        Icon::new(SEND_SVG_PATH, appearance.theme().accent()),
-                        MainAxisSize::Max,
-                        MainAxisAlignment::Center,
-                        vec2f(FOOTER_ICON_SIZE, FOOTER_ICON_SIZE),
-                    )
-                    .with_inner_padding(BUTTON_PADDING),
-                )
-                .build()
-                .on_click(|ctx, _, _| {
-                    ctx.dispatch_typed_action(WorkspaceAction::ShowReferralSettingsPage)
-                })
-                .finish(),
-        )
-        .with_margin_top(SECTION_SPACING)
-        .with_margin_bottom(SECTION_SPACING_BOTTOM)
-        .with_margin_left(SECTION_SPACING + SCROLLBAR_OFFSET)
-        .with_margin_right(SECTION_SPACING + SCROLLBAR_OFFSET)
         .finish()
     }
 
@@ -503,18 +330,9 @@ impl View for ResourceCenterMainView {
     fn render(&self, app: &AppContext) -> Box<dyn Element> {
         let appearance = Appearance::as_ref(app);
         let body = self.render_body(appearance);
-        let invite_button = self.render_invite_button(appearance);
         let skip_tips = self.render_skip_tips_button(appearance);
 
         let mut main_page = Flex::column();
-
-        if !AuthStateProvider::as_ref(app)
-            .get()
-            .is_anonymous_or_logged_out()
-            && !FeatureFlag::AvatarInTabBar.is_enabled()
-        {
-            main_page = main_page.with_child(invite_button);
-        }
 
         if !self.tips_completed.as_ref(app).skipped_or_completed
             && !FeatureFlag::AvatarInTabBar.is_enabled()
@@ -525,11 +343,6 @@ impl View for ResourceCenterMainView {
         main_page = main_page
             .with_child(Shrinkable::new(20., body).finish())
             .with_child(Shrinkable::new(0.1, Empty::new().finish()).finish()); // placeholder to ensure pane extends to bottom of the window
-
-        if FeatureFlag::Autoupdate.is_enabled() && ChannelState::show_autoupdate_menu_items() {
-            let current_version = self.render_current_version(appearance);
-            main_page.add_child(current_version);
-        }
 
         main_page.finish()
     }

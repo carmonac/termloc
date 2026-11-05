@@ -19,9 +19,7 @@ use reqwest::IntoUrl;
 use reqwest_eventsource::RequestBuilderExt;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
-use warp_core::channel::{Channel, ChannelState};
-use warp_core::execution_mode;
-use warp_core::operating_system_info::OperatingSystemInfo;
+use warp_core::channel::ChannelState;
 use warp_errors::report_error;
 
 use crate::iap::{IapTokenProvider, proxy_auth_header};
@@ -29,42 +27,13 @@ use crate::iap::{IapTokenProvider, proxy_auth_header};
 pub mod headers {
     /// Custom Warp header indicating the version of the Warp app.
     pub const CLIENT_RELEASE_VERSION_HEADER_KEY: &str = "X-Warp-Client-Version";
-
-    /// Custom Warp header indicating the OS category the request was sent from.
-    pub(crate) const WARP_OS_CATEGORY: &str = "X-Warp-OS-Category";
-    /// Custom Warp header indicating the OS name the request was sent from. On Linux this is the
-    /// name of the distribution. On all other platforms it should be equivalent to
-    /// `WARP_OS_CATEGORY`.
-    pub(crate) const WARP_OS_NAME: &str = "X-Warp-OS-Name";
-    /// Custom Warp header indicating the version of the operating system. On Linux this is the
-    /// version of the distribution, not the Linux kernel version.
-    pub(crate) const WARP_OS_VERSION: &str = "X-Warp-OS-Version";
-
-    /// Custom Warp header indicating the linux kernel version. This is only sent from Linux.
-    pub(crate) const WARP_OS_LINUX_KERNEL_VERSION: &str = "X-Warp-OS-Linux-Kernel-Version";
-
-    /// Custom Warp header indicating the client role. We don't use the User-Agent header
-    /// because it can't be set from WASM.
-    pub(crate) const WARP_CLIENT_ID: &str = "X-Warp-Client-ID";
-
-    /// Custom Warp header carrying the client's current OTEL span context in W3C
-    /// `traceparent` wire format. It is deliberately distinct from the standard
-    /// `traceparent` header so the server links its request span to the client
-    /// span rather than reparenting the server span under the client trace.
-    pub(crate) const TRACE_LINK_HEADER: &str = "X-Warp-Traceparent";
 }
-
-/// The environment variable containing extra HTTP headers to attach to requests.
-/// Only read when the channel is `Channel::Integration`. The value is a newline-separated
-/// list of `Name:Value` pairs, where each pair is split on the first colon.
-const EXTRA_HTTP_HEADERS_ENV_VAR: &str = "WARP_EXTRA_HTTP_HEADERS";
 
 /// A wrapper around a `reqwest::Client` to execute requests. Returns a custom `RequestBuilder` type
 /// that ensures any call to the underlying `reqwest::Client` are properly adapted so that they can
 /// run outside of a Tokio context.
 pub struct Client {
     wrapped: reqwest::Client,
-    include_warp_headers: bool,
     #[cfg(target_family = "wasm")]
     omit_credentials: bool,
 
@@ -158,10 +127,10 @@ impl Client {
         Self::from_client_builder(builder).expect("should not fail to create client")
     }
 
-    /// Creates a pooled client without automatic Warp headers, IAP tokens, or browser credentials.
+    /// Creates a pooled client without IAP tokens or browser credentials.
     pub fn new_external() -> Self {
+        #[cfg_attr(not(target_family = "wasm"), expect(unused_mut))]
         let mut client = Self::new();
-        client.include_warp_headers = false;
         #[cfg(target_family = "wasm")]
         {
             client.omit_credentials = true;
@@ -182,9 +151,8 @@ impl Client {
     }
 
     pub fn from_client_builder(client_builder: reqwest::ClientBuilder) -> reqwest::Result<Self> {
-        egress::guard(client_builder).build().map(|client| Self {
+        egress::build_client(client_builder).map(|client| Self {
             wrapped: client,
-            include_warp_headers: true,
             #[cfg(target_family = "wasm")]
             omit_credentials: false,
             before_request_sent: None,
@@ -208,7 +176,6 @@ impl Client {
     fn builder(
         &self,
         wrapped: reqwest::RequestBuilder,
-        include_warp_headers: bool,
         iap_token: Option<String>,
     ) -> RequestBuilder<'_> {
         #[cfg(target_family = "wasm")]
@@ -224,10 +191,6 @@ impl Client {
             prevent_sleep_reason: None,
         };
 
-        if include_warp_headers && self.include_warp_headers {
-            builder = Self::add_warp_http_headers(builder);
-        }
-
         if let Some(token) = iap_token {
             let (name, value) = proxy_auth_header(&token);
             builder = builder.header(name, value);
@@ -237,33 +200,28 @@ impl Client {
     }
 
     pub fn get<U: IntoUrl + Clone>(&self, url: U) -> RequestBuilder<'_> {
-        let include_warp_headers = Self::include_warp_http_headers(url.clone());
         let iap_token = self.iap_token_for(url.clone());
-        self.builder(self.wrapped.get(url), include_warp_headers, iap_token)
+        self.builder(self.wrapped.get(url), iap_token)
     }
 
     pub fn post<U: IntoUrl + Clone>(&self, url: U) -> RequestBuilder<'_> {
-        let include_warp_headers = Self::include_warp_http_headers(url.clone());
         let iap_token = self.iap_token_for(url.clone());
-        self.builder(self.wrapped.post(url), include_warp_headers, iap_token)
+        self.builder(self.wrapped.post(url), iap_token)
     }
 
     pub fn put<U: IntoUrl + Clone>(&self, url: U) -> RequestBuilder<'_> {
-        let include_warp_headers = Self::include_warp_http_headers(url.clone());
         let iap_token = self.iap_token_for(url.clone());
-        self.builder(self.wrapped.put(url), include_warp_headers, iap_token)
+        self.builder(self.wrapped.put(url), iap_token)
     }
 
     pub fn patch<U: IntoUrl + Clone>(&self, url: U) -> RequestBuilder<'_> {
-        let include_warp_headers = Self::include_warp_http_headers(url.clone());
         let iap_token = self.iap_token_for(url.clone());
-        self.builder(self.wrapped.patch(url), include_warp_headers, iap_token)
+        self.builder(self.wrapped.patch(url), iap_token)
     }
 
     pub fn delete<U: IntoUrl + Clone>(&self, url: U) -> RequestBuilder<'_> {
-        let include_warp_headers = Self::include_warp_http_headers(url.clone());
         let iap_token = self.iap_token_for(url.clone());
-        self.builder(self.wrapped.delete(url), include_warp_headers, iap_token)
+        self.builder(self.wrapped.delete(url), iap_token)
     }
 
     /// Returns the IAP bearer token to attach to a request targeting
@@ -275,114 +233,6 @@ impl Client {
             return None;
         }
         provider.cached_token()
-    }
-
-    /// Helper method to determine if the request should include warp-specific headers. The only case
-    /// where we should include custom headers is if the request is same-origin and is targetted to our server.
-    /// For example, app.warp.dev --> app.warp.dev.
-    #[cfg(target_family = "wasm")]
-    fn include_warp_http_headers<U: IntoUrl + Clone>(url: U) -> bool {
-        url.into_url().is_ok_and(|url| {
-            url.host_str().is_some_and(|dest_host| {
-                let window_hostname = gloo::utils::window()
-                    .location()
-                    .hostname()
-                    .expect("Can't get window hostname");
-
-                // If the request is going to our server, the destination host should be "app.warp.dev" or
-                // "staging.warp.dev". The window hostname should also return the same.
-                // Note that reqwest's host_str() method is described here: https://docs.rs/reqwest/latest/reqwest/struct.Url.html#method.domain and
-                // gloo's hostname() method refers to this mozilla definition: https://developer.mozilla.org/en-US/docs/Web/API/Location/hostname.
-                window_hostname == dest_host
-            })
-        })
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    fn include_warp_http_headers<U: IntoUrl + Clone>(_url: U) -> bool {
-        true
-    }
-
-    fn add_warp_http_headers(mut builder: RequestBuilder) -> RequestBuilder {
-        // Include the client ID header.
-        if let Some(client_id) = execution_mode::current_client_id() {
-            builder = builder.header(headers::WARP_CLIENT_ID, client_id);
-        }
-
-        // If there's an app version, include it as an HTTP request header.
-        if let Some(app_version) = ChannelState::app_version() {
-            builder = builder.header(headers::CLIENT_RELEASE_VERSION_HEADER_KEY, app_version);
-        }
-
-        // On integration builds, attach any extra headers from the environment.
-        if ChannelState::channel() == Channel::Integration
-            && let Ok(raw) = std::env::var(EXTRA_HTTP_HEADERS_ENV_VAR)
-        {
-            for line in raw.lines() {
-                let Some((name, value)) = line.split_once(':') else {
-                    continue;
-                };
-                let name = name.trim();
-                let value = value.trim();
-                if name.is_empty() {
-                    continue;
-                }
-                match (
-                    HeaderName::from_bytes(name.as_bytes()),
-                    HeaderValue::from_str(value),
-                ) {
-                    (Ok(name), Ok(value)) => {
-                        builder = builder.header(name, value);
-                    }
-                    _ => {
-                        log::warn!(
-                            "Ignoring invalid entry in {EXTRA_HTTP_HEADERS_ENV_VAR}: {line}"
-                        );
-                    }
-                }
-            }
-        }
-
-        // Headers indicating the details of the client's operating system, if available here at runtime.
-        if let Ok(os_system_info) = OperatingSystemInfo::get() {
-            // Operating system category.
-            let category = os_system_info.category().to_string();
-            if let Ok(category) = HeaderValue::from_str(&category) {
-                builder = builder.header(headers::WARP_OS_CATEGORY, category);
-            }
-
-            // Operating system name.
-            builder = builder.header(
-                headers::WARP_OS_NAME,
-                HeaderValue::from_static(os_system_info.name()),
-            );
-
-            // Operating system version.
-            if let Some(version) = os_system_info
-                .version()
-                .and_then(|version| HeaderValue::from_str(version).ok())
-            {
-                builder = builder.header(headers::WARP_OS_VERSION, version);
-            }
-
-            // Linux kernel version.
-            if let Some(linux_kernel_version) = os_system_info
-                .linux_kernel_version()
-                .and_then(|kernel_version| HeaderValue::from_str(kernel_version).ok())
-            {
-                builder =
-                    builder.header(headers::WARP_OS_LINUX_KERNEL_VERSION, linux_kernel_version);
-            }
-        }
-
-        // Forward the current trace context so the server can attach a span link
-        // back to this client (cloud-agent) span. Only present when a valid OTEL
-        // span context exists; omitted otherwise (e.g. non-cloud-agent or wasm).
-        if let Some(trace_link) = current_trace_link_header() {
-            builder = builder.header(headers::TRACE_LINK_HEADER, trace_link);
-        }
-
-        builder
     }
 
     pub async fn execute(&self, request: Request) -> reqwest::Result<Response> {
@@ -431,38 +281,6 @@ fn is_warp_server_origin(url: &reqwest::Url) -> bool {
     .iter()
     .filter_map(|candidate| reqwest::Url::parse(candidate.as_ref()).ok())
     .any(|candidate| candidate.origin() == url.origin())
-}
-
-/// Returns the current OTEL span context formatted as a W3C `traceparent` value
-/// (`00-<trace-id>-<span-id>-<flags>`) for the [`headers::TRACE_LINK_HEADER`]
-/// header, or `None` when there is no valid active span context.
-///
-/// A valid span context only exists in processes where the OpenTelemetry
-/// subscriber is installed — i.e. cloud-agent processes (see
-/// `app/src/tracing/native.rs`). Everywhere else, and on wasm, this returns
-/// `None` so the header is omitted rather than sent empty or malformed.
-#[cfg(not(target_family = "wasm"))]
-fn current_trace_link_header() -> Option<String> {
-    use opentelemetry::trace::TraceContextExt as _;
-    use tracing_opentelemetry::OpenTelemetrySpanExt as _;
-
-    let context = tracing::Span::current().context();
-    let span = context.span();
-    let span_context = span.span_context();
-    if !span_context.is_valid() {
-        return None;
-    }
-    Some(format!(
-        "00-{}-{}-{:02x}",
-        span_context.trace_id(),
-        span_context.span_id(),
-        span_context.trace_flags().to_u8(),
-    ))
-}
-
-#[cfg(target_family = "wasm")]
-fn current_trace_link_header() -> Option<String> {
-    None
 }
 
 impl<'a> RequestBuilder<'a> {
@@ -808,7 +626,6 @@ impl<'c> oauth2::AsyncHttpClient<'c> for Client {
     fn call(&'c self, request: oauth2::HttpRequest) -> Self::Future {
         Box::pin(async move {
             let uri = request.uri().to_string();
-            let include_warp_headers = Self::include_warp_http_headers(uri.clone());
             let iap_token = self.iap_token_for(uri);
             let builder = reqwest::RequestBuilder::from_parts(
                 self.wrapped.clone(),
@@ -816,7 +633,7 @@ impl<'c> oauth2::AsyncHttpClient<'c> for Client {
             );
 
             let response = self
-                .builder(builder, include_warp_headers, iap_token)
+                .builder(builder, iap_token)
                 .send()
                 .await
                 .map_err(Box::new)?;

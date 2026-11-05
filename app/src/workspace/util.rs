@@ -4,15 +4,11 @@ use warpui::{AppContext, EntityId, SingletonEntity, ViewContext, ViewHandle, Win
 
 use super::OneTimeModalModel;
 use crate::appearance::Appearance;
-use crate::menu::{MenuItem, MenuItemFields};
 use crate::pane_group::PaneId;
-use crate::server::ids::ServerId;
 use crate::terminal::TerminalView;
-use crate::ui_components::icons::Icon;
 use crate::window_settings::WindowSettings;
+use crate::workspace::Workspace;
 use crate::workspace::tab_group::TabGroupId;
-use crate::workspace::{Workspace, WorkspaceAction};
-use crate::workspaces::team::Team;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 /// What composes a pane (i.e. the pane group and the pane itself).
@@ -26,7 +22,6 @@ pub(super) struct WorkspaceMouseStates {
     pub(super) new_tab_button: MouseStateHandle,
     pub(super) new_tab_menu: MouseStateHandle,
     pub(super) new_tab: MouseStateHandle,
-    pub(super) overflow_button: MouseStateHandle,
     pub(super) banner_button: MouseStateHandle,
     pub(super) banner_secondary_button: MouseStateHandle,
     pub(super) more_info_banner_button: MouseStateHandle,
@@ -44,7 +39,6 @@ pub(super) struct WorkspaceMouseStates {
     pub(super) session_config_tab_config_chip_close: MouseStateHandle,
     pub(super) tools_panel_icon: MouseStateHandle,
     pub(super) title_bar_search_bar: MouseStateHandle,
-    pub(super) team_switcher_pill: MouseStateHandle,
     #[cfg(target_family = "wasm")]
     pub(super) warp_logo: MouseStateHandle,
 }
@@ -87,7 +81,6 @@ pub struct WorkspaceState {
     pub is_theme_chooser_open: bool,
     pub is_theme_creator_modal_open: bool,
     pub is_theme_deletion_modal_open: bool,
-    pub is_changelog_modal_open: bool,
     pub is_tab_being_dragged: bool,
     pub is_reward_modal_open: bool,
     pub is_launch_config_save_modal_open: bool,
@@ -96,8 +89,6 @@ pub struct WorkspaceState {
     pub is_warp_drive_open: bool,
     pub is_ai_assistant_panel_open: bool,
     pub is_agent_management_popup_open: bool,
-    pub is_auth_override_modal_open: bool,
-    pub is_require_login_modal_open: bool,
     pub is_workflow_modal_open: bool,
     pub is_prompt_editor_open: bool,
     pub is_agent_toolbar_editor_open: bool,
@@ -110,12 +101,10 @@ pub struct WorkspaceState {
     pub is_shared_objects_creation_denied_modal_open: bool,
     pub is_suggested_agent_mode_workflow_modal_open: bool,
     pub is_suggested_rule_modal_open: bool,
-    pub is_enable_auto_reload_modal_open: bool,
     pub is_notification_mailbox_open: bool,
     pub is_agent_management_view_open: bool,
     pub is_codex_modal_open: bool,
     pub is_cloud_agent_capacity_modal_open: bool,
-    pub is_prompt_suggestions_unavailable_modal_open: bool,
     pub is_tab_config_params_modal_open: bool,
     pub is_session_config_modal_open: bool,
     pub is_new_worktree_modal_open: bool,
@@ -140,7 +129,6 @@ impl WorkspaceState {
     pub fn is_any_non_palette_modal_open(&self, app: &AppContext) -> bool {
         self.is_theme_creator_modal_open
             || self.is_theme_deletion_modal_open
-            || self.is_changelog_modal_open
             || self.tab_being_renamed.is_some()
             || self.pane_being_renamed.is_some()
             || self.tab_group_being_renamed.is_some()
@@ -155,10 +143,8 @@ impl WorkspaceState {
             || self.is_shared_objects_creation_denied_modal_open
             || self.is_suggested_rule_modal_open
             || self.is_suggested_agent_mode_workflow_modal_open
-            || self.is_enable_auto_reload_modal_open
             || self.is_codex_modal_open
             || self.is_cloud_agent_capacity_modal_open
-            || self.is_prompt_suggestions_unavailable_modal_open
             || self.is_tab_config_params_modal_open
             || self.is_session_config_modal_open
             || self.is_new_worktree_modal_open
@@ -166,7 +152,6 @@ impl WorkspaceState {
             || {
                 let one_time_modal = OneTimeModalModel::as_ref(app);
                 one_time_modal.is_oz_launch_modal_open()
-                    || one_time_modal.is_build_plan_migration_modal_open()
             }
     }
 
@@ -182,7 +167,6 @@ impl WorkspaceState {
         self.is_ctrl_tab_palette_open = false;
         self.is_theme_creator_modal_open = false;
         self.is_theme_deletion_modal_open = false;
-        self.is_changelog_modal_open = false;
         self.tab_being_renamed = None;
         self.pane_being_renamed = None;
         self.tab_group_being_renamed = None;
@@ -195,14 +179,10 @@ impl WorkspaceState {
         self.is_header_toolbar_editor_open = false;
         self.is_import_modal_open = false;
         self.is_shared_objects_creation_denied_modal_open = false;
-        self.is_auth_override_modal_open = false;
-        self.is_require_login_modal_open = false;
         self.is_suggested_rule_modal_open = false;
         self.is_suggested_agent_mode_workflow_modal_open = false;
-        self.is_enable_auto_reload_modal_open = false;
         self.is_codex_modal_open = false;
         self.is_cloud_agent_capacity_modal_open = false;
-        self.is_prompt_suggestions_unavailable_modal_open = false;
         self.is_tab_config_params_modal_open = false;
         self.is_session_config_modal_open = false;
         self.is_new_worktree_modal_open = false;
@@ -407,31 +387,4 @@ fn get_terminal_background_opacity(window_id: WindowId, app: &AppContext) -> u8 
         }
         _ => background_opacity,
     }
-}
-
-/// Builds the team-switcher dropdown items: a "Teams" header followed by one entry per team,
-/// marking the current team with a check icon.
-pub fn team_switcher_menu_items(
-    teams: &[Team],
-    current_team_uid: Option<ServerId>,
-) -> Vec<MenuItem<WorkspaceAction>> {
-    let mut items = vec![
-        MenuItem::Header {
-            fields: MenuItemFields::new("Teams"),
-            clickable: false,
-            right_side_fields: None,
-        },
-        MenuItem::Separator,
-    ];
-    items.extend(teams.iter().map(|team| {
-        let mut fields = MenuItemFields::new(team.name.clone())
-            .with_on_select_action(WorkspaceAction::OpenNewWindowForTeam { team_uid: team.uid });
-        fields = if Some(team.uid) == current_team_uid {
-            fields.with_icon(Icon::Check)
-        } else {
-            fields.with_indent()
-        };
-        fields.into_item()
-    }));
-    items
 }

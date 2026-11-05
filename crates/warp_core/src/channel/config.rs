@@ -18,13 +18,7 @@ pub struct ChannelConfig {
     pub server_config: WarpServerConfig,
     /// Configuration for Oz/ambient agents.
     pub oz_config: OzConfig,
-    /// Configuration for telemetry sending, or [`None`] if telemetry should be
-    /// disabled for this build.
-    pub telemetry_config: Option<TelemetryConfig>,
     /// Configuration for autoupdate functionality.
-    pub autoupdate_config: Option<AutoupdateConfig>,
-    /// Configuration for crash reporting.
-    pub crash_reporting_config: Option<CrashReportingConfig>,
     /// Configuration for statically-bundled MCP OAuth credentials.
     pub mcp_static_config: Option<McpStaticConfig>,
 }
@@ -59,17 +53,6 @@ pub struct WarpServerConfig {
 }
 
 impl WarpServerConfig {
-    pub fn production() -> Self {
-        Self {
-            server_root_url: "https://app.warp.dev".into(),
-            prewarmed_sandbox_control_url: None,
-            rtc_server_url: "wss://rtc.app.warp.dev/graphql/v2".into(),
-            session_sharing_server_url: Some("wss://sessions.app.warp.dev".into()),
-            firebase_auth_api_key: "AIzaSyBdy3O3S9hrdayLJxJ7mriBR4qgUaUygAs".into(),
-            iap_config: None,
-        }
-    }
-
     /// Points every server URL at a closed loopback port, for builds that never talk to Warp.
     pub fn disabled() -> Self {
         Self {
@@ -95,13 +78,6 @@ pub struct OzConfig {
 }
 
 impl OzConfig {
-    pub fn production() -> Self {
-        Self {
-            oz_root_url: "https://oz.warp.dev".into(),
-            workload_audience_url: None,
-        }
-    }
-
     /// See [`WarpServerConfig::disabled`].
     pub fn disabled() -> Self {
         Self {
@@ -109,57 +85,6 @@ impl OzConfig {
             workload_audience_url: None,
         }
     }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct TelemetryConfig {
-    /// The name of the file in which not-yet-sent telemetry events will be stored.
-    pub telemetry_file_name: Cow<'static, str>,
-    /// Configuration for Rudderstack, for reporting telemetry events.
-    pub rudderstack_config: Option<RudderStackConfig>,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct RudderStackConfig {
-    pub write_key: Cow<'static, str>,
-    pub root_url: Cow<'static, str>,
-    pub ugc_write_key: Cow<'static, str>,
-}
-
-impl RudderStackConfig {
-    pub fn non_ugc_destination(&self) -> RudderStackDestination {
-        RudderStackDestination {
-            root_url: self.root_url.clone(),
-            write_key: self.write_key.clone(),
-        }
-    }
-
-    pub fn ugc_destination(&self) -> RudderStackDestination {
-        RudderStackDestination {
-            root_url: self.root_url.clone(),
-            write_key: self.ugc_write_key.clone(),
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct RudderStackDestination {
-    pub root_url: Cow<'static, str>,
-    pub write_key: Cow<'static, str>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AutoupdateConfig {
-    /// The base URL for fetching autoupdate versions and updated release bundles.
-    pub releases_base_url: Cow<'static, str>,
-    /// Whether or not to display menu items relating to autoupdate.
-    pub show_autoupdate_menu_items: bool,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CrashReportingConfig {
-    /// The URL/DSN for sending error logs and crash reports to Sentry.
-    pub sentry_url: Cow<'static, str>,
 }
 
 /// Configuration for statically-bundled MCP OAuth credentials.

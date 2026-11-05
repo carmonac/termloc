@@ -51,7 +51,19 @@ pub fn send_request(
             "local control endpoint is disabled for this instance",
         )
     })?;
-    let client = reqwest::blocking::Client::new();
+    // Requests carry a bearer credential to a loopback endpoint, so nothing may reroute them.
+    #[allow(clippy::disallowed_methods)]
+    let client = reqwest::blocking::Client::builder()
+        .no_proxy()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|err| {
+            ControlError::with_details(
+                ErrorCode::TransportUnavailable,
+                "failed to create local-control client",
+                err.to_string(),
+            )
+        })?;
     let response = client
         .post(endpoint.url())
         .header("Authorization", credential.authorization_value())

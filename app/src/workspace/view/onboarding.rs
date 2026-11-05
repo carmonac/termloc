@@ -16,14 +16,7 @@ pub enum OnboardingTutorial {
     NoProject { intention: OnboardingIntention },
 }
 
-impl OnboardingTutorial {
-    /// Extracts the onboarding intention from any tutorial variant.
-    pub(crate) fn intention(&self) -> OnboardingIntention {
-        match self {
-            OnboardingTutorial::NoProject { intention } => *intention,
-        }
-    }
-}
+impl OnboardingTutorial {}
 
 /// A tutorial dispatch held back until the blocking one-time modal that was open closes.
 #[derive(Debug, Clone, Copy)]
@@ -109,8 +102,8 @@ impl Workspace {
     }
 
     /// Dispatch the agent onboarding tutorial flow to the active terminal. While a blocking
-    /// one-time modal (e.g. the ChatGPT plan modal) is open, the dispatch is held until it
-    /// closes so the callout doesn't compete with the modal for attention and focus.
+    /// one-time modal is open, the dispatch is held until it closes so the callout doesn't
+    /// compete with the modal for attention and focus.
     fn dispatch_agent_onboarding_tutorial(
         &mut self,
         has_project: bool,
@@ -134,9 +127,6 @@ impl Workspace {
             AgentOnboardingVersion::UniversalInput { has_project }
         });
         self.dispatch_onboarding(TerminalAction::OnboardingFlow(version), ctx);
-        OneTimeModalModel::handle(ctx).update(ctx, |model, ctx| {
-            model.set_onboarding_tutorial_active(true, ctx);
-        });
     }
 
     /// Starts a tutorial that was held back by a one-time modal, now that the modal closed.

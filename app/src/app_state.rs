@@ -16,7 +16,6 @@ use crate::drive::OpenWarpDriveObjectSettings;
 use crate::root_view::quake_mode_window_id;
 use crate::server::ids::{ServerId, SyncId};
 use crate::settings_view::SettingsSection;
-use crate::settings_view::environments_page::EnvironmentsPage;
 use crate::tab::SelectedTabColor;
 use crate::terminal::ShellLaunchData;
 use crate::themes::theme::AnsiColorIdentifier;
@@ -140,11 +139,9 @@ pub enum LeafContents {
     AIDocument(AIDocumentPaneSnapshot),
     Code(CodePaneSnapShot),
     EnvVarCollection(EnvVarCollectionPaneSnapshot),
-    EnvironmentManagement(EnvironmentManagementPaneSnapshot),
     Workflow(WorkflowPaneSnapshot),
     Settings(SettingsPaneSnapshot),
     AIFact(AIFactPaneSnapshot),
-    CustomRouterEditor,
     ExecutionProfileEditor,
     CodeReview(CodeReviewPaneSnapshot),
     AmbientAgent(AmbientAgentPaneSnapshot),
@@ -171,10 +168,7 @@ impl LeafContents {
             // Network log: the backing log is an in-memory ring buffer that
             // starts empty on launch; persisting would also regress back to
             // an on-disk log via the app-state database.
-            LeafContents::NetworkLog
-            // Environment management panes are opened on-demand via workspace
-            // actions and have no persistable state.
-            | LeafContents::EnvironmentManagement(_) => false,
+            LeafContents::NetworkLog => false,
             LeafContents::Terminal(_)
             | LeafContents::Notebook(_)
             | LeafContents::AIDocument(_)
@@ -183,7 +177,6 @@ impl LeafContents {
             | LeafContents::Workflow(_)
             | LeafContents::Settings(_)
             | LeafContents::AIFact(_)
-            | LeafContents::CustomRouterEditor
             | LeafContents::ExecutionProfileEditor
             | LeafContents::CodeReview(_)
             | LeafContents::AmbientAgent(_)
@@ -280,11 +273,6 @@ pub enum EnvVarCollectionPaneSnapshot {
     CloudEnvVarCollection {
         env_var_collection_id: Option<SyncId>,
     },
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct EnvironmentManagementPaneSnapshot {
-    pub mode: EnvironmentsPage,
 }
 
 #[derive(Clone, Debug, PartialEq)]

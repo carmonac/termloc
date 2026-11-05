@@ -23,8 +23,6 @@ prost-types.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true
-schemars = "1"
-settings_value.workspace = true
 string-offset.workspace = true
 typed-path.workspace = true
 anyhow.workspace = true
@@ -32,7 +30,6 @@ base16ct = "0.2.0"
 streaming-iterator.workspace = true
 instant.workspace = true
 itertools.workspace = true
-indexmap = { version = "2.0.2", features = ["serde"] }
 rayon.workspace = true
 ignore = "0.4.23"
 line-span = "0.1.5"
@@ -41,7 +38,6 @@ shellexpand.workspace = true
 strum.workspace = true
 strum_macros.workspace = true
 warpui_core.workspace = true
-warpui_extras = { workspace = true, features = ["default"] }
 warp_graphql.workspace = true
 warp_multi_agent_api.workspace = true
 dirs.workspace = true
@@ -76,11 +72,7 @@ nix.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 async-fs.workspace = true
 arborium.workspace = true
-base64.workspace = true
-http_client.workspace = true
 languages.workspace = true
-rand.workspace = true
-serde_urlencoded.workspace = true
 syntax_tree.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread"] }
 watcher.workspace = true

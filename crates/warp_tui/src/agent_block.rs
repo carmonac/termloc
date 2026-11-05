@@ -19,12 +19,11 @@ use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentActionId, AIAgentActionType, AIAgentExchangeId,
     AIAgentOutputMessageType, AIAgentText, AIAgentTextSection, AIAgentTodo, AIBlockModel,
     AIBlockModelHelper, AIBlockOutputStatus, AIConversationId, AuthStateProvider, BlockId,
-    BlocklistAIActionEvent, BlocklistAIActionModel, BlocklistAIHistoryModel,
-    CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT, CancellationReason, FAILED_OUTPUT_USAGE_NOTICE_TEXT,
-    FailedOutputPresentation, MessageId, ModelEvent, ModelEventDispatcher, ReceivedMessageDisplay,
-    RenderableAIError, SummarizationType, TelemetryEvent, TerminalModel, TodoOperation, TodoStatus,
-    TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent, UserWorkspaces,
-    chatgpt_subscription_message_with_links, failed_output_presentation,
+    BlocklistAIActionEvent, BlocklistAIActionModel, BlocklistAIHistoryModel, CancellationReason,
+    FAILED_OUTPUT_USAGE_NOTICE_TEXT, FailedOutputPresentation, MessageId, ModelEvent,
+    ModelEventDispatcher, ReceivedMessageDisplay, RenderableAIError, SummarizationType,
+    TelemetryEvent, TerminalModel, TodoOperation, TodoStatus, TuiOnboardingMarker,
+    TuiOnboardingMarkers, TuiOnboardingMarkersEvent, UserWorkspaces, failed_output_presentation,
     should_show_failed_output_usage_notice,
 };
 use warpui::SingletonEntity;
@@ -241,25 +240,9 @@ fn render_failure_section(
     let error_style = builder.error_text_style();
     let body_style = builder.muted_text_style();
     match presentation {
-        FailedOutputPresentation::Message(message)
-        | FailedOutputPresentation::AwsBedrockCredentialsExpiredOrInvalid {
-            fallback_message: message,
-        }
-        | FailedOutputPresentation::GeminiEnterpriseCredentialsExpiredOrInvalid {
-            fallback_message: message,
-        } => TuiText::from_spans([
+        FailedOutputPresentation::Message(message) => TuiText::from_spans([
             (FAILURE_WARNING_PREFIX.to_owned(), error_style),
             (message.clone(), body_style),
-        ])
-        .finish(),
-        FailedOutputPresentation::InvalidApiKey { title, detail } => TuiText::from_spans([
-            (FAILURE_WARNING_PREFIX.to_owned(), error_style),
-            (
-                (*title).to_owned(),
-                error_style.add_modifier(Modifier::BOLD),
-            ),
-            ("\n  ".to_owned(), body_style),
-            (detail.clone(), body_style),
         ])
         .finish(),
         FailedOutputPresentation::OutOfCredits { .. } => {
@@ -317,26 +300,6 @@ fn render_failure_section(
             (message.clone(), body_style),
         ])
         .finish(),
-        // The TUI cannot dispatch the recovery actions, so only the copy and any links are shown.
-        FailedOutputPresentation::ChatGPTSubscription {
-            title,
-            message,
-            actions,
-        } => TuiText::from_spans([
-            (FAILURE_WARNING_PREFIX.to_owned(), error_style),
-            (title.clone(), error_style.add_modifier(Modifier::BOLD)),
-            ("\n  ".to_owned(), body_style),
-            (
-                chatgpt_subscription_message_with_links(message, actions).replace('\n', "\n  "),
-                body_style,
-            ),
-        ])
-        .finish(),
-        FailedOutputPresentation::ChatGPTSubscriptionContinuedWithWarpCredits => {
-            TuiText::new(CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT)
-                .with_style(body_style)
-                .finish()
-        }
     }
 }
 
@@ -349,12 +312,6 @@ fn render_usage_notice(app: &AppContext) -> Box<dyn TuiElement> {
 fn failure_text(presentation: &FailedOutputPresentation, app: &AppContext) -> String {
     match presentation {
         FailedOutputPresentation::Message(message)
-        | FailedOutputPresentation::AwsBedrockCredentialsExpiredOrInvalid {
-            fallback_message: message,
-        }
-        | FailedOutputPresentation::GeminiEnterpriseCredentialsExpiredOrInvalid {
-            fallback_message: message,
-        }
         | FailedOutputPresentation::ContextWindowExceeded { message } => message.clone(),
         FailedOutputPresentation::OutOfCredits { .. } => {
             let upgrade_url = upgrade_url(app);
@@ -362,20 +319,6 @@ fn failure_text(presentation: &FailedOutputPresentation, app: &AppContext) -> St
                 "{OUT_OF_CREDITS_TITLE}\n  {OUT_OF_CREDITS_DETAIL}\n\n  \
                  {OUT_OF_CREDITS_ACTION_LABEL} {OUT_OF_CREDITS_ACTION_HINT}\n\n  {upgrade_url}"
             )
-        }
-        FailedOutputPresentation::InvalidApiKey { title, detail } => {
-            format!("{title}\n{detail}")
-        }
-        FailedOutputPresentation::ChatGPTSubscription {
-            title,
-            message,
-            actions,
-        } => {
-            let message = chatgpt_subscription_message_with_links(message, actions);
-            format!("{title}\n{message}")
-        }
-        FailedOutputPresentation::ChatGPTSubscriptionContinuedWithWarpCredits => {
-            CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT.to_owned()
         }
     }
 }
@@ -1302,16 +1245,7 @@ impl TuiAIBlock {
         let AIBlockOutputStatus::Failed { error, .. } = status else {
             return None;
         };
-        let conversation_uses_warp_credits_instead_of_chatgpt = self
-            .block_model
-            .conversation(app)
-            .is_some_and(|conversation| conversation.use_warp_credits_instead_of_chatgpt());
-        failed_output_presentation(
-            error,
-            conversation_uses_warp_credits_instead_of_chatgpt,
-            app,
-        )
-        .map(|presentation| (error, presentation))
+        failed_output_presentation(error, app).map(|presentation| (error, presentation))
     }
 
     pub(super) fn has_out_of_credits_failure(&self, app: &AppContext) -> bool {

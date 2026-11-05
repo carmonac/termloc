@@ -14,10 +14,7 @@ use warpui::elements::HyperlinkUrl;
 use warpui::event::ModifiersState;
 use warpui::units::Lines;
 
-use super::inline_banner::{
-    AwsBedrockLoginBannerAction, AwsCliNotInstalledBannerAction, OpenInWarpBannerAction,
-    VimModeBannerAction,
-};
+use super::inline_banner::{OpenInWarpBannerAction, VimModeBannerAction};
 use super::{
     AliasExpansionBannerAction, ContextMenuAction, GridHighlightedLink, InputContextMenuAction,
     NotificationsDiscoveryBannerAction, NotificationsErrorBannerAction, RichContentLink,
@@ -328,10 +325,8 @@ pub enum TerminalAction {
     ToggleCLIAgentVoiceInput(voice_input::VoiceInputToggledFrom),
 
     HyperlinkClick(HyperlinkUrl),
-    AttemptLoginGatedFeature,
     StartFileDropTarget,
     StopFileDropTarget,
-    OpenTeamSettingsPage,
     SetMarkedText {
         marked_text: UserInput<String>,
         selected_range: Range<usize>,
@@ -379,7 +374,6 @@ pub enum TerminalAction {
         skill_reference: SkillReference,
     },
     OpenAddPromptPane,
-    OpenBillingAndUsagePane,
     OpenConversationsPalette,
     PickRepoToOpen,
     OpenFilesPalette {
@@ -410,8 +404,6 @@ pub enum TerminalAction {
     OpenInlineHistoryMenu,
     OpenModelSelector,
     ResolvePromptSuggestion(PromptSuggestionResolution),
-    AwsBedrockLoginBanner(AwsBedrockLoginBannerAction),
-    AwsCliNotInstalledBanner(AwsCliNotInstalledBannerAction),
     /// Toggle the usage footer on the last AI block in the active conversation.
     ToggleUsageFooter,
     /// Reveal a hidden child agent pane from the orchestrator status card.
@@ -661,13 +653,11 @@ impl fmt::Debug for TerminalAction {
             #[cfg(feature = "voice_input")]
             ToggleCLIAgentVoiceInput(source) => write!(f, "ToggleCLIAgentVoiceInput({source:?})"),
             HyperlinkClick(hyperlink_url) => write!(f, "HyperlinkClick({hyperlink_url:?})"),
-            AttemptLoginGatedFeature => write!(f, "AttemptLoginGatedFeature"),
             StartFileDropTarget => write!(f, "StartFileDropTarget"),
             StopFileDropTarget => write!(f, "StopFileDropTarget"),
             RunNativeShellCompletions { buffer_text, .. } => {
                 write!(f, "RunNativeShellCompletions({buffer_text:?})")
             }
-            OpenTeamSettingsPage => write!(f, "OpenTeamSettingsPage"),
             SetMarkedText {
                 marked_text,
                 selected_range,
@@ -710,7 +700,6 @@ impl fmt::Debug for TerminalAction {
             OpenRulesPane => write!(f, "OpenRulesPane"),
             OpenEditSkillPane { .. } => write!(f, "OpenEditSkillPane"),
             OpenAddPromptPane => write!(f, "OpenAddPromptPane"),
-            OpenBillingAndUsagePane => write!(f, "OpenBillingAndUsagePane"),
             OpenConversationsPalette => write!(f, "OpenConversationsPalette"),
             PickRepoToOpen => write!(f, "PickRepoToOpen"),
             OpenFilesPalette { .. } => write!(f, "OpenFilesPalette"),
@@ -735,8 +724,6 @@ impl fmt::Debug for TerminalAction {
             OpenInlineHistoryMenu => write!(f, "OpenInlineHistoryMenu"),
             OpenModelSelector => write!(f, "OpenModelSelector"),
             ResolvePromptSuggestion(..) => write!(f, "ResolvePromptSuggestion"),
-            AwsBedrockLoginBanner(action) => write!(f, "AwsBedrockLoginBanner({action:?})"),
-            AwsCliNotInstalledBanner(action) => write!(f, "AwsCliNotInstalledBanner({action:?})"),
             ToggleUsageFooter => write!(f, "ToggleUsageFooter"),
             RevealChildAgent { .. } => write!(f, "RevealChildAgent"),
             SwitchAgentViewToConversation { .. } => write!(f, "SwitchAgentViewToConversation"),

@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
-use ai::api_keys::{ApiKeyManager, CustomEndpointParams, CustomEndpointSchema};
 use warp_core::features::FeatureFlag;
 use warp_multi_agent_api as api;
-use warpui::{App, SingletonEntity};
+use warpui::App;
 
 use super::{
     AIConversation, AIConversationAutoexecuteMode, AIConversationId, ConversationDriver,
@@ -57,7 +56,6 @@ fn conversation_data_with_usage_metadata(
         autoexecute_override: None,
         last_event_sequence: None,
         pinned: false,
-        use_warp_credits_instead_of_chatgpt: false,
     }
 }
 
@@ -742,7 +740,7 @@ fn restored_legacy_conversation_keeps_cost_unavailable_after_follow_up() {
 
         let mut conversation =
             restored_conversation(Some(conversation_data_with_billed_cost(None)));
-        app.read(|ctx| {
+        app.read(|_ctx| {
             conversation
                 .update_cost_and_usage_for_request(
                     None,
@@ -750,7 +748,6 @@ fn restored_legacy_conversation_keeps_cost_unavailable_after_follow_up() {
                     vec![stream_token_usage("legacy-model", 10, 2, 1.5)],
                     Some(credits_usage_metadata(1.0, 0.0)),
                     false,
-                    ctx,
                 )
                 .expect("follow-up usage should update");
         });
@@ -762,65 +759,13 @@ fn restored_legacy_conversation_keeps_cost_unavailable_after_follow_up() {
 }
 
 #[test]
-fn update_cost_and_usage_resolves_custom_endpoint_alias_for_footer_usage() {
-    App::test((), |mut app| async move {
-        initialize_custom_endpoint_usage_test_app(&mut app);
-        ApiKeyManager::handle(&app).update(&mut app, |manager, ctx| {
-            manager.add_custom_endpoint(
-                CustomEndpointParams {
-                    name: "Endpoint".to_string(),
-                    url: "https://custom.example".to_string(),
-                    api_key: "key".to_string(),
-                    models: vec![(
-                        "raw-model".to_string(),
-                        Some("Friendly alias".to_string()),
-                        Some("config-key".to_string()),
-                    )],
-                    schema: CustomEndpointSchema::default(),
-                },
-                ctx,
-            );
-        });
-        app.add_singleton_model(LLMPreferences::new);
-
-        let mut conversation = AIConversation::new(false, false);
-        app.read(|ctx| {
-            conversation
-                .update_cost_and_usage_for_request(
-                    None,
-                    None,
-                    vec![],
-                    Some(custom_endpoint_usage_metadata("config-key", 6)),
-                    false,
-                    ctx,
-                )
-                .expect("custom endpoint usage should update");
-        });
-
-        let usage = conversation
-            .token_usage()
-            .iter()
-            .find(|usage| usage.model_id == "Friendly alias")
-            .expect("custom endpoint alias should resolve into footer usage");
-        assert_eq!(usage.custom_endpoint_tokens, 6);
-        assert_eq!(usage.byok_tokens, 0);
-        assert_eq!(
-            usage
-                .custom_endpoint_token_usage_by_category
-                .get("primary_agent"),
-            Some(&6)
-        );
-    });
-}
-
-#[test]
 fn update_cost_and_usage_uses_fallback_label_for_unknown_custom_endpoint() {
     App::test((), |mut app| async move {
         initialize_custom_endpoint_usage_test_app(&mut app);
         app.add_singleton_model(LLMPreferences::new);
 
         let mut conversation = AIConversation::new(false, false);
-        app.read(|ctx| {
+        app.read(|_ctx| {
             conversation
                 .update_cost_and_usage_for_request(
                     None,
@@ -828,7 +773,6 @@ fn update_cost_and_usage_uses_fallback_label_for_unknown_custom_endpoint() {
                     vec![],
                     Some(custom_endpoint_usage_metadata("missing-config-key", 9)),
                     false,
-                    ctx,
                 )
                 .expect("fallback custom endpoint usage should update");
         });
@@ -903,7 +847,7 @@ fn usage_totals_reads_gui_credits_without_a_dollar_total() {
             }
         );
 
-        app.read(|ctx| {
+        app.read(|_ctx| {
             conversation
                 .update_cost_and_usage_for_request(
                     None,
@@ -911,7 +855,6 @@ fn usage_totals_reads_gui_credits_without_a_dollar_total() {
                     vec![stream_token_usage("model-a", 100, 20, 1.5)],
                     Some(credits_usage_metadata(2.0, 0.5)),
                     false,
-                    ctx,
                 )
                 .expect("usage should update");
             // The server's usage metadata is cumulative per conversation: the
@@ -924,7 +867,6 @@ fn usage_totals_reads_gui_credits_without_a_dollar_total() {
                     vec![stream_token_usage("model-a", 50, 10, 1.2)],
                     Some(credits_usage_metadata(3.0, 0.5)),
                     false,
-                    ctx,
                 )
                 .expect("usage should update");
         });
@@ -1005,9 +947,9 @@ fn update_cost_and_usage_resets_stale_charged_usage_for_last_block_on_new_user_t
             ..Default::default()
         }));
 
-        app.read(|ctx| {
+        app.read(|_ctx| {
             conversation
-                .update_cost_and_usage_for_request(None, None, vec![], None, true, ctx)
+                .update_cost_and_usage_for_request(None, None, vec![], None, true)
                 .expect("usage should update");
         });
 
@@ -1017,88 +959,6 @@ fn update_cost_and_usage_resets_stale_charged_usage_for_last_block_on_new_user_t
             "a new user-initiated turn must clear the previous block's stale charged usage, \
              even when this turn's request itself carries no charges"
         );
-    });
-}
-
-#[allow(deprecated)]
-#[test]
-fn footer_model_token_usage_keeps_custom_endpoint_usage_distinct_from_same_labeled_models() {
-    App::test((), |mut app| async move {
-        initialize_custom_endpoint_usage_test_app(&mut app);
-        ApiKeyManager::handle(&app).update(&mut app, |manager, ctx| {
-            manager.add_custom_endpoint(
-                CustomEndpointParams {
-                    name: "Endpoint".to_string(),
-                    url: "https://custom.example".to_string(),
-                    api_key: "key".to_string(),
-                    models: vec![(
-                        "raw-model".to_string(),
-                        Some("Resolved custom".to_string()),
-                        Some("config-key".to_string()),
-                    )],
-                    schema: CustomEndpointSchema::default(),
-                },
-                ctx,
-            );
-        });
-        app.add_singleton_model(LLMPreferences::new);
-
-        let category = "primary_agent".to_string();
-        let usage_metadata = api::response_event::stream_finished::ConversationUsageMetadata {
-            context_window_usage: 0.0,
-            credits_spent: 0.0,
-            platform_credits_spent: 0.0,
-            summarized: false,
-            #[allow(deprecated)]
-            token_usage: vec![],
-            tool_usage_metadata: None,
-            total_input_tokens: 0,
-            total_charges: None,
-            warp_token_usage: HashMap::new(),
-            byok_token_usage: HashMap::from([(
-                "Resolved custom".to_string(),
-                api::response_event::stream_finished::ModelTokenUsage {
-                    model_id: "Resolved custom".to_string(),
-                    total_tokens: 4,
-                    token_usage_by_category: HashMap::from([(category.clone(), 4)]),
-                },
-            )]),
-            custom_endpoint_token_usage: HashMap::from([(
-                "config-key".to_string(),
-                api::response_event::stream_finished::ModelTokenUsage {
-                    model_id: "config-key".to_string(),
-                    total_tokens: 6,
-                    token_usage_by_category: HashMap::from([(category.clone(), 6)]),
-                },
-            )]),
-            context_window_segments: Vec::new(),
-        };
-
-        let model_usage =
-            app.read(|ctx| footer_model_token_usage(&usage_metadata, LLMPreferences::as_ref(ctx)));
-        let byok_usage = model_usage
-            .iter()
-            .find(|usage| usage.model_id == "Resolved custom" && usage.byok_tokens == 4)
-            .expect("existing model usage should be present");
-        let custom_usage = model_usage
-            .iter()
-            .find(|usage| usage.model_id == "Resolved custom" && usage.custom_endpoint_tokens == 6)
-            .expect("custom endpoint usage should remain distinct");
-
-        assert_eq!(model_usage.len(), 2);
-        assert_eq!(
-            byok_usage.byok_token_usage_by_category.get(&category),
-            Some(&4)
-        );
-        assert_eq!(
-            custom_usage
-                .custom_endpoint_token_usage_by_category
-                .get(&category),
-            Some(&6)
-        );
-        assert_eq!(byok_usage.warp_tokens, 0);
-        assert_eq!(custom_usage.warp_tokens, 0);
-        assert_eq!(custom_usage.byok_tokens, 0);
     });
 }
 
@@ -1133,8 +993,7 @@ fn footer_model_token_usage_preserves_unresolved_custom_endpoint_usage_with_fall
             context_window_segments: Vec::new(),
         };
 
-        let model_usage =
-            app.read(|ctx| footer_model_token_usage(&usage_metadata, LLMPreferences::as_ref(ctx)));
+        let model_usage = footer_model_token_usage(&usage_metadata);
         let custom_usage = model_usage
             .iter()
             .find(|usage| usage.model_id == "Custom endpoint")
@@ -1337,19 +1196,6 @@ fn restored_conversation_ignores_persisted_autoexecute_override_when_disabled() 
         conversation.autoexecute_override(),
         AIConversationAutoexecuteMode::RespectUserSettings
     );
-}
-
-#[test]
-fn restored_conversation_keeps_use_warp_credits_instead_of_chatgpt() {
-    let conversation_data: AgentConversationData = serde_json::from_str(
-        r#"{"server_conversation_token":null,"use_warp_credits_instead_of_chatgpt":true}"#,
-    )
-    .unwrap();
-
-    let conversation = restored_conversation(Some(conversation_data));
-
-    assert!(conversation.use_warp_credits_instead_of_chatgpt());
-    assert!(!AIConversation::new(false, false).use_warp_credits_instead_of_chatgpt());
 }
 
 #[test]

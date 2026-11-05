@@ -38,6 +38,12 @@ allow = [
 [bans]
 # We allow dependencies on multiple versions of crates.
 multiple-versions = "allow"
+# This build must not be able to send crash reports or telemetry anywhere.
+deny = [
+    { crate = "sentry" },
+    { crate = "sentry-core" },
+    { crate = "sentry-log" },
+]
 # Do not allow wildcard versions, except in our private path-based dependencies
 # (i.e.: workspace crates).
 wildcards = "deny"

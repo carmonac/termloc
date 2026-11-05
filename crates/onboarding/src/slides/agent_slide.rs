@@ -56,9 +56,8 @@ impl std::fmt::Display for AgentAutonomy {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgentDevelopmentSettings {
-    /// The model the user explicitly picked. `None` leaves the profile following the server's
-    /// default model, which can change after onboarding (e.g. when a ChatGPT subscription is
-    /// connected).
+    /// The model the user explicitly picked. `None` leaves the profile following the default
+    /// model.
     pub selected_model_id: Option<LLMId>,
     pub autonomy: Option<AgentAutonomy>,
     /// Whether the CLI agent toolbar is enabled (maps to `should_render_cli_agent_footer`).
@@ -152,13 +151,10 @@ impl AgentSlide {
                     let model_count = state.models().len();
                     me.ensure_mouse_states_for_models(model_count, ctx);
                 }
-                OnboardingStateEvent::AuthStateChanged
-                | OnboardingStateEvent::SelectedSlideChanged
+                OnboardingStateEvent::SelectedSlideChanged
                 | OnboardingStateEvent::IntentionChanged
                 | OnboardingStateEvent::Completed
-                | OnboardingStateEvent::UpgradeRequested
-                | OnboardingStateEvent::NoAiConfirmationChanged
-                | OnboardingStateEvent::AiSellOfferSatisfied => {}
+                | OnboardingStateEvent::NoAiConfirmationChanged => {}
             }
         });
 

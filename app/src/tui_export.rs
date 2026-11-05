@@ -11,6 +11,7 @@ pub use ::ai::agent::{
 pub use ai::agent::action::{RunAgentsAgentRunConfig, RunAgentsExecutionMode, RunAgentsRequest};
 pub use ai::agent::orchestration_config::{OrchestrationConfig, OrchestrationConfigStatus};
 pub use repo_metadata::repositories::RepoDetectionSource;
+use thousands::Separable as _;
 #[cfg(feature = "voice_input")]
 pub use voice_input::{
     StartListeningError, VoiceInput, VoiceInputLifecycle, VoiceInputLifecycleState,
@@ -36,9 +37,8 @@ pub use crate::ai::agent::{
     AIAgentOutputMessage, AIAgentOutputMessageType, AIAgentPtyWriteMode, AIAgentText,
     AIAgentTextSection, AIAgentTodo, AIAgentTodoId, AgentOutputImage, AgentOutputImageLayout,
     AgentOutputMermaidDiagram, AgentOutputTable, AskUserQuestionResult, CancellationReason,
-    ChatGPTSubscriptionErrorAction, ChatGPTSubscriptionErrorActionKind, FileGlobV2Result,
-    GrepResult, ImageContext, MessageId, ReceivedMessageDisplay, RenderableAIError,
-    RequestCommandOutputResult, RunAgentsAgentOutcomeKind, RunAgentsResult,
+    FileGlobV2Result, GrepResult, ImageContext, MessageId, ReceivedMessageDisplay,
+    RenderableAIError, RequestCommandOutputResult, RunAgentsAgentOutcomeKind, RunAgentsResult,
     SearchCodebaseFailureReason, SearchCodebaseResult, ServerOutputId, Shared, ShellCommandDelay,
     StartAgentExecutionMode, StopRecordingResult, SuggestNewConversationResult, SummarizationType,
     TodoOperation, UserQueryMode,
@@ -105,10 +105,9 @@ pub use crate::ai::blocklist::telemetry::{
     RunAgentsCardDecision, run_agents_card_decision_event,
 };
 pub use crate::ai::blocklist::view_util::{
-    CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT, FAILED_OUTPUT_USAGE_NOTICE_TEXT,
-    FailedOutputPresentation, OUT_OF_CREDITS_SUBSCRIBE_LABEL,
-    chatgpt_subscription_message_with_links, failed_output_presentation, format_credits,
-    format_dollars, should_show_failed_output_usage_notice,
+    FAILED_OUTPUT_USAGE_NOTICE_TEXT, FailedOutputPresentation, OUT_OF_CREDITS_SUBSCRIBE_LABEL,
+    failed_output_presentation, format_credits, format_dollars,
+    should_show_failed_output_usage_notice,
 };
 pub use crate::ai::blocklist::{
     AIActionStatus, AskUserQuestionExecutor, AttachmentType, BlocklistAIActionEvent,
@@ -142,10 +141,7 @@ pub use crate::ai::harness_availability::{
     AuthSecretEntry, AuthSecretFetchState, HarnessAvailability, HarnessAvailabilityEvent,
     HarnessAvailabilityModel, HarnessModelInfo,
 };
-pub use crate::ai::llms::{
-    LLMId, LLMInfo, LLMPreferences, LLMPreferencesEvent, should_show_bedrock_icon_for_model,
-    should_show_gemini_enterprise_agent_platform_icon_for_model, should_show_key_icon_for_model,
-};
+pub use crate::ai::llms::{LLMId, LLMInfo, LLMPreferences, LLMPreferencesEvent};
 pub use crate::ai::orchestration::{
     AuthSecretSelection, CloudAgentStartupAuthFlow, CloudAgentStartupBlocker,
     CloudAgentStartupFailure, CloudAgentStartupIssue, CloudAgentStartupPresentation,
@@ -163,13 +159,9 @@ pub use crate::ai::orchestration::{
 pub use crate::ai::request_usage_model::{AIRequestUsageModel, BonusGrantType};
 pub use crate::ai::skills::{SkillManager, SkillManagerEvent, SkillReference};
 #[cfg(not(target_family = "wasm"))]
-pub use crate::ai::tui_api_keys::notify_tui_api_keys_changed;
 pub use crate::appearance::Appearance;
 pub use crate::auth::AuthStateProvider;
 pub use crate::banner::BannerState;
-pub use crate::changelog_model::{
-    ChangelogModel, ChangelogRequestType, ChangelogState, Event as ChangelogModelEvent,
-};
 pub use crate::code::DiffResult;
 pub use crate::code_review::git_repo_model::{
     GitRepoModels, GitRepoStatusModel, GitStatusMetadata,
@@ -291,11 +283,21 @@ pub use crate::workspaces::workspace::{
 };
 
 pub fn format_usage_cost_cents(cents: f64) -> String {
-    crate::settings_view::format_cost_cents(cents)
+    let cents = cents.round() as i64;
+    let dollars = cents / 100;
+    let remainder = (cents.abs() % 100) as u8;
+    if dollars < 0 {
+        format!(
+            "-${}.{remainder:02}",
+            dollars.unsigned_abs().separate_with_commas()
+        )
+    } else {
+        format!("${}.{remainder:02}", dollars.separate_with_commas())
+    }
 }
 
 pub fn format_usage_credits(credits: f64) -> String {
-    crate::settings_view::format_credits(credits)
+    (credits.round() as i64).separate_with_commas()
 }
 
 /// Builds the live-shell completion context used to parse TUI input for NLD.

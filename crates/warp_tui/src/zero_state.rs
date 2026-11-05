@@ -11,15 +11,13 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ai::api_keys::{ApiKeyManager, ApiKeyManagerEvent};
 use ai::project_context::model::{
     ProjectContextModel, ProjectContextModelEvent, ProjectRulesResult,
 };
 use warp::settings::{TuiZeroStateSettings, TuiZeroStateSettingsChangedEvent};
 use warp::tui_export::{
-    ActiveSession, ActiveSessionEvent, ChangelogModel, ChangelogModelEvent, ChangelogState,
-    SkillManager, SkillManagerEvent, TuiMcpManager, TuiMcpServerStatus, TuiUserInfoManager,
-    TuiUserInfoManagerEvent, TuiUserInfoSnapshot,
+    ActiveSession, ActiveSessionEvent, SkillManager, SkillManagerEvent, TuiMcpManager,
+    TuiMcpServerStatus, TuiUserInfoManager, TuiUserInfoManagerEvent, TuiUserInfoSnapshot,
 };
 use warp_core::channel::ChannelState;
 use warp_core::settings::Setting;
@@ -34,18 +32,12 @@ use warpui_core::elements::tui::{
 };
 use warpui_core::{AppContext, Entity, ModelHandle, TuiView, ViewContext};
 
-use crate::autoupdate::{
-    HOMEBREW_UPDATE_STATUS, TuiAutoupdateStatus, TuiAutoupdater, TuiAutoupdaterEvent,
-};
 use crate::tui_builder::TuiUiBuilder;
 use crate::ui::{abbreviate_home_prefix, append_welcome_capability_section, render_welcome_title};
 use crate::zero_state_animation::{
     WarpLogoStyles, ZeroStateAnimationConfig, ZeroStateAnimationConfigEvent,
     ZeroStateAnimationElement, ZeroStateInteractionHandle, ZeroStateStarfieldElement,
 };
-
-/// Cap on "What's new" bullets, mirroring the compact zero-state mock.
-const MAX_CHANGELOG_BULLETS: usize = 3;
 
 /// Fixed width for the two constrained sub-sections of the overlay column (top: title +
 /// version + changelog bullets; bottom: project context body + MCP). Pinning both axes
@@ -68,7 +60,6 @@ enum ZeroStateVariant {
 #[derive(Clone, Copy)]
 struct ZeroStateSectionVisibility {
     signed_in_user: bool,
-    changelog: bool,
     project_info: bool,
     mcp: bool,
     animation: bool,
@@ -78,7 +69,6 @@ impl Default for ZeroStateSectionVisibility {
     fn default() -> Self {
         Self {
             signed_in_user: true,
-            changelog: true,
             project_info: true,
             mcp: true,
             animation: true,
@@ -94,7 +84,6 @@ impl ZeroStateSectionVisibility {
         let settings = TuiZeroStateSettings::as_ref(ctx);
         Self {
             signed_in_user: *settings.show_signed_in_user.value(),
-            changelog: *settings.show_changelog.value(),
             project_info: *settings.show_project_info.value(),
             mcp: *settings.show_mcp.value(),
             animation: *settings.show_animation.value(),
@@ -126,21 +115,6 @@ impl TuiZeroStateView {
         // Subscribe to events that change what the zero state displays so
         // this view re-renders independently of its parent.
         ctx.subscribe_to_model(
-            &ChangelogModel::handle(ctx),
-            |_, _, event: &ChangelogModelEvent, ctx| {
-                if let ChangelogModelEvent::ChangelogRequestComplete { .. } = event {
-                    ctx.notify();
-                }
-            },
-        );
-        ctx.subscribe_to_model(
-            &TuiAutoupdater::handle(ctx),
-            |_, _, event: &TuiAutoupdaterEvent, ctx| {
-                let TuiAutoupdaterEvent::StatusChanged = event;
-                ctx.notify();
-            },
-        );
-        ctx.subscribe_to_model(
             &ProjectContextModel::handle(ctx),
             |_, _, event: &ProjectContextModelEvent, ctx| {
                 if let ProjectContextModelEvent::PathIndexed = event {
@@ -153,10 +127,6 @@ impl TuiZeroStateView {
             |_, _, SkillManagerEvent::SkillsChanged { .. }, ctx| ctx.notify(),
         );
         ctx.subscribe_to_model(&TuiMcpManager::handle(ctx), |_, _, _, ctx| ctx.notify());
-        ctx.subscribe_to_model(
-            &ApiKeyManager::handle(ctx),
-            |_, _, _: &ApiKeyManagerEvent, ctx| ctx.notify(),
-        );
         ctx.subscribe_to_model(&TuiUserInfoManager::handle(ctx), |_, _, event, ctx| {
             let TuiUserInfoManagerEvent::Updated = event;
             ctx.notify();
@@ -183,9 +153,6 @@ impl TuiZeroStateView {
             ctx.subscribe_to_model(&TuiZeroStateSettings::handle(ctx), |view, _, event, ctx| {
                 match event {
                     TuiZeroStateSettingsChangedEvent::TuiZeroStateShowSignedInUserSetting {
-                        ..
-                    }
-                    | TuiZeroStateSettingsChangedEvent::TuiZeroStateShowChangelogSetting {
                         ..
                     }
                     | TuiZeroStateSettingsChangedEvent::TuiZeroStateShowProjectInfoSetting {
@@ -644,8 +611,6 @@ fn render_standard_top_section(
     app: &AppContext,
 ) -> TuiFlex {
     let title_style = builder.accent_text_style().add_modifier(Modifier::BOLD);
-    let header_style = builder.primary_text_style().add_modifier(Modifier::BOLD);
-    let muted = builder.muted_text_style();
 
     let mut column = TuiFlex::column()
         .child(
@@ -654,34 +619,11 @@ fn render_standard_top_section(
                 .truncate()
                 .finish(),
         )
-        .child(render_version_line(builder, app));
+        .child(render_version_line(builder));
     if visibility.signed_in_user {
         column = column.child(render_login_line(builder, app));
     }
 
-    let bullets = if visibility.changelog {
-        changelog_bullets(app)
-    } else {
-        Vec::new()
-    };
-    if !bullets.is_empty() {
-        column = column.child(blank_row()).child(
-            TuiText::new("What's new")
-                .with_style(header_style)
-                .truncate()
-                .finish(),
-        );
-        for bullet in bullets {
-            // A fixed (non-flex) text child still wraps against the remaining
-            // width while only reporting its natural width.
-            column = column.child(
-                TuiFlex::row()
-                    .child(TuiText::new("• ").with_style(muted).truncate().finish())
-                    .child(TuiText::new(bullet).with_style(muted).finish())
-                    .finish(),
-            );
-        }
-    }
     column
 }
 
@@ -692,7 +634,7 @@ fn render_first_run_top_section(
 ) -> TuiFlex {
     let mut column = TuiFlex::column()
         .child(render_welcome_title(builder))
-        .child(render_version_line(builder, app));
+        .child(render_version_line(builder));
     if visibility.signed_in_user {
         column = column.child(render_login_line_with_prefix("logged in as", builder, app));
     }
@@ -723,9 +665,9 @@ fn render_bottom_section(
         column
     };
     if visibility.mcp {
-        render_custom_endpoints_section(render_mcp_section(column, builder, app), builder, app)
+        render_mcp_section(column, builder, app)
     } else {
-        render_custom_endpoints_section(column, builder, app)
+        column
     }
 }
 
@@ -764,56 +706,6 @@ fn render_mcp_section(mut column: TuiFlex, builder: &TuiUiBuilder, app: &AppCont
     column.child(TuiText::new(label).with_style(style).truncate().finish())
 }
 
-fn render_custom_endpoints_section(
-    column: TuiFlex,
-    builder: &TuiUiBuilder,
-    app: &AppContext,
-) -> TuiFlex {
-    let Some((label, is_error)) = custom_endpoint_status_label(ApiKeyManager::as_ref(app)) else {
-        return column;
-    };
-    let header_style = builder.primary_text_style().add_modifier(Modifier::BOLD);
-    let style = if is_error {
-        builder.error_text_style()
-    } else {
-        builder.muted_text_style()
-    };
-    column
-        .child(blank_row())
-        .child(
-            TuiText::new("Custom endpoints")
-                .with_style(header_style)
-                .truncate()
-                .finish(),
-        )
-        .child(TuiText::new(label).with_style(style).truncate().finish())
-}
-
-fn custom_endpoint_status_label(manager: &ApiKeyManager) -> Option<(String, bool)> {
-    if !manager.custom_endpoint_settings_valid() {
-        return Some((
-            "Configuration error · fix agents.custom_endpoints".to_owned(),
-            true,
-        ));
-    }
-    let definitions = manager.custom_endpoint_definitions()?;
-    if definitions.is_empty() {
-        return None;
-    }
-    let connected = definitions
-        .definitions()
-        .filter(|(id, _)| manager.custom_endpoint_key(id).is_some())
-        .count();
-    let missing = definitions.len() - connected;
-    let label = match (connected, missing) {
-        (0, missing) => format!("{missing} need API keys · /api-keys"),
-        (connected, 0) => format!("{connected} connected · /api-keys"),
-        (connected, missing) => {
-            format!("{connected} connected · {missing} need API keys · /api-keys")
-        }
-    };
-    Some((label, false))
-}
 #[derive(Default)]
 struct McpStatusCounts {
     running: usize,
@@ -923,59 +815,11 @@ fn login_line_label(signed_in_prefix: &str, user_info: TuiUserInfoSnapshot) -> O
         .map(|display| format!("{signed_in_prefix} {display}"))
 }
 
-/// User-facing copy for each visible background updater status.
-fn autoupdate_status_label(status: TuiAutoupdateStatus) -> Option<&'static str> {
-    match status {
-        TuiAutoupdateStatus::Idle => None,
-        TuiAutoupdateStatus::Checking => Some("checking for updates…"),
-        TuiAutoupdateStatus::Updating => Some("updating…"),
-        TuiAutoupdateStatus::UpToDate => Some("up to date"),
-        TuiAutoupdateStatus::Failed => Some("automatic update failed"),
-        TuiAutoupdateStatus::PendingRestart => Some("update installed, restart to apply"),
-        TuiAutoupdateStatus::UpdateAvailable => Some(HOMEBREW_UPDATE_STATUS),
-    }
-}
-
-/// The version line: the release version (or "dev build"), with the
-/// background auto-updater's status appended in parentheses. Dev builds
-/// never run the updater (and have no version), so they render plain; the
-/// `Idle` status (updater ineligible, or no stable check result yet) renders
-/// no suffix either.
-fn render_version_line(builder: &TuiUiBuilder, app: &AppContext) -> Box<dyn TuiElement> {
-    let muted = builder.muted_text_style();
-    let Some(version) = ChannelState::app_version() else {
-        return TuiText::new("dev build")
-            .with_style(muted)
-            .truncate()
-            .finish();
-    };
-    let status = TuiAutoupdater::as_ref(app).status();
-    let Some(label) = autoupdate_status_label(status) else {
-        return TuiText::new(version).with_style(muted).truncate().finish();
-    };
-    let style = match status {
-        TuiAutoupdateStatus::Idle => unreachable!("idle status has no label"),
-        TuiAutoupdateStatus::Checking
-        | TuiAutoupdateStatus::Updating
-        | TuiAutoupdateStatus::UpToDate
-        | TuiAutoupdateStatus::UpdateAvailable => muted,
-        TuiAutoupdateStatus::Failed => builder.error_text_style(),
-        TuiAutoupdateStatus::PendingRestart => builder.success_glyph_style(),
-    };
-    // Like the bullet rows below: the version reports its natural width and
-    // the suffix wraps against the remaining column width.
-    TuiFlex::row()
-        .child(
-            TuiText::new(format!("{version} "))
-                .with_style(muted)
-                .truncate()
-                .finish(),
-        )
-        .child(
-            TuiText::new(format!("({label})"))
-                .with_style(style)
-                .finish(),
-        )
+/// The version line: the release version, or "dev build".
+fn render_version_line(builder: &TuiUiBuilder) -> Box<dyn TuiElement> {
+    TuiText::new(ChannelState::app_version().unwrap_or("dev build"))
+        .with_style(builder.muted_text_style())
+        .truncate()
         .finish()
 }
 
@@ -1049,25 +893,6 @@ fn render_project_context_body(
         );
     }
     column
-}
-
-/// Up to [`MAX_CHANGELOG_BULLETS`] plain-text bullets for the current
-/// version's changelog, or empty when no changelog is available (request
-/// failed, still pending, or a channel without release changelogs).
-fn changelog_bullets(app: &AppContext) -> Vec<String> {
-    let ChangelogState::Some(changelog) = &ChangelogModel::as_ref(app).changelog else {
-        return Vec::new();
-    };
-    changelog_bullets_from_changelog(changelog)
-}
-
-fn changelog_bullets_from_changelog(changelog: &channel_versions::Changelog) -> Vec<String> {
-    changelog
-        .tui_updates
-        .iter()
-        .take(MAX_CHANGELOG_BULLETS)
-        .cloned()
-        .collect()
 }
 
 /// A one-row spacer between sections.

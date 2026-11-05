@@ -1099,7 +1099,7 @@ impl AmbientAgentViewModel {
             let active_id = &prefs
                 .get_active_base_model(scope, ctx, Some(self.terminal_view_id))
                 .id;
-            prefs.cloud_runnable_oz_model_id_or_fallback(active_id)
+            prefs.cloud_runnable_oz_model_id_or_fallback(active_id, ctx)
         });
         let third_party_harness = (selected_harness != Harness::Oz).then(|| HarnessConfig {
             harness_type: selected_harness,

@@ -1,21 +1,7 @@
 use serde_json::json;
-use warp_core::features::FeatureFlag;
 use warp_core::telemetry::TelemetryEvent;
 
 use super::{ACCOUNT_FIRST_FLOW_VERSION, OnboardingEvent};
-
-#[test]
-fn account_first_started_payload_includes_flow_metadata() {
-    let _account_first_onboarding = FeatureFlag::AccountFirstOnboarding.override_enabled(true);
-
-    assert_eq!(
-        OnboardingEvent::OnboardingStarted.payload(),
-        Some(json!({
-            "flow_version": ACCOUNT_FIRST_FLOW_VERSION,
-            "entrypoint": "native_app",
-        }))
-    );
-}
 
 #[test]
 fn account_first_lifecycle_payloads_include_flow_and_classification() {
@@ -90,37 +76,7 @@ fn offer_action_payload_includes_account_class() {
 }
 
 #[test]
-fn account_first_slide_and_setting_payloads_include_flow_version() {
-    let _account_first_onboarding = FeatureFlag::AccountFirstOnboarding.override_enabled(true);
-
-    assert_eq!(
-        OnboardingEvent::SlideViewed {
-            slide_name: "customize".to_string(),
-        }
-        .payload(),
-        Some(json!({
-            "slide_name": "customize",
-            "flow_version": ACCOUNT_FIRST_FLOW_VERSION,
-        }))
-    );
-    assert_eq!(
-        OnboardingEvent::SettingChanged {
-            setting: "theme".to_string(),
-            value: "Dark".to_string(),
-        }
-        .payload(),
-        Some(json!({
-            "setting": "theme",
-            "value": "Dark",
-            "flow_version": ACCOUNT_FIRST_FLOW_VERSION,
-        }))
-    );
-}
-
-#[test]
-fn stable_slide_payload_does_not_include_flow_version() {
-    let _account_first_onboarding = FeatureFlag::AccountFirstOnboarding.override_enabled(false);
-
+fn slide_payload_does_not_include_flow_version() {
     assert_eq!(OnboardingEvent::OnboardingStarted.payload(), None);
     assert_eq!(
         OnboardingEvent::SlideViewed {

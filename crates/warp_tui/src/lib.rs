@@ -11,9 +11,7 @@ mod agent_block;
 mod agent_block_sections;
 mod agent_message;
 mod alt_screen_view;
-mod api_keys_menu;
 mod attachment_bar;
-mod autoupdate;
 #[cfg(feature = "test-util")]
 #[doc(hidden)]
 pub mod benchmark_support;
@@ -36,7 +34,6 @@ mod editor_element;
 mod editor_interaction;
 mod editor_view;
 mod exit_confirmation;
-mod grok_oauth;
 mod handoff;
 mod inline_menu;
 mod input_hints;

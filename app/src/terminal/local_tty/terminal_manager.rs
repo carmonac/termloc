@@ -9,7 +9,6 @@ use std::sync::mpsc::{SendError, SyncSender};
 use std::thread::JoinHandle;
 use std::time::Duration;
 
-use ai::api_keys::ApiKeyManager;
 use anyhow::Context as _;
 use async_broadcast::InactiveReceiver;
 use instant::Instant;
@@ -31,7 +30,6 @@ use super::spawner::{PtySpawnHooks, PtySpawnMode};
 #[cfg(unix)]
 use super::terminal_attributes::TerminalAttributesPoller;
 use super::{mio_channel, recorder};
-use crate::ai::aws_credentials::AwsCredentialRefresher as _;
 use crate::ai::blocklist::SerializedBlockListItem;
 use crate::auth::AuthStateProvider;
 use crate::auth::auth_state::AuthState;
@@ -446,13 +444,6 @@ impl<S> TerminalManager<S> {
         );
         let colors = model.colors();
         let model = Arc::new(FairMutex::new(model));
-
-        // Have ApiKeyManager subscribe to block completion events for AWS credential refresh.
-        // This must happen after `model` is created, since the subscription needs it to resolve
-        // lazily-computed `UserBlockCompleted` fields.
-        ApiKeyManager::handle(ctx).update(ctx, |manager, ctx| {
-            manager.register_model_event_dispatcher(&model_events, model.clone(), ctx);
-        });
 
         // This is purely for measuring throughput on WarpDev.
         if FeatureFlag::RecordPtyThroughput.is_enabled() {

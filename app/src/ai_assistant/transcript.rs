@@ -818,8 +818,7 @@ impl View for Transcript {
         let transcript = self.requests_model.as_ref(app).transcript();
         let request_status = self.requests_model.as_ref(app).request_status();
         let user_workspaces = UserWorkspaces::as_ref(app);
-        let scope = user_workspaces.team_context(&self.view_handle, app);
-        let has_ai_available = AIRequestUsageModel::as_ref(app).has_any_ai_remaining(&scope, app);
+        let has_ai_available = AIRequestUsageModel::as_ref(app).has_any_ai_remaining(app);
 
         let mut blocks = Flex::column();
         for (index, part) in transcript.iter().enumerate() {

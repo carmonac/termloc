@@ -1160,12 +1160,10 @@ fn save_pane_state(
         LeafContents::AIFact(_) => AI_FACT_PANE_KIND,
         LeafContents::CodeReview(_) => CODE_REVIEW_PANE_KIND,
         LeafContents::AmbientAgent(_) => AMBIENT_AGENT_PANE_KIND,
-        LeafContents::ExecutionProfileEditor | LeafContents::CustomRouterEditor => {
-            EXECUTION_PROFILE_EDITOR_PANE_KIND
-        }
+        LeafContents::ExecutionProfileEditor => EXECUTION_PROFILE_EDITOR_PANE_KIND,
         LeafContents::GetStarted => GET_STARTED_PANE_KIND,
         LeafContents::AIDocument(_) => AI_DOCUMENT_PANE_KIND,
-        LeafContents::EnvironmentManagement(_) | LeafContents::NetworkLog => {
+        LeafContents::NetworkLog => {
             // These pane types are filtered out before this function is
             // called; see `LeafContents::is_persisted` and the skip in
             // `save_app_state`. Reaching this arm would mean a `pane_nodes`
@@ -1317,9 +1315,6 @@ fn save_pane_state(
                 .values(workflow)
                 .execute(conn)?;
         }
-        LeafContents::EnvironmentManagement(_) => {
-            // Unreachable: filtered by `is_persisted` in `save_app_state`.
-        }
         LeafContents::Settings(settings_pane_snapshot) => {
             let current_page = match settings_pane_snapshot {
                 SettingsPaneSnapshot::Local { current_page, .. } => current_page,
@@ -1356,7 +1351,7 @@ fn save_pane_state(
                 .values(code_review)
                 .execute(conn)?;
         }
-        LeafContents::ExecutionProfileEditor | LeafContents::CustomRouterEditor => {
+        LeafContents::ExecutionProfileEditor => {
             // Editor panes: no pane-specific data to save.
         }
         LeafContents::GetStarted => {

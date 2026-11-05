@@ -764,11 +764,6 @@ impl UpdateEnvironmentForm {
             && self.should_handle_escape_from_editor
     }
 
-    #[cfg(test)]
-    pub(crate) fn github_auth_redirect_target_for_test(&self) -> GithubAuthRedirectTarget {
-        self.github_auth_redirect_target
-    }
-
     fn try_close_repos_dropdown(&mut self, ctx: &mut ViewContext<Self>) -> bool {
         if !self.github_dropdown_state.is_expanded {
             return false;

@@ -15,7 +15,6 @@ use warpui_core::keymap::Keystroke;
 use warpui_core::presenter::tui::TuiPresenter;
 
 use super::TuiTerminalSessionView;
-use crate::autoupdate::TuiAutoupdater;
 use crate::handoff::TuiHandoffBlock;
 use crate::orchestration_model::TuiOrchestrationModel;
 use crate::root_view::RootTuiView;
@@ -30,7 +29,6 @@ struct Fixture {
 fn fixture(app: &mut App) -> Fixture {
     register_tui_session_view_test_singletons(app);
     add_test_semantic_selection(app);
-    app.update(TuiAutoupdater::register);
     app.update(crate::keybindings::init);
     let (window_id, _) = app.update(|ctx| {
         ctx.add_tui_window(

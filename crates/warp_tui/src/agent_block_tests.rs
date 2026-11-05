@@ -15,13 +15,13 @@ use warp::tui_export::{
     AIAgentOutputMessageType, AIAgentText, AIAgentTextSection, AIAgentTodo, AIAgentTodoList,
     AIBlockModel, AIBlockOutputStatus, AIConversationId, AIRequestType, ActiveSession,
     AgentOutputImage, AgentOutputImageLayout, AgentOutputMermaidDiagram, AgentOutputTable,
-    Appearance, AuthStateProvider, BlocklistAIActionModel, ChatGPTSubscriptionErrorAction,
-    ChatGPTSubscriptionErrorActionKind, FailedOutputPresentation, GetRelevantFilesController,
-    LLMId, MessageId, ModelEventDispatcher, OutputStatusUpdateCallback, ReceivedMessageDisplay,
-    RenderableAIError, RequestCommandOutputResult, ServerOutputId, Sessions, Shared,
-    SummarizationType, TaskId, TerminalModel, TodoOperation, TodoStatus, TuiOnboardingMarker,
-    TuiOnboardingMarkers, UserQueryMode, UserWorkspaces, queue_tui_permission_action,
-    register_tui_session_view_test_singletons, should_show_failed_output_usage_notice,
+    Appearance, AuthStateProvider, BlocklistAIActionModel, FailedOutputPresentation,
+    GetRelevantFilesController, LLMId, MessageId, ModelEventDispatcher, OutputStatusUpdateCallback,
+    ReceivedMessageDisplay, RenderableAIError, RequestCommandOutputResult, ServerOutputId,
+    Sessions, Shared, SummarizationType, TaskId, TerminalModel, TodoOperation, TodoStatus,
+    TuiOnboardingMarker, TuiOnboardingMarkers, UserQueryMode, UserWorkspaces,
+    queue_tui_permission_action, register_tui_session_view_test_singletons,
+    should_show_failed_output_usage_notice,
 };
 use warp_core::ui::color::blend::Blend;
 use warp_core::ui::theme::Fill as ThemeFill;
@@ -102,7 +102,6 @@ fn agent_block_renders_generic_failure_after_partial_output() {
 fn restored_out_of_credits_exchange_does_not_consume_first_credit_gate() {
     let presentation = FailedOutputPresentation::OutOfCredits {
         message: "out of credits".to_owned(),
-        can_use_own_api_keys: false,
     };
     assert!(should_consume_first_credit_gate(false, Some(&presentation)));
     assert!(!should_consume_first_credit_gate(true, Some(&presentation)));
@@ -270,42 +269,6 @@ fn agent_block_renders_cloud_startup_failure_without_apology_prefix() {
 }
 
 #[test]
-fn agent_block_renders_invalid_api_key_detail_without_usage_notice() {
-    App::test((), |mut app| async move {
-        app.add_singleton_model(|_| Appearance::mock());
-        let block = test_agent_block(
-            &mut app,
-            FakeAgentBlockModel {
-                inputs: Vec::new(),
-                status: failed_output(
-                    Vec::new(),
-                    RenderableAIError::InvalidApiKey {
-                        provider: "OpenAI".to_owned(),
-                        model_name: "GPT".to_owned(),
-                    },
-                ),
-            },
-        );
-
-        app.read(|ctx| {
-            let lines = render_block_lines(block.as_ref(ctx), 100, ctx);
-            assert_eq!(
-                lines,
-                vec![
-                    "⚠ Provided API key is not valid",
-                    "  Failed to authenticate with OpenAI when using GPT. Double-check that your API key is correct.",
-                ]
-            );
-            assert!(
-                lines
-                    .iter()
-                    .all(|line| !line.contains("won't count towards your usage"))
-            );
-        });
-    });
-}
-
-#[test]
 fn agent_block_suppresses_recovery_pending_failure() {
     App::test((), |mut app| async move {
         app.add_singleton_model(|_| Appearance::mock());
@@ -379,7 +342,6 @@ fn out_of_credits_failure_matches_tui_design_and_opens_upgrade() {
             let presentation = FailedOutputPresentation::OutOfCredits {
                 message: "I'm sorry, I couldn't complete that request.\n\nIn order to use Warp's AI features, subscribe to a Warp plan, or bring your own inference."
                     .to_owned(),
-                can_use_own_api_keys: true,
             };
             let out_of_credits_hover_state = MouseStateHandle::default();
             let mut presenter = TuiPresenter::new();
@@ -474,51 +436,6 @@ fn out_of_credits_failure_matches_tui_design_and_opens_upgrade() {
 }
 
 #[test]
-fn chatgpt_subscription_failure_lists_url_actions_as_text() {
-    App::test((), |app| async move {
-        app.add_singleton_model(|_| Appearance::mock());
-        app.read(|ctx| {
-            let presentation = FailedOutputPresentation::ChatGPTSubscription {
-                title: "You've reached your ChatGPT usage limit".to_owned(),
-                message: "Continue with Warp credits to keep going.".to_owned(),
-                actions: vec![
-                    ChatGPTSubscriptionErrorAction {
-                        kind: ChatGPTSubscriptionErrorActionKind::ContinueWithWarpCredits,
-                        label: "Continue with Warp credits".to_owned(),
-                    },
-                    ChatGPTSubscriptionErrorAction {
-                        kind: ChatGPTSubscriptionErrorActionKind::OpenUrl {
-                            url: "https://chatgpt.com/#settings/Usage".to_owned(),
-                        },
-                        label: "Manage usage".to_owned(),
-                    },
-                ],
-            };
-            let mut presenter = TuiPresenter::new();
-            let frame = presenter.present_element(
-                render_failure_section(&presentation, &MouseStateHandle::default(), ctx),
-                TuiRect::new(0, 0, 80, 4),
-                ctx,
-            );
-            assert_eq!(
-                frame
-                    .buffer
-                    .to_lines()
-                    .into_iter()
-                    .map(|line| line.trim_end().to_owned())
-                    .collect::<Vec<_>>(),
-                vec![
-                    "⚠ You've reached your ChatGPT usage limit".to_owned(),
-                    "  Continue with Warp credits to keep going.".to_owned(),
-                    String::new(),
-                    "  Manage usage: https://chatgpt.com/#settings/Usage".to_owned(),
-                ]
-            );
-        });
-    });
-}
-
-#[test]
 fn failed_output_usage_notice_matches_gui_conditions() {
     let error = RenderableAIError::other("failed", false);
     assert!(should_show_failed_output_usage_notice(
@@ -540,15 +457,6 @@ fn failed_output_usage_notice_matches_gui_conditions() {
     ));
     assert!(!should_show_failed_output_usage_notice(
         &error, true, false, true
-    ));
-    assert!(!should_show_failed_output_usage_notice(
-        &RenderableAIError::InvalidApiKey {
-            provider: "OpenAI".to_owned(),
-            model_name: "GPT".to_owned(),
-        },
-        true,
-        false,
-        false,
     ));
 }
 

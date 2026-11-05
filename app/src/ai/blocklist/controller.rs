@@ -2861,8 +2861,6 @@ impl BlocklistAIController {
                 // separate, read-only requests.
                 ambient_agent_task_id: None,
                 existing_suggestions: None,
-                use_warp_credits_instead_of_chatgpt: conversation
-                    .use_warp_credits_instead_of_chatgpt(),
             };
             (conversation_id, task_id, conversation_data)
         } else if !matches!(
@@ -2881,7 +2879,6 @@ impl BlocklistAIController {
                 // separate, read-only requests.
                 ambient_agent_task_id: None,
                 existing_suggestions: None,
-                use_warp_credits_instead_of_chatgpt: false,
             };
             (conversation_id, task_id, conversation_data)
         } else {
@@ -3060,7 +3057,6 @@ impl BlocklistAIController {
             active_tasks,
             parent_agent_id,
             agent_name,
-            use_warp_credits_instead_of_chatgpt,
         ) = {
             let Some(conversation) = history_model
                 .as_ref(ctx)
@@ -3083,7 +3079,6 @@ impl BlocklistAIController {
                 active_tasks,
                 conversation.parent_agent_id().map(str::to_string),
                 conversation.agent_name().map(str::to_string),
-                conversation.use_warp_credits_instead_of_chatgpt(),
             )
         };
 
@@ -3142,7 +3137,6 @@ impl BlocklistAIController {
                 .as_ref(ctx)
                 .existing_suggestions_for_conversation(conversation_id)
                 .cloned(),
-            use_warp_credits_instead_of_chatgpt,
         };
 
         // Log an error if tool call results do not have corresponding tool calls in task context
@@ -3151,20 +3145,6 @@ impl BlocklistAIController {
             &conversation_data.tasks,
             &conversation_data.server_conversation_token,
         );
-
-        // Safety net: re-arm the Gemini Enterprise (GEAP) credential refresh
-        // chain if it was parked or never armed, so upcoming requests can
-        // authenticate. The connected Grok subscription's request-time OAuth
-        // refresh is handled in the response stream's send path
-        // (`ResponseStream::spawn_request`).
-        #[cfg(not(target_family = "wasm"))]
-        {
-            use ::ai::api_keys::ApiKeyManager;
-
-            ApiKeyManager::handle(ctx).update(ctx, |manager, ctx| {
-                crate::ai::geap_credentials::refresh_geap_credentials_if_needed(manager, ctx);
-            });
-        }
 
         let scope = self.team_context(ctx);
         // Pinned at send, so the request keeps the team the surface was on when the user sent it.
@@ -4149,44 +4129,11 @@ impl BlocklistAIController {
                 });
             }
             Some(warp_multi_agent_api::response_event::stream_finished::Reason::InvalidApiKey(details)) => {
-                use warp_multi_agent_api::LlmProvider;
-                let is_aws_bedrock = details
-                    .provider
-                    .try_into()
-                    .ok()
-                    .is_some_and(|p: LlmProvider| p == LlmProvider::AwsBedrock);
-                let is_gemini_enterprise = details
-                    .provider
-                    .try_into()
-                    .ok()
-                    .is_some_and(|p: LlmProvider| p == LlmProvider::GeminiEnterprise);
-
-                let error = if is_aws_bedrock {
-                    RenderableAIError::AwsBedrockCredentialsExpiredOrInvalid {
-                        model_name: details.model_name,
-                    }
-                } else if is_gemini_enterprise {
-                    RenderableAIError::GeminiEnterpriseCredentialsExpiredOrInvalid
-                } else {
-                    let provider = details.provider.try_into().ok().and_then(|provider| match provider {
-                        LlmProvider::Google => Some("Google"),
-                        LlmProvider::Anthropic => Some("Anthropic"),
-                        LlmProvider::Openai => Some("OpenAI"),
-                        LlmProvider::Xai => Some("xAI"),
-                        LlmProvider::Openrouter => Some("OpenRouter"),
-                        LlmProvider::AwsBedrock
-                        | LlmProvider::GeminiEnterprise
-                        | LlmProvider::Unknown => None,
-                    });
-                    RenderableAIError::InvalidApiKey {
-                        provider: provider.unwrap_or("Unknown").to_string(),
-                        model_name: details.model_name,
-                    }
-                };
-
+                let error_message =
+                    format!("The model provider rejected the request for {}.", details.model_name);
                 history_model.update(ctx, |history_model, ctx| {
                     history_model.mark_response_stream_completed_with_error(
-                        error,
+                        RenderableAIError::other(error_message, true),
                         /*recovery_pending*/ false,
                         stream_id,
                         conversation_id,
@@ -4198,7 +4145,7 @@ impl BlocklistAIController {
             Some(warp_multi_agent_api::response_event::stream_finished::Reason::ChatgptSubscriptionError(error)) => {
                 history_model.update(ctx, |history_model, ctx| {
                     history_model.mark_response_stream_completed_with_error(
-                        RenderableAIError::from_chatgpt_subscription_error(error),
+                        RenderableAIError::other(error.message, true),
                         /*recovery_pending*/ false,
                         stream_id,
                         conversation_id,

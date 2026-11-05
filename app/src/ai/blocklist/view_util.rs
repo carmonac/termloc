@@ -16,9 +16,7 @@ use warpui::ui_components::text::Span;
 use warpui::{AppContext, Element, EntityId, EventContext, SingletonEntity};
 
 use crate::ai::AIRequestUsageModel;
-use crate::ai::agent::{
-    ChatGPTSubscriptionErrorAction, ChatGPTSubscriptionErrorActionKind, RenderableAIError,
-};
+use crate::ai::agent::RenderableAIError;
 use crate::settings::{AISettings, UsageDisplayUnit};
 use crate::themes::theme::{AnsiColorIdentifier, Fill, WarpTheme};
 use crate::ui_components::icons::Icon;
@@ -30,11 +28,8 @@ const PROVIDER_BUTTON_ICON_TEXT_GAP: f32 = 8.;
 const ERROR_APOLOGY_TEXT: &str = "I'm sorry, I couldn't complete that request.";
 const INTERNAL_WARP_ERROR: &str = "Internal Warp error.";
 pub const FAILED_OUTPUT_USAGE_NOTICE_TEXT: &str = "This response won't count towards your usage.";
+#[cfg(feature = "tui")]
 pub const OUT_OF_CREDITS_SUBSCRIBE_LABEL: &str = "Subscribe";
-/// Disclosure shown in place of a ChatGPT subscription error once the user has switched the
-/// conversation to Warp-funded inference.
-pub const CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT: &str = "Continued with Warp credits. Your \
-     ChatGPT subscription won't be used for the rest of this conversation.";
 /// Text to use as a label throughout the app for user interactions that will attach selected
 /// block(s) or text selections to a new AI query.
 pub static ATTACH_AS_AGENT_MODE_CONTEXT_TEXT: LazyLock<&'static str> =
@@ -71,44 +66,16 @@ pub fn error_color(theme: &WarpTheme) -> ColorU {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FailedOutputPresentation {
     Message(String),
-    OutOfCredits {
-        message: String,
-        can_use_own_api_keys: bool,
-    },
-    InvalidApiKey {
-        title: &'static str,
-        detail: String,
-    },
-    ContextWindowExceeded {
-        message: String,
-    },
-    AwsBedrockCredentialsExpiredOrInvalid {
-        fallback_message: String,
-    },
-    GeminiEnterpriseCredentialsExpiredOrInvalid {
-        fallback_message: String,
-    },
-    /// A ChatGPT token-sharing failure with server-authored copy and recovery actions.
-    ChatGPTSubscription {
-        title: String,
-        message: String,
-        actions: Vec<ChatGPTSubscriptionErrorAction>,
-    },
-    /// The conversation has since been switched to Warp-funded inference, so the failure is
-    /// shown as a disclosure line instead of an actionable error.
-    ChatGPTSubscriptionContinuedWithWarpCredits,
+    OutOfCredits { message: String },
+    ContextWindowExceeded { message: String },
 }
 
 /// Returns the user-facing presentation for an Agent Mode request failure.
-///
-/// `conversation_uses_warp_credits_instead_of_chatgpt` is the owning conversation's
-/// per-conversation ChatGPT opt-out; it only affects ChatGPT subscription errors.
 ///
 /// Recovery-pending failures are intentionally suppressed so callers cannot accidentally render
 /// an alarming terminal error while an automatic resume is still in flight.
 pub fn failed_output_presentation(
     error: &RenderableAIError,
-    conversation_uses_warp_credits_instead_of_chatgpt: bool,
     app: &AppContext,
 ) -> Option<FailedOutputPresentation> {
     if error.should_suppress_during_recovery() {
@@ -123,8 +90,6 @@ pub fn failed_output_presentation(
                 if should_show_subscribe_cta(app) {
                     FailedOutputPresentation::OutOfCredits {
                         message: format!("{ERROR_APOLOGY_TEXT}\n\n{message}"),
-                        can_use_own_api_keys: UserWorkspaces::as_ref(app)
-                            .is_byo_api_key_enabled(app),
                     }
                 } else {
                     FailedOutputPresentation::Message(format!("{ERROR_APOLOGY_TEXT}\n\n{message}"))
@@ -150,32 +115,6 @@ pub fn failed_output_presentation(
                 message: message.clone(),
             }
         }
-        RenderableAIError::InvalidApiKey {
-            provider,
-            model_name,
-        } => FailedOutputPresentation::InvalidApiKey {
-            title: "Provided API key is not valid",
-            detail: format!(
-                "Failed to authenticate with {provider} when using {model_name}. \
-                 Double-check that your API key is correct."
-            ),
-        },
-        RenderableAIError::AwsBedrockCredentialsExpiredOrInvalid { model_name } => {
-            FailedOutputPresentation::AwsBedrockCredentialsExpiredOrInvalid {
-                fallback_message: format!(
-                    "{ERROR_APOLOGY_TEXT}\n\nAWS credentials expired or missing for {model_name}. \
-                     Please refresh your AWS credentials."
-                ),
-            }
-        }
-        RenderableAIError::GeminiEnterpriseCredentialsExpiredOrInvalid => {
-            FailedOutputPresentation::GeminiEnterpriseCredentialsExpiredOrInvalid {
-                fallback_message: format!(
-                    "{ERROR_APOLOGY_TEXT}\n\nGemini Enterprise credentials expired or invalid.\n\n\
-                     Warp couldn't authenticate with Google Cloud. Refresh your Gemini Enterprise credentials, then retry the request."
-                ),
-            }
-        }
         RenderableAIError::TransientNetworkError { .. } => {
             FailedOutputPresentation::Message(error.to_string())
         }
@@ -191,44 +130,7 @@ pub fn failed_output_presentation(
         RenderableAIError::CloudStartupFailed(msg) => {
             FailedOutputPresentation::Message(msg.clone())
         }
-        RenderableAIError::ChatGPTSubscriptionError { .. }
-            if conversation_uses_warp_credits_instead_of_chatgpt =>
-        {
-            FailedOutputPresentation::ChatGPTSubscriptionContinuedWithWarpCredits
-        }
-        RenderableAIError::ChatGPTSubscriptionError {
-            title,
-            message,
-            actions,
-            ..
-        } => FailedOutputPresentation::ChatGPTSubscription {
-            title: title.clone(),
-            message: message.clone(),
-            actions: actions.clone(),
-        },
     })
-}
-
-/// Appends recovery links and copyable text for surfaces that cannot render action buttons.
-pub fn chatgpt_subscription_message_with_links(
-    message: &str,
-    actions: &[ChatGPTSubscriptionErrorAction],
-) -> String {
-    actions
-        .iter()
-        .filter_map(|action| match &action.kind {
-            ChatGPTSubscriptionErrorActionKind::OpenUrl { url } => {
-                Some(format!("{}: {url}", action.label))
-            }
-            ChatGPTSubscriptionErrorActionKind::CopyText { text } => {
-                Some(format!("{}:\n{text}", action.label))
-            }
-            ChatGPTSubscriptionErrorActionKind::Retry
-            | ChatGPTSubscriptionErrorActionKind::ContinueWithWarpCredits => None,
-        })
-        .fold(message.to_string(), |text, link| {
-            format!("{text}\n\n{link}")
-        })
 }
 
 /// Whether a failed Agent Mode response should explain that it will not count towards usage.
@@ -242,8 +144,6 @@ pub fn should_show_failed_output_usage_notice(
         && is_latest_visible_exchange_in_root_task
         && !has_expanded_last_requested_command
         && !is_restored
-        && !error.is_invalid_api_key()
-        && !error.is_chatgpt_subscription_error()
 }
 
 /// Whether to show the out-of-credits CTA: only for non-paid users. Paid users and the enterprise

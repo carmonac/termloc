@@ -36,12 +36,6 @@ pub const AI_FEATURES: &[&str] = &[
     "Remote control for Claude Code, Codex, and other agents",
 ];
 
-/// User-facing names of the Warp Drive features enabled when the terminal
-/// intention is selected with Warp Drive turned on. Shared by the login slide's
-/// skip-login confirmation dialog so the list stays in sync with any future
-/// surfaces that need it.
-pub const WARP_DRIVE_FEATURES: &[&str] = &["Warp Drive", "Session Sharing"];
-
 cfg_if::cfg_if! {
     if #[cfg(feature = "bin")] {
         mod telemetry_provider;
@@ -70,8 +64,7 @@ impl std::fmt::Display for SessionDefault {
 }
 
 pub use agent_onboarding_view::{AgentOnboardingAction, AgentOnboardingEvent, AgentOnboardingView};
-pub use model::{OnboardingAuthState, SelectedSettings, UICustomizationSettings};
-pub use slides::OfferVariant;
+pub use model::{SelectedSettings, UICustomizationSettings};
 pub use telemetry::OnboardingEvent;
 
 pub fn init(app: &mut warpui_core::AppContext) {

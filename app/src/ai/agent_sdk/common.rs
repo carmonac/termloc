@@ -17,7 +17,7 @@ use crate::ai::agent::conversation::ServerAIConversationMetadata;
 use crate::ai::agent_sdk::driver::{AgentDriverError, WARP_DRIVE_SYNC_TIMEOUT};
 use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::cloud_environments::{CloudAmbientAgentEnvironment, environment_matches_scope};
-use crate::ai::llms::{LLMId, LLMPreferences, is_model_allowed_for_scope};
+use crate::ai::llms::{LLMId, LLMPreferences};
 use crate::auth::UserUid;
 use crate::auth::auth_state::AuthStateProvider;
 use crate::cloud_object::{CloudObject, CloudObjectLookup as _, Owner};
@@ -184,24 +184,11 @@ pub(super) fn validate_agent_mode_base_model_id_for_scope(
         .get_base_llm_choices_for_agent_mode(team_scope, ctx)
         .map(|info| info.id.clone())
         .collect::<Vec<_>>();
-    let llm_id = classify_agent_mode_base_model_id(
+    classify_agent_mode_base_model_id(
         model_id,
         &valid_ids,
         llm_prefs.agent_mode_models_unavailable(team_scope),
-    )?;
-    let Some(llm) = llm_prefs.custom_llm_info_for_id(&llm_id) else {
-        return Ok(llm_id);
-    };
-    if is_model_allowed_for_scope(llm_prefs, llm, team_scope, ctx) {
-        return Ok(llm_id);
-    }
-    let scope = team_scope.team_uid().map_or_else(
-        || "your personal scope".to_string(),
-        |team_uid| format!("team {team_uid}"),
-    );
-    Err(anyhow::anyhow!(
-        "Model '{model_id}' is one of your own custom endpoints, which {scope} does not allow."
-    ))
+    )
 }
 
 fn current_user_uid(ctx: &AppContext) -> anyhow::Result<UserUid> {

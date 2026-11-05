@@ -8,7 +8,6 @@ use enclose::enclose;
 use itertools::Itertools;
 use settings::Setting as _;
 use settings::manager::SettingsManager;
-use warp_core::channel::ChannelState;
 use warp_core::context_flag::ContextFlag;
 use warp_errors::{report_error, report_if_error};
 use warp_util::path::user_friendly_path;
@@ -21,8 +20,6 @@ use warpui::windowing::WindowManager;
 use warpui::{AppContext, SingletonEntity};
 
 use crate::ai::persisted_workspace::PersistedWorkspace;
-use crate::auth;
-use crate::auth::AuthStateProvider;
 use crate::default_terminal::DefaultTerminal;
 use crate::features::{FeatureFlag, runtime_flags_menu_items};
 use crate::root_view::OpenLaunchConfigArg;
@@ -153,12 +150,6 @@ fn make_new_app_menu(ctx: &AppContext) -> Menu {
     }
 
     menu_items.push(MenuItem::Separator);
-    if !ChannelState::is_local_only() {
-        menu_items.extend([
-            updateable_custom_item_without_checkmark(CustomAction::ReferAFriend, ctx),
-            MenuItem::Separator,
-        ]);
-    }
 
     let preferences_menu_items = vec![
         updateable_custom_item_without_checkmark(CustomAction::ShowSettings, ctx),
@@ -178,24 +169,9 @@ fn make_new_app_menu(ctx: &AppContext) -> Menu {
         preferences_menu_items,
     )));
 
-    if FeatureFlag::Changelog.is_enabled() {
-        menu_items.push(updateable_custom_item_without_checkmark(
-            CustomAction::ViewChangelog,
-            ctx,
-        ));
-    }
-
     #[cfg(target_os = "macos")]
     {
         menu_items.push(MenuItem::Services);
-    }
-
-    if !ChannelState::is_local_only() {
-        menu_items.push(MenuItem::Separator);
-        menu_items.push(link_menu_item(
-            "Privacy Policy...",
-            links::PRIVACY_POLICY_URL.into(),
-        ));
     }
 
     let debug_menu_items = debug_menu_items();
@@ -233,24 +209,6 @@ fn make_new_app_menu(ctx: &AppContext) -> Menu {
         },
         None,
     )));
-    if !ChannelState::is_local_only() {
-        menu_items.push(MenuItem::Separator);
-        menu_items.push(MenuItem::Custom(CustomMenuItem::new(
-            "Log out",
-            auth::maybe_log_out,
-            move |_, ctx| {
-                let is_anonymous = AuthStateProvider::handle(ctx)
-                    .as_ref(ctx)
-                    .get()
-                    .is_anonymous_or_logged_out();
-                MenuItemPropertyChanges {
-                    disabled: Some(is_anonymous),
-                    ..Default::default()
-                }
-            },
-            None,
-        )));
-    }
     menu_items.push(MenuItem::Standard(StandardAction::Quit));
     Menu::new("Warp", menu_items)
 }
@@ -574,7 +532,6 @@ fn make_new_blocks_menu(ctx: &AppContext) -> Menu {
     items.push(MenuItem::Separator);
     items.extend([
         updateable_custom_item_without_checkmark(CustomAction::CreateBlockPermalink, ctx),
-        non_updateable_custom_item(CustomAction::ViewSharedBlocks, ctx),
         updateable_custom_item_without_checkmark(CustomAction::ToggleBookmarkBlock, ctx),
         updateable_custom_item_without_checkmark(CustomAction::FindWithinBlock, ctx),
         MenuItem::Separator,
@@ -602,47 +559,15 @@ fn make_new_drive_menu(ctx: &AppContext) -> Menu {
         CustomAction::NewPersonalEnvVars,
         ctx,
     ));
-    if !ChannelState::is_local_only() {
-        items.extend([
-            MenuItem::Separator,
-            updateable_custom_item_without_checkmark(CustomAction::NewTeamWorkflow, ctx),
-            updateable_custom_item_without_checkmark(CustomAction::NewTeamNotebook, ctx),
-            updateable_custom_item_without_checkmark(CustomAction::NewTeamAIPrompt, ctx),
-        ]);
-        items.push(updateable_custom_item_without_checkmark(
-            CustomAction::NewTeamEnvVars,
-            ctx,
-        ));
-    }
     items.extend([
         MenuItem::Separator,
         updateable_custom_item_without_checkmark(CustomAction::ToggleWarpDrive, ctx),
         updateable_custom_item_without_checkmark(CustomAction::SearchDrive, ctx),
     ]);
-    if !ChannelState::is_local_only() {
-        items.push(updateable_custom_item_without_checkmark(
-            CustomAction::OpenTeamSettings,
-            ctx,
-        ));
-    }
     items.extend([
         updateable_custom_item_without_checkmark(CustomAction::OpenAIFactCollection, ctx),
         updateable_custom_item_without_checkmark(CustomAction::OpenMCPServerCollection, ctx),
     ]);
-
-    if !ChannelState::is_local_only() {
-        items.push(updateable_custom_item_without_checkmark(
-            CustomAction::SharePaneContents,
-            ctx,
-        ));
-    }
-
-    if FeatureFlag::CreatingSharedSessions.is_enabled() && !ChannelState::is_local_only() {
-        items.extend([
-            MenuItem::Separator,
-            updateable_custom_item_without_checkmark(CustomAction::ShareCurrentSession, ctx),
-        ])
-    }
 
     Menu::new("Drive", items)
 }
@@ -899,13 +824,6 @@ fn debug_menu_items() -> Vec<MenuItem> {
                 }
                 let _ = writer.flush();
             },
-            no_updates,
-            None,
-        )));
-
-        debug_menu_items.push(MenuItem::Custom(CustomMenuItem::new(
-            "Create anonymous user",
-            move |ctx| ctx.dispatch_global_action("workspace:debug_create_anonymous_user", &()),
             no_updates,
             None,
         )));

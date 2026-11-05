@@ -35,7 +35,6 @@ pub enum SharedObjectsCreationDeniedModalAction {
 
 pub enum SharedObjectsCreationDeniedModalEvent {
     Close,
-    TeamSettings,
 }
 
 pub fn init(app: &mut AppContext) {
@@ -179,7 +178,7 @@ impl SharedObjectsCreationDeniedModal {
                     ctx.open_url(UserWorkspaces::upgrade_link_for_team(team_uid).as_str());
                 }
                 // Otherwise redirect them to the team settings page.
-                None => ctx.emit(SharedObjectsCreationDeniedModalEvent::TeamSettings),
+                None => self.close(ctx),
             },
             SharedObjectsCreationDeniedBodyEvent::ManageBilling => match self.team_uid {
                 // If team_uid is set, then open up the manage billing page for the team
@@ -191,7 +190,7 @@ impl SharedObjectsCreationDeniedModal {
                     });
                 }
                 // Otherwise redirect them to the team settings page.
-                None => ctx.emit(SharedObjectsCreationDeniedModalEvent::TeamSettings),
+                None => self.close(ctx),
             },
         }
     }

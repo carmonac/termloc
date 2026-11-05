@@ -333,11 +333,11 @@ impl PendingHandoff {
         let model_id = if is_explicit {
             model_id
         } else {
-            preferences.cloud_runnable_oz_model_id_or_fallback(&LLMId::from(model_id.as_str()))
+            preferences.cloud_runnable_oz_model_id_or_fallback(&LLMId::from(model_id.as_str()), ctx)
         };
 
         self.model_is_cloud_runnable =
-            preferences.is_cloud_runnable_oz_model_id(&LLMId::from(model_id.as_str()));
+            preferences.is_cloud_runnable_oz_model_id(&LLMId::from(model_id.as_str()), ctx);
         self.selected_model_id = model_id.clone();
         self.model_selection_is_explicit |= is_explicit;
         self.config.model_id = Some(model_id);
@@ -549,9 +549,9 @@ pub fn prepare_handoff(
     let active_model_id = &preferences
         .get_active_base_model(&scope, ctx, Some(terminal_surface_id))
         .id;
-    let model_id = preferences.cloud_runnable_oz_model_id_or_fallback(active_model_id);
+    let model_id = preferences.cloud_runnable_oz_model_id_or_fallback(active_model_id, ctx);
     let model_is_cloud_runnable =
-        preferences.is_cloud_runnable_oz_model_id(&LLMId::from(model_id.as_str()));
+        preferences.is_cloud_runnable_oz_model_id(&LLMId::from(model_id.as_str()), ctx);
     let computer_use_enabled = resolve_cloud_agent_computer_use_state(&scope, ctx).enabled;
     let config = AgentConfigSnapshot {
         environment_id: environment_id.map(|id| id.to_string()),
@@ -701,7 +701,7 @@ pub fn execute_handoff(
             .collect(),
     );
     pending.model_is_cloud_runnable = LLMPreferences::as_ref(ctx)
-        .is_cloud_runnable_oz_model_id(&LLMId::from(pending.selected_model_id.as_str()));
+        .is_cloud_runnable_oz_model_id(&LLMId::from(pending.selected_model_id.as_str()), ctx);
     pending.snapshot_disabled = should_disable_snapshot(ctx);
     let validation = if AISettings::as_ref(ctx).is_cloud_handoff_enabled(ctx) {
         pending.validate()

@@ -29,16 +29,14 @@ use crate::ai::blocklist::BlocklistAIHistoryModel;
 use crate::ai::blocklist::history_model::BlocklistAIHistoryEvent;
 use crate::ai::blocklist::usage::colors::chart_color;
 use crate::ai::blocklist::view_util::{effective_usage_unit, format_credits, format_dollars};
-use crate::ai::llms::LLMPreferences;
+use crate::ai::llms::CUSTOM_ENDPOINT_USAGE_LABEL;
 use crate::appearance::Appearance;
 use crate::persistence::model::{
     ChargedUsageTotals, FULL_TERMINAL_USE_CATEGORY, ModelTokenUsage, PRIMARY_AGENT_CATEGORY,
 };
 use crate::settings::UsageDisplayUnit;
 use crate::settings::ai::{AISettings, AISettingsChangedEvent};
-use crate::settings_view::SettingsSection;
 use crate::ui_components::blended_colors;
-use crate::workspace::WorkspaceAction;
 
 /// Fixed popover width: the Figma reference (`336px`) widened by 15% so long
 /// model names and their values fit on one row.
@@ -133,7 +131,6 @@ pub struct UsagePopoverView {
     view_id: EntityId,
     model_usage_toggle_mouse_state: MouseStateHandle,
     tool_call_summary_toggle_mouse_state: MouseStateHandle,
-    view_account_usage_mouse_state: MouseStateHandle,
     /// Number of times this view rendered. Notification has no observable
     /// state, so tests observe the render pass it should trigger instead.
     #[cfg(test)]
@@ -184,7 +181,6 @@ impl UsagePopoverView {
             view_id: ctx.view_id(),
             model_usage_toggle_mouse_state: MouseStateHandle::default(),
             tool_call_summary_toggle_mouse_state: MouseStateHandle::default(),
-            view_account_usage_mouse_state: MouseStateHandle::default(),
             #[cfg(test)]
             render_count_for_test: Cell::new(0),
         }
@@ -249,27 +245,7 @@ impl UsagePopoverView {
             .with_child(total)
             .finish();
 
-        let link_color = blended_colors::text_sub(theme, background);
-        let font_family = appearance.ui_font_family();
-        let font_size = appearance.ui_font_size();
-        let link = Hoverable::new(self.view_account_usage_mouse_state.clone(), move |_state| {
-            Text::new("View account usage".to_string(), font_family, font_size)
-                .with_color(link_color)
-                .with_selectable(false)
-                .finish()
-        })
-        .with_cursor(Cursor::PointingHand)
-        .on_click(|ctx, _, _| {
-            ctx.dispatch_typed_action(WorkspaceAction::ShowSettingsPage(
-                SettingsSection::BillingAndUsage,
-            ));
-        })
-        .finish();
-
-        space_between_row()
-            .with_child(title)
-            .with_child(link)
-            .finish()
+        space_between_row().with_child(title).finish()
     }
 
     /// Renders a collapsible section header: an overline `label` on the
@@ -936,9 +912,7 @@ impl View for UsagePopoverView {
             return Empty::new().finish();
         };
         let usage_display_unit = conversation_usage_display_unit(conversation, app);
-        let llm_preferences = LLMPreferences::as_ref(app);
-        let custom_endpoint_label =
-            |config_key: &str| llm_preferences.custom_endpoint_usage_display_label(config_key);
+        let custom_endpoint_label = |_: &str| CUSTOM_ENDPOINT_USAGE_LABEL.to_string();
         let charged_usage_by_key =
             sum_charged_usage_by_key(conversation.all_tasks().flat_map(|task| task.messages()));
         let charged_totals = conversation_charged_totals(conversation);

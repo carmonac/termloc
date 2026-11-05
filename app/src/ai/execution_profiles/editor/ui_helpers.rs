@@ -12,17 +12,12 @@ use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
 use warpui::{AppContext, Element, SingletonEntity, ViewHandle};
 
 use super::{ExecutionProfileEditorView, ExecutionProfileEditorViewAction};
-use crate::ai::blocklist::BlocklistAIPermissions;
-use crate::ai::execution_profiles::{
-    AIExecutionProfile, AIExecutionProfileAppExt as _, ActionPermission,
-    long_context_pricing_warning_title,
-};
+use crate::ai::execution_profiles::{AIExecutionProfile, ActionPermission};
 use crate::editor::EditorView;
 use crate::settings::AISettings;
 use crate::ui_components::icons::Icon;
 use crate::view_components::{
-    Dropdown, DropdownItemAction, FilterableDropdown, SubmittableTextInput, WarningBoxConfig,
-    render_warning_box,
+    Dropdown, DropdownItemAction, FilterableDropdown, SubmittableTextInput,
 };
 use crate::{Appearance, TemplatableMCPServerManager};
 
@@ -202,13 +197,6 @@ fn render_info_section(
         .finish();
     Container::new(description).with_margin_bottom(12.).finish()
 }
-fn render_long_context_pricing_warning(appearance: &Appearance) -> Box<dyn Element> {
-    render_warning_box(
-        WarningBoxConfig::formatted_title(long_context_pricing_warning_title()),
-        appearance,
-    )
-}
-
 fn render_permission_row<T: DropdownItemAction>(
     appearance: &Appearance,
     icon: Icon,
@@ -423,16 +411,9 @@ fn render_context_window_row(
         .with_child(input_box)
         .finish();
 
-    let mut column = Flex::column()
+    let column = Flex::column()
         .with_child(Container::new(label_desc).with_margin_bottom(4.).finish())
         .with_child(slider_row);
-    let scope = view.team_context(app);
-    if BlocklistAIPermissions::as_ref(app)
-        .permissions_profile_for_id(view.profile_id(), &scope, app)
-        .should_show_long_context_pricing_warning(view.dragged_context_window_value, app)
-    {
-        column.add_child(render_long_context_pricing_warning(appearance));
-    }
 
     Some(
         Container::new(column.finish())

@@ -9,7 +9,6 @@ use std::pin::Pin;
 use std::sync::{Arc, LazyLock, Mutex};
 
 pub use ai::agent::convert::ConvertToAPITypeError;
-use ai::api_keys::ApiKeyManager;
 pub(crate) use convert_from::convert_user_query_mode;
 pub use convert_from::{
     ConversionParams, ConvertAPIMessageToClientOutputMessage, MaybeAIAgentOutputMessage,
@@ -33,14 +32,14 @@ use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::blocklist::{BlocklistAIPermissions, RequestInput, SessionContext};
 use crate::ai::execution_profiles::AIExecutionProfileAppExt;
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
-use crate::ai::llms::{LLMId, LLMPreferences};
+use crate::ai::llms::LLMId;
 use crate::ai::mcp::TemplatableMCPServerManager;
 use crate::send_telemetry_from_app_ctx;
 use crate::server::server_api::AIApiError;
 use crate::server::telemetry::TelemetryEvent;
 use crate::settings::AISettings;
 use crate::terminal::safe_mode_settings::get_secret_obfuscation_mode;
-use crate::workspaces::user_workspaces::{TeamScope, UserWorkspaces};
+use crate::workspaces::user_workspaces::TeamScope;
 
 /// Unique, server-generated conversation-scoped token to be roundtripped to the API when sending
 /// requests that follow-up within a given conversation.
@@ -155,25 +154,6 @@ pub struct RequestParams {
     pub mcp_context: Option<MCPContext>,
     pub planning_enabled: bool,
     should_redact_secrets: bool,
-
-    /// Whether `scope`'s team allows members to use their own provider credentials.
-    ///
-    /// A later mutation of [`Self::api_keys`] must gate on this, not on plan entitlement alone:
-    /// `api_keys` stays `Some(..)` for org-level credentials that survive the team's policy.
-    pub member_byo_credentials_allowed: bool,
-    /// User-provided API keys for AI providers (BYO API Key).
-    pub api_keys: Option<warp_multi_agent_api::request::settings::ApiKeys>,
-    /// User-provided custom model providers (BYOK endpoints).
-    pub custom_model_providers:
-        Option<warp_multi_agent_api::request::settings::CustomModelProviders>,
-    /// User-defined custom model routers referenced by the current selection. Mirrors
-    /// `custom_model_providers`: the selected model's `config_key` indexes into this
-    /// registry. `None` when no custom router is selected.
-    pub custom_model_routers: Option<warp_multi_agent_api::request::settings::CustomModelRouters>,
-    pub allow_use_of_warp_credits: bool,
-    /// Asks the server not to attach the user's delegated ChatGPT token, so OpenAI requests run
-    /// on Warp's key. Set for the rest of a conversation after a token-sharing failure.
-    pub skip_chatgpt_subscription: bool,
     pub autonomy_level: warp_multi_agent_api::AutonomyLevel,
     pub isolation_level: warp_multi_agent_api::IsolationLevel,
     pub web_search_enabled: bool,
@@ -207,7 +187,6 @@ pub struct ConversationData {
     pub forked_from_conversation_token: Option<ServerConversationToken>,
     pub ambient_agent_task_id: Option<AmbientAgentTaskId>,
     pub existing_suggestions: Option<Suggestions>,
-    pub use_warp_credits_instead_of_chatgpt: bool,
 }
 
 impl RequestParams {
@@ -232,12 +211,6 @@ impl RequestParams {
             mcp_context: None,
             planning_enabled: false,
             should_redact_secrets: false,
-            member_byo_credentials_allowed: false,
-            api_keys: None,
-            custom_model_providers: None,
-            custom_model_routers: None,
-            allow_use_of_warp_credits: false,
-            skip_chatgpt_subscription: false,
             autonomy_level: Default::default(),
             isolation_level: Default::default(),
             web_search_enabled: false,
@@ -336,35 +309,6 @@ impl RequestParams {
 
         let should_redact_secrets = get_secret_obfuscation_mode(app).should_redact_secret();
 
-        let user_workspaces = UserWorkspaces::as_ref(app);
-        let api_key_manager = ApiKeyManager::as_ref(app);
-        // Bedrock and Gemini Enterprise are admin-configured host credentials rather than member
-        // BYO keys, so they deliberately skip this gate.
-        let member_byo_credentials_allowed = user_workspaces.are_member_byo_keys_allowed(scope);
-        let is_byo_enabled =
-            user_workspaces.is_byo_api_key_enabled(app) && member_byo_credentials_allowed;
-        #[cfg(not(target_family = "wasm"))]
-        let geap_binding =
-            crate::ai::geap_credentials::current_geap_policy(scope, app).mint_binding();
-        #[cfg(target_family = "wasm")]
-        let geap_binding: Option<::ai::api_keys::GeapMintBinding> = None;
-        let api_keys = api_key_manager.api_keys_for_request(
-            is_byo_enabled,
-            user_workspaces.is_aws_bedrock_credentials_enabled(scope, app),
-            geap_binding,
-        );
-        let is_custom_inference_enabled = user_workspaces.is_byo_endpoint_enabled(app)
-            && user_workspaces.are_member_byo_endpoints_allowed(scope);
-        let custom_model_providers =
-            api_key_manager.custom_model_providers_for_request(is_custom_inference_enabled);
-        let custom_model_routers = FeatureFlag::CustomModelRouters.is_enabled().then(|| {
-            LLMPreferences::as_ref(app).custom_model_routers_for_request(
-                &request_input.model_id,
-                &request_input.coding_model_id,
-            )
-        });
-        let allow_use_of_warp_credits = *AISettings::as_ref(app).can_use_warp_credits_for_fallback;
-
         let app_execution_mode = AppExecutionMode::as_ref(app);
         let autonomy_level = if app_execution_mode.is_autonomous() {
             warp_multi_agent_api::AutonomyLevel::Unsupervised
@@ -444,12 +388,6 @@ impl RequestParams {
             mcp_context,
             planning_enabled: true,
             should_redact_secrets,
-            member_byo_credentials_allowed,
-            api_keys,
-            custom_model_providers,
-            custom_model_routers,
-            allow_use_of_warp_credits,
-            skip_chatgpt_subscription: conversation.use_warp_credits_instead_of_chatgpt,
             autonomy_level,
             isolation_level,
             web_search_enabled,

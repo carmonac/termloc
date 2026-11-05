@@ -149,7 +149,6 @@ pub(crate) use queued_query::{
 #[cfg_attr(not(feature = "tui"), allow(unused_imports))]
 pub use queued_query::{QueuedQueryEvent, QueuedQueryModel};
 pub use suggestion_chip_view::*;
-pub use view_util::error_color;
 pub(crate) use view_util::{
     ATTACH_AS_AGENT_MODE_CONTEXT_TEXT, CLAUDE_ORANGE, NEW_AGENT_PANE_LABEL, ai_brand_color,
     ai_indicator_height, format_credits, get_ai_block_overflow_menu_element_position_id,

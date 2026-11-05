@@ -529,17 +529,6 @@ fn fresh_assignment_fixture_decodes_nullable_control_fields() {
     assert_eq!(runtime_env["WARP_SANDBOX_DEADLINE"], "1767225600");
     assert!(execution_config.conversation_id.is_none());
     assert!(execution_config.repositories[0].ref_.is_none());
-    assert!(
-        execution_config
-            .inference_providers
-            .as_ref()
-            .unwrap()
-            .aws_bedrock
-            .as_ref()
-            .unwrap()
-            .region
-            .is_none()
-    );
     assert_eq!(api_key, "wk-placeholder-not-a-real-key");
     assert_eq!(expires_at.to_rfc3339(), "2026-01-01T00:00:00+00:00");
 }

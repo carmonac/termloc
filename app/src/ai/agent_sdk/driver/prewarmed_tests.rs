@@ -40,7 +40,6 @@ fn config() -> ExecutionConfiguration {
     execution_config.conversation_id = None;
     execution_config.skip_initial_turn = false;
     execution_config.providers = None;
-    execution_config.inference_providers = None;
     execution_config
 }
 

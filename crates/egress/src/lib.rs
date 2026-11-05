@@ -11,7 +11,14 @@ use std::sync::{Mutex, OnceLock, RwLock};
 use http::Uri;
 
 #[cfg(not(target_family = "wasm"))]
-pub use guard::guard;
+pub use guard::build_client;
+
+/// Browsers decide where wasm builds may connect.
+#[cfg(target_family = "wasm")]
+#[allow(clippy::disallowed_methods)]
+pub fn build_client(builder: reqwest::ClientBuilder) -> reqwest::Result<reqwest::Client> {
+    builder.build()
+}
 
 static POLICY: OnceLock<Policy> = OnceLock::new();
 static REPORTED_HOSTS: Mutex<Option<HashSet<String>>> = Mutex::new(None);

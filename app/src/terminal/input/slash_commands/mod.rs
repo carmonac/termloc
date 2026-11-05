@@ -894,15 +894,6 @@ impl Input {
             SlashCommandKind::Init => {
                 ctx.dispatch_typed_action(&TerminalAction::InitProject);
             }
-            SlashCommandKind::Changelog => {
-                if !FeatureFlag::Changelog.is_enabled() {
-                    return false;
-                }
-                ctx.dispatch_typed_action(&WorkspaceAction::ViewLatestChangelog);
-            }
-            SlashCommandKind::Feedback => {
-                ctx.dispatch_typed_action(&WorkspaceAction::SendFeedback);
-            }
             SlashCommandKind::OpenCodeReview => {
                 ctx.dispatch_typed_action(&TerminalAction::ToggleCodeReviewPane {
                     entrypoint: CodeReviewPaneEntrypoint::SlashCommand,
@@ -1032,9 +1023,7 @@ impl Input {
             SlashCommandKind::Rewind => {
                 self.open_rewind_menu(ctx);
             }
-            SlashCommandKind::Usage => {
-                ctx.dispatch_typed_action(&TerminalAction::OpenBillingAndUsagePane);
-            }
+            SlashCommandKind::Usage => return false,
             SlashCommandKind::RemoteControl => {
                 if !FeatureFlag::CreatingSharedSessions.is_enabled()
                     || !FeatureFlag::HOARemoteControl.is_enabled()
@@ -1335,8 +1324,6 @@ impl Input {
             SlashCommandKind::AutoApprove
             | SlashCommandKind::Statusline
             | SlashCommandKind::ResetStatusline
-            | SlashCommandKind::ApiKeys
-            | SlashCommandKind::ConnectGrok
             | SlashCommandKind::Upgrade
             | SlashCommandKind::ManageBilling
             | SlashCommandKind::ViewLogs

@@ -244,7 +244,6 @@ pub(super) fn execution_config() -> ExecutionConfiguration {
         factory_skill_dirs: Vec::new(),
         computer_use_enabled: false,
         computer_use_model_id: None,
-        inference_providers: None,
         repositories: Vec::new(),
         deferred_repositories: Some(Vec::new()),
         setup_commands: Vec::new(),

@@ -99,9 +99,9 @@ use crate::ai::agent::{
     AIAgentOutputMessage, AIAgentOutputMessageType, AIAgentTextSection, AIIdentifiers,
     CancellationReason, CreateDocumentsRequest, CreateDocumentsResult, DocumentToCreate,
     EditDocumentsResult, MessageId, PassiveSuggestionTrigger, ProgrammingLanguage,
-    RenderableAIError, RequestCommandOutputResult, RequestFileEditsResult, ScreenshotSource,
-    SearchCodebaseResult, ServerOutputId, SubagentCall, SubagentType, SuggestPromptRequest,
-    SuggestPromptResult, SuggestedLoggingId, SummarizationType, TodoOperation,
+    RequestCommandOutputResult, RequestFileEditsResult, ScreenshotSource, SearchCodebaseResult,
+    ServerOutputId, SubagentCall, SubagentType, SuggestPromptRequest, SuggestPromptResult,
+    SuggestedLoggingId, SummarizationType, TodoOperation,
 };
 use crate::ai::agent_conversations_model::{AgentConversationsModel, AgentConversationsModelEvent};
 use crate::ai::ambient_agents::AmbientAgentTaskId;
@@ -116,14 +116,8 @@ use crate::ai::blocklist::diff_types::FileDiff;
 use crate::ai::blocklist::inline_action::ask_user_question_view::{
     self, AskUserQuestionView, AskUserQuestionViewEvent,
 };
-use crate::ai::blocklist::inline_action::aws_bedrock_credentials_error::{
-    AwsBedrockCredentialsErrorEvent, AwsBedrockCredentialsErrorView,
-};
 use crate::ai::blocklist::inline_action::code_diff_view;
 use crate::ai::blocklist::inline_action::code_diff_view::convert_file_edits_to_file_diffs;
-use crate::ai::blocklist::inline_action::gemini_enterprise_credentials_error::{
-    GeminiEnterpriseCredentialsErrorEvent, GeminiEnterpriseCredentialsErrorView,
-};
 use crate::ai::blocklist::inline_action::requested_command::{
     self, RequestedActionViewType, RequestedCommand, RequestedCommandView,
     RequestedCommandViewEvent,
@@ -183,7 +177,6 @@ use crate::settings::{
     InputModeSettings, InputModeSettingsChangedEvent, InputSettings,
     OrchestrationMessageDisplayMode,
 };
-use crate::settings_view::SettingsSection;
 use crate::terminal::find::TerminalFindModel;
 use crate::terminal::model::BlockId;
 use crate::terminal::model::secrets::RichContentSecretTooltipInfo;
@@ -490,17 +483,8 @@ pub(super) struct AIBlockStateHandles {
     /// Mouse state handle for the debug ID copy button
     debug_copy_button_handle: MouseStateHandle,
     /// Mouse state handle for the submit issue button
-    submit_issue_button_handle: MouseStateHandle,
-
-    /// Mouse state handle for the invalid API key button
-    invalid_api_key_button_handle: MouseStateHandle,
 
     /// Mouse state handle for the Subscribe button shown on the out-of-credits error
-    subscribe_button_handle: MouseStateHandle,
-
-    /// Per-action mouse state handles for the recovery buttons on a ChatGPT subscription
-    /// error, indexed in the server's action order.
-    chatgpt_subscription_action_handles: Vec<MouseStateHandle>,
 
     /// Mouse state handle for AI document created block
     ai_document_handle: MouseStateHandle,
@@ -1099,12 +1083,6 @@ pub struct AIBlock {
     agent_view_controller: ModelHandle<AgentViewController>,
     ambient_agent_view_model: Option<ModelHandle<AmbientAgentViewModel>>,
 
-    /// View for AWS Bedrock credentials error, created lazily when the error occurs.
-    aws_bedrock_credentials_error_view: Option<ViewHandle<AwsBedrockCredentialsErrorView>>,
-    /// View for Gemini Enterprise credentials errors, created lazily when the error occurs.
-    gemini_enterprise_credentials_error_view:
-        Option<ViewHandle<GeminiEnterpriseCredentialsErrorView>>,
-
     imported_comments: HashMap<AIAgentActionId, ImportedCommentGroup>,
     has_imported_comments: bool,
 
@@ -1562,8 +1540,6 @@ impl AIBlock {
             turn_panel_view: None,
             agent_view_controller,
             ambient_agent_view_model,
-            aws_bedrock_credentials_error_view: None,
-            gemini_enterprise_credentials_error_view: None,
             imported_comments: Default::default(),
             has_imported_comments: false,
             run_agents_card_views: Default::default(),
@@ -1591,10 +1567,7 @@ impl AIBlock {
             AIBlockOutputStatus::Complete { .. } => {
                 me.finish(FinishReason::Complete, ctx);
             }
-            AIBlockOutputStatus::Failed { error, .. } => {
-                me.maybe_create_aws_bedrock_credentials_error_view(&error, ctx);
-                me.maybe_create_gemini_enterprise_credentials_error_view(&error, ctx);
-                me.maybe_create_chatgpt_subscription_action_handles(&error);
+            AIBlockOutputStatus::Failed { .. } => {
                 me.finish(FinishReason::Error, ctx);
             }
             AIBlockOutputStatus::Cancelled { .. } => {
@@ -1973,7 +1946,7 @@ impl AIBlock {
                     ctx
                 );
             }
-            AIBlockOutputStatus::Failed { error, .. } => {
+            AIBlockOutputStatus::Failed { .. } => {
                 let server_output_id = self.model.server_output_id(ctx);
                 send_telemetry_from_ctx!(
                     TelemetryEvent::AgentModeCreatedAIBlock {
@@ -1989,9 +1962,6 @@ impl AIBlock {
                     },
                     ctx
                 );
-                self.maybe_create_aws_bedrock_credentials_error_view(&error, ctx);
-                self.maybe_create_gemini_enterprise_credentials_error_view(&error, ctx);
-                self.maybe_create_chatgpt_subscription_action_handles(&error);
                 self.notify_run_agents_card_views(ctx);
                 // There are no actions to be taken in this block, it is finished.
                 self.finish(FinishReason::Error, ctx);
@@ -4140,112 +4110,6 @@ impl AIBlock {
         ctx.notify();
     }
 
-    /// Creates the AWS Bedrock credentials error view if the error is `AwsBedrockCredentialsExpiredOrInvalid`
-    /// and we don't already have one. If auto-login is enabled, automatically runs the login command.
-    fn maybe_create_aws_bedrock_credentials_error_view(
-        &mut self,
-        error: &RenderableAIError,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        // Only create the view for AWS Bedrock credentials errors
-        let RenderableAIError::AwsBedrockCredentialsExpiredOrInvalid { model_name } = error else {
-            return;
-        };
-
-        // Don't recreate if we already have a view
-        if self.aws_bedrock_credentials_error_view.is_some() {
-            return;
-        }
-
-        let ai_settings = AISettings::as_ref(ctx);
-        let login_command = ai_settings.aws_bedrock_auth_refresh_command.value().clone();
-        let auto_login_enabled = *ai_settings.aws_bedrock_auto_login.value();
-
-        // If auto-login is enabled, run the login command automatically
-        if auto_login_enabled {
-            ctx.emit(AIBlockEvent::RunAwsLoginCommand);
-        }
-
-        let model_name = model_name.clone();
-        let view = ctx.add_typed_action_view(|ctx| {
-            AwsBedrockCredentialsErrorView::new(model_name, login_command, auto_login_enabled, ctx)
-        });
-
-        // Subscribe to events from the view and emit AIBlockEvents directly
-        // Note: We emit events here rather than dispatch actions because we're in a
-        // subscription callback where the context is already for AIBlock
-        ctx.subscribe_to_view(&view, |_me, _view, event, ctx| match event {
-            AwsBedrockCredentialsErrorEvent::RunLoginCommand => {
-                ctx.emit(AIBlockEvent::RunAwsLoginCommand);
-            }
-            AwsBedrockCredentialsErrorEvent::ConfigureLoginCommand => {
-                // Defer so Workspace is not opened while AIBlock is still mid-subscription.
-                // Synchronous dispatch here can panic with "Circular view update".
-                ctx.dispatch_typed_action_deferred(WorkspaceAction::ShowSettingsPageWithSearch {
-                    search_query: "aws bedrock".to_string(),
-                    section: Some(SettingsSection::WarpAgent),
-                });
-            }
-        });
-
-        self.aws_bedrock_credentials_error_view = Some(view);
-        ctx.notify();
-    }
-
-    fn maybe_create_gemini_enterprise_credentials_error_view(
-        &mut self,
-        error: &RenderableAIError,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        if !matches!(
-            error,
-            RenderableAIError::GeminiEnterpriseCredentialsExpiredOrInvalid
-        ) {
-            return;
-        }
-        if let Some(view) = &self.gemini_enterprise_credentials_error_view {
-            view.update(ctx, |view, ctx| view.reset(ctx));
-            return;
-        }
-
-        let view = ctx.add_typed_action_view(GeminiEnterpriseCredentialsErrorView::new);
-        ctx.subscribe_to_view(&view, |_me, _view, event, ctx| match event {
-            GeminiEnterpriseCredentialsErrorEvent::RefreshCredentials => {
-                #[cfg(not(target_family = "wasm"))]
-                {
-                    use ai::api_keys::ApiKeyManager;
-
-                    ApiKeyManager::handle(ctx).update(ctx, |manager, ctx| {
-                        crate::ai::geap_credentials::force_refresh_geap_credentials(manager, ctx);
-                    });
-                }
-            }
-            GeminiEnterpriseCredentialsErrorEvent::OpenSettings => {
-                // Defer so Workspace is not opened while AIBlock is still mid-subscription.
-                // Synchronous dispatch here can panic with "Circular view update".
-                ctx.dispatch_typed_action_deferred(WorkspaceAction::ShowSettingsPageWithSearch {
-                    search_query: "gemini enterprise".to_string(),
-                    section: Some(SettingsSection::WarpAgent),
-                });
-            }
-        });
-
-        self.gemini_enterprise_credentials_error_view = Some(view);
-        ctx.notify();
-    }
-
-    fn maybe_create_chatgpt_subscription_action_handles(&mut self, error: &RenderableAIError) {
-        let RenderableAIError::ChatGPTSubscriptionError { actions, .. } = error else {
-            return;
-        };
-        if self.state_handles.chatgpt_subscription_action_handles.len() != actions.len() {
-            self.state_handles.chatgpt_subscription_action_handles = actions
-                .iter()
-                .map(|_| MouseStateHandle::default())
-                .collect();
-        }
-    }
-
     pub fn accept_pending_unit_test_suggestion(
         &mut self,
         interaction_source: InteractionSource,
@@ -6296,10 +6160,6 @@ pub enum AIBlockEvent {
     ResumeConversation {
         conversation_id: AIConversationId,
     },
-    /// Emitted when the user chooses Warp-funded inference after a ChatGPT subscription error.
-    ContinueWithWarpCredits {
-        conversation_id: AIConversationId,
-    },
     InsertForkSlashCommand,
     ToggleCodeReviewPane {
         entrypoint: CodeReviewPaneEntrypoint,
@@ -6311,8 +6171,6 @@ pub enum AIBlockEvent {
         is_auto_open: bool,
     },
     OpenActiveAgentProfileEditor,
-    /// Run the configured AWS auth refresh command to fix expired Bedrock credentials
-    RunAwsLoginCommand,
     /// Emitted when a passive code diff has loaded its diffs and is ready to display.
     /// This is used to trigger height recalculation since the diffs are loaded asynchronously
     /// after the initial output completes.
@@ -6354,10 +6212,6 @@ pub enum AIBlockAction {
 
     /// Resume the stopped conversation
     ResumeConversation,
-
-    /// Switch the conversation to Warp-funded inference after a ChatGPT subscription error, then
-    /// resume it.
-    ContinueWithWarpCredits,
 
     /// Fork the conversation
     ForkConversation,
@@ -6405,7 +6259,6 @@ pub enum AIBlockAction {
     ToggleReferencesSection,
     ToggleAutoexecuteReadonlyCommandsSpeedbumpCheckbox,
     ToggleAutoreadFilesSpeedbumpCheckbox,
-    ToggleAwsBedrockAutoLogin,
     ToggleCodebaseSearchSpeedbump(Option<usize>),
     StartNewConversationButtonClicked {
         action_id: AIAgentActionId,
@@ -6457,7 +6310,6 @@ pub enum AIBlockAction {
     CopyDebugId(String),
     CopyText(String),
     /// Open Warp feedback documentation
-    OpenFeedbackDocs,
     /// Toggle the usage summary footer expansion state
     ToggleIsUsageFooterExpanded,
     /// Toggle the per-turn request-metadata "Turn" panel expansion state.
@@ -6466,10 +6318,6 @@ pub enum AIBlockAction {
     CommentExpanded {
         id: CommentId,
     },
-    /// Run the configured AWS auth refresh command to fix expired Bedrock credentials
-    RunAwsLoginCommand,
-    /// Open settings to configure the AWS auth refresh command
-    ConfigureAwsLoginCommand,
     /// Open the screenshot lightbox for a UseComputer action.
     ViewScreenshot {
         action_id: AIAgentActionId,
@@ -6577,11 +6425,6 @@ impl TypedActionView for AIBlock {
                     conversation_id: self.client_ids.conversation_id,
                 });
             }
-            AIBlockAction::ContinueWithWarpCredits => {
-                ctx.emit(AIBlockEvent::ContinueWithWarpCredits {
-                    conversation_id: self.client_ids.conversation_id,
-                });
-            }
             AIBlockAction::ForkConversation => {
                 // Fully reset the fork button's interaction state before navigation.
                 // This avoids an immediate re-hover (and stuck tooltip) from synthetic mouse events
@@ -6644,9 +6487,6 @@ impl TypedActionView for AIBlock {
             AIBlockAction::CopyDebugId(debug_id) => {
                 ctx.clipboard()
                     .write(ClipboardContent::plain_text(debug_id.clone()));
-            }
-            AIBlockAction::OpenFeedbackDocs => {
-                ctx.open_url("https://docs.warp.dev/support-and-community/troubleshooting-and-support/sending-us-feedback");
             }
             AIBlockAction::CancelRequestedAction { action_id } => {
                 self.cancel_action(action_id, ctx);
@@ -7084,22 +6924,6 @@ impl TypedActionView for AIBlock {
             }
             AIBlockAction::StoreRightClickedCommand { command } => {
                 self.last_right_clicked_command = Some(command.clone());
-            }
-            AIBlockAction::RunAwsLoginCommand => {
-                ctx.emit(AIBlockEvent::RunAwsLoginCommand);
-            }
-            AIBlockAction::ToggleAwsBedrockAutoLogin => {
-                AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                    let current = *settings.aws_bedrock_auto_login.value();
-                    let new_value = !current;
-                    report_if_error!(settings.aws_bedrock_auto_login.set_value(new_value, ctx));
-                });
-            }
-            AIBlockAction::ConfigureAwsLoginCommand => {
-                ctx.dispatch_typed_action(&WorkspaceAction::ShowSettingsPageWithSearch {
-                    search_query: "aws bedrock".to_string(),
-                    section: Some(SettingsSection::WarpAgent),
-                });
             }
             AIBlockAction::ToggleImportedCommentCollapsed {
                 action_id,

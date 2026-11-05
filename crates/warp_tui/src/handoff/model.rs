@@ -460,7 +460,7 @@ impl TuiHandoffModel {
             .expect("editable handoff has pending state")
             .presentation_snapshot()
             .model_id;
-        oz_model_snapshot(&selected_model_id, false, ctx)
+        oz_model_snapshot(&selected_model_id, ctx)
     }
 
     pub(crate) fn environment_label(&self, ctx: &AppContext) -> String {
@@ -492,7 +492,7 @@ impl TuiHandoffModel {
             .map(|row| row.label.clone())
             .unwrap_or_else(|| presentation.model_id.clone());
         if !LLMPreferences::as_ref(ctx)
-            .is_cloud_runnable_oz_model_id(&LLMId::from(presentation.model_id.as_str()))
+            .is_cloud_runnable_oz_model_id(&LLMId::from(presentation.model_id.as_str()), ctx)
         {
             format!("{label} (incompatible)")
         } else {

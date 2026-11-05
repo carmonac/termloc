@@ -15,12 +15,12 @@ use super::initializer::SettingsInitializer;
 use super::native_preference::NativePreferenceSettings;
 use super::{
     AISettings, AccessibilitySettings, AliasExpansionSettings, AppEditorSettings,
-    BlockVisibilitySettings, ChangelogSettings, CodeSettings, DebugSettings, EmacsBindingsSettings,
-    FontSettings, FontSettingsChangedEvent, GPUSettings, InputBoxType, InputModeSettings,
-    InputSettings, LocalControlSettings, PaneSettings, SameLinePromptBlockSettings, ScrollSettings,
+    BlockVisibilitySettings, CodeSettings, DebugSettings, EmacsBindingsSettings, FontSettings,
+    FontSettingsChangedEvent, GPUSettings, InputBoxType, InputModeSettings, InputSettings,
+    LocalControlSettings, PaneSettings, SameLinePromptBlockSettings, ScrollSettings,
     SelectionSettings, SharedObjectLimitBannerSettings, SshSettings, ThemeSettings,
-    TuiAutoupdateSettings, TuiThemeSettings, TuiVoiceSettings, TuiZeroStateSettings,
-    VimBannerSettings, WarpDrivePrivacySettings,
+    TuiThemeSettings, TuiVoiceSettings, TuiZeroStateSettings, VimBannerSettings,
+    WarpDrivePrivacySettings,
 };
 use crate::ai::cloud_agent_settings::CloudAgentSettings;
 use crate::appearance;
@@ -72,7 +72,6 @@ pub fn register_all_settings(ctx: &mut AppContext) {
     CodeSettings::register(ctx);
     LigatureSettings::register(ctx);
     GPUSettings::register(ctx);
-    ChangelogSettings::register(ctx);
     GeneralSettings::register(ctx);
     AISettings::register_and_subscribe_to_events(ctx);
     CloudAgentSettings::register(ctx);
@@ -80,7 +79,6 @@ pub fn register_all_settings(ctx: &mut AppContext) {
     SelectionSettings::register(ctx);
     InputModeSettings::register(ctx);
     ThemeSettings::register(ctx);
-    TuiAutoupdateSettings::register(ctx);
     TuiThemeSettings::register(ctx);
     TuiVoiceSettings::register(ctx);
     TuiZeroStateSettings::register(ctx);

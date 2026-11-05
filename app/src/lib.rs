@@ -8,10 +8,8 @@ mod app_menus;
 mod app_services;
 mod app_state;
 mod auth;
-mod autoupdate;
 mod banner;
 mod billing;
-mod changelog_model;
 mod chip_configurator;
 mod cloud_object;
 mod code;
@@ -146,12 +144,11 @@ use ai::agent_conversations_model::AgentConversationsModel;
 use ai::agent_management::AgentNotificationsModel;
 use ai::ambient_agents::scheduled::ScheduledAgentManager;
 use ai::blocklist::{BlocklistAIHistoryModel, BlocklistAIPermissions};
-use ai::chatgpt_subscription::ChatGPTSubscriptionModel;
 use ai::execution_profiles::editor::ExecutionProfileEditorManager;
 use ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use ai::metadata_project_rules::read_project_rule_contents;
 use ai::persisted_workspace::PersistedWorkspace;
-use auth::auth_manager::{AuthManager, AuthManagerEvent};
+use auth::auth_manager::AuthManager;
 use auth::auth_state::{AuthState, AuthStateProvider};
 use code::editor_management::CodeManager;
 use code::opened_files::OpenedFilesModel;
@@ -181,9 +178,6 @@ use watcher::HomeDirectoryWatcher;
 
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 #[cfg(not(target_family = "wasm"))]
-use crate::ai::aws_credentials::AwsCredentialRefresher as _;
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::geap_credentials::GeapCredentialRefresher as _;
 use crate::ai::mcp::{FileBasedMCPManager, FileMCPWatcher};
 use crate::uri::web_intent_parser::maybe_rewrite_web_url_to_intent;
 use crate::view_components::DismissibleToast;
@@ -230,7 +224,6 @@ use warp_logging::{LogDestination, LogFrontend};
 use warp_server_client::iap::{IapManager, IapManagerEvent, IapState, ManagedIapMint};
 use warp_server_client::network_logging::NetworkLogModel;
 use warpui::integration::TestDriver;
-use warpui::modals::{AlertDialogWithCallbacks, AppModalCallback};
 use warpui::platform::TerminationMode;
 use warpui::platform::app::{ApproveTerminateResult, TerminationRequestSource};
 use warpui::windowing::state::ApplicationStage;
@@ -256,11 +249,8 @@ use crate::ai::outline::RepoOutlines;
 use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
 #[cfg(not(target_family = "wasm"))]
-use crate::ai::tui_api_keys::TuiApiKeyRefresher;
 use crate::antivirus::AntivirusInfo;
 use crate::app_state::AppState;
-use crate::autoupdate::{AutoupdateState, RelaunchModel};
-use crate::changelog_model::ChangelogModel;
 use crate::cloud_object::model::actions::{ObjectAction, ObjectActions};
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::cloud_object::model::view::CloudViewModel;
@@ -312,7 +302,6 @@ use crate::tab::TabShortcutModifierState;
 use crate::terminal::cli_agent_sessions::CLIAgentSessionsModel;
 use crate::terminal::keys::TerminalKeybindings;
 use crate::terminal::resizable_data::ResizableData;
-use crate::terminal::view::inline_banner::ByoLlmAuthBannerSessionState;
 use crate::terminal::{AudibleBell, CustomSecretRegexUpdater, History};
 #[cfg(feature = "tui")]
 pub use crate::tui::{TuiLoginEvent, TuiLoginModel, TuiLoginPhase, log_out_tui};
@@ -431,10 +420,6 @@ enum TuiEntryPoint {
         /// API key for non-interactive Warp authentication.
         api_key: Option<String>,
     },
-    /// Execute a CLI command after TUI-scoped app initialization, then exit.
-    CliCommand {
-        execute: Box<dyn FnOnce(&mut warpui::AppContext)>,
-    },
 }
 
 enum AuthInitialization {
@@ -481,10 +466,7 @@ impl LaunchMode {
             } => api_key.clone(),
             LaunchMode::Test { .. }
             | LaunchMode::RemoteServerProxy
-            | LaunchMode::RemoteServerDaemon { .. }
-            | LaunchMode::Tui {
-                entrypoint: TuiEntryPoint::CliCommand { .. },
-            } => None,
+            | LaunchMode::RemoteServerDaemon { .. } => None,
         }
     }
 
@@ -814,15 +796,12 @@ pub fn run() -> Result<()> {
             warp_cli::Command::CommandLine(cmd) => {
                 #[cfg(not(target_family = "wasm"))]
                 if let CliCommand::EnvironmentCheckout(args) = cmd.as_ref() {
-                    let (mut tracing_initialization, parent_context) =
-                        tracing::init_child_process(&args.requests_file)?;
-                    let _parent_context = parent_context.attach();
+                    tracing::init()?;
                     warp_logging::init(warp_logging::LogConfig {
                         frontend: warp_logging::LogFrontend::Cli,
                         log_destination: Some(warp_logging::LogDestination::Stderr),
                         ..Default::default()
                     })?;
-                    tracing_initialization.log_initialization_warning();
                     return ai::agent_sdk::run_environment_checkout(args);
                 }
                 return run_internal(LaunchMode::command_line(
@@ -881,13 +860,12 @@ fn run_worker_command(worker: &warp_cli::WorkerCommand) -> Result<()> {
             // It only needs logging to stderr since stdout is the protocol
             // channel. No crash reporting, no initialize_app.
             let launch_mode = LaunchMode::RemoteServerProxy;
-            let mut tracing_initialization = tracing::init()?;
+            tracing::init()?;
             warp_logging::init(warp_logging::LogConfig {
                 frontend: launch_mode.log_frontend(),
                 log_destination: launch_mode.log_destination(),
                 ..Default::default()
             })?;
-            tracing_initialization.log_initialization_warning();
             crate::remote_server::run_proxy(args.identity_key.clone())
         }
         #[cfg(not(target_family = "wasm"))]
@@ -953,14 +931,6 @@ pub fn run_tui(api_key: Option<String>, mount: TuiMountFn) -> Result<()> {
     })
 }
 
-/// Executes a CLI command after initializing TUI-scoped settings and secure storage.
-#[cfg(feature = "tui")]
-pub fn run_tui_cli_command(execute: Box<dyn FnOnce(&mut warpui::AppContext)>) -> Result<()> {
-    run_internal(LaunchMode::Tui {
-        entrypoint: TuiEntryPoint::CliCommand { execute },
-    })
-}
-
 /// Dispatches a worker command when the current executable was re-invoked for one.
 #[cfg(feature = "tui")]
 pub fn run_tui_worker_if_requested() -> Option<Result<()>> {
@@ -1008,7 +978,7 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
     // for other entrypoints.
     features::init_feature_flags();
 
-    let mut tracing_initialization = launch_mode
+    launch_mode
         .needs_profiling()
         .then(tracing::init)
         .transpose()?;
@@ -1044,9 +1014,6 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
         }
     }
 
-    if let Some(initialization) = tracing_initialization.as_mut() {
-        initialization.log_initialization_warning();
-    }
     timer.mark_interval_end("LOG_FILE_SETUP_COMPLETE");
 
     // Claim a background-only process type before anything else can reach
@@ -1182,21 +1149,14 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
     // windows and GUI-only state, but still flushes telemetry and reporting on
     // termination.
     let callbacks = if matches!(launch_mode, LaunchMode::Tui { .. }) {
-        let mut tracing_initialization = tracing_initialization.take();
         warpui::platform::AppCallbacks {
             on_will_terminate: Some(Box::new(move |_| {
                 profiling::teardown();
-                if let Some(initialization) = tracing_initialization.as_mut() {
-                    initialization.shutdown();
-                }
             })),
             ..Default::default()
         }
     } else {
-        app_callbacks(
-            launch_mode.is_integration_test(),
-            tracing_initialization.take(),
-        )
+        app_callbacks(launch_mode.is_integration_test())
     };
     let mut app_builder = if launch_mode.is_gui() {
         warpui::platform::AppBuilder::new(
@@ -1333,7 +1293,6 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
             #[cfg(feature = "tui")]
             LaunchMode::Tui { entrypoint } => match entrypoint {
                 TuiEntryPoint::Interactive { mount, .. } => crate::tui::init(mount, ctx),
-                TuiEntryPoint::CliCommand { execute } => execute(ctx),
             },
             #[cfg(not(feature = "tui"))]
             LaunchMode::Tui { .. } => {
@@ -1544,13 +1503,6 @@ pub(crate) fn initialize_app(
         }
     }
     let ai_client = server_api_provider.as_ref(ctx).get_ai_client();
-    #[cfg(not(target_family = "wasm"))]
-    // Refresh starts only after the authenticated server client exists; tracing initialization
-    // remains responsible for deciding whether this process opted in to cloud-agent export.
-    tracing::start_auth_refresh(
-        server_api_provider.as_ref(ctx).get_managed_secrets_client(),
-        ctx,
-    );
 
     ctx.add_singleton_model(|_ctx| AuthStateProvider::new(auth_state.clone()));
 
@@ -1725,42 +1677,6 @@ pub(crate) fn initialize_app(
         )
     });
 
-    // Initialize ApiKeyManager after UserWorkspaces so it can subscribe to workspace/settings changes
-    ctx.add_singleton_model(|ctx| {
-        #[cfg_attr(target_family = "wasm", allow(unused_mut))]
-        let mut manager = ::ai::api_keys::ApiKeyManager::new(ctx);
-        #[cfg(not(target_family = "wasm"))]
-        if matches!(launch_mode, LaunchMode::Tui { .. }) {
-            manager.subscribe_to_tui_api_key_changes(ctx);
-        }
-        #[cfg(not(target_family = "wasm"))]
-        manager.subscribe_to_settings_changes(ctx);
-        // Gemini Enterprise (GEAP) credential refresh triggers: workspace
-        // settings saves / team changes and the member's enablement toggle.
-        #[cfg(not(target_family = "wasm"))]
-        if FeatureFlag::GeminiEnterprise.is_enabled() {
-            manager.subscribe_to_geap_settings_changes(ctx);
-        }
-        // The Grok subscription refresher (`ai::grok_subscription`) has no
-        // visibility into workspace policy, so wire the BYO API key policy in
-        // here. The initial value resumes proactive refresh of any tokens
-        // restored from secure storage; TeamsChanged keeps the policy aligned
-        // as team data loads or the workspace changes.
-        #[cfg(not(target_family = "wasm"))]
-        if FeatureFlag::SuperGrok.is_enabled() {
-            use crate::workspaces::user_workspaces::UserWorkspacesEvent;
-            ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), |manager, _, event, ctx| {
-                if matches!(event, UserWorkspacesEvent::TeamsChanged) {
-                    let allowed = UserWorkspaces::as_ref(ctx).is_byo_api_key_enabled(ctx);
-                    manager.set_grok_refresh_allowed(allowed, ctx);
-                }
-            });
-            let allowed = UserWorkspaces::as_ref(ctx).is_byo_api_key_enabled(ctx);
-            manager.set_grok_refresh_allowed(allowed, ctx);
-        }
-        manager
-    });
-
     ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), |_, event, ctx| {
         if matches!(
             event,
@@ -1773,55 +1689,11 @@ pub(crate) fn initialize_app(
             });
         }
     });
-    ctx.subscribe_to_model(
-        &::ai::api_keys::ApiKeyManager::handle(ctx),
-        |_, event, ctx| {
-            if let ::ai::api_keys::ApiKeyManagerEvent::KeysUpdated = event {
-                AIRequestUsageModel::handle(ctx).update(ctx, |usage_model, ctx| {
-                    usage_model.request_availability_refresh(ctx);
-                });
-            }
-        },
-    );
-    if FeatureFlag::ChatGPTSubscription.is_enabled() {
-        let ai_client = server_api_provider.as_ref(ctx).get_ai_client();
-        ctx.add_singleton_model(|_| ChatGPTSubscriptionModel::new(ai_client));
-        ChatGPTSubscriptionModel::handle(ctx).update(ctx, |model, ctx| model.refresh(ctx));
-        ctx.subscribe_to_model(&AuthManager::handle(ctx), |_, event, ctx| {
-            if matches!(event, AuthManagerEvent::AuthComplete) {
-                ChatGPTSubscriptionModel::handle(ctx).update(ctx, |model, ctx| {
-                    model.refresh(ctx);
-                });
-            }
-        });
-    }
-
     ctx.add_singleton_model(AntivirusInfo::new);
-
-    if let LaunchMode::App { .. } = launch_mode {
-        autoupdate::check_and_report_update_errors(ctx);
-    }
 
     ctx.set_fallback_font_source_provider(|url| ::asset_cache::url_source(url));
 
     ctx.set_default_binding_validator(is_binding_cross_platform);
-
-    // Attempt to clean up any old executable, whether or not we were explicitly
-    // launched as part of the auto-update process. We may have failed to remove
-    // the executable on a previous launch of the app and should try again.
-    //
-    // On macOS this deletes `Contents/MacOS/old` from inside the installed app
-    // bundle, so it runs behind the same `can_autoupdate` guard as the rest of
-    // the autoupdate machinery: an execution mode that never autoupdates must
-    // not mutate that bundle. The bundled CLI runs the GUI executable from
-    // inside `Warp.app`, so without this it would rewrite a bundle it does not
-    // own. See APP-2946.
-    if FeatureFlag::Autoupdate.is_enabled()
-        && AppExecutionMode::as_ref(ctx).can_autoupdate()
-        && let Err(e) = autoupdate::remove_old_executable()
-    {
-        report_error!(e.context("Failed to remove old executable"));
-    }
 
     experiments::init(ctx);
 
@@ -1834,7 +1706,6 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(|_| ExecutionProfileEditorManager::default());
     ctx.add_singleton_model(|_| NetworkLogPaneManager::default());
     ctx.add_singleton_model(|_| pricing::PricingInfoModel::new());
-    ctx.add_singleton_model(ai::pricing_promotion::PricingPromotionState::new);
     ctx.add_singleton_model(|ctx| {
         // Not using the *Provider types isn't ideal, but it's worth it for the ability to move managed secrets to a separate crate.
         ManagedSecretManager::new(
@@ -2061,7 +1932,6 @@ pub(crate) fn initialize_app(
     themes::theme_deletion_modal::init(ctx);
     root_view::init(ctx);
     voltron::init(ctx);
-    auth::init(ctx);
     reward_view::init(ctx);
     crate::view_components::find::init(ctx);
     prompt::editor_modal::init(ctx);
@@ -2090,8 +1960,6 @@ pub(crate) fn initialize_app(
     let display_count = ctx.windows().display_count();
     ctx.add_singleton_model(|_| DisplayCount(display_count));
 
-    ctx.add_singleton_model(|_| RelaunchModel::new());
-    ctx.add_singleton_model(|_| ChangelogModel::new(server_api.clone()));
     ctx.add_singleton_model(|_| GitHubAuthNotifier::new());
     ctx.add_singleton_model(|_| NetworkStatus::new());
     ctx.add_singleton_model(|_| SystemStats::new());
@@ -2283,7 +2151,6 @@ pub(crate) fn initialize_app(
             window_settings::migrate_legacy_background_backdrop(ctx);
         }
     });
-    ai::custom_endpoints::init(launch_mode, ctx);
 
     // LogManager must be registered before any subsystem (e.g. MCP, LSP) that creates file-based loggers.
     ctx.add_singleton_model(|_| simple_logger::manager::LogManager::new());
@@ -2324,9 +2191,6 @@ pub(crate) fn initialize_app(
 
     // AgentConversationsModel subscribes to UpdateManager for RTC task updates.
     ctx.add_singleton_model(AgentConversationsModel::new);
-
-    // ByoLlmAuthBannerSessionState tracks dismissal of the BYO LLM auth banner (e.g., AWS Bedrock login).
-    ctx.add_singleton_model(ByoLlmAuthBannerSessionState::new);
 
     ctx.add_singleton_model(ExportManager::new);
     ctx.add_singleton_model(|ctx| NotebookManager::new(notebooks, ctx));
@@ -2447,8 +2311,6 @@ pub(crate) fn initialize_app(
     if FeatureFlag::ScheduledAmbientAgents.is_enabled() {
         ctx.add_singleton_model(ScheduledAgentManager::new);
     }
-
-    AutoupdateState::register(ctx, server_api.clone());
 
     ctx.add_singleton_model(LocalWorkflows::new);
 
@@ -2594,10 +2456,7 @@ pub(crate) fn initialize_app(
     app_state
 }
 
-pub(crate) fn app_callbacks(
-    is_integration_test: bool,
-    mut tracing_initialization: Option<tracing::Initialization>,
-) -> warpui::platform::AppCallbacks {
+pub(crate) fn app_callbacks(is_integration_test: bool) -> warpui::platform::AppCallbacks {
     warpui::platform::AppCallbacks {
         on_internet_reachability_changed: Some(Box::new(move |reachable, ctx| {
             NetworkStatus::handle(ctx)
@@ -2684,7 +2543,6 @@ pub(crate) fn app_callbacks(
             // ensure that the new process doesn't find the old process while
             // attempting to enforce our single-instance policy on Linux.
             app_services::teardown(ctx);
-            autoupdate::spawn_child_if_necessary(ctx);
 
             // Tear down any application profilers that are running, writing
             // results to disk.
@@ -2694,10 +2552,6 @@ pub(crate) fn app_callbacks(
             crash_recovery::CrashRecovery::handle(ctx).update(ctx, |crash_recovery, _ctx| {
                 crash_recovery.teardown();
             });
-            if let Some(initialization) = tracing_initialization.as_mut() {
-                initialization.shutdown();
-            }
-
             // Tear down crash reporting as the last thing we do before the application
             // terminates.
         })),
@@ -2767,18 +2621,6 @@ pub(crate) fn app_callbacks(
                 },
                 ctx
             );
-
-            // If there's a pending autoupdate, apply that before showing the unsaved changes
-            // dialog. We apply the update first so that the dialog can force-terminate.
-            let applying_update = autoupdate::apply_pending_update(ctx, |ctx| {
-                // Once the deferred update is applied, re-terminate the app. This termination is
-                // cancellable so that we still show the unsaved changes dialog.
-                log::info!("Deferred autoupdate applied, terminating app");
-                ctx.terminate_app(TerminationMode::Cancellable, None);
-            });
-            if applying_update {
-                return ApproveTerminateResult::Cancel;
-            }
 
             let summary = UnsavedStateSummary::for_app(ctx);
             // Don't show dialog on integration test. Machine can't press buttons.
@@ -2900,37 +2742,7 @@ pub(crate) fn app_callbacks(
     }
 }
 
-/// Focuses the active window or if there isn't one then a window with a running process
-/// and then shows the native modal.
-fn focus_running_window_and_show_native_modal(
-    sessions_summary: RunningSessionSummary,
-    dialog_with_callbacks: AlertDialogWithCallbacks<AppModalCallback>,
-    ctx: &mut AppContext,
-) {
-    let windowing_model = ctx.windows();
-    let active_window_id = windowing_model.active_window();
-    // Show the nav palette in the active window. If there is no active window,
-    // arbitrarily pick one of the windows having a running process.
-    let window_id_to_focus = active_window_id.unwrap_or_else(|| {
-        *sessions_summary
-            .windows_running()
-            .iter()
-            .next()
-            .expect("already checked len > 0")
-    });
-    ctx.windows().show_window_and_focus_app(window_id_to_focus);
-    if let Some(workspaces) = ctx.views_of_type::<Workspace>(window_id_to_focus)
-        && let Some(handle) = workspaces.first()
-    {
-        handle.update(ctx, |view, ctx| {
-            view.show_native_modal(dialog_with_callbacks, ctx);
-        });
-    }
-}
-
 fn on_close_app_cancelled(open_navigation_palette: bool, ctx: &mut AppContext) {
-    autoupdate::cancel_relaunch(ctx);
-
     send_telemetry_from_app_ctx!(
         TelemetryEvent::QuitModalCancel {
             nav_palette: open_navigation_palette,

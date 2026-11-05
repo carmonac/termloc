@@ -52,7 +52,7 @@ pub(crate) struct AutoCloudHandoffEligibility {
     /// fork only the parent and orphan its local children, so we skip it.
     pub(crate) has_local_orchestrated_children: bool,
     /// True when the pane's active Agent Mode model can't run in a Warp cloud
-    /// (Oz) agent (e.g. a custom-endpoint/BYOK model or local custom router).
+    /// (Oz) agent (e.g. a local Ollama model).
     /// Handing off would silently swap the run onto a different model, so we
     /// skip instead.
     pub(crate) active_model_not_cloud_runnable: bool,

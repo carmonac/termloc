@@ -41,10 +41,10 @@ use warpui::{
 };
 
 use super::common::{
-    ChatGPTSubscriptionActionProps, DebugFooterProps, FailedOutputProps, FindContext,
-    STATUS_FOOTER_VERTICAL_PADDING, STATUS_ICON_SIZE_DELTA, TextSectionsProps, render_debug_footer,
-    render_failed_output, render_informational_footer, render_output_status_text,
-    render_scrollable_collapsible_content, render_text_sections,
+    DebugFooterProps, FailedOutputProps, FindContext, STATUS_FOOTER_VERTICAL_PADDING,
+    STATUS_ICON_SIZE_DELTA, TextSectionsProps, render_debug_footer, render_failed_output,
+    render_informational_footer, render_output_status_text, render_scrollable_collapsible_content,
+    render_text_sections,
 };
 use super::imported_comments::render_imported_comments;
 use super::todos::{render_completed_todo_items, render_todos};
@@ -55,18 +55,18 @@ use super::{
 };
 use crate::ai::agent::api::ServerConversationToken;
 use crate::ai::agent::comment::ReviewComment;
-use crate::ai::agent::conversation::{AIConversation, RecordingSpanInfo, RecordingSpanStatus};
+use crate::ai::agent::conversation::{RecordingSpanInfo, RecordingSpanStatus};
 use crate::ai::agent::icons::{self, gray_stop_icon, yellow_stop_icon};
 use crate::ai::agent::request_metadata::TurnPanelData;
 use crate::ai::agent::task::TaskId;
 use crate::ai::agent::{
     AIAgentAction, AIAgentActionId, AIAgentActionResult, AIAgentActionResultType,
     AIAgentActionType, AIAgentCitation, AIAgentInput, AIAgentOutputMessage,
-    AIAgentOutputMessageType, AIAgentText, AIAgentTextSection, CancellationOutcome,
-    ChatGPTSubscriptionErrorActionKind, MessageId, ReadFilesFailedFile, ReadFilesRequest,
-    ReadFilesResult, RequestCommandOutputResult, SearchCodebaseFailureReason, SearchCodebaseResult,
-    StartRecordingResult, StopRecordingResult, SubagentCall, SubagentType,
-    SuggestNewConversationResult, SummarizationType, TodoOperation, UploadArtifactResult,
+    AIAgentOutputMessageType, AIAgentText, AIAgentTextSection, CancellationOutcome, MessageId,
+    ReadFilesFailedFile, ReadFilesRequest, ReadFilesResult, RequestCommandOutputResult,
+    SearchCodebaseFailureReason, SearchCodebaseResult, StartRecordingResult, StopRecordingResult,
+    SubagentCall, SubagentType, SuggestNewConversationResult, SummarizationType, TodoOperation,
+    UploadArtifactResult,
 };
 use crate::ai::agent_conversations_model::AgentConversationsModel;
 use crate::ai::ambient_agents::AmbientAgentTaskId;
@@ -83,9 +83,7 @@ use crate::ai::blocklist::block::{
 };
 use crate::ai::blocklist::history_model::BlocklistAIHistoryModel;
 use crate::ai::blocklist::inline_action::ask_user_question_view::AskUserQuestionView;
-use crate::ai::blocklist::inline_action::aws_bedrock_credentials_error::AwsBedrockCredentialsErrorView;
 use crate::ai::blocklist::inline_action::create_or_edit_document::CreateOrEditDocumentAction;
-use crate::ai::blocklist::inline_action::gemini_enterprise_credentials_error::GeminiEnterpriseCredentialsErrorView;
 use crate::ai::blocklist::inline_action::inline_action_header::{
     HeaderConfig, INLINE_ACTION_HEADER_VERTICAL_PADDING, INLINE_ACTION_HORIZONTAL_PADDING,
     InteractionMode,
@@ -197,10 +195,6 @@ pub(crate) struct Props<'a> {
     pub(super) is_conversation_transcript_viewer: bool,
     #[cfg(not(target_family = "wasm"))]
     pub(super) is_cloud_agent_context: bool,
-    pub(super) aws_bedrock_credentials_error_view:
-        Option<&'a ViewHandle<AwsBedrockCredentialsErrorView>>,
-    pub(super) gemini_enterprise_credentials_error_view:
-        Option<&'a ViewHandle<GeminiEnterpriseCredentialsErrorView>>,
     pub(super) imported_comments: &'a HashMap<AIAgentActionId, ImportedCommentGroup>,
     /// Per-orchestrate-action card view. Each `RunAgentsCardView` owns
     /// its own edit state, button + picker handles, and in-flight
@@ -305,10 +299,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                         && !is_output_for_static_prompt_suggestions
                         && !is_conversation_in_progress
                         && request_type.is_active()
-                        && !props.is_cloud_agent_pre_first_exchange
-                        && !status.error().is_some_and(|e| {
-                            e.is_invalid_api_key() || e.is_chatgpt_subscription_error()
-                        });
+                        && !props.is_cloud_agent_pre_first_exchange;
 
                 let mut has_rendered_first_text_section = false;
 
@@ -1221,28 +1212,11 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
         // actually failed. Dogfood builds (Local/Dev) opt out so developers still see
         // every transport failure aggressively.
         if !error.should_suppress_during_recovery() {
-            let conversation_uses_warp_credits_instead_of_chatgpt = props
-                .model
-                .conversation(app)
-                .is_some_and(AIConversation::use_warp_credits_instead_of_chatgpt);
             output_items.add_child(
                 render_failed_output(
                     FailedOutputProps {
                         error,
                         is_ai_input_enabled: props.is_ai_input_enabled,
-                        invalid_api_key_button_handle: &props
-                            .state_handles
-                            .invalid_api_key_button_handle,
-                        subscribe_button_handle: &props.state_handles.subscribe_button_handle,
-                        aws_bedrock_credentials_error_view: props
-                            .aws_bedrock_credentials_error_view,
-                        gemini_enterprise_credentials_error_view: props
-                            .gemini_enterprise_credentials_error_view,
-                        chatgpt_subscription_actions: Some(ChatGPTSubscriptionActionProps {
-                            handles: &props.state_handles.chatgpt_subscription_action_handles,
-                            on_click: dispatch_chatgpt_subscription_action,
-                        }),
-                        conversation_uses_warp_credits_instead_of_chatgpt,
                         icon_right_margin: 16.,
                     },
                     app,
@@ -1272,16 +1246,10 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                 .state_handles
                                 .debug_copy_button_handle
                                 .clone(),
-                            submit_issue_button_handle: props
-                                .state_handles
-                                .submit_issue_button_handle
-                                .clone(),
-                            should_render_feedback_below: false,
                         },
                         |debug_id, ctx| {
                             ctx.dispatch_typed_action(AIBlockAction::CopyDebugId(debug_id))
                         },
-                        |ctx| ctx.dispatch_typed_action(AIBlockAction::OpenFeedbackDocs),
                         app,
                     )
                     .with_agent_output_item_spacing(app)
@@ -1296,25 +1264,6 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
     }
 
     output_items.finish()
-}
-
-fn dispatch_chatgpt_subscription_action(
-    kind: &ChatGPTSubscriptionErrorActionKind,
-    ctx: &mut warpui::EventContext,
-    app: &AppContext,
-) {
-    match kind {
-        ChatGPTSubscriptionErrorActionKind::Retry => {
-            ctx.dispatch_typed_action(AIBlockAction::ResumeConversation)
-        }
-        ChatGPTSubscriptionErrorActionKind::ContinueWithWarpCredits => {
-            ctx.dispatch_typed_action(AIBlockAction::ContinueWithWarpCredits)
-        }
-        ChatGPTSubscriptionErrorActionKind::OpenUrl { url } => app.open_url(url),
-        ChatGPTSubscriptionErrorActionKind::CopyText { text } => {
-            ctx.dispatch_typed_action(AIBlockAction::CopyText(text.clone()))
-        }
-    }
 }
 
 fn should_render_stopped_output(props: Props, app: &AppContext) -> bool {

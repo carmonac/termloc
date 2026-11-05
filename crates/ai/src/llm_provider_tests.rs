@@ -1,26 +1,20 @@
 use super::LLMProvider;
 
 #[test]
-fn api_key_provider_help_matches_the_canonical_provider_list() {
+fn ollama_round_trips_through_serde() {
+    let json = serde_json::to_string(&LLMProvider::Ollama).unwrap();
     assert_eq!(
-        LLMProvider::API_KEY_PROVIDERS
-            .into_iter()
-            .map(|provider| provider.api_key_slug().unwrap())
-            .collect::<Vec<_>>()
-            .join("|"),
-        LLMProvider::API_KEY_PROVIDER_VALUE_NAME
+        serde_json::from_str::<LLMProvider>(&json).unwrap(),
+        LLMProvider::Ollama
     );
 }
 
 #[test]
-fn only_pasted_key_providers_report_pasted_key_support() {
-    for provider in LLMProvider::API_KEY_PROVIDERS {
+fn removed_providers_deserialize_as_unknown() {
+    for name in ["OpenAI", "Anthropic", "Google", "Xai"] {
         assert_eq!(
-            provider.supports_pasted_api_key(),
-            matches!(
-                provider,
-                LLMProvider::OpenAI | LLMProvider::Anthropic | LLMProvider::Google
-            )
+            serde_json::from_str::<LLMProvider>(&format!("\"{name}\"")).unwrap(),
+            LLMProvider::Unknown
         );
     }
 }

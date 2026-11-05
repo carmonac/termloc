@@ -142,7 +142,7 @@ impl AssetCacheExt for AssetCache {
 
 /// Fetches a file from the given `url` to memory.
 async fn fetch_file_to_memory(url: Url) -> Result<Bytes, anyhow::Error> {
-    let client = egress::guard(reqwest::Client::builder()).build()?;
+    let client = egress::build_client(reqwest::Client::builder())?;
     cfg_if::cfg_if! {
         if #[cfg(target_family = "wasm")] {
             let response = client.get(url).send().await?;

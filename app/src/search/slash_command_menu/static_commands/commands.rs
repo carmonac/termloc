@@ -118,26 +118,6 @@ pub const NATURAL_LANGUAGE_DETECTION: StaticCommand = StaticCommand {
     argument: None,
 };
 
-pub const API_KEYS: StaticCommand = StaticCommand {
-    name: "/api-keys",
-    description: "View and manage API keys",
-    kind: SlashCommandKind::ApiKeys,
-    supported_surfaces: SlashCommandSurfaces::TuiOnly,
-    availability: Availability::AI_ENABLED,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-
-pub const CONNECT_GROK: StaticCommand = StaticCommand {
-    name: "/connect-grok",
-    description: "Connect your Grok (X Premium / SuperGrok) account",
-    kind: SlashCommandKind::ConnectGrok,
-    supported_surfaces: SlashCommandSurfaces::TuiOnly,
-    availability: Availability::AI_ENABLED,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-
 pub const MANAGE_BILLING: StaticCommand = StaticCommand {
     name: "/manage-billing",
     description: "Open the team billing page in your browser",
@@ -467,33 +447,6 @@ pub const OPEN_SETTINGS_FILE: StaticCommand = StaticCommand {
     argument: None,
 };
 
-pub const CHANGELOG: StaticCommand = StaticCommand {
-    name: "/changelog",
-    description: "Open the latest changelog",
-    kind: SlashCommandKind::Changelog,
-    supported_surfaces: SlashCommandSurfaces::GuiOnly {
-        icon_path: "bundled/svg/book-open.svg",
-    },
-    availability: Availability::ALWAYS,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-
-// Accepts an optional argument so that buffers like `/feedback some text` still parse to
-// this command (the trailing text is ignored on execution). Without this, typing any
-// argument after `/feedback` would fall through and be treated as plain input.
-pub static FEEDBACK: LazyLock<StaticCommand> = LazyLock::new(|| StaticCommand {
-    name: "/feedback",
-    description: "Send feedback",
-    kind: SlashCommandKind::Feedback,
-    supported_surfaces: SlashCommandSurfaces::GuiOnly {
-        icon_path: "bundled/svg/feedback.svg",
-    },
-    availability: Availability::ALWAYS,
-    auto_enter_ai_mode: false,
-    argument: Some(Argument::optional().with_execute_on_selection()),
-});
-
 pub const OPEN_REPO: StaticCommand = StaticCommand {
     name: "/open-repo",
     description: "Switch to another indexed repository",
@@ -771,9 +724,7 @@ pub const USAGE: StaticCommand = StaticCommand {
     name: "/usage",
     description: "View account and credit usage",
     kind: SlashCommandKind::Usage,
-    supported_surfaces: SlashCommandSurfaces::GuiAndTui {
-        icon_path: "bundled/svg/bar-chart-04.svg",
-    },
+    supported_surfaces: SlashCommandSurfaces::TuiOnly,
     availability: Availability::AI_ENABLED,
     auto_enter_ai_mode: false,
     argument: None,
@@ -978,11 +929,8 @@ fn all_commands_for_all_surfaces() -> Vec<StaticCommand> {
         AUTO_APPROVE,
         COST,
         EXIT,
-        FEEDBACK.clone(),
         INDEX,
         INIT,
-        API_KEYS,
-        CONNECT_GROK,
         UPGRADE,
         MANAGE_BILLING,
         LOGOUT,
@@ -1021,10 +969,6 @@ fn all_commands_for_all_surfaces() -> Vec<StaticCommand> {
         && FeatureFlag::HOARemoteControl.is_enabled()
     {
         commands.push(REMOTE_CONTROL);
-    }
-
-    if FeatureFlag::Changelog.is_enabled() {
-        commands.push(CHANGELOG);
     }
 
     if FeatureFlag::AgentView.is_enabled() {

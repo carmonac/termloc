@@ -56,12 +56,6 @@ pub async fn generate_multi_agent_output(
         redaction::redact_inputs(&mut params.input);
     }
 
-    let api_keys = api_keys_with_warp_credit_fallback_setting(
-        params.api_keys,
-        params.allow_use_of_warp_credits,
-        params.skip_chatgpt_subscription,
-    );
-
     let request = api::Request {
         task_context: Some(api::request::TaskContext {
             tasks: params.tasks,
@@ -92,7 +86,7 @@ pub async fn generate_multi_agent_output(
             supports_suggest_prompt: true,
             supports_read_image_files: FeatureFlag::ReadImageFiles.is_enabled(),
             supports_reasoning_message: true,
-            api_keys,
+            api_keys: None,
             autonomy_level: params.autonomy_level.into(),
             isolation_level: params.isolation_level.into(),
             web_search_enabled: params.web_search_enabled,
@@ -114,10 +108,10 @@ pub async fn generate_multi_agent_output(
             // Unconditional: echoed agent messages are always confirmed delivered, so injection
             // cannot produce a duplicate turn.
             supports_server_side_agent_message_injection: true,
-            supports_chatgpt_subscription_error: true,
-            supports_chatgpt_subscription_copy_text: !cfg!(feature = "tui"),
-            custom_model_providers: params.custom_model_providers,
-            custom_model_routers: params.custom_model_routers,
+            supports_chatgpt_subscription_error: false,
+            supports_chatgpt_subscription_copy_text: false,
+            custom_model_providers: None,
+            custom_model_routers: None,
         }),
         metadata: Some(api::request::Metadata {
             logging: logging_metadata,
@@ -200,28 +194,6 @@ async fn convert_multi_agent_client_error(
         }
     };
     Arc::new(error)
-}
-
-fn api_keys_with_warp_credit_fallback_setting(
-    api_keys: Option<api::request::settings::ApiKeys>,
-    allow_use_of_warp_credits: bool,
-    skip_chatgpt_subscription: bool,
-) -> Option<api::request::settings::ApiKeys> {
-    match api_keys {
-        Some(mut api_keys) => {
-            api_keys.allow_use_of_warp_credits = allow_use_of_warp_credits;
-            api_keys.skip_chatgpt_subscription = skip_chatgpt_subscription;
-            Some(api_keys)
-        }
-        None if allow_use_of_warp_credits || skip_chatgpt_subscription => {
-            Some(api::request::settings::ApiKeys {
-                allow_use_of_warp_credits,
-                skip_chatgpt_subscription,
-                ..Default::default()
-            })
-        }
-        None => None,
-    }
 }
 
 fn supports_orchestration_v2(orchestration_enabled: bool) -> bool {

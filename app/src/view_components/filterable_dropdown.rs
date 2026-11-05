@@ -162,28 +162,11 @@ where
         ctx.notify();
     }
 
-    /// Override the vertical margin applied above and below the dropdown's top
-    /// bar (default [`DROPDOWN_PADDING`]). Set to `0.` when the caller manages
-    /// its own spacing and needs the bar to align flush with sibling inputs.
-    pub fn set_vertical_margin(&mut self, vertical_margin: f32, ctx: &mut ViewContext<Self>) {
-        self.vertical_margin = vertical_margin;
-        ctx.notify();
-    }
-
     pub fn set_menu_header_text_override<F>(&mut self, formatter: F)
     where
         F: Fn(&str) -> String + 'static,
     {
         self.menu_header_text_override = Some(Box::new(formatter));
-    }
-
-    /// Sets placeholder text shown (greyed) in the closed top bar when no item
-    /// is selected, and opts the dropdown into allowing an empty selection so
-    /// the placeholder is preserved rather than being replaced by the first
-    /// item after filtering.
-    pub fn set_placeholder(&mut self, placeholder: impl Into<String>, ctx: &mut ViewContext<Self>) {
-        self.placeholder = Some(placeholder.into());
-        ctx.notify();
     }
 
     pub fn set_footer<F>(&mut self, builder: F, ctx: &mut ViewContext<Self>)
@@ -196,13 +179,6 @@ where
         // standard `on_click` (LeftMouseUp) behaviour with no timing issues.
         self.dropdown.update(ctx, |menu, _| {
             menu.set_pinned_footer_builder(builder);
-        });
-    }
-
-    pub fn clear_footer(&mut self, ctx: &mut ViewContext<Self>) {
-        self.has_pinned_footer = false;
-        self.dropdown.update(ctx, |menu, _| {
-            menu.clear_pinned_footer_builder();
         });
     }
 
@@ -775,23 +751,6 @@ where
 
     pub fn set_menu_header_to_static(&mut self, header: &'static str) {
         self.static_menu_header = Some(header);
-    }
-
-    /// Test-only: drive the filter input with `query` and re-filter the list,
-    /// mirroring what happens when a user types into the search field.
-    #[cfg(test)]
-    pub(crate) fn set_filter_query_for_test(&mut self, query: &str, ctx: &mut ViewContext<Self>) {
-        self.filter_editor.update(ctx, |editor, ctx| {
-            editor.select_all(ctx);
-            editor.insert_selected_text(query, ctx);
-        });
-        self.set_filtered_items(ctx);
-    }
-
-    /// Test-only: the number of items currently visible after filtering.
-    #[cfg(test)]
-    pub(crate) fn visible_items_len_for_test(&self, ctx: &AppContext) -> usize {
-        self.dropdown_items_len(ctx)
     }
 }
 

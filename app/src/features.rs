@@ -23,10 +23,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
     }
 
     flags.extend([
-        #[cfg(feature = "autoupdate")]
-        FeatureFlag::Autoupdate,
-        #[cfg(feature = "changelog")]
-        FeatureFlag::Changelog,
         #[cfg(feature = "log_expensive_frames_in_sentry")]
         FeatureFlag::LogExpensiveFramesInSentry,
         #[cfg(feature = "record_app_active_events")]
@@ -87,8 +83,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::CloudAgentRunners,
         #[cfg(feature = "cloud_agent_execution_config")]
         FeatureFlag::CloudAgentExecutionConfig,
-        #[cfg(feature = "account_first_onboarding")]
-        FeatureFlag::AccountFirstOnboarding,
         #[cfg(all(feature = "simulate_github_unauthed", debug_assertions))]
         FeatureFlag::SimulateGithubUnauthed,
         #[cfg(feature = "session_sharing_acls")]
@@ -121,8 +115,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::PromptSuggestionsViaMAA,
         #[cfg(feature = "clear_autosuggestion_on_escape")]
         FeatureFlag::ClearAutosuggestionOnEscape,
-        #[cfg(feature = "autoupdate_ui_revamp")]
-        FeatureFlag::AutoupdateUIRevamp,
         #[cfg(all(not(windows), feature = "kitty_images"))]
         FeatureFlag::KittyImages,
         #[cfg(feature = "warp_packs")]
@@ -409,8 +401,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::OzPlatformSkills,
         #[cfg(feature = "oz_identity_federation")]
         FeatureFlag::OzIdentityFederation,
-        #[cfg(feature = "oz_changelog_updates")]
-        FeatureFlag::OzChangelogUpdates,
         #[cfg(feature = "bundled_skills")]
         FeatureFlag::BundledSkills,
         #[cfg(feature = "oz_launch_modal")]
@@ -477,12 +467,8 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::TransferControlTool,
         #[cfg(feature = "warpify_footer")]
         FeatureFlag::WarpifyFooter,
-        #[cfg(feature = "solo_user_byok")]
-        FeatureFlag::SoloUserByok,
         #[cfg(feature = "billing_and_usage_page_v2")]
         FeatureFlag::BillingAndUsagePageV2,
-        #[cfg(feature = "gpt_configurable_context_window")]
-        FeatureFlag::GPTConfigurableContextWindow,
         #[cfg(feature = "skip_firebase_anonymous_user")]
         FeatureFlag::SkipFirebaseAnonymousUser,
         #[cfg(feature = "hoa_onboarding_flow")]
@@ -509,14 +495,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::FactoryDeferredRepositories,
         #[cfg(feature = "remote_code_review")]
         FeatureFlag::RemoteCodeReview,
-        #[cfg(feature = "custom_model_routers")]
-        FeatureFlag::CustomModelRouters,
-        #[cfg(feature = "supergrok")]
-        FeatureFlag::SuperGrok,
-        #[cfg(feature = "chatgpt_subscription")]
-        FeatureFlag::ChatGPTSubscription,
-        #[cfg(feature = "gemini_enterprise")]
-        FeatureFlag::GeminiEnterprise,
         #[cfg(feature = "nld_prompt_history_match")]
         FeatureFlag::NldPromptHistoryMatch,
         #[cfg(feature = "prompt_cache_expiry_warning")]
@@ -541,11 +519,7 @@ fn enabled_features() -> HashSet<FeatureFlag> {
 
     if ChannelState::is_local_only() {
         for flag in [
-            FeatureFlag::ForceLogin,
-            FeatureFlag::AccountFirstOnboarding,
             FeatureFlag::AgentOnboarding,
-            FeatureFlag::Autoupdate,
-            FeatureFlag::Changelog,
             FeatureFlag::CocoaSentry,
             FeatureFlag::CrashReporting,
             FeatureFlag::LogExpensiveFramesInSentry,
@@ -561,7 +535,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
             FeatureFlag::HOARemoteControl,
             FeatureFlag::HandoffCloudCloud,
             FeatureFlag::HandoffLocalCloud,
-            FeatureFlag::OzChangelogUpdates,
             FeatureFlag::OzHandoff,
             FeatureFlag::OzLaunchModal,
             FeatureFlag::ScheduledAmbientAgents,

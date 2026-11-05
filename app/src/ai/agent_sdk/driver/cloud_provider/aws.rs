@@ -12,7 +12,6 @@ use warpui::{ModelSpawner, SingletonEntity};
 
 use super::super::terminal::TerminalDriver;
 use super::{CloudProvider, CloudProviderSetupError, Result};
-use crate::ai::aws_credentials::aws_role_session_name;
 use crate::ai::cloud_environments::AwsProviderConfig;
 use crate::server::server_api::managed_secrets::AppManagedSecretManager as ManagedSecretManager;
 
@@ -48,7 +47,7 @@ impl AwsCloudProvider {
         Ok(Self {
             role_arn: config.role_arn.clone(),
             session_name: run_id
-                .map(aws_role_session_name)
+                .map(|run_id| format!("Oz_Run_{run_id}"))
                 .unwrap_or_else(|| "Oz_Standby".into()),
             token_file,
         })

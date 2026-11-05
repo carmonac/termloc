@@ -21,7 +21,7 @@ use warp_multi_agent_api::response_event::stream_finished;
 use warp_multi_agent_api::response_event::stream_finished::TokenUsage;
 use warp_multi_agent_api::{self as api};
 use warpui::color::ColorU;
-use warpui::{AppContext, EntityId, ModelContext, SingletonEntity};
+use warpui::{EntityId, ModelContext, SingletonEntity};
 
 use super::api::ServerConversationToken;
 pub use super::conversation_driver::ConversationDriver;
@@ -63,7 +63,7 @@ use crate::ai::blocklist::{
     BlocklistAIHistoryEvent, ConversationStatusUpdate, RequestInput, ResponseStreamId,
     SerializedBlockListItem,
 };
-use crate::ai::llms::LLMPreferences;
+use crate::ai::llms::CUSTOM_ENDPOINT_USAGE_LABEL;
 use crate::ai::skills::SkillDescriptor;
 use crate::code_review::CodeReviewTelemetryEvent;
 use crate::notebooks::NotebookId;
@@ -139,7 +139,6 @@ fn narrow_token_count(tokens: u64) -> u32 {
 
 fn footer_model_token_usage(
     usage_metadata: &stream_finished::ConversationUsageMetadata,
-    llm_preferences: &LLMPreferences,
 ) -> Vec<ModelTokenUsage> {
     // warp + byok rows merge on their server-known model id. Custom endpoint
     // rows live in a separate bucket keyed by their upstream `config_key` so
@@ -187,7 +186,7 @@ fn footer_model_token_usage(
 
     let mut custom_usage: HashMap<String, ModelTokenUsage> = HashMap::new();
     for (config_key, usage) in &usage_metadata.custom_endpoint_token_usage {
-        let label = llm_preferences.custom_endpoint_usage_display_label(config_key);
+        let label = CUSTOM_ENDPOINT_USAGE_LABEL.to_string();
         let entry = custom_usage
             .entry(config_key.clone())
             .or_insert_with(|| ModelTokenUsage {
@@ -440,10 +439,6 @@ pub struct AIConversation {
     /// only matters for the live process that bootstrapped the conversation, and a restored
     /// conversation resumes ordinary synchronization.
     task_sync_mode: TaskSyncMode,
-
-    /// Whether the user chose Warp-funded inference for this conversation after a ChatGPT
-    /// token-sharing failure. Sticky for the rest of the conversation and inherited by forks.
-    use_warp_credits_instead_of_chatgpt: bool,
 }
 
 pub(crate) fn artifact_from_fork_proto(
@@ -508,7 +503,6 @@ impl AIConversation {
             pinned: false,
             remote_run_updated_at: None,
             task_sync_mode: TaskSyncMode::default(),
-            use_warp_credits_instead_of_chatgpt: false,
         }
     }
 
@@ -645,7 +639,6 @@ impl AIConversation {
             autoexecute_override,
             last_event_sequence,
             pinned,
-            use_warp_credits_instead_of_chatgpt,
         ) = if let Some(data) = conversation_data {
             let server_conversation_token = data
                 .server_conversation_token
@@ -702,7 +695,6 @@ impl AIConversation {
                 autoexecute_override,
                 data.last_event_sequence,
                 data.pinned,
-                data.use_warp_credits_instead_of_chatgpt,
             )
         } else {
             (
@@ -720,7 +712,6 @@ impl AIConversation {
                 None,
                 AIConversationAutoexecuteMode::default(),
                 None,
-                false,
                 false,
             )
         };
@@ -767,7 +758,6 @@ impl AIConversation {
             pinned,
             remote_run_updated_at: None,
             task_sync_mode: TaskSyncMode::default(),
-            use_warp_credits_instead_of_chatgpt,
         })
     }
 
@@ -1351,18 +1341,6 @@ impl AIConversation {
     /// `write_updated_conversation_state` to push the change to SQLite.
     pub fn set_pinned(&mut self, pinned: bool) {
         self.pinned = pinned;
-    }
-
-    /// Returns whether requests in this conversation must run on Warp's OpenAI key instead of
-    /// the user's ChatGPT subscription.
-    pub fn use_warp_credits_instead_of_chatgpt(&self) -> bool {
-        self.use_warp_credits_instead_of_chatgpt
-    }
-
-    /// Switches the rest of this conversation to Warp-funded inference. Callers must follow up
-    /// with `write_updated_conversation_state` to push the change to SQLite.
-    pub fn set_use_warp_credits_instead_of_chatgpt(&mut self) {
-        self.use_warp_credits_instead_of_chatgpt = true;
     }
 
     /// Returns true if this conversation was spawned by a parent orchestrator
@@ -2380,7 +2358,6 @@ impl AIConversation {
         token_usage: Vec<TokenUsage>,
         usage_metadata: Option<stream_finished::ConversationUsageMetadata>,
         was_user_initiated_request: bool,
-        ctx: &AppContext,
     ) -> Result<(), UpdateConversationError> {
         self.has_usage_metadata |=
             request_cost.is_some() || usage_metadata.is_some() || !token_usage.is_empty();
@@ -2454,9 +2431,8 @@ impl AIConversation {
                 .total_charges
                 .as_ref()
                 .map(ChargedUsageTotals::from);
-            let llm_preferences = LLMPreferences::as_ref(ctx);
             self.conversation_usage_metadata.token_usage =
-                footer_model_token_usage(&usage_metadata, llm_preferences);
+                footer_model_token_usage(&usage_metadata);
 
             self.conversation_usage_metadata.tool_usage_metadata = usage_metadata
                 .tool_usage_metadata
@@ -4062,7 +4038,6 @@ impl AIConversation {
                 autoexecute_override: Some(self.autoexecute_override.into()),
                 last_event_sequence: self.last_event_sequence,
                 pinned: self.pinned,
-                use_warp_credits_instead_of_chatgpt: self.use_warp_credits_instead_of_chatgpt,
             },
         };
         ctx.spawn(

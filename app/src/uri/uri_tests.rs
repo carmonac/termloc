@@ -838,10 +838,7 @@ fn test_settings_widget_deeplink_target() {
         settings_widget_deeplink_target("global_hotkey").map(|(section, _)| section),
         Some(SettingsSection::Features),
     );
-    assert_eq!(
-        settings_widget_deeplink_target("custom_router").map(|(section, _)| section),
-        Some(SettingsSection::WarpAgent),
-    );
+    assert!(settings_widget_deeplink_target("custom_router").is_none());
     #[cfg(not(target_family = "wasm"))]
     assert_eq!(
         settings_widget_deeplink_target("cli_agents").map(|(section, _)| section),
@@ -852,64 +849,7 @@ fn test_settings_widget_deeplink_target() {
     assert!(settings_widget_deeplink_target("").is_none());
 }
 
-#[test]
-fn test_settings_section_for_simple_subpage() {
-    assert_eq!(
-        settings_section_for_simple_subpage("appearance"),
-        Some(SettingsSection::Appearance),
-    );
-    assert_eq!(
-        settings_section_for_simple_subpage("billing_and_usage"),
-        Some(SettingsSection::BillingAndUsage),
-    );
-    assert_eq!(
-        settings_section_for_simple_subpage("platform"),
-        Some(SettingsSection::WarpCloudAgentAPIKeys),
-    );
-    assert_eq!(
-        settings_section_for_simple_subpage("warp_agent"),
-        Some(SettingsSection::WarpAgent),
-    );
-    assert!(settings_section_for_simple_subpage("not_a_subpage").is_none());
-}
-
 // -- post-checkout desktop hand-off ------------------------------------------
-
-/// Regression coverage for REV-1952: the confirmation page reports a completed
-/// purchase by riding `checkoutSuccessful=true` on the ordinary desktop
-/// redirect, so onboarding can advance without opening a settings page.
-#[test]
-fn test_url_reports_checkout_success() {
-    let scheme = ChannelState::url_scheme();
-
-    let with_flag = Url::parse(&format!(
-        "{scheme}://auth/desktop_redirect?refresh_token=abc&checkoutSuccessful=true"
-    ))
-    .unwrap();
-    assert!(url_reports_checkout_success(&with_flag));
-
-    let plain_redirect = Url::parse(&format!(
-        "{scheme}://auth/desktop_redirect?refresh_token=abc"
-    ))
-    .unwrap();
-    assert!(!url_reports_checkout_success(&plain_redirect));
-
-    // Only an explicit `true` counts, so an abandoned checkout that reports
-    // failure never advances onboarding.
-    let failed = Url::parse(&format!(
-        "{scheme}://auth/desktop_redirect?checkoutSuccessful=false"
-    ))
-    .unwrap();
-    assert!(!url_reports_checkout_success(&failed));
-
-    // The flag is not tied to the auth host: an older confirmation page can
-    // still send it on the settings deeplink.
-    let on_settings = Url::parse(&format!(
-        "{scheme}://settings/billing_and_usage?checkoutSuccessful=true"
-    ))
-    .unwrap();
-    assert!(url_reports_checkout_success(&on_settings));
-}
 
 // Regression coverage for issue #9005: shell scripts opened via `file://` should run,
 // not open in the editor. Exercised through the pure routing helper to avoid standing
@@ -1115,4 +1055,20 @@ fn test_decode_uuid_hex_rejects_wrong_length() {
 #[test]
 fn test_decode_uuid_hex_rejects_invalid_chars() {
     assert!(super::decode_uuid_hex("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ").is_none());
+}
+
+#[test]
+fn test_settings_section_for_simple_subpage() {
+    assert_eq!(
+        settings_section_for_simple_subpage("appearance"),
+        Some(SettingsSection::Appearance),
+    );
+    assert_eq!(
+        settings_section_for_simple_subpage("warp_agent"),
+        Some(SettingsSection::WarpAgent),
+    );
+    assert_eq!(
+        settings_section_for_simple_subpage("billing_and_usage"),
+        None
+    );
 }

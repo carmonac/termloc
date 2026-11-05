@@ -22,15 +22,8 @@ set -e
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 cd "${REPO_ROOT}"
 
-./script/install_channel_config || echo "Skipping internal channel config installation (no repo access)."
-
-if command -v warp-channel-config &>/dev/null; then
-    BIN="warp-tui"
-    CHANNEL="local"
-else
-    BIN="warp-tui-oss"
-    CHANNEL="oss"
-fi
+BIN="warp-tui-oss"
+CHANNEL="oss"
 
 # Split cargo arguments from binary arguments (after `--`), tracking the profile
 # and target triple so we can locate the built binary (for codesigning on macOS)

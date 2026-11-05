@@ -26,7 +26,6 @@ use self::docker::open_docker_container;
 use crate::ai::active_agent_views_model::{ActiveAgentViewsModel, ConversationOrTaskId};
 use crate::ai::agent::api::ServerConversationToken;
 use crate::ai::ambient_agents::github_auth_notifier::GitHubAuthNotifier;
-use crate::ai::chatgpt_subscription::{CHATGPT_LINK_URI_HOST, ChatGPTSubscriptionModel};
 use crate::cloud_object::ObjectType;
 use crate::drive::{OpenWarpDriveObjectArgs, OpenWarpDriveObjectSettings};
 use crate::features::FeatureFlag;
@@ -38,9 +37,7 @@ use crate::root_view::{
 };
 use crate::server::ids::ServerId;
 use crate::server::telemetry::{LaunchConfigUiLocation, TelemetryEvent};
-use crate::settings_view::{
-    OpenTeamsSettingsModalArgs, SettingsSection, settings_widget_deeplink_target,
-};
+use crate::settings_view::{SettingsSection, settings_widget_deeplink_target};
 use crate::tab_configs::TabConfig;
 use crate::user_config::{load_launch_configs, load_tab_configs, tab_configs_dir};
 use crate::util::openable_file_type::{
@@ -86,18 +83,6 @@ pub enum OpenSettingsArgs {
 /// Used to skip opening settings page after GitHub auth completes.
 pub const CLOUD_SETUP_SOURCE: &str = "cloud_setup";
 
-/// Query parameter the web checkout confirmation page appends to the desktop
-/// hand-off to report that the purchase went through. It is the shared
-/// convention across every product the web can sell (a subscription plan or a
-/// one-time credit pack), so the client has a single success signal to react to.
-pub const CHECKOUT_SUCCESSFUL_PARAM: &str = "checkoutSuccessful";
-
-/// Whether an incoming deeplink reports a completed web checkout.
-pub fn url_reports_checkout_success(url: &Url) -> bool {
-    url.query_pairs()
-        .any(|(key, value)| key == CHECKOUT_SUCCESSFUL_PARAM && value == "true")
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum UriHost {
     Auth,
@@ -127,8 +112,6 @@ pub enum UriHost {
     TabConfig,
     /// Focuses a specific terminal pane by its persistent session UUID.
     Session,
-    /// Result of a browser flow that links a ChatGPT account to the signed-in user.
-    ChatGPTLink,
 }
 
 impl FromStr for UriHost {
@@ -152,9 +135,6 @@ impl FromStr for UriHost {
             "linear" => Ok(Self::Linear),
             "tab_config" if FeatureFlag::TabConfigs.is_enabled() => Ok(Self::TabConfig),
             "session" => Ok(Self::Session),
-            CHATGPT_LINK_URI_HOST if FeatureFlag::ChatGPTSubscription.is_enabled() => {
-                Ok(Self::ChatGPTLink)
-            }
             _ => Err(anyhow!("Received url with unexpected host: {}", s)),
         }
     }
@@ -184,14 +164,6 @@ impl UriHost {
                             log::Level::Info,
                         );
                     });
-            }
-            UriHost::ChatGPTLink => {
-                ChatGPTSubscriptionModel::handle(ctx).update(ctx, |model, ctx| {
-                    model.handle_link_redirect(url, ctx);
-                });
-                if let Some(window_id) = primary_window_id {
-                    ctx.windows().show_window_and_focus_app(window_id);
-                }
             }
             UriHost::Team => {
                 match url.path_segments().into_iter().flatten().last() {
@@ -407,36 +379,11 @@ impl UriHost {
                     .map(|s| s.to_string());
 
                 match settings_sub_page.as_deref() {
-                    Some("teams") => {
-                        let invite_email = query_string.get("invite").map(|s| s.to_string());
-                        let args = OpenTeamsSettingsModalArgs { invite_email };
-                        dispatch_action_in_new_or_existing_window(
-                            primary_window_id,
-                            "root_view:open_team_settings_with_email_invite_in_existing_window",
-                            "root_view:open_team_settings_with_email_invite_in_new_window",
-                            &args,
-                            ctx,
-                        );
-                    }
                     Some("environments") => {
                         // Notify that GitHub auth completed so views can refresh
                         GitHubAuthNotifier::handle(ctx).update(ctx, |notifier, ctx| {
                             notifier.notify_auth_completed(ctx);
                         });
-
-                        // Open settings page unless auth was initiated from cloud setup
-                        // (cloud setup users should stay on their current page)
-                        let source = query_string.get("source").map(|s| s.as_ref());
-                        let skip_settings = source == Some(CLOUD_SETUP_SOURCE);
-                        if !skip_settings {
-                            dispatch_action_in_new_or_existing_window(
-                                primary_window_id,
-                                "root_view:open_settings_page_in_existing_window",
-                                "root_view:open_settings_page_in_new_window",
-                                &SettingsSection::CloudEnvironments,
-                                ctx,
-                            );
-                        }
                     }
                     Some("mcp") => {
                         // warp://settings/mcp?autoinstall=<name> auto-installs a gallery MCP server.
@@ -624,7 +571,6 @@ impl UriHost {
             Self::TabConfig => W::Nothing,
             Self::Session => W::Nothing,
             // The handler focuses the primary window itself once the result is recorded.
-            Self::ChatGPTLink => W::Nothing,
         }
     }
 }
@@ -1209,13 +1155,6 @@ impl Action {
                 GitHubAuthNotifier::handle(ctx).update(ctx, |notifier, ctx| {
                     notifier.notify_auth_completed(ctx);
                 });
-                dispatch_action_in_new_or_existing_window(
-                    primary_window_id,
-                    "root_view:open_settings_page_in_existing_window",
-                    "root_view:open_settings_page_in_new_window",
-                    &SettingsSection::CloudEnvironments,
-                    ctx,
-                );
             }
             Action::AutoHandoffToCloud { trigger } => {
                 trigger_auto_handoff_to_cloud(*trigger, ctx);
@@ -1653,13 +1592,6 @@ fn find_cloud_mode_terminal_in_workspace(
             continue;
         };
 
-        let has_environment_management_pane = pane_group
-            .pane_ids()
-            .any(|pane_id| pane_id.is_environment_management_pane());
-        if has_environment_management_pane {
-            return Some(ambient_terminal_id);
-        }
-
         if fallback_ambient_terminal_id.is_none() {
             fallback_ambient_terminal_id = Some(ambient_terminal_id);
         }
@@ -1696,8 +1628,6 @@ fn dispatch_action_in_new_or_existing_window<T: 'static>(
 
 fn settings_section_for_simple_subpage(subpage: &str) -> Option<SettingsSection> {
     match subpage {
-        "billing_and_usage" => Some(SettingsSection::BillingAndUsage),
-        "platform" => Some(SettingsSection::WarpCloudAgentAPIKeys),
         "appearance" => Some(SettingsSection::Appearance),
         "warp_agent" => Some(SettingsSection::WarpAgent),
         _ => None,
@@ -1734,8 +1664,7 @@ fn validate_custom_uri(url: &Url) -> Result<UriHost> {
         | UriHost::Codex
         | UriHost::Linear
         | UriHost::TabConfig
-        | UriHost::Session
-        | UriHost::ChatGPTLink => true,
+        | UriHost::Session => true,
         // Auth and Home only allow the desktop redirect path
         UriHost::Auth | UriHost::Home => false,
     };

@@ -171,7 +171,6 @@ fn pill_bar_data_layer_finds_restored_children_before_pane_creation() {
                         autoexecute_override: None,
                         last_event_sequence: None,
                         pinned: false,
-                        use_warp_credits_instead_of_chatgpt: false,
                     })
                     .expect("child conversation data should serialize"),
                     last_modified_at: now,
@@ -224,7 +223,6 @@ fn pill_bar_data_layer_finds_restored_children_before_pane_creation() {
                         autoexecute_override: None,
                         last_event_sequence: None,
                         pinned: false,
-                        use_warp_credits_instead_of_chatgpt: false,
                     })
                     .expect("parent conversation data should serialize"),
                     last_modified_at: now - chrono::Duration::seconds(1),
@@ -555,7 +553,6 @@ fn breadcrumbs_resolve_token_only_parent_linkage_after_restore() {
             autoexecute_override: None,
             last_event_sequence: None,
             pinned: false,
-            use_warp_credits_instead_of_chatgpt: false,
         };
         let child_data = AgentConversationData {
             server_conversation_token: None,
@@ -573,7 +570,6 @@ fn breadcrumbs_resolve_token_only_parent_linkage_after_restore() {
             autoexecute_override: None,
             last_event_sequence: None,
             pinned: false,
-            use_warp_credits_instead_of_chatgpt: false,
         };
 
         let conversations = vec![

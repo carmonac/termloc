@@ -589,26 +589,6 @@ pub struct BillingMetadata {
     pub ai_overages: Option<AiOverages>,
 }
 
-/// The effective account outcome used to route users after account-first signup.
-///
-/// Paid status and free AI availability are resolved from fresh server-authored
-/// data during post-auth onboarding.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FtueAccountClass {
-    Paid,
-    FreeIcp,
-    FreeStandard,
-}
-
-impl FtueAccountClass {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            FtueAccountClass::Paid => "paid",
-            FtueAccountClass::FreeIcp => "free_icp",
-            FtueAccountClass::FreeStandard => "free_standard",
-        }
-    }
-}
 #[derive(Clone, Debug, Default)]
 pub struct BonusGrantsPurchased {
     pub total_credits_purchased: i32,
@@ -815,24 +795,6 @@ impl BillingMetadata {
         } else {
             false
         }
-    }
-
-    pub fn is_byo_api_key_enabled(&self) -> bool {
-        self.tier
-            .byo_api_key_policy
-            .is_some_and(|policy| policy.enabled)
-    }
-
-    pub fn is_byo_endpoint_enabled(&self) -> bool {
-        self.tier
-            .byo_endpoint_policy
-            .is_some_and(|policy| policy.enabled)
-    }
-
-    pub fn is_managed_byok_byoe_enabled(&self) -> bool {
-        self.tier
-            .managed_byok_byoe_policy
-            .is_some_and(|policy| policy.enabled)
     }
 
     pub fn has_overages_used(&self) -> bool {

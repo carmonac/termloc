@@ -108,40 +108,6 @@ fn context_window_exceeded_is_failed() {
 }
 
 #[test]
-fn invalid_api_key_is_failed_with_auth_required() {
-    assert_update(
-        classify_renderable_error(&RenderableAIError::InvalidApiKey {
-            provider: "OpenAI".into(),
-            model_name: "gpt-4".into(),
-        }),
-        AgentTaskState::Failed,
-        Some(PlatformErrorCode::AuthenticationRequired),
-        Some("OpenAI"),
-    );
-}
-
-#[test]
-fn aws_bedrock_credentials_is_failed_with_auth_required() {
-    assert_update(
-        classify_renderable_error(&RenderableAIError::AwsBedrockCredentialsExpiredOrInvalid {
-            model_name: "claude-v2".into(),
-        }),
-        AgentTaskState::Failed,
-        Some(PlatformErrorCode::AuthenticationRequired),
-        Some("claude-v2"),
-    );
-}
-
-#[test]
-fn gemini_enterprise_credentials_is_failed_with_auth_required() {
-    assert_update(
-        classify_renderable_error(&RenderableAIError::GeminiEnterpriseCredentialsExpiredOrInvalid),
-        AgentTaskState::Failed,
-        Some(PlatformErrorCode::AuthenticationRequired),
-        Some("Gemini Enterprise"),
-    );
-}
-#[test]
 fn other_error_is_error_with_internal() {
     assert_update(
         classify_renderable_error(&RenderableAIError::Other {

@@ -667,7 +667,6 @@ pub(crate) fn agent_driver_options() -> AgentDriverOptions {
         harness_transport: HarnessTransport::Pty,
         third_party_harness_model_config: None,
         team_scope: None,
-        bedrock_oidc_credentials: None,
         snapshot_disabled: None,
         snapshot_upload_timeout: None,
         snapshot_script_timeout: None,

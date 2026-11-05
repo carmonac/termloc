@@ -7,17 +7,10 @@ use warpui::elements::{
     Text,
 };
 use warpui::fonts::{Properties, Style};
-use warpui::{Action, AppContext, Element, SingletonEntity as _};
+use warpui::{Action, Element};
 
-use crate::ai::agent::conversation::AIConversation;
-use crate::ai::custom_model_routers::is_custom_router_id;
-use crate::ai::llms::{
-    DisableReason, LLMId, LLMInfo, LLMPreferences, ModelIconFlags, is_model_allowed_for_scope,
-    model_leading_icon, should_show_bedrock_icon_for_model,
-    should_show_gemini_enterprise_agent_platform_icon_for_model, should_show_key_icon_for_model,
-};
+use crate::ai::llms::{DisableReason, LLMId, LLMInfo, model_leading_icon};
 use crate::menu::{MenuItem, MenuItemFields, MenuTooltipPosition};
-use crate::workspaces::user_workspaces::TeamScope;
 
 pub fn is_auto(llm: &LLMInfo) -> bool {
     llm.display_name.to_lowercase().contains("auto")
@@ -87,16 +80,12 @@ impl CollapsedModelVariants {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn make_item_fields<A: Action + Clone>(
     llm: &LLMInfo,
     action: impl Fn(&LLMInfo) -> A,
     position_id_fn: Option<&dyn Fn(&LLMId) -> String>,
     model_id_to_add_profile_default_label_to: Option<&LLMId>,
     collapse: CollapsedModelVariants,
-    conversation: Option<&AIConversation>,
-    scope: &dyn TeamScope,
-    app: &AppContext,
 ) -> MenuItem<A> {
     let is_auto_model = is_auto(llm);
     let label = if collapse.auto && is_auto_model {
@@ -106,22 +95,11 @@ fn make_item_fields<A: Action + Clone>(
     } else {
         llm.menu_display_name()
     };
-    let is_using_bedrock = should_show_bedrock_icon_for_model(llm, scope, app);
-    let is_using_gemini_enterprise_agent_platform =
-        should_show_gemini_enterprise_agent_platform_icon_for_model(llm, scope, app);
-    let is_using_api_key = should_show_key_icon_for_model(llm, conversation, scope, app);
-    let is_custom_router = is_custom_router_id(llm.id.as_str());
-    let leading_icon = model_leading_icon(
-        llm,
-        ModelIconFlags {
-            is_custom_router,
-            is_auto: is_auto_model,
-            is_using_bedrock,
-            is_using_gemini_enterprise: is_using_gemini_enterprise_agent_platform,
-        },
-    );
-    let is_using_cloud_host = is_using_bedrock || is_using_gemini_enterprise_agent_platform;
-    let trailing_credential_icon = (!is_using_cloud_host && is_using_api_key).then_some(Icon::Key);
+    let leading_icon = if is_auto_model {
+        Icon::Agent
+    } else {
+        model_leading_icon(llm)
+    };
 
     let mut item = if let Some(position_id_fn) = position_id_fn {
         let position_id = position_id_fn(&llm.id);
@@ -157,20 +135,6 @@ fn make_item_fields<A: Action + Clone>(
                 )
                 .finish();
                 item_row.add_child(Shrinkable::new(4., text).finish());
-                if let Some(icon) = trailing_credential_icon {
-                    let credential_icon = Container::new(
-                        ConstrainedBox::new(
-                            icon.to_warpui_icon(appearance.theme().disabled_ui_text_color())
-                                .finish(),
-                        )
-                        .with_height(appearance.ui_font_size())
-                        .with_width(appearance.ui_font_size())
-                        .finish(),
-                    )
-                    .with_margin_left(6.)
-                    .finish();
-                    item_row.add_child(credential_icon);
-                }
                 SavePosition::new(item_row.finish(), &position_id).finish()
             }),
             None,
@@ -197,23 +161,16 @@ fn make_item_fields<A: Action + Clone>(
     with_cost_and_profile_info(item, llm, model_id_to_add_profile_default_label_to).into_item()
 }
 
-/// Builds the model menu rows. `conversation` is the conversation the menu applies to, when
-/// known; it decides whether a ChatGPT subscription counts as a connected key.
-#[allow(clippy::too_many_arguments)]
+/// Builds the model menu rows.
 pub fn available_model_menu_items<A: Action + Clone>(
     choices: Vec<&LLMInfo>,
     action: impl Fn(&LLMInfo) -> A,
     model_id_to_add_profile_default_label_to: Option<&LLMId>,
     position_id_fn: Option<&dyn Fn(&LLMId) -> String>,
     collapse: CollapsedModelVariants,
-    conversation: Option<&AIConversation>,
-    scope: &dyn TeamScope,
-    app: &AppContext,
 ) -> Vec<MenuItem<A>> {
-    let prefs = LLMPreferences::as_ref(app);
     choices
         .into_iter()
-        .filter(|llm| is_model_allowed_for_scope(prefs, llm, scope, app))
         .map(|llm| {
             make_item_fields(
                 llm,
@@ -221,9 +178,6 @@ pub fn available_model_menu_items<A: Action + Clone>(
                 position_id_fn,
                 model_id_to_add_profile_default_label_to,
                 collapse,
-                conversation,
-                scope,
-                app,
             )
         })
         .collect_vec()

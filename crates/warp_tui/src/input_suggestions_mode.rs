@@ -13,7 +13,6 @@ pub(crate) enum TuiInputSuggestionsMode {
     #[default]
     Closed,
     SlashCommands,
-    ApiKeys,
     ConversationMenu,
     ModelSelector,
     TeamSelector,
@@ -35,7 +34,6 @@ impl TuiInputSuggestionsMode {
             Self::ReadOnlyMenu(kind) => Some(kind),
             Self::Closed
             | Self::SlashCommands
-            | Self::ApiKeys
             | Self::ConversationMenu
             | Self::ModelSelector
             | Self::TeamSelector
@@ -93,7 +91,6 @@ impl TuiInputSuggestionsModeModel {
             }
             active_mode if active_mode == mode => true,
             TuiInputSuggestionsMode::SlashCommands
-            | TuiInputSuggestionsMode::ApiKeys
             | TuiInputSuggestionsMode::ConversationMenu
             | TuiInputSuggestionsMode::ModelSelector
             | TuiInputSuggestionsMode::TeamSelector

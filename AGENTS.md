@@ -7,22 +7,7 @@ This file provides guidance when working with code in this repository.
 ### Build and Run
 - `cargo run` / `./script/run` - Build and run the GUI desktop app locally
 - `./script/run-tui` - Build and run the headless TUI front-end (`crates/warp_tui`)
-- `cargo bundle --bin warp` - Bundle the main (GUI) app
-
-### Running with local warp-server
-To connect Warp client to a local warp-server instance:
-
-```bash
-# Connect to server on default port 8080
-WITH_LOCAL_SERVER=1 ./script/run
-
-# Connect to server on custom port (e.g., 8082)
-WITH_LOCAL_SERVER=1 SERVER_ROOT_URL=http://localhost:8082 WS_SERVER_URL=ws://localhost:8082/graphql/v2 ./script/run
-```
-
-Environment variables:
-- `SERVER_ROOT_URL` - HTTP endpoint (default: `http://localhost:8080`)
-- `WS_SERVER_URL` - WebSocket endpoint (default: `ws://localhost:8080/graphql/v2`)
+- `cargo bundle --bin warp-oss` - Bundle the main (GUI) app
 
 ### Testing
 - `cargo nextest run --no-fail-fast --workspace` - Run tests with nextest
@@ -65,6 +50,14 @@ Run the full presubmit only when the user, task, or approved spec explicitly req
 - `./script/install_cargo_test_deps` - Install Cargo test dependencies
 
 `skills-lock.json` is the standard project lock file managed by `npx skills`. `warpdotdev/common-skills/scripts/install_common_skills` requires an explicit install target before restoring: pass `--project`, pass `--global`, set `WARP_COMMON_SKILLS_INSTALL_TARGET`, or answer the interactive prompt from bootstrap. Non-interactive flows fail if no target is explicit. The installer creates `skills-lock.json` from `warpdotdev/common-skills` if it is missing, uses global as the recommended interactive default, errors if common skills are present in both project and global locations, prevents a global install pinned to one lock from being silently overwritten by another checkout pinned to a different lock, and verifies installed skills against the lock after successful install or skip paths. `script/run` and `script/bootstrap` execute this installer with `script/resolve_common_skills`, which uses `WARP_COMMON_SKILLS_SCRIPTS_DIR` only when explicitly set and otherwise runs the raw script from `warpdotdev/common-skills`. To test a remote common-skills branch, set `WARP_COMMON_SKILLS_REF=<branch>`. Cloud setup should use `common-skills/scripts/install_common_skills --repo-root <warp-checkout> --project --if-needed --non-interactive` or set `WARP_COMMON_SKILLS_INSTALL_TARGET=project` to avoid the prompt. To update the locked common skills, run `npx --yes skills@1.5.6 update -p -y` and commit the resulting `skills-lock.json` changes.
+
+## Local-only build
+
+This fork runs entirely on the user's machine: `warp-oss` is the only GUI binary, there are no Warp servers, no login and no telemetry, and all AI runs on Ollama. `ChannelState::is_local_only()` gates what remains of the cloud code, and is false in tests unless `ChannelState::override_local_only_for_test()` is held.
+
+- Keep it that way: don't add outbound connections, and build every HTTP client with `egress::build_client` so the egress policy applies. Child processes aren't covered by that policy, so don't spawn ones that reach the network without being asked to.
+- `crates/local_agent` produces the `ResponseEvent` stream the server used to send; `app/src/ai/local.rs` connects it to the app.
+- `LocalObjectClient` stands in for the server in Warp Drive, whose objects live in SQLite.
 
 ## Architecture Overview
 

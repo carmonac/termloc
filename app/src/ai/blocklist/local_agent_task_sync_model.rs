@@ -620,27 +620,6 @@ pub(crate) fn classify_renderable_error(
                 PlatformErrorCode::InternalError,
             )),
         ),
-        RenderableAIError::InvalidApiKey { provider, .. } => (
-            AgentTaskState::Failed,
-            Some(TaskStatusUpdate::with_error_code(
-                format!("Invalid API key for {provider}. Update your API key in settings."),
-                PlatformErrorCode::AuthenticationRequired,
-            )),
-        ),
-        RenderableAIError::AwsBedrockCredentialsExpiredOrInvalid { model_name } => (
-            AgentTaskState::Failed,
-            Some(TaskStatusUpdate::with_error_code(
-                format!("AWS Bedrock credentials expired or invalid for {model_name}."),
-                PlatformErrorCode::AuthenticationRequired,
-            )),
-        ),
-        RenderableAIError::GeminiEnterpriseCredentialsExpiredOrInvalid => (
-            AgentTaskState::Failed,
-            Some(TaskStatusUpdate::with_error_code(
-                "Gemini Enterprise credentials expired or invalid.",
-                PlatformErrorCode::AuthenticationRequired,
-            )),
-        ),
         RenderableAIError::TransientNetworkError { .. } => (
             AgentTaskState::Error,
             Some(TaskStatusUpdate::with_error_code(
@@ -690,13 +669,6 @@ pub(crate) fn classify_renderable_error(
             Some(TaskStatusUpdate::with_error_code(
                 msg,
                 PlatformErrorCode::InternalError,
-            )),
-        ),
-        RenderableAIError::ChatGPTSubscriptionError { .. } => (
-            AgentTaskState::Failed,
-            Some(TaskStatusUpdate::with_error_code(
-                error.to_string(),
-                PlatformErrorCode::InvalidRequest,
             )),
         ),
     }

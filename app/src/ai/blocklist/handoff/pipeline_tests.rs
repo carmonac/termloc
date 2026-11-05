@@ -18,14 +18,16 @@ use crate::ai::agent::{
 use crate::ai::blocklist::{
     PendingAttachment, PendingFile, RequestInput, ResponseStream, ResponseStreamId,
 };
-use crate::ai::llms::{AvailableLLMs, LLMId, LLMInfo, LLMPreferences, ModelsByFeature};
+use crate::ai::llms::{
+    AvailableLLMs, LLMId, LLMInfo, LLMPreferences, LLMProvider, ModelsByFeature,
+};
 use crate::features::FeatureFlag;
 use crate::server::ids::{ServerId, SyncId};
 use crate::server::server_api::ServerApiProvider;
 use crate::server::server_api::ai::{ForkConversationResponse, MockAIClient, SpawnAgentResponse};
 use crate::test_util::add_window_with_terminal;
 use crate::test_util::terminal::initialize_app_for_terminal_view;
-use crate::workspaces::user_workspaces::TeamContextForOperation;
+use crate::workspaces::user_workspaces::{TeamContextForOperation, TeamlessScopeForTest};
 
 fn task_id() -> AmbientAgentTaskId {
     "550e8400-e29b-41d4-a716-446655440000"
@@ -88,21 +90,38 @@ fn required_environment_revalidates_after_catalog_refresh() {
     );
 }
 
+const OLLAMA_MODEL_ID: &str = "llama3";
+
+fn ollama_llm() -> LLMInfo {
+    let mut llm = LLMInfo::new_for_test(OLLAMA_MODEL_ID);
+    llm.provider = LLMProvider::Ollama;
+    llm
+}
+
+fn add_ollama_model(app: &mut App) {
+    app.update(|ctx| {
+        LLMPreferences::handle(ctx).update(ctx, |preferences, ctx| {
+            preferences.add_agent_mode_model_for_test(&TeamlessScopeForTest, ollama_llm(), ctx);
+        });
+    });
+}
+
 #[test]
 fn model_selection_refreshes_cloud_compatibility_in_both_directions() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
+        add_ollama_model(&mut app);
         let mock = Arc::new(MockAIClient::new());
         let mut pending = pending(mock, None, false, "continue");
         app.update(|ctx| {
-            pending.set_model_id("custom-router:local:byok".to_owned(), false, ctx);
+            pending.set_model_id(OLLAMA_MODEL_ID.to_owned(), false, ctx);
         });
         assert_eq!(pending.selected_model_id, "auto");
         assert_eq!(pending.config.model_id.as_deref(), Some("auto"));
         assert!(pending.validate().is_ok());
 
         app.update(|ctx| {
-            pending.set_model_id("custom-router:local:byok".to_owned(), true, ctx);
+            pending.set_model_id(OLLAMA_MODEL_ID.to_owned(), true, ctx);
         });
         assert_eq!(pending.validate(), Err(HandoffPrepareError::InvalidModel));
 
@@ -117,7 +136,7 @@ fn model_selection_refreshes_cloud_compatibility_in_both_directions() {
         assert!(pending.validate().is_ok());
 
         app.update(|ctx| {
-            pending.set_model_id("custom-router:local:byok".to_owned(), true, ctx);
+            pending.set_model_id(OLLAMA_MODEL_ID.to_owned(), true, ctx);
         });
         assert_eq!(pending.validate(), Err(HandoffPrepareError::InvalidModel));
     });
@@ -130,12 +149,8 @@ fn prepare_falls_back_to_auto_for_an_implicit_local_model() {
         let terminal = add_window_with_terminal(&mut app, None);
         terminal.update(&mut app, |_view, ctx| {
             let models = ModelsByFeature {
-                agent_mode: AvailableLLMs::new(
-                    "custom-router:local:byok".into(),
-                    vec![LLMInfo::new_for_test("custom-router:local:byok")],
-                    None,
-                )
-                .expect("valid available llms"),
+                agent_mode: AvailableLLMs::new(OLLAMA_MODEL_ID.into(), vec![ollama_llm()], None)
+                    .expect("valid available llms"),
                 ..Default::default()
             };
             LLMPreferences::handle(ctx).update(ctx, |preferences, ctx| {
@@ -180,11 +195,12 @@ fn execute_revalidates_current_model_before_returning_future() {
     let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
+        add_ollama_model(&mut app);
         let mut mock = MockAIClient::new();
         mock.expect_spawn_agent().times(0);
         let client: Arc<dyn AIClient> = Arc::new(mock);
         let mut pending = pending(client.clone(), None, false, "continue");
-        pending.selected_model_id = "custom-router:local:byok".to_owned();
+        pending.selected_model_id = OLLAMA_MODEL_ID.to_owned();
         pending.model_is_cloud_runnable = true;
 
         let future = app.update(|ctx| execute_handoff(pending, client, None, None, ctx));

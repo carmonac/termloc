@@ -80,7 +80,6 @@ pub struct ExecutionConfiguration {
     pub factory_skill_dirs: Vec<String>,
     pub computer_use_enabled: bool,
     pub computer_use_model_id: Option<String>,
-    pub inference_providers: Option<InferenceProviderClientConfigs>,
     pub repositories: Vec<ExecutionRepository>,
     #[cynic(feature = "deferred_repositories")]
     pub deferred_repositories: Option<Vec<ExecutionRepository>>,
@@ -166,18 +165,6 @@ pub struct GcpCloudProviderClientConfig {
 #[cynic(graphql_type = "AWSCloudProviderClientConfig")]
 pub struct AwsCloudProviderClientConfig {
     pub role_arn: String,
-}
-
-#[derive(cynic::QueryFragment, Debug)]
-pub struct InferenceProviderClientConfigs {
-    pub aws_bedrock: Option<AwsBedrockInferenceClientConfig>,
-}
-
-#[derive(cynic::QueryFragment, Debug)]
-#[cynic(graphql_type = "AWSBedrockInferenceClientConfig")]
-pub struct AwsBedrockInferenceClientConfig {
-    pub role_arn: String,
-    pub region: Option<String>,
 }
 
 #[derive(cynic::Enum, Clone, Copy, Debug, PartialEq, Eq)]

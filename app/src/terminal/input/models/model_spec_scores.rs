@@ -1,8 +1,8 @@
 use pathfinder_color::ColorU;
 use warp_core::ui::theme::color::internal_colors;
 use warpui::elements::{
-    Border, ConstrainedBox, Container, CornerRadius, Expanded, Flex, MainAxisAlignment,
-    MainAxisSize, ParentElement as _, Percentage, Radius, Rect, Stack, Text,
+    Border, ConstrainedBox, Container, CornerRadius, Expanded, Flex, MainAxisSize,
+    ParentElement as _, Percentage, Radius, Rect, Stack, Text,
 };
 use warpui::prelude::{Align, CrossAxisAlignment};
 use warpui::text_layout::ClipConfig;
@@ -21,71 +21,30 @@ pub const MODEL_SPECS_DESCRIPTION: &str = "Warp's benchmarks for how well a mode
 pub const REASONING_LEVEL_TITLE: &str = "Reasoning level";
 pub const REASONING_LEVEL_DESCRIPTION: &str = "Increased reasoning levels consume more credits and have higher latency, but higher performance for complicated tasks.";
 
-pub const CUSTOM_MODEL_ROUTER_TITLE: &str = "Custom Model Router";
-pub const CUSTOM_MODEL_ROUTER_DESCRIPTION: &str = "Routes each request to a concrete model based on your routing rules, rather than using a single fixed model.";
-
-pub enum CostRow {
-    Bar {
-        value: Option<f32>,
-    },
-    BilledToProvider {
-        label: &'static str,
-        manage_button: Box<dyn Element>,
-    },
-}
-
 pub struct ModelSpecScoresLayout {
     pub bg_bar_color: ColorU,
 }
 
 pub fn render_model_spec_scores(
     spec: Option<&LLMSpec>,
-    cost_row: CostRow,
     layout: ModelSpecScoresLayout,
     app: &AppContext,
 ) -> Box<dyn Element> {
-    let mut rows = vec![render_score_row(
-        "Intelligence",
-        ScoreRowKind::Bar {
-            value: spec.as_ref().map(|spec| spec.quality),
-        },
-        layout.bg_bar_color,
-        app,
-    )];
-
-    rows.push(render_score_row(
-        "Speed",
-        ScoreRowKind::Bar {
-            value: spec.as_ref().map(|spec| spec.speed),
-        },
-        layout.bg_bar_color,
-        app,
-    ));
-
-    match cost_row {
-        CostRow::Bar { value } => {
-            rows.push(render_score_row(
-                "Cost",
-                ScoreRowKind::Bar { value },
-                layout.bg_bar_color,
-                app,
-            ));
-        }
-        CostRow::BilledToProvider {
-            label,
-            manage_button,
-        } => {
-            rows.push(render_score_row(
-                "Cost",
-                ScoreRowKind::BilledToProvider {
-                    label,
-                    manage_button,
-                },
-                layout.bg_bar_color,
-                app,
-            ));
-        }
-    }
+    let rows = vec![
+        render_score_row(
+            "Intelligence",
+            spec.map(|spec| spec.quality),
+            layout.bg_bar_color,
+            app,
+        ),
+        render_score_row(
+            "Speed",
+            spec.map(|spec| spec.speed),
+            layout.bg_bar_color,
+            app,
+        ),
+        render_score_row("Cost", spec.map(|spec| spec.cost), layout.bg_bar_color, app),
+    ];
 
     Flex::column()
         .with_spacing(ROW_SPACING)
@@ -93,19 +52,9 @@ pub fn render_model_spec_scores(
         .finish()
 }
 
-enum ScoreRowKind {
-    Bar {
-        value: Option<f32>,
-    },
-    BilledToProvider {
-        label: &'static str,
-        manage_button: Box<dyn Element>,
-    },
-}
-
 fn render_score_row(
     name: &str,
-    kind: ScoreRowKind,
+    value: Option<f32>,
     bg_bar_color: ColorU,
     app: &AppContext,
 ) -> Box<dyn Element> {
@@ -129,8 +78,8 @@ fn render_score_row(
         appearance.line_height_ratio(),
     );
 
-    let row_content: Box<dyn Element> = match kind {
-        ScoreRowKind::Bar { value: Some(value) } => {
+    let row_content: Box<dyn Element> = match value {
+        Some(value) => {
             let background_bar = Rect::new()
                 .with_background_color(bg_bar_color)
                 .with_corner_radius(CornerRadius::with_all(Radius::Pixels(CORNER_RADIUS)))
@@ -154,7 +103,7 @@ fn render_score_row(
             )
             .finish()
         }
-        ScoreRowKind::Bar { value: None } => {
+        None => {
             let background_bar = Rect::new()
                 .with_background_color(bg_bar_color)
                 .with_corner_radius(CornerRadius::with_all(Radius::Pixels(CORNER_RADIUS)))
@@ -189,20 +138,6 @@ fn render_score_row(
             )
             .finish()
         }
-        ScoreRowKind::BilledToProvider {
-            label,
-            manage_button,
-        } => Expanded::new(
-            1.,
-            Flex::row()
-                .with_main_axis_size(MainAxisSize::Max)
-                .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                .with_child(render_provider_label(label, appearance))
-                .with_child(Container::new(manage_button).with_margin_left(8.).finish())
-                .finish(),
-        )
-        .finish(),
     };
 
     Flex::row()
@@ -225,15 +160,6 @@ fn render_row_label(label: &str, appearance: &Appearance, app: &AppContext) -> B
             inline_styles::menu_background_color(app).into(),
         )
         .into_solid(),
-    )
-    .finish()
-}
-
-fn render_provider_label(label: &'static str, appearance: &Appearance) -> Box<dyn Element> {
-    Container::new(
-        Text::new(label.to_string(), appearance.ui_font_family(), 14.)
-            .with_color(appearance.theme().disabled_ui_text_color().into())
-            .finish(),
     )
     .finish()
 }

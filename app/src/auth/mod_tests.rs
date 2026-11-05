@@ -1,8 +1,6 @@
 use warp_core::channel::ChannelState;
 
-use super::web_logout_url;
-#[cfg(feature = "tui")]
-use super::web_logout_url_with_continue;
+use super::{web_logout_url, web_logout_url_with_continue};
 
 #[test]
 fn web_logout_url_uses_configured_server_root() {
@@ -14,7 +12,6 @@ fn web_logout_url_uses_configured_server_root() {
 }
 
 #[test]
-#[cfg(feature = "tui")]
 fn web_logout_url_rejects_unsafe_device_auth_continuations() {
     let server_root_url = ChannelState::server_root_url();
     for continue_url in [
@@ -37,7 +34,6 @@ fn web_logout_url_rejects_unsafe_device_auth_continuations() {
 }
 
 #[test]
-#[cfg(feature = "tui")]
 fn web_logout_url_encodes_device_auth_continuation() {
     let continue_url = format!(
         "{}/device?user_code=ABCD-EFGH&source=warp-agent-cli",

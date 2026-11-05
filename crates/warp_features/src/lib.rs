@@ -6,11 +6,9 @@ pub use overrides::{get_overrides, set_overrides};
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, Debug, Sequence)]
 pub enum FeatureFlag {
-    Changelog,
     CocoaSentry,
     CrashReporting,
     DebugMode,
-    Autoupdate,
     LogExpensiveFramesInSentry,
     WithSandboxTelemetry,
     RecordAppActiveEvents,
@@ -213,9 +211,6 @@ pub enum FeatureFlag {
     /// If enabled, the default theme is set to Adeberry for new users.
     DefaultAdeberryTheme,
 
-    /// New, less intrusive autoupdate UI.
-    AutoupdateUIRevamp,
-
     /// Enables Kitty image rendering
     KittyImages,
 
@@ -247,9 +242,6 @@ pub enum FeatureFlag {
 
     /// Enables suggested workflows for Agent Mode.
     SuggestedAgentModeWorkflows,
-
-    /// Forces users to login.
-    ForceLogin,
 
     /// Enables prediction of Agent Mode queries.
     PredictAMQueries,
@@ -660,9 +652,6 @@ pub enum FeatureFlag {
     /// Enables Oz identity federation commands.
     OzIdentityFederation,
 
-    /// Gates populating/reading oz updates from channel versions in the changelog model.
-    OzChangelogUpdates,
-
     /// Enables image upload for ambient agents.
     AmbientAgentsImageUpload,
 
@@ -813,9 +802,6 @@ pub enum FeatureFlag {
     /// Enables the ask_user_question tool allowing the agent to ask clarifying questions.
     AskUserQuestion,
 
-    /// When enabled, solo users (not on a team) can use BYO API keys.
-    SoloUserByok,
-
     /// Replaces the in-block warpification banner with a warpify footer.
     WarpifyFooter,
 
@@ -875,9 +861,6 @@ pub enum FeatureFlag {
 
     /// Gates the v2 billing and usage page redesign.
     BillingAndUsagePageV2,
-    /// Enables configurable expanded context windows for eligible GPT models.
-    GPTConfigurableContextWindow,
-
     /// Replaces the raw harness CLI command with a styled header showing CLI name + status icon.
     HarnessSessionHeader,
 
@@ -892,28 +875,12 @@ pub enum FeatureFlag {
     /// are protected from reordering.
     PinnedTabs,
 
-    /// Gates the SuperGrok feature, which lets users
-    /// connect a Grok subscription instead of pasting an API key.
-    SuperGrok,
-
-    /// Gates connecting a ChatGPT subscription via Sign in with ChatGPT.
-    /// Account linking is server-side (iss+client_id+sub), not local tokens.
-    ChatGPTSubscription,
-
-    /// Gates Gemini Enterprise (GEAP) BYOLLM, which lets users
-    /// route eliglible models to GEAP instead of Warp-managed inference.
-    GeminiEnterprise,
-
     /// Gates NLD input classification matching the buffer against agent
     /// prompt history (in addition to shell command history). Still in
     /// development; currently disabled on all channels as a mitigation for
     /// misclassification bug reports (see PR #12586). Re-enable via
     /// `DOGFOOD_FLAGS` once the underlying issues are resolved.
     NldPromptHistoryMatch,
-
-    /// Gates the custom model router feature, which allows users to define
-    /// their own model routers.
-    CustomModelRouters,
 
     /// Enables state-mutating recovery for abnormal terminal lifecycle sequences.
     TerminalLifecycleRecovery,
@@ -944,10 +911,6 @@ pub enum FeatureFlag {
     /// orchestration (`run_agents`) confirmation card and plan-card config
     /// block for choosing a runner when starting remote child agents.
     CloudAgentRunners,
-
-    /// Gates the account-first onboarding flow, including the reordered
-    /// pre-auth slides and post-auth account offer.
-    AccountFirstOnboarding,
 
     /// Accepts well-known non-UUID managed MCP ids (e.g. `"linear"`) as
     /// `warp_id` values in MCP configs and as bare identifiers in CLI
@@ -1071,7 +1034,6 @@ pub const DOGFOOD_FLAGS: &[FeatureFlag] = &[
     #[cfg(not(windows))]
     FeatureFlag::SshRemoteServer,
     FeatureFlag::RemoteCodebaseIndexing,
-    FeatureFlag::GPTConfigurableContextWindow,
     FeatureFlag::WarpControlCli,
     FeatureFlag::TerminalLifecycleRecovery,
     FeatureFlag::PromptCacheExpiryWarning,
@@ -1098,8 +1060,6 @@ pub const PREVIEW_FLAGS: &[FeatureFlag] = &[];
 /// NOTE: if you are promoting a feature from Preview to launch, you'll likely
 /// want to enable the feature by default in app/Cargo.toml, rather than add it to RELEASE_FLAGS.
 pub const RELEASE_FLAGS: &[FeatureFlag] = &[
-    FeatureFlag::Autoupdate,
-    FeatureFlag::Changelog,
     FeatureFlag::CrashReporting,
     FeatureFlag::PeriodicHandoffCheckpoints,
     FeatureFlag::VideoRecording,

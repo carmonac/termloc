@@ -6,8 +6,7 @@ use warp::settings::AISettings;
 use warp::tui_export::UserWorkspaces;
 use warp::tui_export::{
     AISettingsChangedEvent, LLMId, LLMPreferences, LLMPreferencesEvent, ModelPickerChoice,
-    TeamContextResolver, TeamScope, query_model_picker_choices, should_show_bedrock_icon_for_model,
-    should_show_gemini_enterprise_agent_platform_icon_for_model, should_show_key_icon_for_model,
+    TeamContextResolver, query_model_picker_choices,
 };
 use warp_editor::model::CoreEditorModel;
 use warpui_core::{AppContext, Entity, EntityId, ModelContext, ModelHandle, SingletonEntity};
@@ -25,7 +24,6 @@ struct TuiModelMenuRow {
     id: LLMId,
     title: String,
     is_selectable: bool,
-    is_key_connected: bool,
     is_profile_default: bool,
     discount_percentage: Option<f32>,
 }
@@ -104,7 +102,6 @@ impl TuiModelMenuModel {
                     title: id.to_string(),
                     id,
                     is_selectable,
-                    is_key_connected: false,
                     is_profile_default: false,
                     discount_percentage: None,
                 })
@@ -255,16 +252,12 @@ impl TuiModelMenuModel {
             .id
             .clone();
         let choices = query_model_picker_choices(
-            preferences,
             preferences.get_base_llm_choices_for_agent_mode(&scope, ctx),
             &query,
-            None,
-            &scope,
-            ctx,
         );
         let rows = choices
             .into_iter()
-            .map(|choice| model_menu_row(choice, &profile_default_id, &scope, ctx))
+            .map(|choice| model_menu_row(choice, &profile_default_id))
             .collect::<Vec<_>>();
         let preferred_index = preferred_selection_index(&rows, &active_id, query.trim().is_empty());
         let TuiModelMenuState::Open { list } = &mut self.state else {
@@ -277,23 +270,10 @@ impl TuiModelMenuModel {
     }
 }
 
-fn model_menu_row(
-    choice: ModelPickerChoice,
-    profile_default_id: &LLMId,
-    scope: &dyn TeamScope,
-    app: &AppContext,
-) -> TuiModelMenuRow {
-    let is_key_connected = should_show_key_icon_for_model(&choice.llm, None, scope, app);
-    let uses_external_inference = is_key_connected
-        || should_show_bedrock_icon_for_model(&choice.llm, scope, app)
-        || should_show_gemini_enterprise_agent_platform_icon_for_model(&choice.llm, scope, app);
+fn model_menu_row(choice: ModelPickerChoice, profile_default_id: &LLMId) -> TuiModelMenuRow {
     TuiModelMenuRow {
         is_selectable: choice.is_selectable(),
-        is_key_connected,
-        discount_percentage: choice
-            .llm
-            .discount_percentage
-            .filter(|_| !uses_external_inference),
+        discount_percentage: choice.llm.discount_percentage,
         is_profile_default: choice.llm.id == *profile_default_id,
         id: choice.llm.id,
         title: choice.llm.display_name,
@@ -301,12 +281,7 @@ fn model_menu_row(
 }
 
 fn snapshot_row(row: &TuiModelMenuRow) -> TuiInlineMenuRow {
-    let state_suffix = match (row.is_profile_default, row.is_key_connected) {
-        (true, true) => Some("(default) (key connected)".to_owned()),
-        (true, false) => Some("(default)".to_owned()),
-        (false, true) => Some("(key connected)".to_owned()),
-        (false, false) => None,
-    };
+    let state_suffix = row.is_profile_default.then(|| "(default)".to_owned());
     TuiInlineMenuRow {
         title: row.title.clone(),
         prefix: None,

@@ -6,8 +6,7 @@ use ai::LLMId;
 use anyhow::Result;
 use onboarding::slides::OnboardingModelInfo;
 use onboarding::{
-    AgentOnboardingEvent, AgentOnboardingView, MockTelemetryContextProvider, OfferVariant,
-    SelectedSettings,
+    AgentOnboardingEvent, AgentOnboardingView, MockTelemetryContextProvider, SelectedSettings,
 };
 use pathfinder_color::ColorU;
 use rust_embed::RustEmbed;
@@ -42,22 +41,6 @@ impl AssetProvider for Assets {
     }
 }
 
-/// Env var for jumping straight to a post-auth offer slide, which is otherwise
-/// only reachable from the app after authentication. Accepts
-/// `choose_how_to_start` or `head_start`.
-const DEMO_OFFER_ENV: &str = "ONBOARDING_DEMO_OFFER";
-
-fn demo_offer_variant() -> Option<OfferVariant> {
-    match std::env::var(DEMO_OFFER_ENV).ok()?.as_str() {
-        "choose_how_to_start" => Some(OfferVariant::ChooseHowToStart),
-        "head_start" => Some(OfferVariant::HeadStart),
-        other => {
-            log::warn!("unknown {DEMO_OFFER_ENV} value: {other}");
-            None
-        }
-    }
-}
-
 fn main() -> Result<()> {
     // Initialize logging for the onboarding binary.
     warp_logging::init(warp_logging::LogConfig {
@@ -70,10 +53,6 @@ fn main() -> Result<()> {
     // check panics if initialization never happened. The real app does this in
     // `init_feature_flags`, which also turns on the flags for its release
     // channel; this demo has no channel, so it previews the flag defaults.
-    if demo_offer_variant().is_some() {
-        // Except for this one, which the offer slides live behind.
-        warp_core::features::FeatureFlag::AccountFirstOnboarding.set_enabled(true);
-    }
     warp_core::features::mark_initialized();
 
     let app_builder = warpui::platform::AppBuilder::new(
@@ -139,16 +118,10 @@ impl OnboardingMainView {
                 models.clone(),
                 default_model_id.clone(),
                 false,
-                onboarding::OnboardingAuthState::LoggedOut,
                 ctx,
             )
         });
-        onboarding_view.update(ctx, |view, ctx| {
-            view.start_onboarding(ctx);
-            if let Some(variant) = demo_offer_variant() {
-                view.show_post_auth_offer(variant, ctx);
-            }
-        });
+        onboarding_view.update(ctx, |view, ctx| view.start_onboarding(ctx));
         ctx.subscribe_to_view(&onboarding_view, |me, _view, event, ctx| {
             me.handle_onboarding_event(event, ctx);
         });
@@ -190,18 +163,7 @@ impl OnboardingMainView {
                 self.state = OnboardingMainState::Finished(finished_view);
                 ctx.notify();
             }
-            AgentOnboardingEvent::OfferAiSellSatisfied { .. }
-            | AgentOnboardingEvent::OfferSetUpLaterSelected { .. } => {
-                let finished_view =
-                    ctx.add_typed_action_view(|_| FinishedOnboardingView::new(None));
-                self.state = OnboardingMainState::Finished(finished_view);
-                ctx.notify();
-            }
             AgentOnboardingEvent::SyncWithOsToggled { .. }
-            | AgentOnboardingEvent::UpgradeRequested
-            | AgentOnboardingEvent::UpgradeCopyUrlRequested
-            | AgentOnboardingEvent::UpgradePasteTokenFromClipboardRequested
-            | AgentOnboardingEvent::LoginFromWelcomeRequested
             | AgentOnboardingEvent::PrivacySettingsFromTerminalThemeSlideRequested
             | AgentOnboardingEvent::AppBecameActive => {
                 // No-op in the standalone demo binary

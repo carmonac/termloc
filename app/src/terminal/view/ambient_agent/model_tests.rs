@@ -2,7 +2,9 @@ use url::Url;
 use warpui::App;
 
 use super::*;
-use crate::ai::llms::{AvailableLLMs, LLMId, LLMInfo, LLMPreferences, ModelsByFeature};
+use crate::ai::llms::{
+    AvailableLLMs, LLMId, LLMInfo, LLMPreferences, LLMProvider, ModelsByFeature,
+};
 use crate::server::server_api::ClientError;
 use crate::test_util::terminal::{add_window_with_terminal, initialize_app_for_terminal_view};
 use crate::workspaces::user_workspaces::{TeamContextForOperation, TeamlessScopeForTest};
@@ -87,11 +89,9 @@ fn spawn_config_falls_back_to_auto_only_for_non_cloud_runnable_model() {
         initialize_app_for_terminal_view(&mut app);
         let model = add_model(&mut app);
 
-        install_default_agent_mode_model(
-            &model,
-            &mut app,
-            LLMInfo::new_for_test("custom-router:local:byok"),
-        );
+        let mut ollama_model = LLMInfo::new_for_test("llama3");
+        ollama_model.provider = LLMProvider::Ollama;
+        install_default_agent_mode_model(&model, &mut app, ollama_model);
         model.read(&app, |model, app| {
             assert_eq!(
                 model

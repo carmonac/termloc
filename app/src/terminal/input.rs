@@ -175,7 +175,6 @@ use crate::ai::blocklist::conversation_selection::ConversationSelectionHandle;
 use crate::ai::blocklist::handoff::{
     HandoffLaunchAttachments, PendingCloudLaunch, suggest_handoff_environment,
 };
-use crate::ai::blocklist::prompt::prompt_alert::{PromptAlertEvent, PromptAlertView};
 use crate::ai::blocklist::telemetry_banner::should_collect_ai_ugc_telemetry;
 use crate::ai::blocklist::{
     AttachmentType, BLOCK_CONTEXT_ATTACHMENT_REGEX, BlocklistAIActionModel,
@@ -268,9 +267,9 @@ use crate::server::server_api::presigned_upload::upload_to_target;
 use crate::server::team_scope::RequestTeamScope;
 use crate::server::telemetry::{
     AICommandSearchEntrypoint, AgentModeAutoDetectionFalsePositivePayload,
-    AgentModeAutoDetectionSettingOrigin, AnonymousUserSignupEntrypoint, CommandXRayTrigger,
-    EnvVarTelemetryMetadata, PaletteSource, QueuedPromptSendNowTrigger,
-    SlashCommandAcceptedDetails, SlashMenuSource, TelemetryEvent, WorkflowTelemetryMetadata,
+    AgentModeAutoDetectionSettingOrigin, CommandXRayTrigger, EnvVarTelemetryMetadata,
+    PaletteSource, QueuedPromptSendNowTrigger, SlashCommandAcceptedDetails, SlashMenuSource,
+    TelemetryEvent, WorkflowTelemetryMetadata,
 };
 use crate::session_management::SessionNavigationPromptElements;
 use crate::settings::{
@@ -283,7 +282,6 @@ use crate::suggestions::ignored_suggestions_model::{
     IgnoredSuggestionsModel, IgnoredSuggestionsModelEvent, SuggestionType,
 };
 use crate::terminal::CLIAgent;
-use crate::terminal::buy_credits_banner::{BuyCreditsBanner, BuyCreditsBannerEvent};
 #[cfg(not(target_family = "wasm"))]
 use crate::terminal::cli_agent_sessions::plugin_manager::PluginModalKind;
 use crate::terminal::cli_agent_sessions::{
@@ -329,7 +327,7 @@ use crate::terminal::view::ambient_agent::{
     cloud_agent_team_required_toast_message,
 };
 use crate::terminal::view::init::{CAN_ATTACH_FILE_KEY, CLI_AGENT_SESSION_ACTIVE_KEY};
-use crate::terminal::view::inline_banner::{PromptSuggestionsEvent, PromptSuggestionsView};
+use crate::terminal::view::inline_banner::PromptSuggestionsView;
 use crate::terminal::view::{
     AIQueryRouting, CodeDiffAction, file_attach_allowed_for_shared_session,
     resolve_ai_query_routing, resolve_ambient_agent_task_id,
@@ -1097,9 +1095,6 @@ pub enum Event {
     EditorFocused,
     UnhandledCmdEnter,
     CtrlEnter,
-    SignupAnonymousUser {
-        entrypoint: AnonymousUserSignupEntrypoint,
-    },
     OpenSettings(SettingsSection),
     #[cfg(feature = "local_fs")]
     OpenCodeInWarp {
@@ -1130,9 +1125,6 @@ pub enum Event {
     OpenAIDocumentPane {
         document_id: AIDocumentId,
         document_version: AIDocumentVersion,
-    },
-    OpenAutoReloadModal {
-        purchased_credits: i32,
     },
     AuthSecretDeleteConfirmationDialogToggled {
         is_open: bool,
@@ -1883,7 +1875,6 @@ pub struct Input {
     /// Weak handle to this input view for drop target data
     weak_view_handle: WeakViewHandle<Input>,
 
-    buy_credits_banner: ViewHandle<BuyCreditsBanner>,
     agent_status_view: ViewHandle<BlocklistAIStatusBar>,
     /// Optional queued-prompts panel rendered between `agent_status_view` and the input editor.
     /// Constructed in [`Input::new`] when [`FeatureFlag::QueueSlashCommand`] is enabled.
@@ -2147,8 +2138,7 @@ pub fn init(app: &mut AppContext) {
                 & !id!("ProfileModelSelectorOpen")
                 & !id!("PromptChipMenuOpen")
                 & !id!(QUEUED_PROMPT_INLINE_EDITOR_OPEN_CONTEXT)
-                & !id!("AIContextMenuOpen")
-                & !id!("BuyCreditsBannerOpen"),
+                & !id!("AIContextMenuOpen"),
         ),
     ]);
 
@@ -2751,8 +2741,7 @@ impl Input {
                 data_source.set_ambient_agent_view_model(composer_slash_model, ctx);
             });
         }
-        // The /model picker's data source lists a different model set for cloud panes (it suppresses
-        // custom-endpoint models), so keep it in sync for the link-join viewer.
+        // Keep the /model picker's data source in sync with this pane for the link-join viewer.
         let model_selector_model = view_model.clone();
         self.inline_model_selector_view.update(ctx, |view, ctx| {
             view.set_ambient_agent_view_model(model_selector_model, ctx);
@@ -3007,9 +2996,6 @@ impl Input {
                         &PromptDisplayEvent::TryExecuteCommand(cmd.clone()),
                         ctx,
                     );
-                }
-                AgentInputFooterEvent::PromptAlert(prompt_alert_event) => {
-                    me.handle_prompt_alert(prompt_alert_event, ctx);
                 }
                 AgentInputFooterEvent::ModelSelectorOpened => {
                     me.close_overlays(false, ctx);
@@ -3436,7 +3422,7 @@ impl Input {
             None
         };
 
-        let terminal_input_message_bar = ctx.add_typed_action_view(|ctx| {
+        let terminal_input_message_bar = ctx.add_view(|ctx| {
             TerminalInputMessageBar::new(
                 model.clone(),
                 ai_input_model.clone(),
@@ -3801,11 +3787,8 @@ impl Input {
             },
         );
 
-        let prompt_suggestions_view = ctx
-            .add_typed_action_view(|ctx| PromptSuggestionsView::new(ai_input_model.clone(), ctx));
-        ctx.subscribe_to_view(&prompt_suggestions_view, move |me, _, event, ctx| {
-            me.handle_prompt_suggestions_event(event, ctx);
-        });
+        let prompt_suggestions_view =
+            ctx.add_view(|ctx| PromptSuggestionsView::new(ai_input_model.clone(), ctx));
 
         let slash_command_team_context_resolver =
             UserWorkspaces::team_context_resolver(ctx.handle());
@@ -4054,27 +4037,6 @@ impl Input {
             ctx.notify();
         });
 
-        let buy_credits_banner = ctx.add_typed_action_view(BuyCreditsBanner::new);
-        ctx.subscribe_to_view(&buy_credits_banner, |me, _, event, ctx| match event {
-            BuyCreditsBannerEvent::OpenBillingAndUsage => {
-                ctx.emit(Event::OpenSettings(SettingsSection::BillingAndUsage));
-            }
-            BuyCreditsBannerEvent::RefocusInput => {
-                ctx.focus(&me.editor);
-            }
-            BuyCreditsBannerEvent::OpenAutoReloadModal { purchased_credits } => {
-                ctx.emit(Event::OpenAutoReloadModal {
-                    purchased_credits: *purchased_credits,
-                });
-            }
-            BuyCreditsBannerEvent::ShowAutoReloadError { error_message } => {
-                ctx.emit(Event::ShowToast {
-                    message: error_message.to_string(),
-                    flavor: ToastFlavor::Error,
-                });
-            }
-        });
-
         let agent_status_view = ctx.add_typed_action_view(|ctx| {
             BlocklistAIStatusBar::new(
                 ai_controller.clone(),
@@ -4210,7 +4172,6 @@ impl Input {
             cached_agent_mode_hint_text: None,
             is_editor_empty_on_last_edit: is_editor_empty,
             weak_view_handle: ctx.handle(),
-            buy_credits_banner,
             agent_status_view,
             queued_prompts_panel,
             agent_view_controller,
@@ -4962,8 +4923,8 @@ impl Input {
     }
 
     /// Cloud handoff is Oz-only. When this pane's active Agent Mode model can't
-    /// run in a Warp cloud (Oz) agent (e.g. a custom-endpoint/BYOK model or
-    /// local custom router), shows an explanatory error toast and returns true
+    /// run in a Warp cloud (Oz) agent (e.g. a local Ollama model), shows an
+    /// explanatory error toast and returns true
     /// so the `&`, footer-chip, and `/handoff` entry points can bail out up
     /// front instead of failing at spawn time.
     #[cfg(all(feature = "local_fs", not(target_family = "wasm")))]
@@ -6568,11 +6529,7 @@ impl Input {
         triggered_from: ZeroStatePromptSuggestionTriggeredFrom,
         ctx: &mut ViewContext<Self>,
     ) {
-        let has_any_ai = {
-            let user_workspaces = UserWorkspaces::as_ref(ctx);
-            let scope = user_workspaces.team_context_for_view(ctx);
-            AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(&scope, ctx)
-        };
+        let has_any_ai = AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(ctx);
         if !has_any_ai {
             return;
         }
@@ -7091,28 +7048,6 @@ impl Input {
         });
     }
 
-    fn handle_prompt_alert(
-        &mut self,
-        prompt_alert: &PromptAlertEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match prompt_alert {
-            PromptAlertEvent::SignupAnonymousUser => {
-                ctx.emit(Event::SignupAnonymousUser {
-                    entrypoint: AnonymousUserSignupEntrypoint::SignUpAIPrompt,
-                });
-            }
-            PromptAlertEvent::OpenBillingAndUsagePage => {
-                ctx.emit(Event::OpenSettings(SettingsSection::BillingAndUsage));
-            }
-            PromptAlertEvent::OpenBillingPortal { team_uid } => {
-                UserWorkspaces::handle(ctx).update(ctx, |user_workspaces, ctx| {
-                    user_workspaces.generate_stripe_billing_portal_link(*team_uid, ctx);
-                });
-            }
-        }
-    }
-
     fn enable_auto_detection(&mut self, ctx: &mut ViewContext<Self>) {
         // Don't allow input mode changes for read-only viewers in shared sessions
         if self.model.lock().shared_session_status().is_reader() {
@@ -7245,9 +7180,6 @@ impl Input {
             UniversalDeveloperInputButtonBarEvent::SetAIContextMenuOpen(open) => {
                 self.focus_input_box(ctx);
                 self.set_ai_context_menu_open(*open, ctx);
-            }
-            UniversalDeveloperInputButtonBarEvent::PromptAlert(prompt_alert_event) => {
-                self.handle_prompt_alert(prompt_alert_event, ctx);
             }
             UniversalDeveloperInputButtonBarEvent::ModelSelectorOpened => {
                 self.close_overlays(false, ctx);
@@ -15105,40 +15037,6 @@ impl Input {
             return;
         }
 
-        let has_any_ai = {
-            let user_workspaces = UserWorkspaces::as_ref(ctx);
-            let scope = user_workspaces.team_context_for_view(ctx);
-            AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(&scope, ctx)
-        };
-        if !has_any_ai {
-            AIRequestUsageModel::handle(ctx).update(ctx, |model, ctx| {
-                model.enable_buy_credits_banner(ctx);
-            });
-        }
-
-        let alert_blocks_ai = {
-            let user_workspaces = UserWorkspaces::as_ref(ctx);
-            let scope = user_workspaces.team_context_for_view(ctx);
-            PromptAlertView::does_alert_block_ai_requests(&scope, ctx)
-        };
-        if alert_blocks_ai {
-            AIRequestUsageModel::handle(ctx).update(ctx, |usage_model, ctx| {
-                // Rate limit requests to fetch the user's AI usage if triggered by enter
-                // keypress.
-                const USAGE_LIMIT_UPDATE_REQUEST_RATE_LIMIT: Duration = Duration::from_secs(10);
-
-                let last_update_time = usage_model.last_update_time();
-                if last_update_time
-                    .is_some_and(|time| time.elapsed() >= USAGE_LIMIT_UPDATE_REQUEST_RATE_LIMIT)
-                    || last_update_time.is_none()
-                {
-                    usage_model.refresh_request_usage_async(ctx);
-                }
-            });
-
-            return;
-        }
-
         if let Some(zero_state_prompt_suggestion_type) = zero_state_prompt_suggestion_type {
             return self.ai_controller.update(ctx, move |controller, ctx| {
                 controller.send_zero_state_prompt_suggestion(zero_state_prompt_suggestion_type, ctx)
@@ -16760,26 +16658,6 @@ impl Input {
         self.is_voltron_open
     }
 
-    fn handle_prompt_suggestions_event(
-        &mut self,
-        event: &PromptSuggestionsEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match event {
-            PromptSuggestionsEvent::SignupAnonymousUser => ctx.emit(Event::SignupAnonymousUser {
-                entrypoint: AnonymousUserSignupEntrypoint::SignUpAIPrompt,
-            }),
-            PromptSuggestionsEvent::OpenBillingAndUsagePage => {
-                ctx.emit(Event::OpenSettings(SettingsSection::BillingAndUsage))
-            }
-            PromptSuggestionsEvent::OpenBillingPortal { team_uid } => {
-                UserWorkspaces::handle(ctx).update(ctx, |user_workspaces, ctx| {
-                    user_workspaces.generate_stripe_billing_portal_link(*team_uid, ctx);
-                });
-            }
-        }
-    }
-
     /// Returns whether the input box is currently pinned to the top of the screen.
     fn is_input_at_top(&self, model: &TerminalModel, ctx: &AppContext) -> bool {
         match InputModeSettings::as_ref(ctx).input_mode.value() {
@@ -17192,14 +17070,6 @@ impl View for Input {
             .is_conversation_menu()
         {
             ctx.set.insert(flags::OPEN_INLINE_CONVERSATION_MENU);
-        }
-
-        if self
-            .buy_credits_banner
-            .as_ref(app)
-            .is_denomination_dropdown_open(app)
-        {
-            ctx.set.insert("BuyCreditsBannerOpen");
         }
 
         if self.is_editing_queued_prompt(app) {

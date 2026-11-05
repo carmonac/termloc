@@ -35,12 +35,10 @@ use crate::ai::mcp::gallery::MCPGalleryManager;
 use crate::ai::mcp::templatable_manager::TemplatableMCPServerManager;
 use crate::ai::outline::RepoOutlines;
 use crate::ai::persisted_workspace::PersistedWorkspace;
-use crate::ai::pricing_promotion::PricingPromotionState;
 use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
 use crate::auth::AuthStateProvider;
 use crate::auth::auth_manager::AuthManager;
-use crate::changelog_model::ChangelogModel;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::code_review::git_repo_model::GitRepoModels;
 use crate::context_chips::prompt::Prompt;
@@ -61,7 +59,6 @@ use crate::terminal::cli_agent_sessions::CLIAgentSessionsModel;
 use crate::terminal::keys::TerminalKeybindings;
 use crate::terminal::resizable_data::ResizableData;
 use crate::terminal::shared_session::permissions_manager::SessionPermissionsManager;
-use crate::terminal::view::inline_banner::ByoLlmAuthBannerSessionState;
 use crate::terminal::{History, TerminalView};
 use crate::undo_close::UndoCloseStack;
 use crate::warp_managed_paths_watcher::WarpManagedPathsWatcher;
@@ -89,7 +86,6 @@ pub fn initialize_app_for_terminal_view(app: &mut App) {
             ctx,
         )
     });
-    app.add_singleton_model(|ctx| ChangelogModel::new(ServerApiProvider::as_ref(ctx).get()));
     app.add_singleton_model(|_| NetworkStatus::new());
     app.add_singleton_model(|_| SystemStats::new());
     app.add_singleton_model(|_| Prompt::mock());
@@ -182,9 +178,7 @@ pub fn initialize_app_for_terminal_view(app: &mut App) {
     app.add_singleton_model(|_| WorkspaceRegistry::new());
     app.add_singleton_model(|_| IgnoredSuggestionsModel::new(vec![]));
     app.add_singleton_model(|_| PricingInfoModel::new());
-    app.add_singleton_model(PricingPromotionState::new);
     app.add_singleton_model(AIDocumentModel::new);
-    app.add_singleton_model(ByoLlmAuthBannerSessionState::new);
     app.add_singleton_model(|_| GitHubAuthNotifier::new());
     app.add_singleton_model(AgentConversationsModel::new);
     app.add_singleton_model(PersistedWorkspace::new_for_test);

@@ -4,22 +4,23 @@ use std::task::{Context, Poll};
 use futures::FutureExt as _;
 use futures::future::BoxFuture;
 use http::Uri;
-use reqwest::ClientBuilder;
+use reqwest::{Client, ClientBuilder};
 use tower::{Layer, Service};
 
 use crate::{Blocked, check_host, check_uri, is_enforced};
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
-/// Makes every connection of the built client, redirects included, subject to the active policy.
-pub fn guard(builder: ClientBuilder) -> ClientBuilder {
+/// Builds a client whose connections, redirects included, are subject to the active policy.
+#[allow(clippy::disallowed_methods)]
+pub fn build_client(builder: ClientBuilder) -> reqwest::Result<Client> {
     // A system proxy could carry traffic for loopback addresses off this machine.
     let builder = if is_enforced() {
         builder.no_proxy()
     } else {
         builder
     };
-    builder.connector_layer(GuardLayer)
+    builder.connector_layer(GuardLayer).build()
 }
 
 #[derive(Clone)]

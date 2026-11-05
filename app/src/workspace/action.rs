@@ -26,7 +26,6 @@ use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::blocklist::PendingAttachment;
 use crate::ai::document::ai_document_model::{AIDocumentId, AIDocumentVersion};
-use crate::auth::auth_manager::LoginGatedFeature;
 use crate::drive::CloudObjectTypeAndId;
 use crate::drive::items::WarpDriveItemId;
 use crate::palette::PaletteMode;
@@ -163,7 +162,6 @@ pub enum WorkspaceAction {
         width: f32,
     },
     TabHoverWidthEnd,
-    ToggleTabBarOverflowMenu,
     ToggleWelcomeTips,
     CloseTab(usize),
     CloseActiveTab,
@@ -267,11 +265,7 @@ pub enum WorkspaceAction {
         anchor: NewSessionMenuAnchor,
     },
     SelectNewSessionMenuItem(NewSessionMenuItem),
-    AutoupdateFailureLink,
-    ApplyUpdate,
-    LogOut,
     CopyVersion(&'static str),
-    DownloadNewVersion,
     ConfigureKeybindingSettings {
         keybinding_name: Option<String>,
     },
@@ -303,13 +297,9 @@ pub enum WorkspaceAction {
         mode: PaletteMode,
         source: PaletteSource,
     },
-    ShowUpgrade,
-    ShowReferralSettingsPage,
     JoinSlack,
     ViewUserDocs,
-    ViewLatestChangelog,
     ViewPrivacyPolicy,
-    SendFeedback,
     /// Open the log directory in the system file explorer with the current log file selected.
     #[cfg(not(target_family = "wasm"))]
     ViewLogs,
@@ -317,7 +307,6 @@ pub enum WorkspaceAction {
     ToggleBlockSnackbar,
     ToggleErrorUnderlining,
     ToggleSyntaxHighlighting,
-    CheckForUpdate,
     ExportAllWarpDriveObjects,
     SetA11yVerbosityLevel(AccessibilityVerbosity),
     ToggleNotifications,
@@ -438,9 +427,6 @@ pub enum WorkspaceAction {
     ShowHeaderToolbarContextMenu {
         position: Vector2F,
     },
-    Reauth,
-    SignupAnonymousUser,
-    SignInAnonymousWebUser,
     OpenLink(String),
     /// On WASM, opens a given URL in the desktop Warp app (if installed) or redirects to download page.
     #[cfg(target_family = "wasm")]
@@ -516,9 +502,6 @@ pub enum WorkspaceAction {
         zero_state_prompt_suggestion_type: Option<ZeroStatePromptSuggestionType>,
     },
     OpenCloudAgentSetupGuide,
-    AttemptLoginGatedAIUpgrade,
-    /// Open the modal explaining Prompt Suggestions aren't available on the Free plan.
-    OpenPromptSuggestionsUnavailableModal,
     /// Dismisses the Wayland crash recovery banner and opens a link to our docs page with more
     /// information.
     #[cfg(target_os = "linux")]
@@ -530,8 +513,6 @@ pub enum WorkspaceAction {
     },
     OpenAIFactCollection,
     OpenMCPServerCollection,
-    /// Open the Environment Management pane in Create mode.
-    OpenEnvironmentManagementPane,
     ToggleAIDocumentPane {
         document_id: AIDocumentId,
         document_version: AIDocumentVersion,
@@ -707,15 +688,6 @@ pub enum WorkspaceAction {
     ToggleConversationListView,
     OpenConversationListView,
     OpenAgentManagementView,
-    /// Open the Build Plan Migration Modal (for debugging)
-    #[cfg(debug_assertions)]
-    OpenBuildPlanMigrationModal,
-    /// Reset the build plan migration modal dismissed state (for debugging)
-    #[cfg(debug_assertions)]
-    ResetBuildPlanMigrationModalState,
-    /// Reset the AWS Bedrock login banner dismissed state (for debugging).
-    #[cfg(debug_assertions)]
-    DebugResetAwsBedrockLoginBannerDismissed,
     /// Open the Oz Launch Modal (for debugging)
     #[cfg(debug_assertions)]
     OpenOzLaunchModal,
@@ -740,34 +712,16 @@ pub enum WorkspaceAction {
     /// Reset the Warp Agent CLI launch modal dismissed state (for debugging)
     #[cfg(debug_assertions)]
     ResetAgentCliLaunchModalState,
-    /// Open the Feature Intro Modal (for debugging)
-    #[cfg(debug_assertions)]
-    OpenFeatureIntroModal,
-    /// Reset the feature intro seen state (for debugging)
-    #[cfg(debug_assertions)]
-    ResetFeatureIntroModalState,
     /// Open the auto-handoff sleep modal (for debugging)
     #[cfg(debug_assertions)]
     OpenAutoHandoffSleepModal,
     /// Reset the auto-handoff sleep modal shown state (for debugging)
     #[cfg(debug_assertions)]
     ResetAutoHandoffSleepModalState,
-    /// Open the "You're using your ChatGPT plan" modal (for debugging)
-    #[cfg(debug_assertions)]
-    OpenChatGPTPlanModal,
-    /// Reset the ChatGPT plan modal shown state (for debugging)
-    #[cfg(debug_assertions)]
-    ResetChatGPTPlanModalState,
     /// Trigger the auto-handoff-to-cloud flow in-process, as if the machine
     /// were about to sleep (for debugging)
     #[cfg(debug_assertions)]
     TriggerAutoHandoffToCloud,
-    /// Open the Free AI Removal Modal (for debugging)
-    #[cfg(debug_assertions)]
-    OpenFreeAiRemovalModal,
-    /// Reset the free AI removal modal seen state (for debugging)
-    #[cfg(debug_assertions)]
-    ResetFreeAiRemovalModalState,
     /// Install the opencode-warp plugin from GitHub into the global opencode config.
     #[cfg(debug_assertions)]
     InstallOpenCodeWarpPlugin,
@@ -829,8 +783,6 @@ pub enum WorkspaceAction {
     StartAgentOnboardingTutorial(OnboardingTutorial),
     ShowSessionConfigModal,
     DismissSessionConfigTabConfigChip,
-    /// Dismiss the non-blocking feature-intro popover without requiring it to hold focus.
-    DismissFeatureIntroModal,
     /// Start the HOA onboarding flow (for debugging)
     #[cfg(debug_assertions)]
     ShowHoaOnboardingFlow,
@@ -881,42 +833,9 @@ pub enum WorkspaceAction {
     OpenNewWindowForTeam {
         team_uid: ServerId,
     },
-    BrowseTeams,
-    /// Shows (toggles) the team-switcher dropdown menu in the title bar.
-    ShowTeamSwitcherMenu,
-}
-
-impl From<&WorkspaceAction> for LoginGatedFeature {
-    fn from(val: &WorkspaceAction) -> LoginGatedFeature {
-        use WorkspaceAction::*;
-        match val {
-            ImportToTeamDrive => "Importing to a team drive",
-            CreateTeamNotebook => "Creating a team notebook",
-            CreateTeamWorkflow => "Creating a team workflow",
-            CreateTeamFolder => "Creating a team folder",
-            CreateTeamEnvVarCollection => "Creating a team environment variable collection",
-            CreateTeamAIPrompt => "Creating a team prompt",
-            OpenShareSessionModal(_) => "Sharing a session",
-            _ => "Unknown reason",
-        }
-    }
 }
 
 impl WorkspaceAction {
-    pub fn blocked_for_anonymous_user(&self) -> bool {
-        use WorkspaceAction::*;
-        matches!(
-            self,
-            ImportToTeamDrive
-                | CreateTeamNotebook
-                | CreateTeamWorkflow
-                | CreateTeamFolder
-                | CreateTeamEnvVarCollection
-                | CreateTeamAIPrompt
-                | OpenShareSessionModal(_)
-        )
-    }
-
     /// Matches what actions require the app state to be saved, and which don't. We match all
     /// actions directly, rather than using _, so we're forced to make a conscious decision for each
     /// of them, rather than following some default.
@@ -1011,10 +930,7 @@ impl WorkspaceAction {
             | OpenVerticalTabsPanel => true, // actions that actually change a state of the state of user's
             // workspace would most likely require a save, so that if the app gets
             // restarted, the user can continue working
-            AutoupdateFailureLink
-            | ApplyUpdate
-            | CopyVersion(_)
-            | DownloadNewVersion
+            CopyVersion(_)
             | ConfigureKeybindingSettings { .. }
             | ExportAllWarpDriveObjects
             | ShowSettings
@@ -1030,13 +946,9 @@ impl WorkspaceAction {
             | ResetZoom
             | OpenPalette { .. }
             | TogglePalette { mode: _, source: _ }
-            | ShowUpgrade
-            | ShowReferralSettingsPage
             | JoinSlack
             | ViewUserDocs
-            | ViewLatestChangelog
             | ViewPrivacyPolicy
-            | SendFeedback
             | ChangeCursor(_)
             | ToggleBlockSnackbar
             | ToggleErrorUnderlining
@@ -1050,8 +962,6 @@ impl WorkspaceAction {
             | ToggleTabConfigsMenu
             | ToggleNewSessionMenu { .. }
             | SelectNewSessionMenuItem(_)
-            | ToggleTabBarOverflowMenu
-            | CheckForUpdate
             | SetA11yVerbosityLevel(_)
             | ToggleNotifications
             | DispatchToSettingsTab { .. }
@@ -1060,7 +970,6 @@ impl WorkspaceAction {
             | ClickedAIAssistantIcon
             | ToggleAIAssistant
             | OpenCloudAgentSetupGuide
-            | OpenPromptSuggestionsUnavailableModal
             | ToggleKeybindingsPage
             | ShowCommandSearch(_)
             | TriggerExternalCtrlTFileSearch
@@ -1127,9 +1036,6 @@ impl WorkspaceAction {
             | OpenCLIAgentToolbarEditor
             | OpenHeaderToolbarEditor
             | ShowHeaderToolbarContextMenu { .. }
-            | Reauth
-            | SignupAnonymousUser
-            | LogOut
             | OpenLink(_)
             | OpenShareSessionModal(_)
             | StopSharingSessionFromTabMenu { .. }
@@ -1149,13 +1055,11 @@ impl WorkspaceAction {
             | RunCommand { .. }
             | InsertInInput { .. }
             | InsertForkSlashCommand
-            | AttemptLoginGatedAIUpgrade
             | UndoTrash(_)
             | OpenFilePath { .. }
             | ViewObjectInWarpDrive(_)
             | OpenObjectSharingSettings { .. }
             | TerminateApp
-            | SignInAnonymousWebUser
             | TabHoverWidthStart { .. }
             | TabHoverWidthEnd
             | OpenAIFactCollection
@@ -1195,7 +1099,6 @@ impl WorkspaceAction {
             | StartAgentOnboardingTutorial(_)
             | ShowSessionConfigModal
             | DismissSessionConfigTabConfigChip
-            | DismissFeatureIntroModal
             | SaveCurrentTabAsNewConfig(_)
             | SyncTrafficLights
             | OpenTabConfigErrorFile { .. }
@@ -1210,18 +1113,13 @@ impl WorkspaceAction {
             | ShowCloudModeV2EnvironmentCreationModal
             | OpenCreateAuthSecretModal { .. }
             | OpenNetworkLogPane
-            | OpenNewWindowForTeam { .. }
-            | BrowseTeams
-            | ShowTeamSwitcherMenu => false,
+            | OpenNewWindowForTeam { .. } => false,
             #[cfg(debug_assertions)]
             ShowHoaOnboardingFlow => false,
             #[cfg(target_family = "wasm")]
             ToggleConversationTranscriptDetailsPanel => false,
             #[cfg(debug_assertions)]
-            OpenBuildPlanMigrationModal
-            | ResetBuildPlanMigrationModalState
-            | DebugResetAwsBedrockLoginBannerDismissed
-            | OpenOzLaunchModal
+            OpenOzLaunchModal
             | ResetOzLaunchModalState
             | OpenOpenWarpLaunchModal
             | ResetOpenWarpLaunchModalState
@@ -1229,15 +1127,9 @@ impl WorkspaceAction {
             | ResetOrchestrationLaunchModalState
             | OpenAgentCliLaunchModal
             | ResetAgentCliLaunchModalState
-            | OpenFeatureIntroModal
-            | ResetFeatureIntroModalState
             | OpenAutoHandoffSleepModal
             | ResetAutoHandoffSleepModalState
-            | OpenChatGPTPlanModal
-            | ResetChatGPTPlanModalState
             | TriggerAutoHandoffToCloud
-            | OpenFreeAiRemovalModal
-            | ResetFreeAiRemovalModalState
             | InstallOpenCodeWarpPlugin
             | UseLocalOpenCodeWarpPlugin => false,
             #[cfg(not(target_family = "wasm"))]
@@ -1252,7 +1144,6 @@ impl WorkspaceAction {
             FileRenamed { .. } => false, // File rename doesn't change workspace state
             #[cfg(feature = "local_fs")]
             FileDeleted { .. } => false, // File deletion doesn't change workspace state
-            OpenEnvironmentManagementPane => false,
             #[cfg(target_os = "linux")]
             DismissWaylandCrashRecoveryBannerAndOpenLink => false,
             #[cfg(target_family = "wasm")]

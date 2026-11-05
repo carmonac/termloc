@@ -1083,11 +1083,6 @@ fn handle_terminal_view_event(
             Event::OpenSettings(section) => {
                 ctx.emit(pane_group::Event::OpenSettings(*section));
             }
-            Event::OpenAutoReloadModal { purchased_credits } => {
-                ctx.emit(pane_group::Event::OpenAutoReloadModal {
-                    purchased_credits: *purchased_credits,
-                });
-            }
             #[cfg(not(target_family = "wasm"))]
             Event::OpenPluginInstructionsPane(agent, kind) => {
                 ctx.emit(pane_group::Event::OpenPluginInstructionsPane(*agent, *kind));
@@ -1267,7 +1262,6 @@ fn handle_terminal_view_event(
                     is_open.then_some(pane_id);
                 ctx.notify();
             }
-            Event::AnonymousUserSignup => ctx.emit(pane_group::Event::AnonymousUserSignup),
             #[cfg(feature = "local_fs")]
             Event::OpenFileWithTarget {
                 path,
@@ -1344,11 +1338,6 @@ fn handle_terminal_view_event(
                     upload_id: *upload_id,
                 })
             }
-            Event::SignupAnonymousUser { entrypoint } => {
-                ctx.emit(pane_group::Event::SignupAnonymousUser {
-                    entrypoint: *entrypoint,
-                });
-            }
             Event::OpenThemeChooser => {
                 ctx.emit(pane_group::Event::OpenThemeChooser);
             }
@@ -1368,9 +1357,6 @@ fn handle_terminal_view_event(
                 ctx.emit(crate::pane_group::Event::OpenAddPromptPane {
                     initial_content: initial_content.clone(),
                 });
-            }
-            Event::OpenEnvironmentManagementPane => {
-                ctx.emit(crate::pane_group::Event::OpenEnvironmentManagementPane);
             }
             #[cfg(feature = "local_fs")]
             Event::FileRenamed { old_path, new_path } => {

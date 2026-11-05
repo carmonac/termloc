@@ -2,10 +2,7 @@ use warp_core::HostId;
 use warp_core::features::FeatureFlag;
 use warp_multi_agent_api as api;
 
-use super::{
-    api_keys_with_warp_credit_fallback_setting, get_supported_cli_agent_tools, get_supported_tools,
-    supports_orchestration_v2,
-};
+use super::{get_supported_cli_agent_tools, get_supported_tools, supports_orchestration_v2};
 use crate::ai::agent::api::RequestParams;
 use crate::ai::blocklist::SessionContext;
 use crate::ai::llms::LLMId;
@@ -33,12 +30,6 @@ fn request_params_with_ask_user_question_enabled(ask_user_question_enabled: bool
         mcp_context: None,
         planning_enabled: true,
         should_redact_secrets: false,
-        member_byo_credentials_allowed: false,
-        api_keys: None,
-        custom_model_providers: None,
-        custom_model_routers: None,
-        allow_use_of_warp_credits: false,
-        skip_chatgpt_subscription: false,
         autonomy_level: api::AutonomyLevel::Supervised,
         isolation_level: api::IsolationLevel::None,
         web_search_enabled: false,
@@ -59,71 +50,6 @@ fn request_params_for_remote(host_id: Option<HostId>) -> RequestParams {
             host_id,
         }));
     params
-}
-
-#[test]
-fn api_keys_with_warp_credit_fallback_setting_returns_none_without_keys_or_fallback() {
-    let api_keys = api_keys_with_warp_credit_fallback_setting(None, false, false);
-
-    assert!(api_keys.is_none());
-}
-
-#[test]
-fn api_keys_with_warp_credit_fallback_setting_creates_fallback_only_api_keys() {
-    let api_keys = api_keys_with_warp_credit_fallback_setting(None, true, false)
-        .expect("fallback setting should create ApiKeys");
-
-    assert!(api_keys.allow_use_of_warp_credits);
-    assert!(!api_keys.skip_chatgpt_subscription);
-    assert!(api_keys.anthropic.is_empty());
-    assert!(api_keys.openai.is_empty());
-    assert!(api_keys.google.is_empty());
-    assert!(api_keys.open_router.is_empty());
-    assert!(api_keys.aws_credentials.is_none());
-}
-
-#[test]
-fn api_keys_with_warp_credit_fallback_setting_preserves_existing_keys() {
-    let api_keys = api_keys_with_warp_credit_fallback_setting(
-        Some(api::request::settings::ApiKeys {
-            anthropic: "anthropic-key".to_string(),
-            ..Default::default()
-        }),
-        true,
-        false,
-    )
-    .expect("existing ApiKeys should be preserved");
-
-    assert_eq!(api_keys.anthropic, "anthropic-key");
-    assert!(api_keys.allow_use_of_warp_credits);
-    assert!(!api_keys.skip_chatgpt_subscription);
-}
-
-#[test]
-fn api_keys_skip_chatgpt_subscription_creates_api_keys_when_none_exist() {
-    let api_keys = api_keys_with_warp_credit_fallback_setting(None, false, true)
-        .expect("skipping the ChatGPT subscription should create ApiKeys");
-
-    assert!(api_keys.skip_chatgpt_subscription);
-    assert!(!api_keys.allow_use_of_warp_credits);
-    assert!(api_keys.openai.is_empty());
-}
-
-#[test]
-fn api_keys_skip_chatgpt_subscription_follows_conversation_flag_on_existing_keys() {
-    let existing = api::request::settings::ApiKeys {
-        openai: "openai-key".to_string(),
-        ..Default::default()
-    };
-
-    let skipped = api_keys_with_warp_credit_fallback_setting(Some(existing.clone()), false, true)
-        .expect("existing ApiKeys should be preserved");
-    assert!(skipped.skip_chatgpt_subscription);
-    assert_eq!(skipped.openai, "openai-key");
-
-    let not_skipped = api_keys_with_warp_credit_fallback_setting(Some(existing), false, false)
-        .expect("existing ApiKeys should be preserved");
-    assert!(!not_skipped.skip_chatgpt_subscription);
 }
 
 #[test]

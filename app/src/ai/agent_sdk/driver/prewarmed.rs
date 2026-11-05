@@ -125,10 +125,6 @@ impl AgentDriver {
         let share_requests =
             execution_config::sharing_acls(std::mem::take(&mut config.session_sharing_acls))
                 .map_err(AgentDriverError::ConfigBuildFailed)?;
-        let bedrock = config
-            .inference_providers
-            .take()
-            .and_then(|providers| providers.aws_bedrock);
         let specs = config
             .skills
             .iter()
@@ -272,23 +268,6 @@ impl AgentDriver {
                     ),
                 )
                 .await?;
-        }
-        #[cfg(not(target_family = "wasm"))]
-        if let Some(bedrock) = bedrock {
-            let region = bedrock.region.ok_or_else(|| {
-                AgentDriverError::AwsBedrockCredentialsFailed("Bedrock region is required".into())
-            })?;
-            crate::ai::agent_sdk::configure_bedrock_oidc_credentials(
-                spawner,
-                &mut options,
-                bedrock.role_arn,
-                region,
-            )
-            .await?;
-        }
-        #[cfg(target_family = "wasm")]
-        if bedrock.is_some() {
-            return Err(AgentDriverError::InvalidRuntimeState);
         }
         let (terminal_inputs, run_config) = split_run_options(options)?;
         let should_share = terminal_inputs.should_share;

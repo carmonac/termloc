@@ -1,25 +1,13 @@
 //! Team-scoped reads of workspace settings, plus the [`TeamScope`] types that name which team a
 //! read is for.
 //!
-//! Two layers gate what a member may do, at different granularities:
-//! - Plan entitlements are **workspace-level**: billing metadata is workspace-owned, so they hold
-//!   regardless of which team a window has selected, and read `current_workspace()` (e.g.
-//!   [`UserWorkspaces::is_managed_byok_byoe_enabled`]).
-//! - Admin policies are **team-scoped**: they narrow an entitlement for one team, so they take a
-//!   [`TeamScope`] and read that team (e.g. [`UserWorkspaces::team_byo_for_scope`]).
-//!
-//! A team-scoped policy only bites once its workspace-level entitlement turns it on -- a plan that
-//! does not manage credentials centrally has no `team_byo` to enforce, so members fall back to the
-//! plan's own BYO entitlement.
 
 use std::rc::Rc;
 use std::sync::OnceLock;
 
 use regex::Regex;
-use settings::Setting;
 #[cfg(not(target_family = "wasm"))]
 use warp_cli::scope::{ObjectScope, TeamSelection};
-use warp_core::features::FeatureFlag;
 use warpui::{AppContext, Entity, SingletonEntity, ViewContext, WeakViewHandle, WindowId};
 
 #[cfg(not(target_family = "wasm"))]
@@ -29,16 +17,12 @@ use super::UserWorkspaces;
 use crate::ai::ambient_agents::task::TaskScope;
 #[cfg(any(test, feature = "test-util"))]
 use crate::ai::llms::LLMInfo;
-use crate::ai::llms::{LLMId, LLMModelHost, LLMProvider, ModelsByFeature};
-use crate::auth::AuthStateProvider;
+use crate::ai::llms::ModelsByFeature;
 use crate::server::ids::ServerId;
-use crate::settings::{AISettings, AgentModeCommandExecutionPredicate};
+use crate::settings::AgentModeCommandExecutionPredicate;
 use crate::workspaces::gql_convert::ToAgentModeCommandExecutionPredicates;
 use crate::workspaces::team::Team;
-use crate::workspaces::workspace::{
-    AdminEnablementSetting, AiAutonomySettings, HostEnablementSetting, LlmHostSettings,
-    LlmSettings, TeamByoSettings, Workspace,
-};
+use crate::workspaces::workspace::{AdminEnablementSetting, AiAutonomySettings, Workspace};
 
 mod sealed {
     pub trait Sealed {}
@@ -198,20 +182,6 @@ pub(crate) enum TeamScopeForCliError {
     NotAMember(#[from] NotATeamMemberError),
 }
 
-/// What windowless Gemini Enterprise credential minting should mint from. See
-/// [`UserWorkspaces::gemini_enterprise_host_for_any_enabling_team`].
-#[cfg(not(target_family = "wasm"))]
-pub(crate) enum GeminiEnterpriseBackgroundHost<'a> {
-    /// No team of the user's enables Gemini Enterprise, so there is nothing to mint.
-    NoneEnabled,
-    /// Teams enable it against different Google Cloud projects, named here so the caller can
-    /// tell the user which teams disagree. Nothing is minted -- there is one credential store
-    /// and no window to choose with -- but unlike [`Self::NoneEnabled`] this is a
-    /// misconfiguration an admin can fix, and the user should be told so.
-    Conflicting(Vec<&'a str>),
-    Enabled(&'a LlmHostSettings),
-}
-
 impl UserWorkspaces {
     /// Captures the team selected in `ctx`'s window as an operation's
     /// [`TeamContextForOperation`]. Always succeeds -- a window with no team selected still yields
@@ -346,90 +316,6 @@ impl UserWorkspaces {
             .and_then(|team_uid| self.team_from_uid(team_uid))
     }
 
-    /// Whether `scope`'s team admins allows its members to use their own provider API keys.
-    ///
-    /// Without the managed BYOK/BYOE policy there is no team-level restriction, so this returns
-    /// true and the normal BYO entitlement applies.
-    pub fn are_member_byo_keys_allowed<S: TeamScope + ?Sized>(&self, scope: &S) -> bool {
-        !self.is_managed_byok_byoe_enabled()
-            || self
-                .team_byo_for_scope(scope)
-                .is_some_and(|team_byo| team_byo.first_party_enabled && team_byo.allow_user_keys)
-    }
-
-    /// [`Self::are_member_byo_keys_allowed`] for member-configured custom endpoints. Its
-    /// entitlement half is [`Self::is_byo_endpoint_enabled`].
-    pub(crate) fn are_member_byo_endpoints_allowed<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> bool {
-        !self.is_managed_byok_byoe_enabled()
-            || self
-                .team_byo_for_scope(scope)
-                .is_some_and(|team_byo| team_byo.endpoints_enabled && team_byo.allow_user_endpoints)
-    }
-
-    /// Whether `scope`'s team provides a managed endpoint serving `llm_id`.
-    pub fn has_team_byo_endpoint<S: TeamScope + ?Sized>(&self, scope: &S, llm_id: &LLMId) -> bool {
-        self.is_managed_byok_byoe_enabled()
-            && self.team_byo_for_scope(scope).is_some_and(|team_byo| {
-                team_byo.endpoints_enabled
-                    && team_byo.endpoints.iter().any(|endpoint| {
-                        endpoint.enabled
-                            && endpoint
-                                .models
-                                .iter()
-                                .any(|model| model.enabled && model.config_key == llm_id.as_str())
-                    })
-            })
-    }
-
-    /// Whether a first-party key for `provider` has been configured for `scope`.
-    pub fn has_team_first_party_key<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-        provider: LLMProvider,
-    ) -> bool {
-        self.is_managed_byok_byoe_enabled()
-            && self.team_byo_for_scope(scope).is_some_and(|team_byo| {
-                team_byo.first_party_enabled
-                    && team_byo
-                        .first_party_keys
-                        .iter()
-                        .any(|key| key.provider == provider)
-            })
-    }
-
-    /// [`Self::are_member_byo_endpoints_allowed`] across every team at once, for callers with no
-    /// window: id resolution and preference reconciliation act on state that follows the user
-    /// between teams and devices, so neither may turn on one arbitrarily elected team's policy.
-    pub fn is_byo_endpoint_enabled_for_any_team(&self, app: &AppContext) -> bool {
-        self.is_byo_endpoint_enabled(app) && self.any_team_allows_member_byo_endpoints()
-    }
-
-    /// Unlike [`Self::team_byo_for_scope`], several teams is not ambiguous here: any one
-    /// allowing is enough. No teams still falls back to the workspace's own policy.
-    fn any_team_allows_member_byo_endpoints(&self) -> bool {
-        if !self.is_managed_byok_byoe_enabled() {
-            return true;
-        }
-        fn allows(team_byo: &TeamByoSettings) -> bool {
-            team_byo.endpoints_enabled && team_byo.allow_user_endpoints
-        }
-        let mut teams = self
-            .workspaces
-            .iter()
-            .flat_map(|workspace| workspace.teams.iter())
-            .peekable();
-        if teams.peek().is_none() {
-            return self
-                .current_workspace()
-                .and_then(|workspace| workspace.settings.team_byo.as_ref())
-                .is_some_and(allows);
-        }
-        teams.any(|team| team.settings.team_byo.as_ref().is_some_and(allows))
-    }
-
     /// Resolves a per-team setting for `scope`: the scope's own team when it names one, otherwise
     /// `current_workspace().settings`.
     ///
@@ -450,17 +336,6 @@ impl UserWorkspaces {
             Some(_) => self.team_from_scope(scope).map_or(absent, from_team),
             None => self.current_workspace().map_or(absent, from_workspace),
         }
-    }
-
-    /// The `team_byo` policy that governs `scope`. See [`Self::scoped_or_workspace_setting`] for
-    /// the no-team fallback.
-    fn team_byo_for_scope<S: TeamScope + ?Sized>(&self, scope: &S) -> Option<&TeamByoSettings> {
-        self.scoped_or_workspace_setting(
-            scope,
-            |team| team.settings.team_byo.as_ref(),
-            |workspace| workspace.settings.team_byo.as_ref(),
-            None,
-        )
     }
 
     /// The self-hosted worker host slug configured as the default for `scope`'s team. See
@@ -523,253 +398,6 @@ impl UserWorkspaces {
             },
             true,
         )
-    }
-
-    /// Every team the user belongs to, across all of their workspaces.
-    #[cfg(not(target_family = "wasm"))]
-    fn all_teams(&self) -> impl Iterator<Item = &Team> {
-        self.workspaces
-            .iter()
-            .flat_map(|workspace| workspace.teams.iter())
-    }
-
-    /// The LLM host settings (which hosts an admin has enabled, and how) that apply to
-    /// `scope`'s team. See [`Self::scoped_or_workspace_setting`] for the no-team fallback.
-    /// `llm_settings` lives on both [`crate::workspaces::workspace::WorkspaceSettings`] and
-    /// [`crate::workspaces::workspace::TeamSettings`] for exactly this reason: unlike a plan
-    /// entitlement, which host an admin enabled is per-team, not workspace-wide.
-    fn llm_settings_for_scope<S: TeamScope + ?Sized>(&self, scope: &S) -> Option<&LlmSettings> {
-        self.scoped_or_workspace_setting(
-            scope,
-            |team| Some(&team.settings.llm_settings),
-            |workspace| Some(&workspace.settings.llm_settings),
-            None,
-        )
-    }
-
-    fn host_settings_for_scope<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-        host: LLMModelHost,
-    ) -> Option<&LlmHostSettings> {
-        self.llm_settings_for_scope(scope)?.host_configs.get(&host)
-    }
-
-    pub(crate) fn aws_bedrock_host_settings<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> Option<&LlmHostSettings> {
-        self.host_settings_for_scope(scope, LLMModelHost::AwsBedrock)
-    }
-
-    pub(crate) fn gemini_enterprise_host_settings<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> Option<&LlmHostSettings> {
-        self.host_settings_for_scope(scope, LLMModelHost::GeminiEnterprise)
-    }
-
-    /// Did the admin enable AWS Bedrock for `scope`'s team?
-    pub(crate) fn is_aws_bedrock_available<S: TeamScope + ?Sized>(&self, scope: &S) -> bool {
-        self.llm_settings_for_scope(scope)
-            .is_some_and(|llm_settings| llm_settings.enabled)
-            && self
-                .aws_bedrock_host_settings(scope)
-                .is_some_and(|settings| settings.enabled)
-    }
-
-    pub(crate) fn aws_bedrock_host_enablement_setting<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> HostEnablementSetting {
-        self.aws_bedrock_host_settings(scope)
-            .map(|settings| settings.enablement_setting.clone())
-            .unwrap_or_default()
-    }
-
-    pub(crate) fn is_aws_bedrock_credentials_enabled<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-        app: &AppContext,
-    ) -> bool {
-        // i.e. did the admin go and toggle on aws bedrock in the admin panel?
-        if !self.is_aws_bedrock_available(scope) {
-            return false;
-        }
-
-        match self.aws_bedrock_host_enablement_setting(scope) {
-            HostEnablementSetting::Enforce => true,
-            HostEnablementSetting::RespectUserSetting => *AISettings::as_ref(app)
-                .aws_bedrock_credentials_enabled
-                .value(),
-        }
-    }
-
-    /// Whether *any* of the user's teams has AWS Bedrock credentials enabled, for work that
-    /// belongs to no window at all: loading the local AWS credential chain, and the "does this
-    /// user have any usable BYO path" check. A caller with a window must use
-    /// [`Self::is_aws_bedrock_credentials_enabled`] instead -- this deliberately answers for
-    /// the union of the user's teams, not for the team a window points at.
-    #[cfg(not(target_family = "wasm"))]
-    pub(crate) fn is_aws_bedrock_credentials_enabled_for_any_team(&self, app: &AppContext) -> bool {
-        self.every_applicable_team_and_llm_settings()
-            .map(|(_, settings)| settings)
-            .any(|llm_settings| {
-                Self::host_credentials_enabled(llm_settings, &LLMModelHost::AwsBedrock, || {
-                    *AISettings::as_ref(app)
-                        .aws_bedrock_credentials_enabled
-                        .value()
-                })
-            })
-    }
-
-    /// Did the admin enable Gemini Enterprise (GEAP) for `scope`'s team?
-    pub(crate) fn is_gemini_enterprise_available_from_workspace<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> bool {
-        self.llm_settings_for_scope(scope)
-            .is_some_and(|llm_settings| llm_settings.enabled)
-            && self
-                .gemini_enterprise_host_settings(scope)
-                .is_some_and(|settings| settings.enabled)
-    }
-
-    pub(crate) fn gemini_enterprise_host_enablement_setting<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> HostEnablementSetting {
-        self.gemini_enterprise_host_settings(scope)
-            .map(|settings| settings.enablement_setting.clone())
-            .unwrap_or_default()
-    }
-
-    pub(crate) fn is_gemini_enterprise_credentials_toggleable<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-    ) -> bool {
-        matches!(
-            self.gemini_enterprise_host_enablement_setting(scope),
-            HostEnablementSetting::RespectUserSetting
-        )
-    }
-
-    /// Whether Gemini Enterprise (GEAP) credentials should be minted and attached to requests
-    pub(crate) fn is_gemini_enterprise_credentials_enabled<S: TeamScope + ?Sized>(
-        &self,
-        scope: &S,
-        app: &AppContext,
-    ) -> bool {
-        if !FeatureFlag::GeminiEnterprise.is_enabled() {
-            return false;
-        }
-        if AuthStateProvider::as_ref(app)
-            .get()
-            .is_anonymous_or_logged_out()
-        {
-            return false;
-        }
-        // i.e. did the admin toggle on Gemini Enterprise in the admin panel?
-        if !self.is_gemini_enterprise_available_from_workspace(scope) {
-            return false;
-        }
-
-        match self.gemini_enterprise_host_enablement_setting(scope) {
-            HostEnablementSetting::Enforce => true,
-            HostEnablementSetting::RespectUserSetting => *AISettings::as_ref(app)
-                .gemini_enterprise_credentials_enabled
-                .value(),
-        }
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    fn every_applicable_team_and_llm_settings(
-        &self,
-    ) -> Box<dyn Iterator<Item = (Option<&Team>, &LlmSettings)> + '_> {
-        let mut teams = self.all_teams().peekable();
-        if teams.peek().is_none() {
-            return Box::new(
-                self.current_workspace()
-                    .into_iter()
-                    .map(|workspace| (None, &workspace.settings.llm_settings)),
-            );
-        }
-        Box::new(teams.map(|team| (Some(team), &team.settings.llm_settings)))
-    }
-
-    /// Did the admin turn `host` on, with its credentials resolved against `user_setting_enabled`?
-    #[cfg(not(target_family = "wasm"))]
-    fn host_credentials_enabled(
-        llm_settings: &LlmSettings,
-        host: &LLMModelHost,
-        user_setting_enabled: impl FnOnce() -> bool,
-    ) -> bool {
-        if !llm_settings.enabled {
-            return false;
-        }
-        let Some(host_settings) = llm_settings.host_configs.get(host) else {
-            return false;
-        };
-        if !host_settings.enabled {
-            return false;
-        }
-        match host_settings.enablement_setting {
-            HostEnablementSetting::Enforce => true,
-            HostEnablementSetting::RespectUserSetting => user_setting_enabled(),
-        }
-    }
-
-    /// What background, windowless Gemini Enterprise credential minting should mint from.
-    #[cfg(not(target_family = "wasm"))]
-    pub(crate) fn gemini_enterprise_host_for_any_enabling_team(
-        &self,
-        app: &AppContext,
-    ) -> GeminiEnterpriseBackgroundHost<'_> {
-        if !FeatureFlag::GeminiEnterprise.is_enabled()
-            || AuthStateProvider::as_ref(app)
-                .get()
-                .is_anonymous_or_logged_out()
-        {
-            return GeminiEnterpriseBackgroundHost::NoneEnabled;
-        }
-        let enabling: Vec<(Option<&Team>, &LlmHostSettings)> = self
-            .every_applicable_team_and_llm_settings()
-            .filter(|(_, llm_settings)| {
-                Self::host_credentials_enabled(
-                    llm_settings,
-                    &LLMModelHost::GeminiEnterprise,
-                    || {
-                        *AISettings::as_ref(app)
-                            .gemini_enterprise_credentials_enabled
-                            .value()
-                    },
-                )
-            })
-            .filter_map(|(team, llm_settings)| {
-                llm_settings
-                    .host_configs
-                    .get(&LLMModelHost::GeminiEnterprise)
-                    .map(|settings| (team, settings))
-            })
-            .collect();
-
-        let Some((_, first)) = enabling.first().copied() else {
-            return GeminiEnterpriseBackgroundHost::NoneEnabled;
-        };
-        let agree = enabling.iter().all(|(_, settings)| {
-            settings.gcp_audience == first.gcp_audience
-                && settings.gcp_sa_email == first.gcp_sa_email
-        });
-        if agree {
-            GeminiEnterpriseBackgroundHost::Enabled(first)
-        } else {
-            GeminiEnterpriseBackgroundHost::Conflicting(
-                enabling
-                    .iter()
-                    .filter_map(|(team, _)| team.map(|team| team.name.as_str()))
-                    .collect(),
-            )
-        }
     }
 
     /// The AI autonomy policy that applies to `scope`'s team. See

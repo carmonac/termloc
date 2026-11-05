@@ -29,12 +29,9 @@ pub const ORCHESTRATION_RUNNER_NONE_LABEL: &str = "Use default";
 pub(crate) fn get_base_model_choices<'a>(
     llm_prefs: &'a LLMPreferences,
     app: &'a AppContext,
-    is_local: bool,
 ) -> impl Iterator<Item = &'a LLMInfo> {
     let team_uid = UserWorkspaces::as_ref(app).inherited_or_default_team_uid(None);
-    llm_prefs
-        .get_base_llm_choices_for_agent_mode_for_team_uid(team_uid, app)
-        .filter(move |llm| is_local || llm_prefs.custom_llm_info_for_id(&llm.id).is_none())
+    llm_prefs.get_base_llm_choices_for_agent_mode_for_team_uid(team_uid, app)
 }
 
 /// Returns whether the given model_id is present in the harness-filtered
@@ -50,8 +47,7 @@ pub fn is_model_in_filtered_choices(
     match harness {
         Some(Harness::Oz) | None => {
             let llm_prefs = LLMPreferences::as_ref(ctx);
-            get_base_model_choices(llm_prefs, ctx, is_local)
-                .any(|llm| llm.id.to_string() == model_id)
+            get_base_model_choices(llm_prefs, ctx).any(|llm| llm.id.to_string() == model_id)
         }
         Some(Harness::Codex) if is_local => model_id.is_empty(),
         Some(harness) => {

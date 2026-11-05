@@ -16,7 +16,6 @@ use itertools::Itertools;
 use markdown_parser::{FormattedText, FormattedTextInline, TableAlignment};
 use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::vec2f;
-use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::color::blend::Blend;
@@ -28,14 +27,13 @@ use warpui::assets::asset_cache::{AssetCache, AssetSource, AssetState};
 use warpui::elements::new_scrollable::{ScrollableAppearance, SingleAxisConfig};
 use warpui::elements::shimmering_text::ShimmeringTextStateHandle;
 use warpui::elements::{
-    Align, Axis, Border, ChildAnchor, ChildView, Clipped, ClippedScrollStateHandle, ConstrainedBox,
-    Container, CornerRadius, CrossAxisAlignment, DispatchEventResult, Empty, EventHandler,
-    Expanded, Fill, Flex, FormattedTextElement, HeadingFontSizeMultipliers, Highlight,
-    HighlightedRange, Hoverable, Image as WarpImage, MainAxisAlignment, MainAxisSize,
-    MouseStateHandle, NewScrollable, OffsetPositioning, ParentAnchor, ParentElement,
-    ParentOffsetBounds, Radius, SavePosition, ScrollTarget, ScrollToPositionMode, ScrollbarWidth,
-    Shrinkable, Stack, Table, TableColumnWidth, TableConfig, TableHeader, TableVerticalSizing,
-    Text, Wrap,
+    Align, Axis, Border, ChildAnchor, Clipped, ClippedScrollStateHandle, ConstrainedBox, Container,
+    CornerRadius, CrossAxisAlignment, DispatchEventResult, Empty, EventHandler, Expanded, Fill,
+    Flex, FormattedTextElement, HeadingFontSizeMultipliers, Highlight, HighlightedRange, Hoverable,
+    Image as WarpImage, MainAxisSize, MouseStateHandle, NewScrollable, OffsetPositioning,
+    ParentAnchor, ParentElement, ParentOffsetBounds, Radius, SavePosition, ScrollTarget,
+    ScrollToPositionMode, ScrollbarWidth, Shrinkable, Stack, Table, TableColumnWidth, TableConfig,
+    TableHeader, TableVerticalSizing, Text, Wrap,
 };
 use warpui::fonts::{Properties, Weight};
 use warpui::image_cache::{CacheOption, ImageType};
@@ -53,9 +51,8 @@ use crate::ai::agent::icons::red_stop_icon;
 use crate::ai::agent::{
     AIAgentAction, AIAgentActionType, AIAgentInput, AIAgentOutputMessageType, AIAgentTextSection,
     AgentOutputImage, AgentOutputImageLayout, AgentOutputMermaidDiagram, AgentOutputTable,
-    AgentOutputTableRendering, ChatGPTSubscriptionErrorAction, ChatGPTSubscriptionErrorActionKind,
-    MessageId, ProgrammingLanguage, RenderableAIError, ShellCommandDelay, SummarizationType,
-    UserQueryMode, WebSearchStatus, icons,
+    AgentOutputTableRendering, MessageId, ProgrammingLanguage, RenderableAIError,
+    ShellCommandDelay, SummarizationType, UserQueryMode, WebSearchStatus, icons,
 };
 use crate::ai::blocklist::block::find::FindState;
 use crate::ai::blocklist::block::status_bar::BlocklistAIStatusBarAction;
@@ -69,8 +66,6 @@ use crate::ai::blocklist::code_block::{
     render_code_block_with_warp_text,
 };
 use crate::ai::blocklist::history_model::BlocklistAIHistoryModel;
-use crate::ai::blocklist::inline_action::aws_bedrock_credentials_error::AwsBedrockCredentialsErrorView;
-use crate::ai::blocklist::inline_action::gemini_enterprise_credentials_error::GeminiEnterpriseCredentialsErrorView;
 use crate::ai::blocklist::inline_action::inline_action_header::{
     INLINE_ACTION_HEADER_VERTICAL_PADDING, INLINE_ACTION_HORIZONTAL_PADDING,
 };
@@ -79,9 +74,7 @@ use crate::ai::blocklist::inline_action::requested_action::RenderableAction;
 use crate::ai::blocklist::model::{AIBlockModel, AIBlockModelHelper};
 use crate::ai::blocklist::secret_redaction::{SecretRedactionState, redact_secrets_in_element};
 use crate::ai::blocklist::view_util::{
-    CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT, FailedOutputPresentation,
-    OUT_OF_CREDITS_SUBSCRIBE_LABEL, chatgpt_subscription_message_with_links, error_color,
-    failed_output_presentation,
+    FailedOutputPresentation, error_color, failed_output_presentation,
 };
 use crate::ai::blocklist::{BlocklistAIActionModel, ShellCommandExecutor, TextLocation};
 use crate::ai::loading::shimmering_warp_loading_text;
@@ -91,7 +84,6 @@ use crate::code::editor_management::CodeSource;
 use crate::notebooks::editor::{markdown_table_appearance, rich_text_styles};
 use crate::search::slash_command_menu::static_commands::commands;
 use crate::settings::{FontSettings, InputSettings};
-use crate::settings_view::SettingsSection;
 use crate::terminal::find::TerminalFindModel;
 use crate::terminal::grid_renderer::{FOCUSED_MATCH_COLOR, MATCH_COLOR};
 use crate::terminal::safe_mode_settings::get_secret_obfuscation_mode;
@@ -104,8 +96,6 @@ use crate::ui_components::icons::Icon;
 use crate::util::link_detection::{DetectedLinksState, add_link_detection_mouse_interactions};
 use crate::util::time_format::format_elapsed_seconds;
 use crate::workspace::WorkspaceAction;
-use crate::workspaces::user_workspaces::UserWorkspaces;
-use crate::workspaces::workspace::CustomerType;
 
 pub const STATUS_ICON_SIZE_DELTA: f32 = 4.;
 pub const STATUS_FOOTER_VERTICAL_PADDING: f32 = 4.;
@@ -3067,97 +3057,27 @@ pub(crate) fn resolve_absolute_file_path(
     })
 }
 
-/// Wiring for the recovery buttons on a ChatGPT subscription error. `None` renders the error
-/// without buttons, for surfaces that cannot resume the conversation themselves.
-pub struct ChatGPTSubscriptionActionProps<'a> {
-    /// One handle per action, in server order.
-    pub handles: &'a [MouseStateHandle],
-    pub on_click: fn(&ChatGPTSubscriptionErrorActionKind, &mut EventContext, &AppContext),
-}
-
 pub struct FailedOutputProps<'a> {
     pub error: &'a RenderableAIError,
-    pub invalid_api_key_button_handle: &'a MouseStateHandle,
-    pub subscribe_button_handle: &'a MouseStateHandle,
-    pub aws_bedrock_credentials_error_view: Option<&'a ViewHandle<AwsBedrockCredentialsErrorView>>,
-    pub gemini_enterprise_credentials_error_view:
-        Option<&'a ViewHandle<GeminiEnterpriseCredentialsErrorView>>,
-    pub chatgpt_subscription_actions: Option<ChatGPTSubscriptionActionProps<'a>>,
-    pub conversation_uses_warp_credits_instead_of_chatgpt: bool,
     pub is_ai_input_enabled: bool,
     pub icon_right_margin: f32,
 }
 
 pub fn render_failed_output(props: FailedOutputProps, app: &AppContext) -> Box<dyn Element> {
     let appearance = Appearance::as_ref(app);
-    let Some(presentation) = failed_output_presentation(
-        props.error,
-        props.conversation_uses_warp_credits_instead_of_chatgpt,
-        app,
-    ) else {
+    let Some(presentation) = failed_output_presentation(props.error, app) else {
         return Empty::new().finish();
     };
 
     let error_text = match presentation {
-        FailedOutputPresentation::Message(message) => message,
-        FailedOutputPresentation::OutOfCredits { message, .. } => {
-            return render_out_of_credits_error(
-                &message,
-                props.subscribe_button_handle,
-                props.is_ai_input_enabled,
-                props.icon_right_margin,
-                app,
-            );
-        }
-        FailedOutputPresentation::InvalidApiKey { title, detail } => {
-            return render_invalid_api_key_error(
-                title,
-                &detail,
-                props.invalid_api_key_button_handle,
-                app,
-            );
-        }
+        FailedOutputPresentation::Message(message)
+        | FailedOutputPresentation::OutOfCredits { message } => message,
         FailedOutputPresentation::ContextWindowExceeded { message } => {
             // This is rendered in a different way, like a failed action.
             return RenderableAction::new(message.as_str(), app)
                 .with_icon(inline_action_icons::cancelled_icon(appearance).finish())
                 .render(app)
                 .finish();
-        }
-        FailedOutputPresentation::AwsBedrockCredentialsExpiredOrInvalid { fallback_message } => {
-            // Use the rich stateful view if it exists, otherwise show a simple error message
-            if let Some(view) = props.aws_bedrock_credentials_error_view {
-                return ChildView::new(view).finish();
-            }
-            // Fallback for contexts that don't have the stateful view (e.g. CLI subagent)
-            fallback_message
-        }
-        FailedOutputPresentation::GeminiEnterpriseCredentialsExpiredOrInvalid {
-            fallback_message,
-        } => {
-            if let Some(view) = props.gemini_enterprise_credentials_error_view {
-                return ChildView::new(view).finish();
-            }
-            fallback_message
-        }
-        FailedOutputPresentation::ChatGPTSubscription {
-            title,
-            message,
-            actions,
-        } => {
-            return render_chatgpt_subscription_error(
-                &title,
-                &message,
-                &actions,
-                props.chatgpt_subscription_actions,
-                app,
-            );
-        }
-        FailedOutputPresentation::ChatGPTSubscriptionContinuedWithWarpCredits => {
-            return render_informational_footer(
-                app,
-                CHATGPT_CONTINUED_WITH_WARP_CREDITS_TEXT.to_string(),
-            );
         }
     };
 
@@ -3204,309 +3124,6 @@ pub fn render_failed_output(props: FailedOutputProps, app: &AppContext) -> Box<d
         )
         .finish()
 }
-/// Builds an out-of-credits CTA button, styled like the invalid-API-key error's button.
-fn out_of_credits_cta_button(
-    label: &str,
-    state_handle: &MouseStateHandle,
-    app: &AppContext,
-) -> Button {
-    let appearance = Appearance::as_ref(app);
-    let theme = appearance.theme();
-
-    appearance
-        .ui_builder()
-        .button(
-            warpui::ui_components::button::ButtonVariant::Outlined,
-            state_handle.clone(),
-        )
-        .with_style(UiComponentStyles {
-            font_size: Some(14.),
-            border_color: Some(internal_colors::neutral_4(theme).into()),
-            ..Default::default()
-        })
-        .with_hovered_styles(UiComponentStyles {
-            background: Some(internal_colors::fg_overlay_2(theme).into()),
-            ..Default::default()
-        })
-        .with_clicked_styles(UiComponentStyles {
-            background: Some(internal_colors::fg_overlay_3(theme).into()),
-            ..Default::default()
-        })
-        .with_text_label(label.to_string())
-        .with_cursor(Some(Cursor::PointingHand))
-}
-
-/// Builds the filled primary CTA button for an error card, paired with
-/// [`out_of_credits_cta_button`] for the remaining actions.
-fn error_primary_cta_button(
-    label: &str,
-    state_handle: &MouseStateHandle,
-    app: &AppContext,
-) -> Button {
-    Appearance::as_ref(app)
-        .ui_builder()
-        .button(
-            warpui::ui_components::button::ButtonVariant::Basic,
-            state_handle.clone(),
-        )
-        .with_style(UiComponentStyles {
-            font_size: Some(14.),
-            ..Default::default()
-        })
-        .with_text_label(label.to_string())
-        .with_cursor(Some(Cursor::PointingHand))
-}
-
-/// Renders the out-of-credits failure: alert icon + message with a Subscribe CTA below.
-fn render_out_of_credits_error(
-    message: &str,
-    subscribe_button_handle: &MouseStateHandle,
-    is_ai_input_enabled: bool,
-    icon_right_margin: f32,
-    app: &AppContext,
-) -> Box<dyn Element> {
-    let appearance = Appearance::as_ref(app);
-
-    let icon = Container::new(
-        ConstrainedBox::new(
-            warpui::elements::Icon::new(
-                Icon::AlertTriangle.into(),
-                error_color(appearance.theme()),
-            )
-            .finish(),
-        )
-        .with_width(icon_size(app))
-        .with_height(icon_size(app))
-        .finish(),
-    )
-    .with_margin_right(icon_right_margin)
-    .finish();
-
-    let text = Text::new(
-        message.to_owned(),
-        appearance.monospace_font_family(),
-        appearance.monospace_font_size(),
-    )
-    .with_color(blended_colors::text_sub(
-        appearance.theme(),
-        appearance.theme().surface_1(),
-    ))
-    .with_selection_color(if is_ai_input_enabled {
-        appearance
-            .theme()
-            .text_selection_as_context_color()
-            .into_solid()
-    } else {
-        appearance.theme().text_selection_color().into_solid()
-    })
-    .finish();
-
-    let subscribe_button =
-        out_of_credits_cta_button(OUT_OF_CREDITS_SUBSCRIBE_LABEL, subscribe_button_handle, app)
-            .build()
-            .on_click(|ctx, _, _| {
-                ctx.dispatch_typed_action(WorkspaceAction::ShowUpgrade);
-            })
-            .finish();
-
-    Flex::column()
-        .with_cross_axis_alignment(CrossAxisAlignment::Start)
-        .with_spacing(12.)
-        .with_child(
-            Flex::row()
-                .with_child(icon)
-                .with_child(Shrinkable::new(1., text).finish())
-                .finish(),
-        )
-        .with_child(
-            Container::new(
-                Flex::row()
-                    .with_main_axis_size(MainAxisSize::Min)
-                    .with_main_axis_alignment(MainAxisAlignment::Start)
-                    .with_child(subscribe_button)
-                    .finish(),
-            )
-            .with_margin_left(icon_size(app) + icon_right_margin)
-            .finish(),
-        )
-        .finish()
-}
-
-fn render_invalid_api_key_error(
-    title: &str,
-    detail: &str,
-    state_handle: &MouseStateHandle,
-    app: &AppContext,
-) -> Box<dyn Element> {
-    let appearance = Appearance::as_ref(app);
-    let theme = appearance.theme();
-
-    let alert_icon = ConstrainedBox::new(
-        Icon::AlertTriangle
-            .to_warpui_icon(error_color(appearance.theme()).into())
-            .finish(),
-    )
-    .with_width(icon_size(app))
-    .with_height(icon_size(app))
-    .finish();
-
-    let alert_text = Text::new(title.to_string(), appearance.ui_font_family(), 14.)
-        .with_color(error_color(appearance.theme()))
-        .with_selectable(false)
-        .finish();
-
-    let detail_text = Text::new(detail.to_string(), appearance.ui_font_family(), 14.)
-        .with_color(blended_colors::text_sub(
-            appearance.theme(),
-            appearance.theme().surface_1(),
-        ))
-        .with_selectable(false)
-        .finish();
-
-    let settings_button = appearance
-        .ui_builder()
-        .button(
-            warpui::ui_components::button::ButtonVariant::Outlined,
-            state_handle.clone(),
-        )
-        .with_style(UiComponentStyles {
-            border_color: Some(internal_colors::neutral_4(theme).into()),
-            ..Default::default()
-        })
-        .with_hovered_styles(UiComponentStyles {
-            background: Some(internal_colors::fg_overlay_2(theme).into()),
-            ..Default::default()
-        })
-        .with_clicked_styles(UiComponentStyles {
-            background: Some(internal_colors::fg_overlay_3(theme).into()),
-            ..Default::default()
-        })
-        .with_text_label("Edit API Keys".to_string())
-        .with_cursor(Some(Cursor::PointingHand))
-        .build()
-        .on_click(move |ctx, _, _| {
-            ctx.dispatch_typed_action(WorkspaceAction::ShowSettingsPageWithSearch {
-                search_query: "api keys".to_string(),
-                section: Some(SettingsSection::WarpAgent),
-            });
-        })
-        .finish();
-
-    Flex::column()
-        .with_spacing(16.)
-        .with_child(
-            Flex::row()
-                .with_spacing(8.)
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                .with_child(alert_icon)
-                .with_child(alert_text)
-                .finish(),
-        )
-        .with_child(
-            Flex::row()
-                .with_spacing(8.)
-                .with_main_axis_size(MainAxisSize::Max)
-                .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                .with_child(Shrinkable::new(1., detail_text).finish())
-                .with_child(settings_button)
-                .finish(),
-        )
-        .finish()
-}
-
-/// Renders a ChatGPT subscription error: alert icon + title, the server's message, and one
-/// button per action in server order, with the first action styled as the primary CTA. Without
-/// `action_props`, recovery links and copyable text are listed as plain text.
-fn render_chatgpt_subscription_error(
-    title: &str,
-    message: &str,
-    actions: &[ChatGPTSubscriptionErrorAction],
-    action_props: Option<ChatGPTSubscriptionActionProps>,
-    app: &AppContext,
-) -> Box<dyn Element> {
-    let appearance = Appearance::as_ref(app);
-    let message = if action_props.is_some() {
-        message.to_string()
-    } else {
-        chatgpt_subscription_message_with_links(message, actions)
-    };
-
-    let alert_icon = ConstrainedBox::new(
-        Icon::AlertTriangle
-            .to_warpui_icon(error_color(appearance.theme()).into())
-            .finish(),
-    )
-    .with_width(icon_size(app))
-    .with_height(icon_size(app))
-    .finish();
-
-    let title_text = Text::new(title.to_string(), appearance.ui_font_family(), 14.)
-        .with_color(error_color(appearance.theme()))
-        .with_selectable(false)
-        .finish();
-
-    let message_text = Text::new(message, appearance.ui_font_family(), 14.)
-        .with_color(blended_colors::text_sub(
-            appearance.theme(),
-            appearance.theme().surface_1(),
-        ))
-        .with_selectable(false)
-        .finish();
-
-    let mut column = Flex::column()
-        .with_cross_axis_alignment(CrossAxisAlignment::Start)
-        .with_spacing(16.)
-        .with_child(
-            Flex::row()
-                .with_spacing(8.)
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                .with_child(alert_icon)
-                .with_child(title_text)
-                .finish(),
-        )
-        .with_child(
-            Flex::row()
-                .with_child(Shrinkable::new(1., message_text).finish())
-                .finish(),
-        );
-
-    let buttons = action_props
-        .map(|action_props| {
-            actions
-                .iter()
-                .zip(action_props.handles)
-                .enumerate()
-                .map(|(index, (action, handle))| {
-                    let kind = action.kind.clone();
-                    let on_click = action_props.on_click;
-                    let button = if index == 0 {
-                        error_primary_cta_button(&action.label, handle, app)
-                    } else {
-                        out_of_credits_cta_button(&action.label, handle, app)
-                    };
-                    button
-                        .build()
-                        .on_click(move |ctx, app, _| on_click(&kind, ctx, app))
-                        .finish()
-                })
-                .collect_vec()
-        })
-        .unwrap_or_default();
-    if !buttons.is_empty() {
-        column.add_child(
-            Flex::row()
-                .with_spacing(8.)
-                .with_main_axis_size(MainAxisSize::Min)
-                .with_main_axis_alignment(MainAxisAlignment::Start)
-                .with_children(buttons)
-                .finish(),
-        );
-    }
-
-    column.finish()
-}
-
 pub fn render_informational_footer(app: &AppContext, text: String) -> Box<dyn Element> {
     let appearance = Appearance::as_ref(app);
 
@@ -3529,14 +3146,11 @@ pub(crate) struct DebugFooterProps<'a, V: View> {
     pub conversation: Option<&'a AIConversation>,
     pub model: &'a dyn AIBlockModel<View = V>,
     pub debug_copy_button_handle: MouseStateHandle,
-    pub submit_issue_button_handle: MouseStateHandle,
-    pub should_render_feedback_below: bool,
 }
 
 pub(crate) fn render_debug_footer<V: View>(
     props: DebugFooterProps<'_, V>,
     on_copy_debug_id: impl Fn(String, &mut EventContext) + 'static,
-    on_open_feedback: impl Fn(&mut EventContext) + 'static,
     app: &AppContext,
 ) -> Box<dyn Element> {
     let appearance = Appearance::as_ref(app);
@@ -3562,65 +3176,6 @@ pub(crate) fn render_debug_footer<V: View>(
             "conversation_id": conversation_token.as_str()
         })
         .to_string()
-    };
-
-    // Check if we should show the submit button (hide for dogfood and enterprise users)
-    let is_dogfood = ChannelState::channel().is_dogfood();
-    let is_enterprise_user =
-        UserWorkspaces::as_ref(app)
-            .current_workspace()
-            .is_some_and(|workspace| {
-                workspace.billing_metadata.customer_type == CustomerType::Enterprise
-            });
-    let submit_button = if !is_dogfood && !is_enterprise_user {
-        let submit_button_style = UiComponentStyles {
-            font_color: Some(
-                appearance
-                    .theme()
-                    .sub_text_color(appearance.theme().background())
-                    .into(),
-            ),
-            border_width: Some(1.),
-            border_color: Some(
-                appearance
-                    .theme()
-                    .sub_text_color(appearance.theme().background())
-                    .into(),
-            ),
-            border_radius: Some(CornerRadius::with_all(Radius::Pixels(4.))),
-            padding: Some(Coords {
-                top: 4.,
-                bottom: 4.,
-                left: 8.,
-                right: 8.,
-            }),
-            font_size: Some(appearance.monospace_font_size()),
-            font_family_id: Some(appearance.ui_font_family()),
-            ..Default::default()
-        };
-        let submit_button_hover_style = UiComponentStyles {
-            background: Some(blended_colors::neutral_4(appearance.theme()).into()),
-            ..submit_button_style
-        };
-        Some(
-            appearance
-                .ui_builder()
-                .button(
-                    warpui::ui_components::button::ButtonVariant::Text,
-                    props.submit_issue_button_handle,
-                )
-                .with_centered_text_label("Send Feedback".to_string())
-                .with_style(submit_button_style)
-                .with_hovered_styles(submit_button_hover_style)
-                .with_clicked_styles(submit_button_hover_style)
-                .build()
-                .on_click(move |ctx, _, _| {
-                    on_open_feedback(ctx);
-                })
-                .finish(),
-        )
-    } else {
-        None
     };
 
     // render the conversation's debug id so screenshots automatically show the debug id
@@ -3681,17 +3236,6 @@ pub(crate) fn render_debug_footer<V: View>(
         .with_cross_axis_alignment(CrossAxisAlignment::Center)
         .with_main_axis_size(MainAxisSize::Max);
 
-    // In narrow views, render the submit button in a separate row below.
-    // Otherwise, place it inline in the debug row.
-    let stacked_submit_button = if props.should_render_feedback_below {
-        submit_button
-    } else {
-        if let Some(submit_button) = submit_button {
-            debug_row.add_child(Container::new(submit_button).with_margin_right(8.).finish());
-        }
-        None
-    };
-
     debug_row.add_child(
         Shrinkable::new(
             1.0,
@@ -3701,14 +3245,7 @@ pub(crate) fn render_debug_footer<V: View>(
     );
     debug_row.add_child(copy_button_with_tooltip);
 
-    if let Some(submit_button) = stacked_submit_button {
-        let mut column = Flex::column();
-        column.add_child(Expanded::new(1.0, debug_row.finish()).finish());
-        column.add_child(Container::new(submit_button).with_margin_top(8.).finish());
-        column.finish()
-    } else {
-        Container::new(Expanded::new(1.0, debug_row.finish()).finish()).finish()
-    }
+    Container::new(Expanded::new(1.0, debug_row.finish()).finish()).finish()
 }
 
 #[derive(Copy, Clone, Debug)]

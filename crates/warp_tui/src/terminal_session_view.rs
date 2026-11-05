@@ -27,8 +27,8 @@ use warp::tui_export::{
     BlocklistAIActionModel, BlocklistAIContextModel, BlocklistAIController,
     BlocklistAIHistoryEvent, BlocklistAIHistoryModel, BlocklistAIInputModel,
     BlocklistOrchestrationTelemetryEvent, CLISubagentController, CLISubagentEvent,
-    CLISubagentTarget, COMMAND_REGISTRY, CancellationReason, ChangelogModel, ChangelogRequestType,
-    CloudConversationData, CommandExecutionSource, ConversationFileExport, ConversationSelection,
+    CLISubagentTarget, COMMAND_REGISTRY, CancellationReason, CloudConversationData,
+    CommandExecutionSource, ConversationFileExport, ConversationSelection,
     ConversationSelectionHandle, ExecuteCommandEvent, FORK_PREFIX, ForkConversationError,
     GetRelevantFilesController, GitHubRepoModel, GitRepoStatusModel, LLMId, LLMPreferences,
     LLMPreferencesEvent, LOCAL_SKILLS_REMOTE_EXECUTION_ERROR_MESSAGE, LinkedWorkflowData,
@@ -80,7 +80,6 @@ use warpui_core::{
 
 use crate::agent_block::upgrade_url;
 use crate::alt_screen_view::AltScreenElement;
-use crate::api_keys_menu::{TuiApiKeysMenuEvent, TuiApiKeysMenuModel, render_api_keys_footer};
 use crate::attachment_bar::{
     FOCUS_ATTACHMENTS_BINDING_NAME, TuiAttachmentBar, TuiAttachmentBarEvent, TuiAttachmentModel,
     TuiAttachmentPasteDisposition,
@@ -689,7 +688,6 @@ pub(crate) struct TuiTerminalSessionView {
     open_todo_menu_list_key: Option<(AIConversationId, usize)>,
     /// Session-owned live state model shared by this surface and its input view.
     session_state: ModelHandle<TuiTerminalSessionStateModel>,
-    api_keys_menu: ModelHandle<TuiApiKeysMenuModel>,
     conversation_menu: ModelHandle<TuiConversationMenuModel>,
     model_menu: ModelHandle<TuiModelMenuModel>,
     team_menu: ModelHandle<TuiTeamMenuModel>,
@@ -1674,18 +1672,6 @@ impl TuiTerminalSessionView {
         });
         ctx.subscribe_to_model(&slash_commands, |_, _, _, ctx| ctx.notify());
         let window_id = ctx.window_id();
-        let api_keys_team_context = UserWorkspaces::team_context_resolver(ctx.handle());
-        let api_keys_menu = ctx.add_model(|ctx| {
-            TuiApiKeysMenuModel::new(
-                input_editor_model.clone(),
-                suggestions_mode.clone(),
-                api_keys_team_context,
-                ctx,
-            )
-        });
-        ctx.subscribe_to_model(&api_keys_menu, |_, _, _: &TuiApiKeysMenuEvent, ctx| {
-            ctx.notify();
-        });
         let conversation_menu_team_context = UserWorkspaces::team_context_resolver(ctx.handle());
         let conversation_menu = ctx.add_model(|ctx| {
             TuiConversationMenuModel::new(
@@ -1825,7 +1811,6 @@ impl TuiTerminalSessionView {
         let input_mode_for_input_view = ai_input_model.clone();
         let inline_menus = vec![
             TuiInlineMenu::new(slash_commands.clone()),
-            TuiInlineMenu::new(api_keys_menu.clone()),
             TuiInlineMenu::new(conversation_menu.clone()),
             TuiInlineMenu::new(model_menu.clone()),
             TuiInlineMenu::new(team_menu.clone()),
@@ -2106,12 +2091,6 @@ impl TuiTerminalSessionView {
             },
         );
 
-        // Trigger the changelog fetch once at startup so `TuiZeroStateView`
-        // has data to display.  The re-render subscription lives in the view.
-        ChangelogModel::handle(ctx).update(ctx, |changelog, ctx| {
-            changelog.check_for_changelog(ChangelogRequestType::WindowLaunch, ctx);
-        });
-
         // Bridge shared shell-tool executor events into terminal-manager PTY intents.
         let shell_command_executor = action_model.as_ref(ctx).shell_command_executor(ctx);
         let model_for_shell_events = model.clone();
@@ -2316,7 +2295,6 @@ impl TuiTerminalSessionView {
             usage_snapshot: None,
             open_todo_menu_list_key: None,
             session_state,
-            api_keys_menu,
             conversation_menu,
             model_menu,
             team_menu,
@@ -2857,9 +2835,7 @@ impl TuiTerminalSessionView {
             })
             .finish()
         } else {
-            let border_style = if self.api_keys_menu.as_ref(ctx).uses_credential_border(ctx) {
-                builder.credential_entry_accent_style()
-            } else if self.is_shell_mode(ctx) {
+            let border_style = if self.is_shell_mode(ctx) {
                 builder.shell_mode_accent_style()
             } else {
                 builder.accent_border_style()
@@ -2868,9 +2844,7 @@ impl TuiTerminalSessionView {
         };
         #[cfg(not(feature = "voice_input"))]
         let input = {
-            let border_style = if self.api_keys_menu.as_ref(ctx).uses_credential_border(ctx) {
-                builder.credential_entry_accent_style()
-            } else if self.is_shell_mode(ctx) {
+            let border_style = if self.is_shell_mode(ctx) {
                 builder.shell_mode_accent_style()
             } else {
                 builder.accent_border_style()
@@ -2878,9 +2852,7 @@ impl TuiTerminalSessionView {
             bordered_input(&self.input_view, border_style)
         };
 
-        if !self.api_keys_menu.as_ref(ctx).is_open(ctx)
-            && self.attachment_bar.as_ref(ctx).should_render(ctx)
-        {
+        if self.attachment_bar.as_ref(ctx).should_render(ctx) {
             content = content.child(
                 TuiConstrainedBox::new(
                     TuiContainer::new(TuiChildView::new(&self.attachment_bar).finish())
@@ -2896,9 +2868,7 @@ impl TuiTerminalSessionView {
                 .with_max_rows(MAX_INPUT_TEXT_ROWS + BORDERED_INPUT_CHROME_ROWS)
                 .finish(),
         );
-        let footer = if let Some(footer) = self.api_keys_menu.as_ref(ctx).footer(ctx) {
-            render_api_keys_footer(footer, builder)
-        } else if matches!(input_target, TuiInputTarget::Disabled) {
+        let footer = if matches!(input_target, TuiInputTarget::Disabled) {
             self.render_footer(ctx).finish()
         } else if self.orchestration_tabs_focused {
             self.render_orchestration_tab_footer(builder, ctx)
@@ -4653,15 +4623,6 @@ impl TuiTerminalSessionView {
             SlashCommandKind::ResetStatusline => {
                 self.reset_statusline(command.name, ctx);
             }
-            SlashCommandKind::ApiKeys => {
-                self.api_keys_menu.update(ctx, |menu, ctx| menu.open(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
-            }
-            SlashCommandKind::ConnectGrok => {
-                self.api_keys_menu
-                    .update(ctx, |menu, ctx| menu.open_and_connect_grok(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
-            }
             SlashCommandKind::Upgrade => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
                 ctx.open_url(&upgrade_url(ctx));
@@ -4926,8 +4887,6 @@ impl TuiTerminalSessionView {
             | SlashCommandKind::OpenProjectRules
             | SlashCommandKind::OpenMcpServers
             | SlashCommandKind::OpenSettingsFile
-            | SlashCommandKind::Changelog
-            | SlashCommandKind::Feedback
             | SlashCommandKind::OpenRepo
             | SlashCommandKind::OpenRules
             | SlashCommandKind::Host

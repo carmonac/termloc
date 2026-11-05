@@ -1177,7 +1177,7 @@ fn fallback_warping_text(display_name: &str) -> String {
 
 /// Warping text for the model a response is running on, e.g. "Warping with Claude
 /// Sonnet 4.5...". `None` keeps the row on its generic copy, which is what `auto`
-/// and custom routers get until routing picks a model and the server reports it.
+/// gets until routing picks a model and the server reports it.
 ///
 /// Naming the model is `WarpingModelName`'s. `FallbackModelLoadOutputMessaging`
 /// owns the two things specific to a fallback attempt: the explanation line, and

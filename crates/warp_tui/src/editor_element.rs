@@ -127,7 +127,6 @@ pub(crate) struct TuiEditorElement {
     /// [`Self::hide_trailing_empty_line`]).
     hide_trailing_empty_line: bool,
     /// Whether buffer characters are painted as fixed-width mask glyphs.
-    masked: bool,
     styles: TuiEditorStyles,
     trailing_ghost_text: Option<(String, TuiStyle)>,
     /// Resolves the empty-buffer placeholder hint against fresh app state
@@ -204,7 +203,6 @@ impl TuiEditorElement {
             viewport_rows: None,
             line_number_gutter: false,
             hide_trailing_empty_line: false,
-            masked: false,
             styles: TuiEditorStyles::default(),
             trailing_ghost_text: None,
             placeholder_ghost_text_provider: None,
@@ -258,12 +256,6 @@ impl TuiEditorElement {
     /// rows (e.g. the diff body, which scrolls with the transcript).
     pub(crate) fn with_viewport_rows(mut self, max_visible_rows: u32) -> Self {
         self.viewport_rows = Some(max_visible_rows);
-        self
-    }
-
-    /// Conceals buffer text while preserving the backing editor model for editing.
-    pub(crate) fn masked(mut self) -> Self {
-        self.masked = true;
         self
     }
 
@@ -528,11 +520,6 @@ impl TuiEditorElement {
                 let content = lattice
                     .row_text(row, chars)
                     .expect("buffer display rows have source text");
-                let content = if self.masked {
-                    "•".repeat(content.chars().count())
-                } else {
-                    content
-                };
                 let style = self
                     .styles
                     .line_overrides

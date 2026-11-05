@@ -296,16 +296,12 @@ fn oz_model_menu_items<A: OrchestrationControlAction, V: View>(
                 .find(|llm| llm.id.to_string() == row.id)
         })
         .collect();
-    let scope = UserWorkspaces::as_ref(ctx).team_context_for_view(ctx);
     available_model_menu_items(
         ordered_choices,
         move |llm| DropdownAction::select_action_and_close(A::model_changed(llm.id.to_string())),
         None,
         None,
         CollapsedModelVariants::default(),
-        None,
-        &scope,
-        ctx,
     )
 }
 

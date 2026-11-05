@@ -108,7 +108,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(|_ctx| PtySpawner::new_for_test());
     app.add_singleton_model(|_| Prompt::mock());
-    app.add_singleton_model(|ctx| AutoupdateState::new(ServerApiProvider::as_ref(ctx).get()));
     app.add_singleton_model(|_| NetworkStatus::new());
     app.add_singleton_model(|_| SystemStats::new());
     app.add_singleton_model(|_| crate::tab::TabShortcutModifierState::new());
@@ -135,8 +134,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     app.add_singleton_model(|_| DisplayCount::mock());
     app.add_singleton_model(PrivacySettings::mock);
     app.add_singleton_model(|_| KeybindingChangedNotifier::new());
-    app.add_singleton_model(|_ctx| RelaunchModel::new());
-    app.add_singleton_model(|ctx| ChangelogModel::new(ServerApiProvider::as_ref(ctx).get()));
     app.add_singleton_model(|_| GitHubAuthNotifier::new());
     app.add_singleton_model(|_ctx| SyncedInputState::mock());
     app.add_singleton_model(|_| ResizableData::default());
@@ -255,7 +252,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     app.add_singleton_model(|ctx| PersistedWorkspace::new(vec![], HashMap::new(), None, ctx));
     app.add_singleton_model(|_| ProjectContextModel::default());
     app.add_singleton_model(|_| PricingInfoModel::new());
-    app.add_singleton_model(crate::ai::pricing_promotion::PricingPromotionState::new);
     app.add_singleton_model(AIDocumentModel::new);
     app.add_singleton_model(|_| History::new(vec![]));
 
@@ -274,7 +270,6 @@ pub(crate) fn mock_workspace(app: &mut App) -> ViewHandle<Workspace> {
     let (_, workspace) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
         Workspace::new(
             global_resource_handles,
-            None,
             NewWorkspaceSource::Empty {
                 previous_active_window: active_window_id,
                 shell: None,
@@ -283,30 +278,6 @@ pub(crate) fn mock_workspace(app: &mut App) -> ViewHandle<Workspace> {
         )
     });
     workspace
-}
-
-#[test]
-fn test_team_navigation_mode() {
-    assert_eq!(
-        team_navigation_mode(true, true, true, false),
-        TeamNavigationMode::TeamSwitcher
-    );
-    assert_eq!(
-        team_navigation_mode(true, true, false, true),
-        TeamNavigationMode::TeamSwitcher
-    );
-    assert_eq!(
-        team_navigation_mode(true, true, false, false),
-        TeamNavigationMode::Hidden
-    );
-    assert_eq!(
-        team_navigation_mode(false, false, false, true),
-        TeamNavigationMode::BrowseTeams
-    );
-    assert_eq!(
-        team_navigation_mode(false, false, false, false),
-        TeamNavigationMode::Hidden
-    );
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -499,7 +470,6 @@ fn restored_workspace(
     let (_, workspace) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
         Workspace::new(
             global_resource_handles,
-            None,
             NewWorkspaceSource::Restored {
                 window_snapshot,
                 block_lists: Arc::new(HashMap::new()),
@@ -518,7 +488,6 @@ fn transferred_tab_workspace(
     let (_, workspace) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
         Workspace::new(
             global_resource_handles,
-            None,
             NewWorkspaceSource::TransferredTab {
                 source_window_id: ctx.window_id(),
                 tab_color: None,
@@ -578,203 +547,6 @@ fn test_theme_chooser_does_not_suppress_tab_bar_traffic_light_padding() {
                 workspace.compute_tab_bar_left_padding(ctx),
                 closed_padding,
                 "Open tools panel should still reserve tab bar traffic light padding"
-            );
-        });
-    });
-}
-
-/// Regression for account-first onboarding users who select Warp Drive and
-/// conversation history, skip signup, and create an account later. The stored
-/// preferences should remain true while unavailable, then take effect
-/// automatically as account and AI availability change—without an off/on
-/// toggle.
-#[test]
-fn test_tools_panel_preferences_activate_after_signup_and_ai_enablement() {
-    let _skip_anon_guard = FeatureFlag::SkipFirebaseAnonymousUser.override_enabled(true);
-    let _conversation_list_guard =
-        FeatureFlag::AgentViewConversationListView.override_enabled(true);
-
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        // Preserve the user's onboarding intent while starting logged out with
-        // AI disabled (the account-skipped account-first completion state).
-        app.update(|ctx| {
-            WarpDriveSettings::handle(ctx).update(ctx, |settings, ctx| {
-                settings
-                    .enable_warp_drive
-                    .set_value(true, ctx)
-                    .expect("remember Warp Drive preference");
-            });
-            AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                settings
-                    .show_conversation_history
-                    .set_value(true, ctx)
-                    .expect("remember conversation-history preference");
-                settings
-                    .is_any_ai_enabled
-                    .set_value(false, ctx)
-                    .expect("AI remains disabled after skipped signup");
-            });
-            let auth_state = AuthStateProvider::as_ref(ctx).get();
-            auth_state.set_user(None);
-            auth_state.set_credentials(None);
-        });
-
-        let workspace = mock_workspace(&mut app);
-        workspace.update(&mut app, |workspace, ctx| {
-            assert!(
-                workspace
-                    .left_panel_views
-                    .contains(&ToolPanelView::WarpDrive),
-                "the stored preference should keep the locked Warp Drive entry visible"
-            );
-            assert!(
-                workspace
-                    .left_panel_views
-                    .contains(&ToolPanelView::ConversationListView),
-                "the stored preference should keep the locked conversations entry visible"
-            );
-            workspace.left_panel_view.update(ctx, |left_panel, ctx| {
-                left_panel.handle_action_with_force_open(&LeftPanelAction::WarpDrive, false, ctx);
-                assert_eq!(
-                    left_panel.active_view_availability(ctx),
-                    left_panel::ToolPanelAvailability::RequiresAccount
-                );
-                drop(left_panel.render(ctx));
-
-                left_panel.handle_action_with_force_open(
-                    &LeftPanelAction::ConversationListView,
-                    false,
-                    ctx,
-                );
-                assert_eq!(
-                    left_panel.active_view_availability(ctx),
-                    left_panel::ToolPanelAvailability::RequiresAccount
-                );
-                drop(left_panel.render(ctx));
-            });
-            workspace.handle_left_panel_event(&LeftPanelEvent::SignInRequested, ctx);
-            assert!(
-                workspace
-                    .current_workspace_state
-                    .is_require_login_modal_open,
-                "locked-panel Sign in should open the existing auth modal"
-            );
-            // Keep the remainder of this state-transition test focused on the
-            // tool panel rather than modal rendering.
-            workspace
-                .current_workspace_state
-                .is_require_login_modal_open = false;
-        });
-        app.read(|ctx| {
-            // Availability must not erase the raw onboarding preferences.
-            assert!(*WarpDriveSettings::as_ref(ctx).enable_warp_drive);
-            assert!(*AISettings::as_ref(ctx).show_conversation_history);
-            assert!(!WarpDriveSettings::is_warp_drive_available(ctx));
-            assert!(!WarpDriveSettings::is_warp_drive_enabled(ctx));
-            assert!(!AISettings::as_ref(ctx).is_conversation_history_available(ctx));
-            assert!(!AISettings::as_ref(ctx).is_conversation_history_enabled(ctx));
-        });
-
-        // Signing up makes account-backed features available. AuthComplete
-        // must refresh the existing workspace even though no setting changed.
-        app.update(|ctx| {
-            AuthStateProvider::as_ref(ctx)
-                .get()
-                .apply_remote_server_auth_context(
-                    "test-token".to_string(),
-                    "test-user".to_string(),
-                    "test@warp.dev".to_string(),
-                );
-        });
-        workspace.update(&mut app, |workspace, ctx| {
-            workspace.handle_auth_manager_event(
-                AuthManager::handle(ctx),
-                &AuthManagerEvent::AuthComplete,
-                ctx,
-            );
-            assert!(
-                workspace
-                    .left_panel_views
-                    .contains(&ToolPanelView::WarpDrive),
-                "Drive entry remains visible and unlocks after signup"
-            );
-            assert!(
-                workspace
-                    .left_panel_views
-                    .contains(&ToolPanelView::ConversationListView),
-                "conversation entry remains visible while waiting for AI"
-            );
-            assert!(!workspace.auth_state.is_anonymous_or_logged_out());
-            assert!(WarpDriveSettings::is_warp_drive_enabled(ctx));
-            assert!(!AISettings::as_ref(ctx).is_conversation_history_enabled(ctx));
-            workspace.left_panel_view.update(ctx, |left_panel, ctx| {
-                left_panel.handle_action_with_force_open(&LeftPanelAction::WarpDrive, false, ctx);
-                assert_eq!(
-                    left_panel.active_view_availability(ctx),
-                    left_panel::ToolPanelAvailability::Available
-                );
-
-                left_panel.handle_action_with_force_open(
-                    &LeftPanelAction::ConversationListView,
-                    false,
-                    ctx,
-                );
-                assert_eq!(
-                    left_panel.active_view_availability(ctx),
-                    left_panel::ToolPanelAvailability::RequiresAi
-                );
-                drop(left_panel.render(ctx));
-            });
-        });
-
-        // Enabling AI later should make the preserved conversation-history
-        // preference effective through the existing AI-settings subscription.
-        app.update(|ctx| {
-            AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                settings
-                    .is_any_ai_enabled
-                    .set_value(true, ctx)
-                    .expect("enable AI");
-            });
-        });
-        workspace.update(&mut app, |workspace, ctx| {
-            assert!(
-                workspace
-                    .left_panel_views
-                    .contains(&ToolPanelView::ConversationListView)
-            );
-            workspace.left_panel_view.update(ctx, |left_panel, ctx| {
-                left_panel.handle_action_with_force_open(
-                    &LeftPanelAction::ConversationListView,
-                    false,
-                    ctx,
-                );
-                assert_eq!(
-                    left_panel.active_view_availability(ctx),
-                    left_panel::ToolPanelAvailability::Available
-                );
-            });
-        });
-        app.read(|ctx| {
-            assert!(AISettings::as_ref(ctx).is_conversation_history_enabled(ctx));
-        });
-
-        // The raw setting still controls whether the toolbelt entry exists.
-        app.update(|ctx| {
-            AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                settings
-                    .show_conversation_history
-                    .set_value(false, ctx)
-                    .expect("hide conversation history");
-            });
-        });
-        workspace.read(&app, |workspace, _| {
-            assert!(
-                !workspace
-                    .left_panel_views
-                    .contains(&ToolPanelView::ConversationListView)
             );
         });
     });
@@ -1479,7 +1251,6 @@ fn mock_workspace_with_shared_session(app: &mut App) -> ViewHandle<Workspace> {
     let (_, workspace) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
         Workspace::new(
             global_resource_handles,
-            None,
             NewWorkspaceSource::Empty {
                 previous_active_window: None,
                 shell: None,
@@ -1530,7 +1301,6 @@ pub(crate) fn mock_workspace_viewing_shared_session(app: &mut App) -> ViewHandle
     let (_, workspace) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
         Workspace::new(
             global_resource_handles,
-            None,
             NewWorkspaceSource::SharedSessionAsViewer { session_id },
             ctx,
         )
@@ -5521,7 +5291,6 @@ mod simplified_wasm_tab_bar {
         let (_, workspace) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
             Workspace::new(
                 global_resource_handles,
-                None,
                 NewWorkspaceSource::FromCloudConversationId {
                     conversation_id: ServerConversationToken::new("test-server-token".to_string()),
                 },

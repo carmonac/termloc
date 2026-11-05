@@ -14,13 +14,8 @@ pub(crate) mod artifact_download;
 pub mod artifacts;
 pub(crate) mod attachment_utils;
 pub mod auth_secret_types;
-#[cfg(not(target_family = "wasm"))]
-pub mod aws_credentials;
-#[cfg(not(target_family = "wasm"))]
-pub(crate) mod bedrock_credentials;
 pub(crate) mod block_context;
 pub(crate) mod blocklist;
-pub mod chatgpt_subscription;
 #[cfg(any(feature = "local_fs", not(target_family = "wasm")))]
 pub(crate) mod codebase_auto_indexing;
 pub mod control_code_parser;
@@ -32,12 +27,7 @@ pub(crate) mod conversation_rename;
 pub(crate) mod conversation_status_ui;
 pub(crate) mod conversation_utils;
 pub mod credit_availability;
-pub(crate) mod custom_endpoints;
-pub(crate) mod custom_model_router_editor;
-pub(crate) mod custom_model_routers;
 pub(crate) mod document;
-#[cfg(not(target_family = "wasm"))]
-pub mod geap_credentials;
 pub(crate) mod get_relevant_files;
 pub mod harness_availability;
 pub(crate) mod harness_display;
@@ -46,11 +36,9 @@ pub(crate) mod llms;
 pub(crate) mod local;
 pub(crate) mod local_harness_setup;
 pub(crate) mod metadata_project_rules;
-pub mod onboarding;
 pub(crate) mod orchestration;
 pub(crate) mod persisted_workspace;
 pub(crate) mod predict;
-pub(crate) mod pricing_promotion;
 #[cfg(all(not(target_family = "wasm"), feature = "local_fs"))]
 pub(crate) mod remote_agent_context;
 pub(crate) mod remote_context_files;
@@ -59,8 +47,6 @@ pub(crate) mod restored_conversations;
 pub(crate) mod runner_display;
 pub(crate) mod skills;
 pub(crate) mod stored_screenshots;
-#[cfg(not(target_family = "wasm"))]
-pub(crate) mod tui_api_keys;
 pub(crate) mod voice;
 pub use agent_tips::*;
 pub use credit_availability::*;

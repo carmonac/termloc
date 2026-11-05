@@ -11,7 +11,7 @@ fn enforce_test_policy() {
 
 fn client() -> reqwest::Client {
     enforce_test_policy();
-    guard(reqwest::Client::builder()).build().unwrap()
+    build_client(reqwest::Client::builder()).unwrap()
 }
 
 fn is_blocked(error: &reqwest::Error) -> bool {

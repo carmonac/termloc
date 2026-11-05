@@ -297,7 +297,7 @@ pub fn model_snapshot(state: &OrchestrationConfigState, ctx: &AppContext) -> Opt
     let is_local = !state.execution_mode.is_remote();
     let harness = Harness::parse_orchestration_harness(&state.harness_type);
     match harness {
-        Some(Harness::Oz) | None => oz_model_snapshot(&state.model_id, is_local, ctx),
+        Some(Harness::Oz) | None => oz_model_snapshot(&state.model_id, ctx),
         Some(Harness::Codex) if is_local => {
             // Local Codex: only "Default model" entry.
             OptionSnapshot::ready(
@@ -327,22 +327,12 @@ pub fn model_snapshot(state: &OrchestrationConfigState, ctx: &AppContext) -> Opt
 ///
 /// Local execution includes custom models backed by local endpoints. Cloud
 /// execution excludes them because remote workers cannot reach those endpoints.
-pub fn oz_model_snapshot(
-    selected_model_id: &str,
-    is_local: bool,
-    ctx: &AppContext,
-) -> OptionSnapshot {
-    // Oz / unset: Warp LLM catalog. Custom models are excluded for cloud
-    // execution because remote workers cannot use local custom endpoints.
+pub fn oz_model_snapshot(selected_model_id: &str, ctx: &AppContext) -> OptionSnapshot {
     let llm_prefs = LLMPreferences::as_ref(ctx);
-    let (auto_models, rest): (Vec<_>, Vec<_>) = get_base_model_choices(llm_prefs, ctx, is_local)
-        .partition(|llm| llm.id.as_str().starts_with("auto"));
-    let (custom_models, other_models): (Vec<_>, Vec<_>) = rest
-        .into_iter()
-        .partition(|llm| llm_prefs.custom_llm_info_for_id(&llm.id).is_some());
+    let (auto_models, other_models): (Vec<_>, Vec<_>) =
+        get_base_model_choices(llm_prefs, ctx).partition(|llm| llm.id.as_str().starts_with("auto"));
     let choices = auto_models
         .into_iter()
-        .chain(custom_models)
         .chain(other_models)
         .map(|llm| ModelChoiceInput {
             id: llm.id.to_string(),

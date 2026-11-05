@@ -52,7 +52,6 @@ use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
 use crate::auth::auth_manager::AuthManager;
 use crate::auth::{AuthStateProvider, UserUid};
-use crate::changelog_model::ChangelogModel;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::context_chips::prompt::Prompt;
 use crate::editor::{DisplayPoint, EditorAction, Point, TextStyleOperation};
@@ -109,7 +108,6 @@ use crate::terminal::shared_session::presence_manager::PresenceManager;
 use crate::terminal::shell::{Shell, ShellType};
 use crate::terminal::universal_developer_input::UniversalDeveloperInputButtonBarEvent;
 use crate::terminal::view::Event as TerminalViewEvent;
-use crate::terminal::view::inline_banner::ByoLlmAuthBannerSessionState;
 use crate::terminal::writeable_pty::command_history::update_command_history;
 use crate::test_util::assert_eventually;
 use crate::test_util::settings::initialize_settings_for_tests;
@@ -546,7 +544,6 @@ pub fn initialize_app(app: &mut App) {
 
     // Initialize any global models required by the Input view.
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
-    app.add_singleton_model(|ctx| ChangelogModel::new(ServerApiProvider::as_ref(ctx).get()));
     app.add_singleton_model(|_| NetworkStatus::new());
     app.add_singleton_model(|_| SystemStats::new());
     app.add_singleton_model(|_| Prompt::mock());
@@ -655,8 +652,6 @@ pub fn initialize_app(app: &mut App) {
     app.add_singleton_model(|_| WorkspaceRegistry::new());
     app.add_singleton_model(|_| ToastStack);
     app.add_singleton_model(|_| PricingInfoModel::new());
-    app.add_singleton_model(crate::ai::pricing_promotion::PricingPromotionState::new);
-    app.add_singleton_model(ByoLlmAuthBannerSessionState::new);
     app.add_singleton_model(|_| {
         crate::ai::ambient_agents::github_auth_notifier::GitHubAuthNotifier::new()
     });
@@ -5700,33 +5695,6 @@ fn test_open_slash_command_requires_path() {
     });
 }
 
-#[test]
-fn test_changelog_slash_command_clears_buffer_on_success() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(
-            &mut app, None, /* history_file_commands */
-            None,
-        )
-        .await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-
-        input.update(&mut app, |input, ctx| {
-            input.editor.update(ctx, |editor, ctx| {
-                editor.set_buffer_text(commands::CHANGELOG.name, ctx)
-            });
-        });
-
-        input.update(&mut app, |input, ctx| {
-            input.input_enter(ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "");
-        });
-    });
-}
 #[test]
 fn test_open_slash_command_opens_files_palette_when_entered_from_slash_menu() {
     App::test((), |mut app| async move {

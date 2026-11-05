@@ -18,7 +18,6 @@ use warpui::{
 
 use crate::ai::blocklist::agent_view::agent_input_footer::AgentInputButtonTheme;
 use crate::ai::cloud_agent_settings::CloudAgentSettings;
-use crate::ai::custom_model_routers::is_custom_router_id;
 use crate::ai::execution_profiles::model_menu_items::is_auto;
 use crate::ai::harness_availability::{HarnessAvailabilityEvent, HarnessAvailabilityModel};
 use crate::ai::harness_display::icon_for as harness_icon_for;
@@ -495,10 +494,6 @@ impl ModelSelector {
         let mut auto_choices = Vec::new();
         let mut other_choices = Vec::new();
         for llm in llm_preferences.get_base_llm_choices_for_agent_mode(scope, ctx) {
-            if llm_preferences.custom_llm_info_for_id(&llm.id).is_some() {
-                continue;
-            }
-
             let display_name = llm.menu_display_name();
             if !query.is_empty() && !display_name.to_lowercase().contains(query) {
                 continue;
@@ -515,11 +510,7 @@ impl ModelSelector {
             .chain(other_choices)
             .map(|llm| {
                 let display_name = llm.menu_display_name();
-                let leading_icon = if is_custom_router_id(llm.id.as_str()) {
-                    Icon::Dataflow
-                } else {
-                    llm.provider.icon().unwrap_or(Icon::Agent)
-                };
+                let leading_icon = llm.provider.icon().unwrap_or(Icon::Agent);
                 let fields = MenuItemFields::new(display_name)
                     .with_icon(leading_icon)
                     .with_icon_size_override(ITEM_ICON_SIZE)

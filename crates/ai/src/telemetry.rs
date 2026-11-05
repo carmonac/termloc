@@ -11,11 +11,6 @@ use warp_core::telemetry::{EnablementState, TelemetryEvent, TelemetryEventDesc};
 #[derive(Clone, EnumDiscriminants)]
 #[strum_discriminants(derive(EnumIter))]
 pub enum AITelemetryEvent {
-    ProviderCredentialChanged {
-        provider: ProviderCredentialTelemetryProvider,
-        credential_kind: ProviderCredentialTelemetryKind,
-        action: ProviderCredentialTelemetryAction,
-    },
     MerkleTreeSnapshotRebuildSuccess {
         duration: Duration,
     },
@@ -49,29 +44,6 @@ pub enum AITelemetryEvent {
     },
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum ProviderCredentialTelemetryProvider {
-    OpenAi,
-    Anthropic,
-    Google,
-    Xai,
-}
-
-#[derive(Clone, Copy, Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum ProviderCredentialTelemetryKind {
-    PastedKey,
-    Oauth,
-}
-
-#[derive(Clone, Copy, Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum ProviderCredentialTelemetryAction {
-    Added,
-    Removed,
-}
-
 #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
 #[derive(Clone, Serialize)]
 pub enum CodebaseContextSyncType {
@@ -95,15 +67,6 @@ impl TelemetryEvent for AITelemetryEvent {
 
     fn payload(&self) -> Option<Value> {
         match self {
-            Self::ProviderCredentialChanged {
-                provider,
-                credential_kind,
-                action,
-            } => Some(json!({
-                "provider": provider,
-                "credential_kind": credential_kind,
-                "action": action,
-            })),
             Self::MerkleTreeSnapshotRebuildSuccess { duration } => Some(json!({
                 "duration": duration,
             })),
@@ -150,8 +113,7 @@ impl TelemetryEvent for AITelemetryEvent {
 
     fn contains_ugc(&self) -> bool {
         match self {
-            Self::ProviderCredentialChanged { .. }
-            | Self::MerkleTreeSnapshotRebuildSuccess { .. }
+            Self::MerkleTreeSnapshotRebuildSuccess { .. }
             | Self::MerkleTreeSnapshotRebuildFailed { .. }
             | Self::MerkleTreeSnapshotDiffSuccess { .. }
             | Self::MerkleTreeSnapshotDiffFailed { .. }
@@ -170,7 +132,6 @@ impl TelemetryEvent for AITelemetryEvent {
 impl TelemetryEventDesc for AITelemetryEventDiscriminants {
     fn name(&self) -> &'static str {
         match self {
-            Self::ProviderCredentialChanged => "AI.ProviderCredential.Changed",
             Self::MerkleTreeSnapshotRebuildSuccess => {
                 "AgentMode.MerkleTreeSnapshot.Rebuild.Success"
             }
@@ -186,9 +147,6 @@ impl TelemetryEventDesc for AITelemetryEventDiscriminants {
 
     fn description(&self) -> &'static str {
         match self {
-            Self::ProviderCredentialChanged => {
-                "A user added or removed a model-provider credential"
-            }
             Self::MerkleTreeSnapshotRebuildSuccess => {
                 "Successfully rebuilt merkle tree from snapshot"
             }
@@ -204,7 +162,6 @@ impl TelemetryEventDesc for AITelemetryEventDiscriminants {
 
     fn enablement_state(&self) -> EnablementState {
         match self {
-            Self::ProviderCredentialChanged => EnablementState::Always,
             Self::MerkleTreeSnapshotRebuildSuccess
             | Self::MerkleTreeSnapshotRebuildFailed
             | Self::MerkleTreeSnapshotDiffSuccess
@@ -218,7 +175,3 @@ impl TelemetryEventDesc for AITelemetryEventDiscriminants {
 }
 
 register_telemetry_event!(AITelemetryEvent);
-
-#[cfg(test)]
-#[path = "telemetry_tests.rs"]
-mod tests;

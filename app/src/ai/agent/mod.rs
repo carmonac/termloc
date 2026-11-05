@@ -705,14 +705,6 @@ pub enum RenderableAIError {
     ServerOverloaded,
     InternalWarpError,
     ContextWindowExceeded(String),
-    InvalidApiKey {
-        provider: String,
-        model_name: String,
-    },
-    AwsBedrockCredentialsExpiredOrInvalid {
-        model_name: String,
-    },
-    GeminiEnterpriseCredentialsExpiredOrInvalid,
     /// A transient network failure (lost connection or truncated response stream). Carries its
     /// own complete user-facing copy; `kind` preserves the structured cause (including the raw
     /// API error) so user reports can disambiguate the different causes behind the shared message.
@@ -748,78 +740,6 @@ pub enum RenderableAIError {
     /// GUI error card (`render_cloud_mode_error_screen`) which shows the
     /// message directly.
     CloudStartupFailed(String),
-    /// A request funded by the user's ChatGPT subscription was rejected by OpenAI's
-    /// token-sharing checks. The server authors the copy and the recovery actions; the client
-    /// renders them generically and never branches on `code`. Always a terminal failure (FAILED).
-    ChatGPTSubscriptionError {
-        /// The raw OpenAI error code, for telemetry only.
-        code: String,
-        title: String,
-        message: String,
-        /// Recovery actions in display order.
-        actions: Vec<ChatGPTSubscriptionErrorAction>,
-    },
-}
-
-/// A recovery action offered on a [`RenderableAIError::ChatGPTSubscriptionError`].
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ChatGPTSubscriptionErrorAction {
-    pub kind: ChatGPTSubscriptionErrorActionKind,
-    /// Server-authored button label.
-    pub label: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ChatGPTSubscriptionErrorActionKind {
-    /// Re-issue the turn unchanged, still funded by the ChatGPT subscription.
-    Retry,
-    /// Switch the rest of the conversation to Warp-funded inference, then resume.
-    ContinueWithWarpCredits,
-    /// Open an external page in the browser without changing the conversation.
-    OpenUrl { url: String },
-    /// Copy server-authored text without retrying or changing conversation funding.
-    CopyText { text: String },
-}
-
-impl From<warp_multi_agent_api::response_event::stream_finished::chat_gpt_subscription_error::action::Kind>
-    for ChatGPTSubscriptionErrorActionKind
-{
-    fn from(
-        kind: warp_multi_agent_api::response_event::stream_finished::chat_gpt_subscription_error::action::Kind,
-    ) -> Self {
-        use warp_multi_agent_api::response_event::stream_finished::chat_gpt_subscription_error::action::Kind;
-        match kind {
-            Kind::Retry(_) => Self::Retry,
-            Kind::ContinueWithWarpCredits(_) => Self::ContinueWithWarpCredits,
-            Kind::OpenUrl(open_url) => Self::OpenUrl { url: open_url.url },
-            Kind::CopyText(copy_text) => Self::CopyText { text: copy_text.text },
-        }
-    }
-}
-
-impl RenderableAIError {
-    /// Builds a [`Self::ChatGPTSubscriptionError`] from the server's finish reason, dropping
-    /// actions whose kind this client does not understand (decoded as an unset `kind`).
-    pub fn from_chatgpt_subscription_error(
-        error: warp_multi_agent_api::response_event::stream_finished::ChatGptSubscriptionError,
-    ) -> Self {
-        let actions = error
-            .actions
-            .into_iter()
-            .filter_map(|action| {
-                Some(ChatGPTSubscriptionErrorAction {
-                    kind: action.kind?.into(),
-                    label: action.label,
-                })
-            })
-            .collect();
-        Self::ChatGPTSubscriptionError {
-            code: error.code,
-            title: error.title,
-            message: error.message,
-            actions,
-        }
-    }
 }
 
 impl RenderableAIError {
@@ -844,18 +764,6 @@ impl RenderableAIError {
         // If reqwest has an HTTP status, the server responded. Preserve the existing generic
         // rendering for those failures rather than calling them lost connections.
         error.status().is_none()
-    }
-
-    pub fn is_invalid_api_key(&self) -> bool {
-        matches!(self, Self::InvalidApiKey { .. })
-    }
-
-    pub fn is_aws_bedrock_credentials_error(&self) -> bool {
-        matches!(self, Self::AwsBedrockCredentialsExpiredOrInvalid { .. })
-    }
-
-    pub fn is_chatgpt_subscription_error(&self) -> bool {
-        matches!(self, Self::ChatGPTSubscriptionError { .. })
     }
 
     /// Returns true if an automatic resume will be attempted for this error.
@@ -949,10 +857,6 @@ impl From<&Arc<AIApiError>> for RenderableAIError {
                 false,
                 TransientNetworkErrorKind::Api(value.clone()),
             ),
-            AIApiError::GrokSubscriptionTokenRefreshFailed => Self::other(
-                "Grok subscription token could not be refreshed. Please try reconnecting your subscription.",
-                true,
-            ),
             AIApiError::Deserialization(DeserializationError::Json(_))
             | AIApiError::NoContextFound
             | AIApiError::ErrorStatus(_, _)
@@ -986,18 +890,6 @@ impl Display for RenderableAIError {
             Self::ContextWindowExceeded(message) => {
                 write!(f, "Context window exceeded: {message}")
             }
-            Self::InvalidApiKey { provider, .. } => {
-                write!(f, "Invalid API key for {provider}")
-            }
-            Self::AwsBedrockCredentialsExpiredOrInvalid { model_name } => {
-                write!(
-                    f,
-                    "AWS Bedrock credentials expired or invalid for {model_name}"
-                )
-            }
-            Self::GeminiEnterpriseCredentialsExpiredOrInvalid => {
-                write!(f, "Gemini Enterprise credentials expired or invalid")
-            }
             Self::TransientNetworkError { kind, .. } => {
                 write!(
                     f,
@@ -1014,27 +906,6 @@ impl Display for RenderableAIError {
                  scripts that can exit the shell."
             ),
             Self::CloudStartupFailed(msg) => write!(f, "{msg}"),
-            Self::ChatGPTSubscriptionError {
-                title,
-                message,
-                actions,
-                ..
-            } => {
-                write!(f, "{title}\n\n{message}")?;
-                for action in actions {
-                    match &action.kind {
-                        ChatGPTSubscriptionErrorActionKind::OpenUrl { url } => {
-                            write!(f, "\n\n{}: {url}", action.label)?;
-                        }
-                        ChatGPTSubscriptionErrorActionKind::CopyText { text } => {
-                            write!(f, "\n\n{}:\n{text}", action.label)?;
-                        }
-                        ChatGPTSubscriptionErrorActionKind::Retry
-                        | ChatGPTSubscriptionErrorActionKind::ContinueWithWarpCredits => {}
-                    }
-                }
-                Ok(())
-            }
         }
     }
 }

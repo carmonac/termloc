@@ -6,7 +6,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use ::ai::api_keys::CustomEndpointDefinitions;
 use chrono::{DateTime, Utc};
 pub use cloud_object_models::{
     AgentModeCommandExecutionPredicate, DEFAULT_COMMAND_EXECUTION_ALLOWLIST,
@@ -1524,19 +1523,6 @@ define_settings_group!(AISettings, settings: [
         max_table_depth: 2,
         description: "AI execution profiles and their permissions.",
     }
-    // Non-secret custom inference endpoint definitions shared by GUI and TUI.
-    // Credentials remain in each surface's secure-storage namespace.
-    custom_endpoints: CustomEndpoints {
-        type: CustomEndpointDefinitions,
-        default: CustomEndpointDefinitions::default(),
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::ALL,
-        private: false,
-        toml_path: "agents.custom_endpoints",
-        max_table_depth: 2,
-        description: "Custom inference endpoint definitions.",
-    }
     // Which unit the TUI footer's usage entry displays (credits or provider
     // cost), flipped by clicking the entry.
     //
@@ -1617,42 +1603,6 @@ define_settings_group!(AISettings, settings: [
         surface: settings::SettingSurfaces::GUI,
         private: true,
     }
-    // Whether to use locally loaded AWS credentials for Bedrock-enabled requests.
-    aws_bedrock_credentials_enabled: AwsBedrockCredentialsEnabled {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::DESKTOP,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: false,
-        toml_path: "cloud_platform.third_party_api_keys.aws_bedrock_credentials_enabled",
-        description: "Whether Warp should use your local AWS credentials for Bedrock-enabled requests.",
-    }
-    // Whether to automatically run the AWS login command when Bedrock credentials are expired.
-    //
-    // When true, the configured login command will be run automatically without asking.
-    // When false (default), a prompt will be shown asking for permission.
-    aws_bedrock_auto_login: AwsBedrockAutoLogin {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::DESKTOP,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: false,
-        toml_path: "cloud_platform.third_party_api_keys.aws_bedrock_auto_login",
-        description: "Whether to automatically run the AWS login command when Bedrock credentials expire.",
-    }
-    // Command to run to refresh AWS credentials when using Bedrock auto-login.
-    aws_bedrock_auth_refresh_command: AwsBedrockAuthRefreshCommand {
-        type: String,
-        default: "aws login".to_string(),
-        supported_platforms: SupportedPlatforms::DESKTOP,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: false,
-        toml_path: "cloud_platform.third_party_api_keys.aws_bedrock_auth_refresh_command",
-        description: "The command to run to refresh AWS credentials for Bedrock.",
-    }
     ollama_url: OllamaUrl {
         type: String,
         default: "http://127.0.0.1:11434".to_string(),
@@ -1682,43 +1632,6 @@ define_settings_group!(AISettings, settings: [
         private: false,
         toml_path: "agents.local_models.context_window",
         description: "The maximum number of tokens to use per request to a local model.",
-    }
-    // AWS profile name to use when loading credentials from the local AWS credential/config chain.
-    aws_bedrock_profile: AwsBedrockProfile {
-        type: String,
-        default: "default".to_string(),
-        supported_platforms: SupportedPlatforms::DESKTOP,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: false,
-        toml_path: "cloud_platform.third_party_api_keys.aws_bedrock_profile",
-        description: "The AWS profile name to use for Bedrock credentials.",
-    }
-    // Whether the AWS Bedrock login banner has been permanently dismissed.
-    //
-    // Not a user-visible setting - we model it as a setting so we can track state.
-    aws_bedrock_login_banner_dismissed: AwsBedrockLoginBannerDismissed {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::DESKTOP,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    }
-    // Whether to mint and attach Gemini Enterprise (GEAP) credentials to eligible agent
-    // requests, routing them through the workspace's Google Cloud project. Only consulted
-    // when the admin sets the GEAP host to RESPECT_USER_SETTING; ENFORCE bypasses it.
-    // Prefer [`UserWorkspaces::is_gemini_enterprise_credentials_enabled`] to interpret
-    // this setting.
-    gemini_enterprise_credentials_enabled: GeminiEnterpriseCredentialsEnabled {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::DESKTOP,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: false,
-        toml_path: "cloud_platform.third_party_api_keys.gemini_enterprise_credentials_enabled",
-        description: "Whether Warp should route eligible requests through your workspace's Gemini Enterprise Google Cloud project.",
     }
     // Whether or not the user wants agent mode requests to use their saved rules.
     memory_enabled: MemoryEnabled {
@@ -1866,72 +1779,6 @@ define_settings_group!(AISettings, settings: [
         sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
         surface: settings::SettingSurfaces::GUI,
         private: true,
-    }
-
-    // This is not a user-visible setting - it's merely a one-time flag to track if the
-    // free-AI-removal notice modal has been shown to (or silently marked as seen for) the user.
-    //
-    // We model it as a setting so it's only shown once to a given user regardless of the number of
-    // devices they use.
-    did_check_to_trigger_free_ai_removal_modal: DidShowFreeAiRemovalModal {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    }
-
-    // This is not a user-visible setting - it's merely a one-time flag to track if the
-    // "You're using your ChatGPT plan" modal has been shown for the user's current ChatGPT
-    // connection. Reset when the user disconnects so a later reconnect shows it again.
-    //
-    // We model it as a setting so it's only shown once to a given user regardless of the number of
-    // devices they use.
-    did_show_chatgpt_plan_modal: DidShowChatGPTPlanModal {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    }
-
-    // Used to determine whether the "Latest updates" section of the agent view
-    // zero state is expanded or collapsed by default.
-    should_expand_oz_updates: ShouldExpandOzUpdates {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Never,
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    }
-
-    // Used to determine whether the "Latest updates" section of the agent view
-    // zero state is shown or hidden.
-    should_show_oz_updates_in_zero_state: ShouldShowOzUpdatesInZeroState {
-        type: bool,
-        default: true,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: false,
-        toml_path: "agents.warp_agent.other.should_show_oz_updates_in_zero_state",
-        description: "Whether the \"What's new\" section is shown in the agent view.",
-    }
-
-    // Whether or not the user has enabled fallback to Warp credits for user-provided models.
-    can_use_warp_credits_for_fallback: CanUseWarpCreditsForFallback {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::ALL,
-        private: false,
-        storage_key: "CanUseWarpCreditsWithByok",
-        toml_path: "cloud_platform.third_party_api_keys.can_use_warp_credits_with_byok",
-        description: "Whether Warp credits can be used as a fallback for user-provided models.",
     }
 
     should_render_use_agent_footer_for_user_commands: ShouldRenderUseAgentToolbarForUserCommands {
@@ -2254,20 +2101,6 @@ define_settings_group!(AISettings, settings: [
         private: true,
     }
 
-    // Not a user-visible setting - it tracks which one-time feature-intro popups the
-    // user has already seen, keyed by the feature-intro id (see `FEATURE_INTROS`).
-    //
-    // We model it as a globally-synced setting (not respecting the user's sync setting)
-    // so each feature is announced at most once per user, regardless of how many devices
-    // they use. A feature is considered seen when its id is present and mapped to `true`.
-    seen_feature_intro_ids: SeenFeatureIntroIds {
-        type: HashMap<String, bool>,
-        default: HashMap::default(),
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    }
 ]);
 
 impl AISettings {
@@ -2789,25 +2622,6 @@ impl AISettings {
             self.cli_agent_footer_enabled_commands
                 .set_value(ToolbarCommandMap::new(map), ctx)
         );
-    }
-
-    /// Whether the feature-intro popover with the given id key has been seen.
-    pub fn is_feature_intro_seen(&self, key: &str) -> bool {
-        self.seen_feature_intro_ids
-            .get(key)
-            .copied()
-            .unwrap_or(false)
-    }
-
-    /// Records that the feature-intro popover with the given id key has been seen,
-    /// so it is never shown again. No-op if already recorded.
-    pub fn mark_feature_intro_seen(&mut self, key: &str, ctx: &mut ModelContext<Self>) {
-        if self.is_feature_intro_seen(key) {
-            return;
-        }
-        let mut map = self.seen_feature_intro_ids.clone();
-        map.insert(key.to_owned(), true);
-        report_if_error!(self.seen_feature_intro_ids.set_value(map, ctx));
     }
 
     /// Whether the plugin install chip was dismissed for the given agent/host.

@@ -3,11 +3,7 @@
 //! [`crate::workspaces::user_workspaces::team_workspace_settings`] for the workspace-vs-team
 //! two-layer model and the team-scoped policies that layer on top.
 
-use warp_core::features::FeatureFlag;
-use warpui::{AppContext, SingletonEntity};
-
 use super::UserWorkspaces;
-use crate::auth::AuthStateProvider;
 use crate::channel::ChannelState;
 use crate::workspaces::team::Team;
 use crate::workspaces::workspace::{
@@ -160,47 +156,5 @@ impl UserWorkspaces {
                         .warp_ai_policy
                         .is_some_and(|policy| policy.is_voice_enabled)
                 })
-    }
-
-    /// Whether BYO API key is enabled for the current user, based on the active policies.
-    /// Note that the value may be incorrect if called before the team's billing metadata has been fetched.
-    /// For solo users (no workspace), this is controlled by the `SoloUserByok` feature flag.
-    /// Anonymous or logged-out users are not allowed to use BYO API keys.
-    pub fn is_byo_api_key_enabled(&self, app: &AppContext) -> bool {
-        if AuthStateProvider::as_ref(app)
-            .get()
-            .is_anonymous_or_logged_out()
-        {
-            return false;
-        }
-        self.current_workspace()
-            .map(|workspace| workspace.billing_metadata.is_byo_api_key_enabled())
-            .unwrap_or(FeatureFlag::SoloUserByok.is_enabled())
-    }
-
-    /// Whether custom inference endpoints are enabled for the current user.
-    /// Anonymous or logged-out users are not allowed to use custom inference.
-    /// Controlled by the BYO_ENDPOINT billing policy.
-    pub fn is_byo_endpoint_enabled(&self, app: &AppContext) -> bool {
-        if AuthStateProvider::as_ref(app)
-            .get()
-            .is_anonymous_or_logged_out()
-        {
-            return false;
-        }
-
-        self.current_workspace()
-            .map(|workspace| workspace.billing_metadata.is_byo_endpoint_enabled())
-            .unwrap_or(true)
-    }
-
-    /// Whether the current workspace's plan manages BYOK/BYOE centrally.
-    ///
-    /// A workspace-level plan entitlement that turns on the team-scoped `team_byo` policy; see the
-    /// [`crate::workspaces::user_workspaces::team_workspace_settings`] module docs for the
-    /// two-layer model.
-    pub(crate) fn is_managed_byok_byoe_enabled(&self) -> bool {
-        self.current_workspace_billing_metadata()
-            .is_some_and(|billing| billing.is_managed_byok_byoe_enabled())
     }
 }

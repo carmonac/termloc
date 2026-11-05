@@ -18,7 +18,6 @@ use crate::server::ids::ServerId;
 use crate::server::server_api::ServerApi;
 use crate::server::server_api::ai::AIClient;
 use crate::server::telemetry::{TelemetryEvent, WarpAIRequestResult};
-use crate::workspaces::user_workspaces::UserWorkspaces;
 
 /// The key for the corresponding entry in UserDefaults.
 /// Not wiring through Settings for now since this data is only needed by the panel view.
@@ -170,7 +169,7 @@ impl Requests {
     pub fn issue_request(
         &mut self,
         request: String,
-        team_uid: Option<ServerId>,
+        _team_uid: Option<ServerId>,
         ctx: &mut ModelContext<Self>,
     ) {
         let server_api = self.server_api.clone();
@@ -251,28 +250,7 @@ impl Requests {
                                 String::from("later")
                             };
 
-                            let auth_state = AuthStateProvider::as_ref(ctx).get();
-                            let response = if let Some(team) = team_uid.and_then(|team_uid| {
-                                UserWorkspaces::as_ref(ctx)
-                                    .team_from_uid_across_all_workspaces(team_uid)
-                            }) {
-                                let current_user_email = auth_state.user_email().unwrap_or_default();
-                                let has_admin_permissions = team.has_admin_permissions(&current_user_email);
-                                if team.billing_metadata.can_upgrade_to_higher_tier_plan() {
-                                    if has_admin_permissions {
-                                        let upgrade_url = UserWorkspaces::upgrade_link_for_team(team.uid);
-                                        format!("It seems you're out of credits. Please try again {next_time}.\n\n[Upgrade]({upgrade_url}) for more credits.")
-                                    } else {
-                                        format!("It seems you're out of credits. Please try again {next_time}.\n\nContact a team admin to upgrade for more credits.")
-                                    }
-                                } else {
-                                    format!("It seems you're out of credits. Please try again {next_time}.")
-                                }
-                            } else {
-                                let user_id = auth_state.user_id().unwrap_or_default();
-                                let upgrade_url = UserWorkspaces::upgrade_link(user_id);
-                                format!("It seems you're out of credits. Please try again {next_time}.\n\n[Upgrade]({upgrade_url}) for more credits.")
-                            };
+                            let response = format!("It seems you're out of credits. Please try again {next_time}.");
                             let response_in_markdown = markdown_segments_from_text(
                                 transcript_part_index,
                                 TranscriptPartSubType::Answer,

@@ -7,9 +7,6 @@ use warp_graphql::mutations::add_invite_link_domain_restriction::{
     AddInviteLinkDomainRestriction, AddInviteLinkDomainRestrictionInput,
     AddInviteLinkDomainRestrictionResult, AddInviteLinkDomainRestrictionVariables,
 };
-use warp_graphql::mutations::create_team::{
-    CreateTeam, CreateTeamInput, CreateTeamResult, CreateTeamVariables,
-};
 use warp_graphql::mutations::delete_invite_link_domain_restriction::{
     DeleteInviteLinkDomainRestriction, DeleteInviteLinkDomainRestrictionInput,
     DeleteInviteLinkDomainRestrictionResult, DeleteInviteLinkDomainRestrictionVariables,
@@ -32,9 +29,6 @@ use warp_graphql::mutations::join_workspace_from_discovery::{
 use warp_graphql::mutations::remove_user_from_team::{
     RemoveUserFromTeam, RemoveUserFromTeamInput, RemoveUserFromTeamResult,
     RemoveUserFromTeamVariables,
-};
-use warp_graphql::mutations::rename_team::{
-    RenameTeam, RenameTeamInput, RenameTeamResult, RenameTeamVariables,
 };
 use warp_graphql::mutations::reset_invite_links::{
     ResetInviteLinks, ResetInviteLinksInput, ResetInviteLinksResult, ResetInviteLinksVariables,
@@ -72,8 +66,8 @@ use crate::server::graphql::{get_request_context, get_user_facing_error_message}
 use crate::server::ids::ServerId;
 use crate::workspaces::gql_convert::workspaces_metadata_response_from_gql;
 use crate::workspaces::team::{DiscoveryOptions, MembershipRole};
-use crate::workspaces::user_workspaces::{CreateTeamResponse, WorkspacesMetadataWithPricing};
-use crate::workspaces::workspace::{Workspace, WorkspaceUid};
+use crate::workspaces::user_workspaces::WorkspacesMetadataWithPricing;
+use crate::workspaces::workspace::WorkspaceUid;
 
 #[cfg_attr(test, automock)]
 #[cfg_attr(not(target_family = "wasm"), async_trait)]
@@ -93,26 +87,9 @@ pub trait TeamClient: 'static + Send + Sync {
         domain_uid: ServerId,
     ) -> Result<WorkspacesMetadataWithPricing>;
 
-    /// Creates a team and returns the result from the server with the newly created team.
-    async fn create_team(
-        &self,
-        name: String,
-        entrypoint: CloudObjectEventEntrypoint,
-        discoverable: Option<bool>,
-    ) -> Result<CreateTeamResponse>;
-
     /// Removes the user from the selected team and returns a list of all teams that a user is
     /// still a member of (including updated team members).
     async fn remove_user_from_team(
-        &self,
-        user_uid: UserUid,
-        team_uid: ServerId,
-        entrypoint: CloudObjectEventEntrypoint,
-    ) -> Result<WorkspacesMetadataWithPricing>;
-
-    /// Removes the _current_ user from the team (user leaving the team) and returns the list of
-    /// all teams that the current user is still a member of.
-    async fn leave_team(
         &self,
         user_uid: UserUid,
         team_uid: ServerId,
@@ -146,12 +123,6 @@ pub trait TeamClient: 'static + Send + Sync {
     ) -> Result<WorkspacesMetadataWithPricing>;
 
     async fn get_discovery_options(&self) -> Result<DiscoveryOptions>;
-
-    async fn rename_team(
-        &self,
-        new_name: String,
-        team_uid: ServerId,
-    ) -> Result<WorkspacesMetadataWithPricing>;
 
     async fn reset_invite_links(&self, team_uid: ServerId)
     -> Result<WorkspacesMetadataWithPricing>;
@@ -291,46 +262,6 @@ impl TeamClient for ServerApi {
         self.workspaces_metadata().await
     }
 
-    async fn create_team(
-        &self,
-        name: String,
-        entrypoint: CloudObjectEventEntrypoint,
-        discoverable: Option<bool>,
-    ) -> Result<CreateTeamResponse> {
-        let variables = CreateTeamVariables {
-            input: CreateTeamInput {
-                name,
-                entrypoint: entrypoint.into(),
-                discoverable: discoverable.unwrap_or(false),
-            },
-            request_context: get_request_context(),
-        };
-
-        let operation = CreateTeam::build(variables);
-        let result = self
-            .send_graphql_request(operation, None)
-            .await?
-            .create_team;
-
-        match result {
-            CreateTeamResult::CreateTeamOutput(output) => {
-                let workspace: Workspace = output.workspace.clone().into();
-                if let Some(team) = workspace.teams.first() {
-                    Ok(CreateTeamResponse {
-                        workspace: workspace.clone(),
-                        team: team.clone(),
-                    })
-                } else {
-                    Err(anyhow!("failed to create team"))
-                }
-            }
-            CreateTeamResult::UserFacingError(user_facing_error) => {
-                Err(anyhow!(get_user_facing_error_message(user_facing_error)))
-            }
-            CreateTeamResult::Unknown => Err(anyhow!("unknown error while creating team")),
-        }
-    }
-
     async fn remove_user_from_team(
         &self,
         user_uid: UserUid,
@@ -366,42 +297,6 @@ impl TeamClient for ServerApi {
             RemoveUserFromTeamResult::Unknown => {
                 Err(anyhow!("unknown error while removing user from team"))
             }
-        }
-    }
-
-    async fn leave_team(
-        &self,
-        user_uid: UserUid,
-        team_uid: ServerId,
-        entrypoint: CloudObjectEventEntrypoint,
-    ) -> Result<WorkspacesMetadataWithPricing> {
-        let variables = RemoveUserFromTeamVariables {
-            input: RemoveUserFromTeamInput {
-                user_uid: user_uid.into(),
-                team_uid: team_uid.into(),
-                entrypoint: entrypoint.into(),
-            },
-            request_context: get_request_context(),
-        };
-
-        let operation = RemoveUserFromTeam::build(variables);
-        let result = self
-            .send_graphql_request(operation, None)
-            .await?
-            .remove_user_from_team;
-
-        match result {
-            RemoveUserFromTeamResult::RemoveUserFromTeamOutput(output) => {
-                if !output.success {
-                    return Err(anyhow!("failed to leave team"));
-                } else {
-                    self.workspaces_metadata().await
-                }
-            }
-            RemoveUserFromTeamResult::UserFacingError(user_facing_error) => {
-                Err(anyhow!(get_user_facing_error_message(user_facing_error)))
-            }
-            RemoveUserFromTeamResult::Unknown => Err(anyhow!("unknown error while leaving team")),
         }
     }
 
@@ -608,39 +503,6 @@ impl TeamClient for ServerApi {
             warp_graphql::queries::get_discoverable_teams::UserResult::Unknown => {
                 Err(anyhow!("unknown error while getting discoverable teams"))
             }
-        }
-    }
-
-    async fn rename_team(
-        &self,
-        new_name: String,
-        team_uid: ServerId,
-    ) -> Result<WorkspacesMetadataWithPricing> {
-        let variables = RenameTeamVariables {
-            input: RenameTeamInput {
-                new_name,
-                team_uid: team_uid.into(),
-            },
-            request_context: get_request_context(),
-        };
-        let operation = RenameTeam::build(variables);
-        let result = self
-            .send_graphql_request(operation, None)
-            .await?
-            .rename_team;
-
-        match result {
-            RenameTeamResult::RenameTeamOutput(output) => {
-                if output.success {
-                    self.workspaces_metadata().await
-                } else {
-                    Err(anyhow!("failed to rename team"))
-                }
-            }
-            RenameTeamResult::UserFacingError(user_facing_error) => {
-                Err(anyhow!(get_user_facing_error_message(user_facing_error)))
-            }
-            RenameTeamResult::Unknown => Err(anyhow!("unknown error while renaming team")),
         }
     }
 

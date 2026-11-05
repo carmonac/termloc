@@ -115,52 +115,6 @@ fn view_logs_command_is_registered_only_for_tui_mode() {
 }
 
 #[test]
-fn api_keys_command_is_tui_only_and_has_no_arguments() {
-    let command = all_commands(settings::SettingsMode::Tui)
-        .into_iter()
-        .find(|command| command.kind == SlashCommandKind::ApiKeys)
-        .expect("expected /api-keys to be registered in TUI mode");
-    assert_eq!(command, API_KEYS);
-    assert!(!command.auto_enter_ai_mode);
-    assert_eq!(command.availability, Availability::AI_ENABLED);
-    assert!(command.argument.is_none());
-    assert_eq!(command.description, "View and manage API keys");
-    assert!(
-        all_commands(settings::SettingsMode::Gui)
-            .iter()
-            .all(|command| command.kind != SlashCommandKind::ApiKeys)
-    );
-    assert!(
-        all_commands(settings::SettingsMode::Tui)
-            .iter()
-            .all(|command| !matches!(command.name, "/add-api-key" | "/clear-provider-api-key"))
-    );
-}
-
-#[test]
-fn connect_grok_command_is_tui_only_and_has_no_arguments() {
-    let command = all_commands(settings::SettingsMode::Tui)
-        .into_iter()
-        .find(|command| command.kind == SlashCommandKind::ConnectGrok)
-        .expect("expected /connect-grok to be registered in TUI mode");
-    assert_eq!(command, CONNECT_GROK);
-    assert_eq!(command.name, "/connect-grok");
-    assert_eq!(command.supported_surfaces, SlashCommandSurfaces::TuiOnly);
-    assert_eq!(command.availability, Availability::AI_ENABLED);
-    assert!(!command.auto_enter_ai_mode);
-    assert!(command.argument.is_none());
-    assert_eq!(
-        command.description,
-        "Connect your Grok (X Premium / SuperGrok) account"
-    );
-    assert!(
-        all_commands(settings::SettingsMode::Gui)
-            .iter()
-            .all(|command| command.kind != SlashCommandKind::ConnectGrok)
-    );
-}
-
-#[test]
 fn manage_billing_command_is_always_available_only_in_tui_mode() {
     let command = all_commands(settings::SettingsMode::Tui)
         .into_iter()

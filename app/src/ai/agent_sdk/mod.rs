@@ -10,7 +10,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ai::api_keys::{ApiKeyManager, AwsCredentialsRefreshStrategy};
 use anyhow::Context;
 pub use driver::AgentDriver;
 use driver::AgentDriverError;
@@ -66,7 +65,6 @@ use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::ambient_agents::task::{HarnessConfig, TaskAttachment};
 use crate::ai::attachment_utils::attachments_download_dir;
 #[cfg(not(target_family = "wasm"))]
-use crate::ai::aws_credentials::{BedrockOidcCredentialsConfig, refresh_aws_credentials_oidc};
 use crate::ai::cloud_environments::{
     AmbientAgentEnvironment, CloudAmbientAgentEnvironment, SourceRepo,
 };
@@ -142,57 +140,6 @@ fn maybe_warn_team_api_key(ctx: &AppContext) {
         "\x1b[33mWarning: Free cloud credits apply to personal runs only but this run uses \
          a team API key. If you want to use free cloud credits, consider using a personal API key instead.\x1b[0m"
     );
-}
-
-fn bedrock_oidc_credentials_config(
-    options: &AgentDriverOptions,
-    role_arn: String,
-    region: String,
-) -> Result<BedrockOidcCredentialsConfig, AgentDriverError> {
-    let task_id = options.task_id.ok_or_else(|| {
-        AgentDriverError::AwsBedrockCredentialsFailed(
-            "AWS Bedrock inference requires an ambient task ID before credentials can be minted"
-                .to_string(),
-        )
-    })?;
-    Ok(BedrockOidcCredentialsConfig {
-        task_id: task_id.to_string(),
-        role_arn,
-        region,
-    })
-}
-
-/// Switches the run to OIDC-federated AWS credentials for a Bedrock inference role and waits
-/// for the first set to be minted, recording the config on `options` for later refreshes.
-#[cfg(not(target_family = "wasm"))]
-async fn configure_bedrock_oidc_credentials<E: Entity>(
-    foreground: &ModelSpawner<E>,
-    options: &mut AgentDriverOptions,
-    role_arn: String,
-    region: String,
-) -> Result<(), AgentDriverError> {
-    let config = bedrock_oidc_credentials_config(options, role_arn, region)?;
-    let request_scope = options
-        .team_scope
-        .as_ref()
-        .map(RequestTeamScope::from_scope);
-    options.bedrock_oidc_credentials = Some(config.clone());
-    // Set the OIDC strategy on the UI thread and kick off the refresh; the
-    // returned future resolves when credentials are committed to the model.
-    foreground
-        .spawn(move |_, ctx| {
-            ApiKeyManager::handle(ctx).update(ctx, |manager, ctx| {
-                // From here on, refresh credentials via OIDC federation only.
-                manager.set_aws_credentials_refresh_strategy(
-                    AwsCredentialsRefreshStrategy::OidcManaged,
-                    ctx,
-                );
-                refresh_aws_credentials_oidc(config, request_scope, manager, ctx)
-            })
-        })
-        .await?
-        .await
-        .map_err(AgentDriverError::AwsBedrockCredentialsFailed)
 }
 
 pub(crate) fn run_environment_checkout(
@@ -763,7 +710,6 @@ fn build_execution_task_and_options(
         harness_transport,
         third_party_harness_model_config,
         team_scope: None,
-        bedrock_oidc_credentials: None,
         snapshot_disabled: Some(config.snapshot_disabled),
         snapshot_upload_timeout: args
             .and_then(|args| args.snapshot.snapshot_upload_timeout)
@@ -969,18 +915,6 @@ impl AgentDriverRunner {
                     .map_err(AgentDriverError::ConfigBuildFailed)?),
                 None => args.share.share.clone(),
             };
-            let bedrock_inference_role = match execution_config {
-                Some(config) => config.inference_providers.as_ref()
-                    .and_then(|providers| providers.aws_bedrock.as_ref())
-                    .map(|bedrock| bedrock.role_arn.clone()),
-                None => args.bedrock_inference_role.clone(),
-            };
-            let bedrock_role_region = match execution_config {
-                Some(config) => config.inference_providers.as_ref()
-                    .and_then(|providers| providers.aws_bedrock.as_ref())
-                    .and_then(|bedrock| bedrock.region.clone()),
-                None => args.bedrock_role_region.clone(),
-            };
             let has_task_id = args.task_id.is_some();
             let resume_conversation_id = if has_execution_config {
                 None
@@ -1015,27 +949,6 @@ impl AgentDriverRunner {
                     server_api.clone(),
                     conversation_id,
                     task.harness.harness(),
-                )
-                .await?;
-            }
-
-            #[cfg(not(target_family = "wasm"))]
-            if let Some(role_arn) = bedrock_inference_role {
-                // clap's `requires` constraint enforces this at parse time, so a missing
-                // region here means a caller is constructing `RunAgentArgs` directly
-                // without the flag. Fail loudly so callers don't silently fall back to a
-                // hard-coded STS region.
-                let role_region = bedrock_role_region.ok_or_else(|| {
-                    AgentDriverError::AwsBedrockCredentialsFailed(
-                        "--bedrock-role-region is required when --bedrock-inference-role is set"
-                            .to_string(),
-                    )
-                })?;
-                configure_bedrock_oidc_credentials(
-                    &foreground,
-                    &mut driver_options,
-                    role_arn,
-                    role_region,
                 )
                 .await?;
             }
@@ -1549,7 +1462,6 @@ impl AgentDriverRunner {
                     harness_transport: args.harness_transport.unwrap_or_default(),
                     third_party_harness_model_config,
                     team_scope: None,
-                    bedrock_oidc_credentials: None,
                     snapshot_disabled: args.snapshot.no_snapshot.then_some(true),
                     snapshot_upload_timeout: args
                         .snapshot

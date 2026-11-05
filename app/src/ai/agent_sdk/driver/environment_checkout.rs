@@ -16,7 +16,6 @@ use instant::Instant;
 use tokio::fs;
 use tokio::io::{AsyncRead, AsyncReadExt as _};
 use tracing::Instrument as _;
-use tracing_opentelemetry::OpenTelemetrySpanExt as _;
 use warp_cli::agent::{RepositoryForge, RepositoryHeadRef};
 use warp_cli::environment_checkout::EnvironmentCheckoutArgs;
 use warp_core::features::FeatureFlag;
@@ -50,7 +49,6 @@ pub(crate) fn run(args: &EnvironmentCheckoutArgs) -> anyhow::Result<()> {
         result_ok = tracing::field::Empty,
         err = tracing::field::Empty,
     );
-    let _ = span.set_parent(opentelemetry::Context::current());
     let result = runtime.block_on(run_async(args).instrument(span.clone()));
     span.record("result_ok", result.is_ok());
     if let Err(err) = &result {

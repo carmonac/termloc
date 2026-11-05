@@ -7,7 +7,6 @@ use warp_multi_agent_api as api;
 use warpui::integration::{AssertionCallback, AssertionOutcome, TestStep};
 use warpui::{EntityId, SingletonEntity as _, integration_assert};
 
-use super::llm_judge::{LLMJudge, LLMJudgeConfig};
 use crate::BlocklistAIHistoryModel;
 use crate::ai::agent::conversation::{AIConversation, AIConversationId, ConversationStatus};
 use crate::ai::agent::todos::AIAgentTodoList;
@@ -730,42 +729,6 @@ pub fn hydrate_ai_conversation_assertion(tasks: Vec<api::Task>) -> AssertionCall
 
             terminal_view.load_conversation_from_tasks(task_list, ctx);
             AssertionOutcome::Success
-        })
-    })
-}
-
-pub fn assert_llm_judge_whole_conversation_passes(
-    judge_config: LLMJudgeConfig,
-) -> AssertionCallback {
-    Box::new(move |app, window_id| {
-        let terminal_view = terminal_view(app, window_id, 0, 0);
-        BlocklistAIHistoryModel::handle(app).update(app, |history_model, _| {
-            // Async assertions to wait until this exchange is finished.
-            let Some(conversation) = history_model.active_conversation(terminal_view.id()) else {
-                return AssertionOutcome::immediate_failure(
-                    "Failed to get conversation".to_owned(),
-                );
-            };
-
-            let judge = LLMJudge::new(judge_config.clone());
-            let result = judge.judge(conversation);
-            match result {
-                Ok(judge_result) => {
-                    if !judge_result.pass {
-                        AssertionOutcome::immediate_failure(format!(
-                            "LLM judged conversation to fail: {}",
-                            judge_result.critique
-                        ))
-                    } else {
-                        // TODO: we want to record critiques on success
-                        println!("LLM judged conversation to pass: {}", judge_result.critique);
-                        AssertionOutcome::Success
-                    }
-                }
-                Err(e) => AssertionOutcome::immediate_failure(format!(
-                    "Failed to judge conversation: {e:?}"
-                )),
-            }
         })
     })
 }

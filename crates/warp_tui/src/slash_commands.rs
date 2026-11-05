@@ -355,8 +355,7 @@ impl TuiSlashCommandModel {
         }
         if matches!(
             self.suggestions_mode.as_ref(ctx).mode(),
-            TuiInputSuggestionsMode::ApiKeys
-                | TuiInputSuggestionsMode::ConversationMenu
+            TuiInputSuggestionsMode::ConversationMenu
                 | TuiInputSuggestionsMode::ModelSelector
                 | TuiInputSuggestionsMode::SkillMenu
                 | TuiInputSuggestionsMode::Mcp

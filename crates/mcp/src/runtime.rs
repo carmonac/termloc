@@ -181,13 +181,11 @@ pub fn build_client_with_headers(
 ) -> Result<reqwest::Client, rmcp::RmcpError> {
     let header_map = build_header_map(headers);
 
-    egress::guard(reqwest::Client::builder().default_headers(header_map))
-        .build()
-        .map_err(|e| {
-            rmcp::RmcpError::transport_creation::<ReqwestHttpTransport>(format!(
-                "Failed to build client with headers: {e}",
-            ))
-        })
+    egress::build_client(reqwest::Client::builder().default_headers(header_map)).map_err(|e| {
+        rmcp::RmcpError::transport_creation::<ReqwestHttpTransport>(format!(
+            "Failed to build client with headers: {e}",
+        ))
+    })
 }
 
 /// Spawns a new MCP server from a given [`TransportType`].

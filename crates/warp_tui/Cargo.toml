@@ -16,23 +16,8 @@ default-run = "warp-tui-oss"
 name = "warp-tui-oss"
 path = "src/bin/oss.rs"
 
-[[bin]]
-name = "warp-tui"
-path = "src/bin/local.rs"
-
-[[bin]]
-name = "warp-tui-dev"
-path = "src/bin/dev.rs"
-
-[[bin]]
-name = "warp-tui-preview"
-path = "src/bin/preview.rs"
-
-[[bin]]
-name = "warp-tui-stable"
-path = "src/bin/stable.rs"
-
 [dependencies]
+egress.workspace = true
 ai.workspace = true
 anyhow.workspace = true
 async-channel.workspace = true
@@ -49,7 +34,6 @@ futures-lite.workspace = true
 fs4.workspace = true
 http_client.workspace = true
 instant.workspace = true
-inquire = "0.9.1"
 itertools.workspace = true
 log.workspace = true
 markdown_parser.workspace = true
@@ -76,7 +60,6 @@ warp = { workspace = true, features = [
   "nld_heuristic_v2",
   "tui",
 ] }
-warp_channel_config.workspace = true
 warp_completer.workspace = true
 warp_core.workspace = true
 warp_errors.workspace = true
@@ -139,10 +122,6 @@ required-features = ["test-util"]
 voice_input = ["warp/voice_input"]
 # Exposes deterministic, production-shaped transcript fixtures to benchmarks.
 test-util = ["warp/test-util", "warp_core/test-util"]
-# Declared so the `warp_channel_config::load_config!` macro's
-# `cfg(feature = "release_bundle")` branch is a known cfg in this crate. Today it
-# stays off and the local bin uses the runtime generator; wiring the embedded
-# config path (a `build.rs`) is phase 2 of the channel setup.
 release_bundle = ["warp/release_bundle"]
 # Enable Rust Sentry reporting without the GUI-only Cocoa SDK.
 # Self-contained TUI build (the binary is not inside a `.app` bundle). Enables

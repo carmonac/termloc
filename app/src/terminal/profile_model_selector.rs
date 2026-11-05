@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use ai::api_keys::{ApiKeyManager, ApiKeyManagerEvent};
 use indexmap::IndexMap;
 use instant::{Duration, Instant};
 use parking_lot::FairMutex;
@@ -8,10 +7,10 @@ use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::vec2f;
 use warpui::elements::{
     Border, ChildAnchor, ChildView, ConstrainedBox, Container, CornerRadius, CrossAxisAlignment,
-    DEFAULT_UI_LINE_HEIGHT_RATIO, DropShadow, Empty, Expanded, Flex, Hoverable, MainAxisAlignment,
-    MainAxisSize, MouseStateHandle, OffsetPositioning, ParentAnchor, ParentElement as _,
-    ParentOffsetBounds, Percentage, PositionedElementAnchor, PositionedElementOffsetBounds, Radius,
-    Rect, SavePosition, Stack, Text,
+    DEFAULT_UI_LINE_HEIGHT_RATIO, DropShadow, Empty, Expanded, Flex, Hoverable, MouseStateHandle,
+    OffsetPositioning, ParentAnchor, ParentElement as _, ParentOffsetBounds, Percentage,
+    PositionedElementAnchor, PositionedElementOffsetBounds, Radius, Rect, SavePosition, Stack,
+    Text,
 };
 use warpui::platform::Cursor;
 use warpui::text_layout::ClipConfig;
@@ -32,11 +31,9 @@ use warp_core::ui::theme::color::internal_colors;
 
 use crate::ai::blocklist::prompt::PromptIconButtonTheme;
 use crate::ai::blocklist::{
-    BlocklistAIController, BlocklistAIControllerEvent, BlocklistAIHistoryEvent,
-    BlocklistAIHistoryModel, BlocklistAIInputEvent, BlocklistAIInputModel,
+    BlocklistAIController, BlocklistAIControllerEvent, BlocklistAIInputEvent, BlocklistAIInputModel,
 };
 use crate::ai::cloud_agent_settings::CloudAgentSettings;
-use crate::ai::custom_model_routers::is_custom_router_id;
 use crate::ai::execution_profiles::ExecutionProfileId;
 use crate::ai::execution_profiles::model_menu_items::{
     CollapsedModelVariants, available_model_menu_items, has_reasoning_variants, is_auto,
@@ -48,9 +45,7 @@ use crate::ai::harness_availability::{
     HarnessAvailabilityEvent, HarnessAvailabilityModel, HarnessModelInfo,
 };
 use crate::ai::llms::{
-    ByoKeySource, LLMId, LLMInfo, LLMPreferences, LLMPreferencesEvent, LLMSpec,
-    byo_key_source_for_model, dedupe_model_display_names, is_model_allowed_for_scope,
-    is_using_chatgpt_subscription_for_model, should_show_key_icon_for_model,
+    LLMId, LLMInfo, LLMPreferences, LLMPreferencesEvent, LLMSpec, dedupe_model_display_names,
 };
 use crate::appearance::Appearance;
 use crate::cloud_object::model::generic_string_model::StringModel;
@@ -62,12 +57,9 @@ use crate::terminal::TerminalModel;
 use crate::terminal::input::{MenuPositioning, MenuPositioningProvider};
 use crate::terminal::view::ambient_agent::{AmbientAgentViewModel, AmbientAgentViewModelEvent};
 use crate::ui_components::icons::Icon;
-use crate::view_components::action_button::{
-    ActionButton, ActionButtonTheme, ButtonSize, SecondaryTheme,
-};
+use crate::view_components::action_button::{ActionButton, ActionButtonTheme, ButtonSize};
 use crate::view_components::{FeaturePopup, NewFeaturePopupEvent, NewFeaturePopupLabel};
-use crate::workspace::WorkspaceAction;
-use crate::workspaces::user_workspaces::{ResolvedTeamScope, TeamContext, UserWorkspaces};
+use crate::workspaces::user_workspaces::{ResolvedTeamScope, UserWorkspaces};
 
 const MENU_WIDTH: f32 = 280.;
 const NEW_MODEL_CHOICES_POPUP_DELAY: Duration = Duration::from_millis(500);
@@ -82,21 +74,12 @@ const HORIZONTAL_PADDING_SCALE: f32 = 0.35;
 const VERTICAL_PADDING: f32 = 2.5;
 const MIN_HORIZONTAL_PADDING: f32 = 3.5;
 const ICON_SPACING: f32 = 8.0;
-/// Gap between the ChatGPT subscription logo and the model name. Matches the model section's
-/// horizontal padding so the logo sits centered between the section's leading edge and the name.
-const CHATGPT_ICON_RIGHT_SPACING: f32 = 4.0;
-/// Size of the ChatGPT subscription logo relative to the chip's icon slot. The logo's SVG is
-/// full-bleed, whereas the glyph icons around it leave roughly a fifth of their box as padding,
-/// so rendering the logo at the full slot size makes it read noticeably larger than its neighbors.
-const CHATGPT_ICON_SCALE: f32 = 0.875;
 const MAX_PROFILE_NAME_WIDTH_SCALE_FACTOR: f32 = 10.0;
 
 const PROFILE_SELECTOR_POSITION_ID: &str = "profile_selector";
 
 const PROFILE_PICKER_TOOLTIP: &str = "Choose an AI execution profile";
 const MODEL_PICKER_TOOLTIP: &str = "Choose an agent model";
-const MODEL_USES_CHATGPT_SUBSCRIPTION_TOOLTIP: &str =
-    "Requests for this model use your ChatGPT plan";
 const MODEL_LOCKED_FOR_FOLLOWUP_TOOLTIP: &str = "Follow-ups use the original run's model";
 const MODEL_REQUIRES_EDIT_ACCESS_TOOLTIP: &str = "Request edit access to change model";
 const HARNESS_DEFAULT_MODEL_LABEL: &str = "default";
@@ -194,8 +177,6 @@ pub struct ProfileModelSelector {
     ambient_agent_view_model: Option<ModelHandle<AmbientAgentViewModel>>,
     render_compact: bool,
     hovered_llm_info: Option<LLMInfo>,
-    manage_api_key_button: ViewHandle<ActionButton>,
-    manage_chatgpt_usage_button: ViewHandle<ActionButton>,
     terminal_model: Arc<FairMutex<TerminalModel>>,
     all_model_choices: Vec<LLMInfo>,
 }
@@ -501,36 +482,6 @@ impl ProfileModelSelector {
             me.handle_appearance_change(ctx);
         });
 
-        // Refresh model menu when BYO API keys update so the key icons reflect the latest state.
-        ctx.subscribe_to_model(
-            &ApiKeyManager::handle(ctx),
-            |me, _model, _event: &ApiKeyManagerEvent, ctx| {
-                me.refresh_model_menu(ctx);
-                ctx.notify();
-            },
-        );
-
-        // The chip's ChatGPT subscription indicator depends on the active conversation's
-        // per-conversation opt-out, so re-render when that conversation changes or is updated.
-        ctx.subscribe_to_model(
-            &BlocklistAIHistoryModel::handle(ctx),
-            |me, _, event, ctx| {
-                if event
-                    .terminal_surface_id()
-                    .is_some_and(|id| id != me.terminal_view_id)
-                {
-                    return;
-                }
-                if let BlocklistAIHistoryEvent::StartedNewConversation { .. }
-                | BlocklistAIHistoryEvent::SetActiveConversation { .. }
-                | BlocklistAIHistoryEvent::ClearedActiveConversation { .. }
-                | BlocklistAIHistoryEvent::UpdatedConversationMetadata { .. } = event
-                {
-                    ctx.notify();
-                }
-            },
-        );
-
         ctx.subscribe_to_model(
             &AIExecutionProfilesModel::handle(ctx),
             |me, _, event, ctx| {
@@ -560,30 +511,6 @@ impl ProfileModelSelector {
             },
         );
 
-        let manage_api_key_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Manage", SecondaryTheme)
-                .with_tooltip("Manage API keys")
-                .with_size(ButtonSize::XSmall)
-                .on_click(|ctx| {
-                    ctx.dispatch_typed_action(WorkspaceAction::ShowSettingsPageWithSearch {
-                        search_query: "api".to_string(),
-                        section: Some(SettingsSection::WarpAgent),
-                    });
-                })
-        });
-
-        let manage_chatgpt_usage_button = ctx.add_typed_action_view(|_ctx| {
-            let source = ByoKeySource::ChatGPTSubscription;
-            ActionButton::new(source.manage_button_label(), SecondaryTheme)
-                .with_tooltip("Manage ChatGPT usage")
-                .with_size(ButtonSize::XSmall)
-                .on_click(move |ctx| {
-                    if let Some(url) = source.manage_url() {
-                        ctx.dispatch_typed_action(WorkspaceAction::OpenLink(url.to_string()));
-                    }
-                })
-        });
-
         let mut me = Self {
             self_handle: ctx.handle(),
             profile_button,
@@ -609,8 +536,6 @@ impl ProfileModelSelector {
             ambient_agent_view_model: None,
             render_compact: false,
             hovered_llm_info: None,
-            manage_api_key_button,
-            manage_chatgpt_usage_button,
             terminal_model,
             all_model_choices: Vec::new(),
         };
@@ -652,10 +577,6 @@ impl ProfileModelSelector {
         self.ambient_agent_view_model = Some(ambient_agent_view_model);
         self.refresh_state(ctx);
         ctx.notify();
-    }
-
-    fn team_scope<'a>(&self, app: &'a AppContext) -> TeamContext<'a> {
-        UserWorkspaces::as_ref(app).team_context(&self.self_handle, app)
     }
 
     pub fn set_profile_menu_visibility(&mut self, is_open: bool, ctx: &mut ViewContext<Self>) {
@@ -775,14 +696,8 @@ impl ProfileModelSelector {
                 llm_preferences.get_active_base_model(&scope, ctx, Some(self.terminal_view_id))
             };
 
-            // Don't append description for custom model routers — it would add a
-            // redundant "(Custom auto · Local)" suffix to the button label.
-            if !is_custom_router_id(active_llm.id.as_str()) {
-                if let Some(description) = &active_llm.description {
-                    format!("{} ({})", active_llm.display_name, description)
-                } else {
-                    active_llm.display_name.clone()
-                }
+            if let Some(description) = &active_llm.description {
+                format!("{} ({})", active_llm.display_name, description)
             } else {
                 active_llm.display_name.clone()
             }
@@ -1072,23 +987,7 @@ impl ProfileModelSelector {
             .cloned()
             .collect();
 
-        // Partition into server-provided choices (subject to auto/reasoning collapsing) and
-        // custom-endpoint choices (rendered separately under a `Custom models` sub-header so
-        // the server-curated list stays visually distinct).
-        let custom_ids: std::collections::HashSet<LLMId> = llm_preferences
-            .custom_llm_choices(ctx)
-            .map(|info| info.id.clone())
-            .collect();
-        let server_choices: Vec<&LLMInfo> = self
-            .all_model_choices
-            .iter()
-            .filter(|llm| !custom_ids.contains(&llm.id))
-            .collect();
-        let custom_choices: Vec<&LLMInfo> = self
-            .all_model_choices
-            .iter()
-            .filter(|llm| custom_ids.contains(&llm.id))
-            .collect();
+        let server_choices: Vec<&LLMInfo> = self.all_model_choices.iter().collect();
 
         // Group models by base_model_name to collapse reasoning variants.
         // Use "auto" as the key for all auto models so they collapse together.
@@ -1118,9 +1017,6 @@ impl ProfileModelSelector {
             }
         }
 
-        let scope = self.team_scope(ctx);
-        let conversation =
-            BlocklistAIHistoryModel::as_ref(ctx).active_conversation(self.terminal_view_id);
         let mut items = available_model_menu_items(
             auto_choices,
             |llm| {
@@ -1138,41 +1034,7 @@ impl ProfileModelSelector {
             model_id_to_add_profile_default_label_to,
             Some(&|llm_id| self.model_menu_item_position_id(llm_id)),
             CollapsedModelVariants::all(),
-            conversation,
-            &scope,
-            ctx,
         );
-
-        // Append the "Custom models" section when the user has any custom endpoints configured.
-        // Each row gets its own atomic `SelectModel(config_key)` action; no auto/reasoning
-        // collapsing applies.
-        if !custom_choices.is_empty() {
-            let appearance = Appearance::as_ref(ctx);
-            if !items.is_empty() {
-                items.push(MenuItem::Separator);
-            }
-            items.push(MenuItem::Header {
-                fields: MenuItemFields::new("Custom models").with_override_text_color(
-                    appearance
-                        .theme()
-                        .sub_text_color(appearance.theme().background())
-                        .into_solid(),
-                ),
-                clickable: false,
-                right_side_fields: None,
-            });
-            for llm in custom_choices
-                .iter()
-                .filter(|llm| is_model_allowed_for_scope(llm_preferences, llm, &scope, ctx))
-            {
-                let mut fields = MenuItemFields::new(llm.menu_display_name())
-                    .with_on_select_action(ProfileModelSelectorAction::SelectModel(llm.id.clone()));
-                if should_show_key_icon_for_model(llm, conversation, &scope, ctx) {
-                    fields = fields.with_right_side_icon(Icon::Key);
-                }
-                items.push(MenuItem::Item(fields));
-            }
-        }
 
         if !other_choices.is_empty() {
             if !items.is_empty() {
@@ -1195,9 +1057,6 @@ impl ProfileModelSelector {
                 model_id_to_add_profile_default_label_to,
                 Some(&|llm_id| self.model_menu_item_position_id(llm_id)),
                 CollapsedModelVariants::all(),
-                conversation,
-                &scope,
-                ctx,
             ));
         }
 
@@ -1772,10 +1631,8 @@ impl ProfileModelSelector {
                 .is_agent_in_control_or_tagged_in();
         drop(terminal_model);
 
-        let (model_display_name, is_using_chatgpt_subscription) = if self
-            .is_third_party_harness(app)
-        {
-            (self.harness_model_display_name(app), false)
+        let model_display_name = if self.is_third_party_harness(app) {
+            self.harness_model_display_name(app)
         } else {
             let scope = UserWorkspaces::as_ref(app).team_context(&self.self_handle, app);
             let active_llm = if is_lrc {
@@ -1783,12 +1640,7 @@ impl ProfileModelSelector {
             } else {
                 llm_preferences.get_active_base_model(&scope, app, Some(self.terminal_view_id))
             };
-            let conversation =
-                BlocklistAIHistoryModel::as_ref(app).active_conversation(self.terminal_view_id);
-            (
-                active_llm.menu_display_name(),
-                is_using_chatgpt_subscription_for_model(active_llm, conversation, &scope, app),
-            )
+            active_llm.menu_display_name()
         };
 
         let text_color = if self.is_blurred {
@@ -1829,23 +1681,6 @@ impl ProfileModelSelector {
                     .finish(),
             );
         }
-        if is_using_chatgpt_subscription {
-            let logo_size = icon_size * CHATGPT_ICON_SCALE;
-            let logo = ConstrainedBox::new(
-                Icon::OpenAILogo
-                    .to_warpui_icon(Fill::Solid(text_color))
-                    .finish(),
-            )
-            .with_height(logo_size)
-            .with_width(logo_size)
-            .finish();
-            content = content.with_child(
-                Container::new(logo)
-                    .with_margin_right(CHATGPT_ICON_RIGHT_SPACING)
-                    .finish(),
-            );
-        }
-
         content = content.with_child(model_text);
 
         // Only show chevron icon if the user can click to open the menu (i.e. has edit access)
@@ -1871,12 +1706,6 @@ impl ProfileModelSelector {
         let is_locked_for_non_oz = self.is_locked_for_non_oz_run(app);
         let is_locked = is_locked_for_followup || is_locked_for_non_oz;
         let can_interact = has_edit_access && !is_locked;
-        let interactive_tooltip = if is_using_chatgpt_subscription {
-            MODEL_USES_CHATGPT_SUBSCRIPTION_TOOLTIP
-        } else {
-            MODEL_PICKER_TOOLTIP
-        };
-
         let hoverable = Hoverable::new(self.model_mouse_state.clone(), move |state| {
             if state.is_hovered() && can_interact {
                 let button_with_hover = Container::new(button_with_save_position)
@@ -1888,7 +1717,7 @@ impl ProfileModelSelector {
 
                 let tooltip = appearance
                     .ui_builder()
-                    .tool_tip(interactive_tooltip.to_owned());
+                    .tool_tip(MODEL_PICKER_TOOLTIP.to_owned());
                 let mut stack = Stack::new();
                 stack.add_child(button_with_hover);
                 stack.add_positioned_overlay_child(
@@ -2064,66 +1893,14 @@ impl ProfileModelSelector {
         .finish()
     }
 
-    fn render_model_spec_api_key(
-        &self,
-        byo_key_source: ByoKeySource,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let appearance = Appearance::as_ref(app);
-        let theme = appearance.theme();
-        let manage_button = match byo_key_source {
-            ByoKeySource::UserProvided | ByoKeySource::TeamProvided => &self.manage_api_key_button,
-            ByoKeySource::ChatGPTSubscription => &self.manage_chatgpt_usage_button,
-        };
-
-        Container::new(
-            Flex::row()
-                .with_main_axis_size(MainAxisSize::Max)
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                .with_child(self.render_model_spec_value_label("Cost".to_string(), app))
-                .with_child(
-                    Expanded::new(
-                        1.,
-                        Flex::row()
-                            .with_main_axis_size(MainAxisSize::Max)
-                            .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
-                            .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                            .with_child(
-                                Container::new(
-                                    Text::new(
-                                        byo_key_source.inference_label().to_string(),
-                                        appearance.ui_font_family(),
-                                        14.,
-                                    )
-                                    .with_color(theme.disabled_ui_text_color().into())
-                                    .finish(),
-                                )
-                                .finish(),
-                            )
-                            .with_child(
-                                Container::new(ChildView::new(manage_button).finish())
-                                    .with_margin_left(8.)
-                                    .finish(),
-                            )
-                            .finish(),
-                    )
-                    .finish(),
-                )
-                .finish(),
-        )
-        .with_margin_top(12.)
-        .finish()
-    }
-
     // Renders all model spec values for a given model spec
     fn render_all_model_spec_values(
         &self,
         spec: &LLMSpec,
-        byo_key_source: Option<ByoKeySource>,
         bg_bar_color: ColorU,
         app: &AppContext,
     ) -> Box<dyn Element> {
-        let mut spec_values = vec![
+        let spec_values = vec![
             self.render_model_spec_value(
                 "Intelligence".to_string(),
                 spec.quality,
@@ -2131,27 +1908,13 @@ impl ProfileModelSelector {
                 app,
             ),
             self.render_model_spec_value("Speed".to_string(), spec.speed, bg_bar_color, app),
+            self.render_model_spec_value("Cost".to_string(), spec.cost, bg_bar_color, app),
         ];
-        if let Some(byo_key_source) = byo_key_source {
-            spec_values.push(self.render_model_spec_api_key(byo_key_source, app));
-        } else {
-            spec_values.push(self.render_model_spec_value(
-                "Cost".to_string(),
-                spec.cost,
-                bg_bar_color,
-                app,
-            ));
-        }
         Flex::column().with_children(spec_values).finish()
     }
 
     // Renders entire modal for a given model spec
-    fn render_model_spec(
-        &self,
-        spec: &LLMSpec,
-        byo_key_source: Option<ByoKeySource>,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
+    fn render_model_spec(&self, spec: &LLMSpec, app: &AppContext) -> Box<dyn Element> {
         let appearance = Appearance::as_ref(app);
         let theme = appearance.theme();
         let header = self.render_model_spec_header(
@@ -2159,12 +1922,7 @@ impl ProfileModelSelector {
             "Warp’s benchmarks for how well a model performs in our harness, the rate at which it consumes credits, and task speed.".to_string(),
             app,
         );
-        let spec = self.render_all_model_spec_values(
-            spec,
-            byo_key_source,
-            internal_colors::neutral_3(theme),
-            app,
-        );
+        let spec = self.render_all_model_spec_values(spec, internal_colors::neutral_3(theme), app);
 
         ConstrainedBox::new(
             Container::new(
@@ -2208,7 +1966,6 @@ impl ProfileModelSelector {
         let sidecar_menu = ChildView::new(&self.model_spec_sidecar.dropdown).finish();
         let spec_values = self.render_all_model_spec_values(
             &spec.clone().unwrap_or_default(),
-            None,
             internal_colors::neutral_5(theme),
             app,
         );
@@ -2446,14 +2203,10 @@ impl View for ProfileModelSelector {
                         .and_then(|i| i.spec.as_ref())
                         .cloned();
                     Some(self.render_sidecar_spec_panel(&kind, &sidecar_spec, app))
-                } else if let Some(spec) = info.spec.as_ref() {
-                    let conversation = BlocklistAIHistoryModel::as_ref(app)
-                        .active_conversation(self.terminal_view_id);
-                    let byo_key_source =
-                        byo_key_source_for_model(info, conversation, &self.team_scope(app), app);
-                    Some(self.render_model_spec(spec, byo_key_source, app))
                 } else {
-                    None
+                    info.spec
+                        .as_ref()
+                        .map(|spec| self.render_model_spec(spec, app))
                 };
 
                 if let Some(model_spec_sidecar) = model_spec_sidecar {
