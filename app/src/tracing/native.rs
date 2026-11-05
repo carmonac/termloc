@@ -105,7 +105,7 @@ struct ParentTracingContext {
 pub fn init() -> anyhow::Result<Initialization> {
     let Some(base_endpoint) = std::env::var(CLOUD_AGENT_OTLP_ENDPOINT)
         .ok()
-        .filter(|endpoint| !endpoint.trim().is_empty())
+        .filter(|endpoint| !endpoint.trim().is_empty() && !ChannelState::is_local_only())
     else {
         install_no_subscriber()?;
         return Ok(Initialization::default());

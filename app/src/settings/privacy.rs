@@ -6,7 +6,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use settings::macros::{define_settings_group, maybe_define_setting, register_settings_events};
 use settings::{RespectUserSyncSetting, Setting, SupportedPlatforms, SyncToCloud};
-use warp_core::features::FeatureFlag;
+use warp_core::channel::ChannelState;
 use warp_errors::{report_error, report_if_error};
 use warp_graphql::mutations::update_user_settings::UpdateUserSettingsInput;
 pub use warp_terminal::model::secrets::RegexDisplayInfo;
@@ -195,13 +195,6 @@ impl PrivacySettingsSnapshot {
         self.is_telemetry_force_enabled
     }
 
-    pub fn should_disable_telemetry(&self) -> bool {
-        // If a user has opted in to the agent mode analytics experiment, telemetry must be enabled.
-        !self.is_telemetry_enabled
-            && !self.is_telemetry_force_enabled
-            && !FeatureFlag::AgentModeAnalytics.is_enabled()
-    }
-
     pub fn should_collect_ai_ugc_telemetry(&self) -> bool {
         self.should_collect_ai_ugc_telemetry
     }
@@ -246,8 +239,6 @@ impl PrivacySettings {
         // Initialize from `WarpDrivePrivacySettings`, which is the source of truth for these
         // booleans.
         let warp_drive_privacy = WarpDrivePrivacySettings::as_ref(ctx);
-        let is_telemetry_enabled = *warp_drive_privacy.is_telemetry_enabled.value();
-        let is_crash_reporting_enabled = *warp_drive_privacy.is_crash_reporting_enabled.value();
         let is_cloud_conversation_storage_enabled = *warp_drive_privacy
             .is_cloud_conversation_storage_enabled
             .value();
@@ -292,8 +283,8 @@ impl PrivacySettings {
         Self {
             auth_state,
             auth_client,
-            is_crash_reporting_enabled,
-            is_telemetry_enabled,
+            is_crash_reporting_enabled: false,
+            is_telemetry_enabled: false,
             is_cloud_conversation_storage_enabled,
             user_secret_regex_list,
             has_initialized_default_secret_regexes,
@@ -308,7 +299,8 @@ impl PrivacySettings {
     }
 
     pub fn set_is_telemetry_force_enabled(&mut self, is_telemetry_force_enabled: bool) {
-        self.is_telemetry_force_enabled = is_telemetry_force_enabled;
+        self.is_telemetry_force_enabled =
+            is_telemetry_force_enabled && !ChannelState::is_local_only();
     }
 
     pub fn is_enterprise_secret_redaction_enabled(&self) -> bool {
@@ -365,8 +357,8 @@ impl PrivacySettings {
 
     pub fn refresh_to_default(&mut self) {
         // TODO(zach): this seems incorrect - should we also update the values on disk?
-        self.is_telemetry_enabled = true;
-        self.is_crash_reporting_enabled = true;
+        self.is_telemetry_enabled = false;
+        self.is_crash_reporting_enabled = false;
         self.is_cloud_conversation_storage_enabled = true;
         self.is_telemetry_force_enabled = false;
         self.is_enterprise_secret_redaction_enabled = false;
@@ -496,6 +488,10 @@ impl PrivacySettings {
         new_value: bool,
         ctx: &mut ModelContext<PrivacySettings>,
     ) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         let old_value = self.is_crash_reporting_enabled;
         if new_value != old_value {
             self.is_crash_reporting_enabled = new_value;
@@ -532,6 +528,10 @@ impl PrivacySettings {
         new_value: bool,
         ctx: &mut ModelContext<PrivacySettings>,
     ) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         let old_value = self.is_telemetry_enabled;
         if new_value != old_value {
             self.is_telemetry_enabled = new_value;

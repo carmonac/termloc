@@ -150,7 +150,6 @@ use warp_util::path::LineAndColumnArg;
 use warp_util::path::ShellFamily;
 use warpui::accessibility::{AccessibilityContent, ActionAccessibilityContent, WarpA11yRole};
 use warpui::assets::asset_cache::{AssetCache, AssetCacheEvent};
-use warpui::r#async::executor::Background;
 use warpui::r#async::{SpawnedFutureHandle, Timer};
 use warpui::clipboard::ClipboardContent;
 use warpui::clipboard_utils::get_image_filepaths_from_paths;
@@ -2624,7 +2623,6 @@ pub struct TerminalView {
 
     last_hover_fragment_boundary: Option<WithinModel<FragmentBoundary>>,
 
-    bootstrap_start: Option<Instant>,
     is_login_shell_bootstrapped: bool,
     /// Set when a pending command is submitted to the shell. Cleared on the
     /// next `AfterBlockCompleted`, at which point `Event::PendingCommandCompleted`
@@ -2689,8 +2687,6 @@ pub struct TerminalView {
 
     /// Background executor for sending telemetry when a TerminalView is
     /// dropped.
-    background_executor: Arc<Background>,
-
     inline_banners_state: InlineBannersState,
 
     /// Most recent command correction encountered, if any, used for the keyboard shortcut action.
@@ -4413,7 +4409,6 @@ impl TerminalView {
             find_link_tx,
             highlighted_link: HighlightedLinkOption::default(),
             last_hover_fragment_boundary: None,
-            bootstrap_start: None,
             is_login_shell_bootstrapped: false,
             awaiting_pending_command_completion: false,
             pending_command_queue: Default::default(),
@@ -4438,7 +4433,6 @@ impl TerminalView {
             active_block_metadata: None,
             canonical_session_pwd_cache: RefCell::new(None),
             block_text_selection_start_position: None,
-            background_executor: ctx.background_executor().clone(),
             inline_banners_state: Default::default(),
             bookmarked_blocks: Default::default(),
             file_link_scanning_join_handle: None,
@@ -11545,6 +11539,10 @@ impl TerminalView {
 
     /// Inserts telemetry policy banner into the blocklist.
     pub fn insert_telemetry_banner(&mut self, is_onboarded: bool, ctx: &mut ViewContext<Self>) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         // Don't ever show telemetry banner for enterprise users.
         if UserWorkspaces::as_ref(ctx)
             .current_workspace()
@@ -30041,28 +30039,6 @@ impl Drop for TerminalView {
                 log_level,
                 "Session abandoned before bootstrap for shell {pending_shell:?} on ssh {has_pending_ssh_session}"
             );
-
-            let was_ever_visible = self.was_ever_visible;
-            let duration_since_start = self.bootstrap_start.unwrap_or_else(Instant::now).elapsed();
-            let server_api = self.server_api.clone();
-            let privacy_settings_snapshot = self.privacy_settings_snapshot;
-            let task = self.background_executor.spawn(async move {
-                if let Err(error) = server_api
-                    .send_telemetry_event(
-                        TelemetryEvent::SessionAbandonedBeforeBootstrap {
-                            pending_shell,
-                            has_pending_ssh_session,
-                            was_ever_visible,
-                            duration_since_start,
-                        },
-                        privacy_settings_snapshot,
-                    )
-                    .await
-                {
-                    log::warn!("Error occurred with sending telemetry event: {error}");
-                }
-            });
-            task.detach();
         };
     }
 }

@@ -90,7 +90,6 @@ pub enum AuthManagerEvent {
 
 pub type LoginGatedFeature = &'static str;
 
-type URLConstructorCallback = Box<dyn FnOnce(Option<&str>) -> String>;
 const DEVICE_CODE_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 const DEVICE_CODE_REQUEST_ATTEMPTS: usize = 2;
 
@@ -426,14 +425,6 @@ impl AuthManager {
 
                 self.set_needs_reauth(false, ctx);
 
-                // Must be called on the main thread.
-                #[cfg(feature = "crash_reporting")]
-                crate::crash_reporting::set_user_id(
-                    user.local_id,
-                    Some(user.metadata.email.clone()),
-                    ctx,
-                );
-
                 ServerApiProvider::handle(ctx).update(ctx, |provider, ctx| {
                     provider.handle_experiments_fetched(server_experiments, ctx);
                 });
@@ -515,8 +506,6 @@ impl AuthManager {
 
                 // Fetch the user's privacy settings from the server if any or update the server settings.
                 let privacy_settings_handle = PrivacySettings::handle(ctx);
-                let privacy_settings_snapshot =
-                    privacy_settings_handle.as_ref(ctx).get_snapshot(ctx);
                 ctx.update_model(&privacy_settings_handle, |privacy_settings, ctx| {
                     privacy_settings.fetch_or_update_settings(ctx);
                 });
@@ -529,39 +518,8 @@ impl AuthManager {
                 }
 
                 let server_api = self.server_api.clone();
-                let user_id = self.auth_state.user_id().unwrap_or_default();
-                let anonymous_id = self.auth_state.anonymous_id();
                 let _ = ctx.spawn(
-                    // Synchronously add the identify and login event to the telemetry event queue and
-                    // then flush the queue to ensure the events get to Rudderstack. We need to do this
-                    // one-off because the login event happens only once for the user and we don't want
-                    // to drop the event if the user quits the app before the next flush of the queue.
-                    // TODO(alokedesai): Investigate a more robust way of handling events
-                    // that don't get flushed to Rudderstack outside of this event specifically.
                     async move {
-                        warpui::telemetry::record_identify_user_event(
-                            user_id.as_string(),
-                            anonymous_id.clone(),
-                            warpui::time::get_current_time(),
-                        );
-                        warpui::telemetry::record_event(
-                            Some(user_id.as_string()),
-                            anonymous_id,
-                            TelemetryEvent::Login.name().into(),
-                            TelemetryEvent::Login.payload(),
-                            TelemetryEvent::Login.contains_ugc(),
-                            warpui::time::get_current_time(),
-                        );
-
-                        // Note that this snapshot might get overwritten to disabled after the server fetch.
-                        // However, it is still fine to flush to Rudderstack here as the login event is low-risk
-                        // and it is better to err on the side of over-reporting than under-reporting.
-                        if let Err(e) = server_api
-                            .flush_telemetry_events(privacy_settings_snapshot)
-                            .await
-                        {
-                            log::info!("Failed to flush events from Telemetry queue: {e}");
-                        }
                         server_api.notify_login().await;
                     },
                     |_, _, _| {},
@@ -794,42 +752,6 @@ impl AuthManager {
                         ctx.emit(AuthManagerEvent::MintCustomTokenFailed(e));
                     }
                 }
-            },
-        );
-    }
-
-    // Opens a page in the web app and logs the user in using a customToken if they are an anonymous user.
-    // Accepts a callback that constructs the URL using the customToken to open a page and log in an anonymous user.
-    pub fn open_url_maybe_with_anonymous_token(
-        &self,
-        ctx: &mut ModelContext<Self>,
-        construct_url: URLConstructorCallback,
-    ) {
-        if !self.auth_state.is_user_anonymous().unwrap_or_default()
-            || !self.auth_state.is_logged_in()
-        {
-            // Not an anonymous Firebase user, or fully logged out — open URL without token.
-            let url: String = construct_url(None);
-            ctx.open_url(&url);
-            return;
-        }
-
-        let auth_client = self.auth_client.clone();
-        let _ = ctx.spawn(
-            async move { auth_client.fetch_new_custom_token().await },
-            move |me, response, ctx| {
-                let custom_token = me.auth_client.on_custom_token_fetched(response);
-                match custom_token {
-                    Ok(custom_token) => {
-                        let url: String = construct_url(Some(&custom_token));
-                        ctx.open_url(&url);
-                    }
-                    Err(e) => {
-                        report_error!(anyhow::Error::new(e).context(
-                            "Failed to fetch custom token for authenticating anonymous user in browser"
-                        ))
-                }
-                };
             },
         );
     }

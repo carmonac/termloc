@@ -3378,7 +3378,6 @@ impl AgentDriver {
                         let telemetry_pattern = error.pattern.clone();
                         let _ = foreground
                             .spawn(move |_, ctx| {
-                                use warp_core::telemetry::TelemetryEvent as _;
                                 let event =
                                     ThirdPartyHarnessTelemetryEvent::RuntimeErrorDetected {
                                         harness: telemetry_harness,
@@ -3673,7 +3672,6 @@ impl AgentDriver {
         let harness = harness_name.to_owned();
         let _ = foreground
             .spawn(move |_, ctx| {
-                use warp_core::telemetry::TelemetryEvent as _;
                 let event = ThirdPartyHarnessTelemetryEvent::ExitEscalation { harness, method };
                 send_telemetry_from_app_ctx!(event, ctx);
             })
