@@ -113,8 +113,9 @@ impl AuthState {
 
     /// Creates and initializes auth state. Checks, in order:
     /// 1. Test user (test/integration/skip_login builds)
-    /// 2. WARP_USER_SECRET environment variable
-    /// 3. Persisted user from secure storage
+    /// 2. Built-in user (local-only builds)
+    /// 3. WARP_USER_SECRET environment variable
+    /// 4. Persisted user from secure storage
     #[cfg_attr(target_family = "wasm", allow(dead_code))]
     pub fn initialize(ctx: &AppContext) -> Self {
         let state = Self::new(ctx);
@@ -128,6 +129,12 @@ impl AuthState {
                 feature = "test-util"
             ))]
             state.set_credentials(Some(Self::test_credentials()));
+            return state;
+        }
+
+        if ChannelState::is_local_only() {
+            state.set_user(Some(User::local()));
+            state.set_credentials(Some(Credentials::Local));
             return state;
         }
 
@@ -222,7 +229,9 @@ impl AuthState {
             // Do not persist if using API keys, session cookies, or test credentials.
             (Some(_), Some(Credentials::ApiKey { .. })) => PersistAction::DoNothing,
             (Some(_), Some(Credentials::Bearer(_))) => PersistAction::DoNothing,
-            (Some(_), Some(Credentials::SessionCookie)) => PersistAction::DoNothing,
+            (Some(_), Some(Credentials::SessionCookie | Credentials::Local)) => {
+                PersistAction::DoNothing
+            }
             #[cfg(any(test, feature = "integration_tests", feature = "skip_login"))]
             (Some(_), Some(Credentials::Test)) => PersistAction::DoNothing,
             // Credentials without a user, or user without credentials - transient states

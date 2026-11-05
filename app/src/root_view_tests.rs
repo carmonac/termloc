@@ -4,6 +4,7 @@ use onboarding::{
     UICustomizationSettings,
 };
 use session_sharing_protocol::common::SessionId;
+use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_core::user_preferences::GetUserPreferences as _;
 use warpui::elements::Empty;
@@ -77,7 +78,25 @@ fn set_local_onboarding_completed(app: &mut App, completed: bool) {
 }
 
 #[test]
+fn account_first_requires_login_even_without_ai_or_drive_settings() {
+    let _account_first = FeatureFlag::AccountFirstOnboarding.override_enabled(true);
+
+    assert!(requires_post_onboarding_login(false, false, false));
+    assert!(!requires_post_onboarding_login(true, false, false));
+}
+
+#[test]
+fn fallback_flow_only_requires_login_for_account_backed_settings() {
+    let _account_first = FeatureFlag::AccountFirstOnboarding.override_enabled(false);
+
+    assert!(!requires_post_onboarding_login(false, false, false));
+    assert!(requires_post_onboarding_login(false, true, false));
+    assert!(requires_post_onboarding_login(false, false, true));
+}
+
+#[test]
 fn local_only_builds_never_require_login() {
+    let _local_only = ChannelState::override_local_only_for_test();
     let _account_first = FeatureFlag::AccountFirstOnboarding.override_enabled(true);
 
     assert!(!requires_post_onboarding_login(false, false, false));

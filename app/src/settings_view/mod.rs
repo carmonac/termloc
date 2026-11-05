@@ -1049,6 +1049,38 @@ enum NavStop {
     },
 }
 
+/// Whether a settings page depends on a Warp account or Warp's servers.
+fn is_cloud_section(section: SettingsSection) -> bool {
+    matches!(
+        section,
+        SettingsSection::Account
+            | SettingsSection::BillingAndUsage
+            | SettingsSection::CloudEnvironments
+            | SettingsSection::Referrals
+            | SettingsSection::SharedBlocks
+            | SettingsSection::Teams
+            | SettingsSection::WarpCloudAgentAPIKeys
+    )
+}
+
+fn is_cloud_nav_item(item: &SettingsNavItem) -> bool {
+    match item {
+        SettingsNavItem::Page(section) => is_cloud_section(*section),
+        SettingsNavItem::Umbrella(umbrella) => {
+            umbrella.contains(SettingsSection::CloudEnvironments)
+        }
+    }
+}
+
+/// Redirects pages that local-only builds don't offer.
+fn available_section(section: SettingsSection) -> SettingsSection {
+    if ChannelState::is_local_only() && is_cloud_section(section) {
+        SettingsSection::Appearance
+    } else {
+        section
+    }
+}
+
 /// Builds the ordered list of arrow-key nav stops from `nav_items`.
 ///
 /// `is_visible` decides which sections are currently shown in the sidebar;
@@ -1444,6 +1476,10 @@ impl SettingsView {
             SettingsNavItem::Page(SettingsSection::About),
         ];
 
+        if ChannelState::is_local_only() {
+            nav_items.retain(|item| !is_cloud_nav_item(item));
+        }
+
         if FeatureFlag::WarpControlCli.is_enabled() {
             let shared_blocks_index = nav_items
                 .iter()
@@ -1459,9 +1495,9 @@ impl SettingsView {
 
         let initial_page = match page {
             Some(SettingsSection::Scripting) if !FeatureFlag::WarpControlCli.is_enabled() => {
-                SettingsSection::Account
+                available_section(SettingsSection::Account)
             }
-            other => other.unwrap_or_default(),
+            other => available_section(other.unwrap_or_default()),
         };
 
         // Auto-expand the umbrella if the initial page is one of its subpages.
@@ -2043,6 +2079,7 @@ impl SettingsView {
         allow_steal_focus: bool,
         ctx: &mut ViewContext<Self>,
     ) {
+        let section = available_section(section);
         // Every nav target owns its backing page. Check it exists.
         if self.settings_page(section).is_none() {
             return;

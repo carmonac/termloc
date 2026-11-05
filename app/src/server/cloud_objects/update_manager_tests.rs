@@ -7,6 +7,7 @@ use cloud_object_client::MockObjectClient;
 use cloud_object_models::JsonSerializer;
 use futures_lite::future;
 use settings::{RespectUserSyncSetting, SyncToCloud};
+use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_graphql::object_permissions::AccessLevel;
 use warp_graphql::scalars::time::ServerTimestamp;
@@ -39,6 +40,7 @@ use crate::drive::sharing::{SharingAccessLevel, Subject, UserKind};
 use crate::notebooks::{CloudNotebook, CloudNotebookModel, NotebookId};
 use crate::persistence::ModelEvent;
 use crate::server::cloud_objects::listener::ObjectUpdateMessage;
+use crate::server::cloud_objects::local_object_client::LocalObjectClient;
 use crate::server::cloud_objects::test_utils::{
     UpdateManagerStruct, create_update_manager_struct, initialize_app, mock_server_api,
 };
@@ -7508,5 +7510,188 @@ fn test_add_guest_failure() {
         });
         assert_eq!(cloud_events(&update_manager_struct), vec![]);
         assert!(db_events(&update_manager_struct).is_empty());
+    });
+}
+
+fn local_object_metadata(
+    uid: ServerId,
+    folder_id: Option<FolderId>,
+    trashed: bool,
+) -> ServerMetadata {
+    let ts = Utc::now();
+    ServerMetadata {
+        uid,
+        revision: Revision::now(),
+        metadata_last_updated_ts: ts.into(),
+        trashed_ts: trashed.then(|| ts.into()),
+        folder_id,
+        is_welcome_object: false,
+        creator_uid: None,
+        last_editor_uid: None,
+        current_editor_uid: None,
+    }
+}
+
+/// Adds a folder holding a subfolder holding a notebook, and returns their sync IDs.
+fn add_nested_local_objects(app: &mut App, folder_trashed: bool) -> (SyncId, SyncId, SyncId) {
+    let folder_id: FolderId = ServerId::from(1).into();
+    let subfolder_id: FolderId = ServerId::from(2).into();
+    let notebook_id: NotebookId = ServerId::from(3).into();
+    let owner = Owner::mock_current_user();
+    let folder = mock_server_folder(
+        folder_id,
+        owner,
+        local_object_metadata(folder_id.into(), None, folder_trashed),
+    );
+    let subfolder = mock_server_folder(
+        subfolder_id,
+        owner,
+        local_object_metadata(subfolder_id.into(), Some(folder_id), false),
+    );
+    let notebook = mock_server_notebook(
+        notebook_id,
+        owner,
+        local_object_metadata(notebook_id.into(), Some(subfolder_id), false),
+    );
+    let ids = (
+        SyncId::ServerId(folder_id.into()),
+        SyncId::ServerId(subfolder_id.into()),
+        SyncId::ServerId(notebook_id.into()),
+    );
+    CloudModel::handle(app).update(app, |cloud_model, _| {
+        cloud_model.add_object(ids.0, CloudFolder::new_from_server(folder));
+        cloud_model.add_object(ids.1, CloudFolder::new_from_server(subfolder));
+        cloud_model.add_object(ids.2, CloudNotebook::new_from_server(notebook));
+    });
+    ids
+}
+
+fn object_exists(app: &App, id: SyncId) -> bool {
+    CloudModel::handle(app).read(app, |cloud_model, _| {
+        cloud_model.get_by_uid(&id.uid()).is_some()
+    })
+}
+
+#[test]
+fn local_client_delete_removes_folder_contents() {
+    let _local_only = ChannelState::override_local_only_for_test();
+    App::test(ASSETS, |mut app| async move {
+        initialize_app(&mut app);
+        let (folder, subfolder, notebook) = add_nested_local_objects(&mut app, true);
+        let update_manager_struct =
+            create_update_manager_struct(&mut app, Arc::new(LocalObjectClient));
+
+        update_manager_struct
+            .update_manager
+            .update(&mut app, |update_manager, ctx| {
+                update_manager.delete_object_by_user(
+                    CloudObjectTypeAndId::from_id_and_type(folder, ObjectType::Folder),
+                    ctx,
+                );
+                ctx.await_spawned_future(*update_manager.spawned_futures.last().unwrap())
+            })
+            .await;
+
+        assert!(!object_exists(&app, folder));
+        assert!(!object_exists(&app, subfolder));
+        assert!(!object_exists(&app, notebook));
+    });
+}
+
+#[test]
+fn local_client_empty_trash_removes_only_trashed_objects() {
+    let _local_only = ChannelState::override_local_only_for_test();
+    App::test(ASSETS, |mut app| async move {
+        initialize_app(&mut app);
+        let (folder, subfolder, notebook) = add_nested_local_objects(&mut app, true);
+        let kept_id: NotebookId = ServerId::from(4).into();
+        let kept = SyncId::ServerId(kept_id.into());
+        let kept_notebook = mock_server_notebook(
+            kept_id,
+            Owner::mock_current_user(),
+            local_object_metadata(kept_id.into(), None, false),
+        );
+        CloudModel::handle(&app).update(&mut app, |cloud_model, _| {
+            cloud_model.add_object(kept, CloudNotebook::new_from_server(kept_notebook));
+        });
+        let update_manager_struct =
+            create_update_manager_struct(&mut app, Arc::new(LocalObjectClient));
+
+        update_manager_struct
+            .update_manager
+            .update(&mut app, |update_manager, ctx| {
+                update_manager.empty_trash(Space::Personal, ctx);
+                ctx.await_spawned_future(*update_manager.spawned_futures.last().unwrap())
+            })
+            .await;
+
+        assert!(!object_exists(&app, folder));
+        assert!(!object_exists(&app, subfolder));
+        assert!(!object_exists(&app, notebook));
+        assert!(object_exists(&app, kept));
+    });
+}
+
+#[test]
+fn local_client_untrash_keeps_the_object_in_its_folder() {
+    let _local_only = ChannelState::override_local_only_for_test();
+    App::test(ASSETS, |mut app| async move {
+        initialize_app(&mut app);
+        let (_, subfolder, notebook) = add_nested_local_objects(&mut app, false);
+        CloudModel::handle(&app).update(&mut app, |cloud_model, _| {
+            let object = cloud_model.get_mut_by_uid(&notebook.uid()).unwrap();
+            object.metadata_mut().trashed_ts = Some(Utc::now().into());
+        });
+        let update_manager_struct =
+            create_update_manager_struct(&mut app, Arc::new(LocalObjectClient));
+
+        update_manager_struct
+            .update_manager
+            .update(&mut app, |update_manager, ctx| {
+                update_manager.untrash_object(
+                    CloudObjectTypeAndId::from_id_and_type(notebook, ObjectType::Notebook),
+                    ctx,
+                );
+                ctx.await_spawned_future(*update_manager.spawned_futures.last().unwrap())
+            })
+            .await;
+
+        CloudModel::handle(&app).read(&app, |cloud_model, _| {
+            let metadata = cloud_model.get_by_uid(&notebook.uid()).unwrap().metadata();
+            assert!(metadata.trashed_ts.is_none());
+            assert_eq!(metadata.folder_id.map(|id| id.uid()), Some(subfolder.uid()));
+        });
+    });
+}
+
+#[test]
+fn local_client_untrash_moves_the_object_out_of_a_trashed_folder() {
+    let _local_only = ChannelState::override_local_only_for_test();
+    App::test(ASSETS, |mut app| async move {
+        initialize_app(&mut app);
+        let (_, _, notebook) = add_nested_local_objects(&mut app, true);
+        CloudModel::handle(&app).update(&mut app, |cloud_model, _| {
+            let object = cloud_model.get_mut_by_uid(&notebook.uid()).unwrap();
+            object.metadata_mut().trashed_ts = Some(Utc::now().into());
+        });
+        let update_manager_struct =
+            create_update_manager_struct(&mut app, Arc::new(LocalObjectClient));
+
+        update_manager_struct
+            .update_manager
+            .update(&mut app, |update_manager, ctx| {
+                update_manager.untrash_object(
+                    CloudObjectTypeAndId::from_id_and_type(notebook, ObjectType::Notebook),
+                    ctx,
+                );
+                ctx.await_spawned_future(*update_manager.spawned_futures.last().unwrap())
+            })
+            .await;
+
+        CloudModel::handle(&app).read(&app, |cloud_model, _| {
+            let metadata = cloud_model.get_by_uid(&notebook.uid()).unwrap().metadata();
+            assert!(metadata.trashed_ts.is_none());
+            assert!(metadata.folder_id.is_none());
+        });
     });
 }

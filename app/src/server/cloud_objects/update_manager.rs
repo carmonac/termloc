@@ -13,6 +13,7 @@ use futures::stream::AbortHandle;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
+use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_errors::report_error;
 use warp_graphql::mcp_gallery_template::MCPGalleryTemplate;
@@ -4022,6 +4023,11 @@ impl UpdateManager {
         history: &ObjectActionHistory,
         ctx: &mut ModelContext<Self>,
     ) {
+        let actions = if ChannelState::is_local_only() {
+            Self::local_action_history(history, ctx)
+        } else {
+            history.actions.clone()
+        };
         ObjectActions::handle(ctx).update(ctx, |object_actions_model, ctx| {
             // Accept this action history if we don't have any actions for this object OR the server's latest action
             // for this object is at least as recent as our latest synced action for this object
@@ -4033,11 +4039,40 @@ impl UpdateManager {
                 // Overwrite the history for this object.
                 object_actions_model.overwrite_action_history_for_object(
                     &history.uid,
-                    history.actions.clone(),
+                    actions,
                     ctx,
                 );
             }
         });
+    }
+
+    /// The server replies with an object's whole history. Without one, the new actions are added
+    /// to the ones already synced, under the object's SQLite id.
+    fn local_action_history(
+        history: &ObjectActionHistory,
+        ctx: &ModelContext<Self>,
+    ) -> Vec<ObjectAction> {
+        let hashed_sqlite_id = CloudModel::as_ref(ctx)
+            .get_by_uid(&history.uid)
+            .map(|object| {
+                object
+                    .sync_id()
+                    .sqlite_uid_hash(object.cloud_object_type_and_id().object_id_type())
+            });
+        let mut actions: Vec<ObjectAction> = ObjectActions::as_ref(ctx)
+            .get_actions_for_objects(vec![&history.uid])
+            .remove(&history.uid)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|action| !action.is_pending())
+            .collect();
+        actions.extend(history.actions.iter().cloned().map(|mut action| {
+            if let Some(hashed_sqlite_id) = &hashed_sqlite_id {
+                action.hashed_sqlite_id = hashed_sqlite_id.clone();
+            }
+            action
+        }));
+        actions
     }
 
     /// Overwrites the actions in SQLite for a specified set of objects with the actions that
@@ -4547,6 +4582,7 @@ impl UpdateManager {
                 RequestState::RequestSucceeded(delete_result) => {
                     match delete_result {
                         ObjectDeleteResult::Success { deleted_ids } => {
+                            let deleted_ids = me.with_local_descendants(deleted_ids, ctx);
                             let num_deleted_objects = me.on_object_delete_success(deleted_ids, ctx);
                             ctx.emit(UpdateManagerEvent::ObjectOperationComplete {
                                 result: ObjectOperationResult {
@@ -4633,6 +4669,11 @@ impl UpdateManager {
                 RequestState::RequestSucceeded(delete_result) => {
                     match delete_result {
                         ObjectDeleteResult::Success { deleted_ids } => {
+                            let deleted_ids = if ChannelState::is_local_only() {
+                                CloudModel::as_ref(ctx).trashed_sync_ids(owner)
+                            } else {
+                                deleted_ids
+                            };
                             let num_deleted_objects = me.on_object_delete_success(deleted_ids, ctx);
 
                             if num_deleted_objects == 0 {
@@ -4697,6 +4738,34 @@ impl UpdateManager {
         );
 
         self.spawned_futures.push(future.future_id());
+    }
+
+    /// The metadata fields that only the server would know how to update. An object restored from
+    /// the trash moves to the top level if its folder is still in the trash.
+    fn local_metadata_fields(
+        cloud_model: &CloudModel,
+        uid: &ObjectUid,
+    ) -> Option<(Option<SyncId>, Option<String>)> {
+        let metadata = cloud_model.get_by_uid(uid)?.metadata();
+        let folder_is_trashed = metadata
+            .folder_id
+            .and_then(|folder_id| cloud_model.get_by_uid(&folder_id.uid()))
+            .is_some_and(|folder| folder.is_trashed(cloud_model));
+        let folder_id = metadata
+            .folder_id
+            .filter(|_| metadata.trashed_ts.is_none() || !folder_is_trashed);
+        Some((folder_id, metadata.creator_uid.clone()))
+    }
+
+    /// The server reports the contents of a deleted folder; local-only builds look them up.
+    fn with_local_descendants(&self, ids: Vec<SyncId>, ctx: &AppContext) -> Vec<SyncId> {
+        if !ChannelState::is_local_only() {
+            return ids;
+        }
+        let cloud_model = CloudModel::as_ref(ctx);
+        ids.into_iter()
+            .flat_map(|id| cloud_model.sync_id_and_descendants(id))
+            .collect()
     }
 
     pub fn on_object_delete_success(
@@ -4776,10 +4845,18 @@ impl UpdateManager {
         // Update the in-memory metadata.
         let mut hashed_sqlite_id = None;
         cloud_model_handle.update(ctx, |cloud_model, _| {
+            let local_fields = ChannelState::is_local_only()
+                .then(|| Self::local_metadata_fields(cloud_model, &server_id.uid()))
+                .flatten();
             if let Some(object) = cloud_model.get_mut_by_uid(&server_id.uid()) {
                 object
                     .metadata_mut()
                     .update_from_new_metadata_ts(new_metadata);
+                if let Some((folder_id, creator_uid)) = local_fields {
+                    let metadata = object.metadata_mut();
+                    metadata.folder_id = folder_id;
+                    metadata.creator_uid = creator_uid;
+                }
                 update(object.as_mut());
 
                 hashed_sqlite_id =

@@ -65,6 +65,7 @@ use crate::ai::predict::{generate_ai_input_suggestions, generate_am_query_sugges
 use crate::ai::voice::transcribe::{TranscribeRequest, TranscribeResponse};
 use crate::auth::auth_manager::AuthManager;
 use crate::auth::auth_state::AuthState;
+use crate::server::cloud_objects::local_object_client::LocalObjectClient;
 use crate::server::team_scope::RequestTeamScope;
 use crate::{ChannelState, settings_view};
 
@@ -1492,6 +1493,9 @@ impl ServerApiProvider {
     }
 
     pub fn get_cloud_objects_client(&self) -> Arc<dyn ObjectClient> {
+        if ChannelState::is_local_only() {
+            return Arc::new(LocalObjectClient);
+        }
         self.server_api.clone()
     }
 

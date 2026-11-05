@@ -1,5 +1,6 @@
 use std::future::Future;
 
+use warp_core::channel::ChannelState;
 use warp_util::sync::Condition;
 use warpui::{Entity, ModelContext, SingletonEntity};
 
@@ -47,6 +48,11 @@ impl NetworkStatus {
     }
 
     pub fn reachability_changed(&mut self, reachable: bool, ctx: &mut ModelContext<Self>) {
+        // Everything local-only builds talk to runs on this machine.
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         let old_status = self.status;
         let new_status = if reachable {
             NetworkStatusKind::Online

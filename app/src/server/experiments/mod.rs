@@ -11,6 +11,7 @@
 //! See [here](https://www.notion.so/warpdev/Server-side-experiments-dynamic-feature-enablement-c0fb9aed695d4178a19b8830e3269094)
 //! for a full guide on the server-side experiment framework.
 
+use warp_core::channel::ChannelState;
 use warpui::AppContext;
 #[cfg(test)]
 use warpui::SingletonEntity;
@@ -66,6 +67,10 @@ impl ServerExperiment {
     //    That way, this method would not be called until after all other singletons
     //    have been initialized and can thus be referenced.
     fn on_added_to(&self, _ctx: &mut AppContext) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         match self {
             Self::SessionSharingExperiment => {
                 FeatureFlag::CreatingSharedSessions.set_enabled(true);

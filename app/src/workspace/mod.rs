@@ -1235,7 +1235,8 @@ pub fn init(app: &mut AppContext) {
         WorkspaceAction::LogOut,
     )
     .with_group(bindings::BindingGroup::Settings.as_str())
-    .with_context_predicate(id!("Workspace") & !id!("IsAnonymousUser"))]);
+    .with_context_predicate(id!("Workspace") & !id!("IsAnonymousUser"))
+    .with_enabled(|| !ChannelState::is_local_only())]);
 
     if !FeatureFlag::AvatarInTabBar.is_enabled() {
         app.register_editable_bindings([EditableBinding::new(
@@ -1692,7 +1693,8 @@ fn add_overflow_menu_items_as_editable_binding(app: &mut AppContext) {
             WorkspaceAction::ShowReferralSettingsPage,
         )
         .with_context_predicate(id!("Workspace"))
-        .with_custom_action(CustomAction::ReferAFriend),
+        .with_custom_action(CustomAction::ReferAFriend)
+        .with_enabled(|| !ChannelState::is_local_only()),
         EditableBinding::new(
             "workspace:link_to_slack",
             "Join our Slack community (opens external link)",

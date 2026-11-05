@@ -154,6 +154,9 @@ impl FirebaseAuthTokens {
     }
 }
 
+const LOCAL_USER_UID: &str = "local-user";
+const LOCAL_USER_DISPLAY_NAME: &str = "Local user";
+
 impl User {
     /// The name for the user that we display. This is the user's display name, if set. If not set,
     /// we then fallback to email (which is always set).
@@ -168,6 +171,26 @@ impl User {
     /// The display name of the user. Does not fall back to email.
     pub fn display_name(&self) -> Option<String> {
         self.metadata.display_name.clone()
+    }
+
+    /// The only user of a local-only build.
+    pub fn local() -> Self {
+        Self {
+            local_id: UserUid::new(LOCAL_USER_UID),
+            metadata: UserMetadata {
+                email: String::new(),
+                display_name: Some(LOCAL_USER_DISPLAY_NAME.to_string()),
+                photo_url: None,
+            },
+            is_onboarded: true,
+            needs_sso_link: false,
+            anonymous_user_type: None,
+            is_on_work_domain: false,
+            linked_at: None,
+            personal_object_limits: None,
+            principal_type: PrincipalType::User,
+            global_skills: Vec::new(),
+        }
     }
 
     pub fn test() -> Self {

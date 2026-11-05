@@ -18,6 +18,22 @@ lazy_static! {
 }
 
 #[cfg(feature = "test-util")]
+thread_local! {
+    static LOCAL_ONLY_FOR_TEST: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Undoes [`ChannelState::override_local_only_for_test`] when dropped.
+#[cfg(feature = "test-util")]
+pub struct LocalOnlyTestGuard;
+
+#[cfg(feature = "test-util")]
+impl Drop for LocalOnlyTestGuard {
+    fn drop(&mut self) {
+        LOCAL_ONLY_FOR_TEST.set(false);
+    }
+}
+
+#[cfg(feature = "test-util")]
 lazy_static! {
     static ref MOCK_SERVER: Mutex<mockito::ServerGuard> = Mutex::new(mockito::Server::new());
     static ref MOCK_SERVER_URL: String = MOCK_SERVER.lock().url();
@@ -357,7 +373,20 @@ impl ChannelState {
 
     /// Whether this build runs entirely on the user's machine, with no accounts or Warp servers.
     pub fn is_local_only() -> bool {
-        Self::channel() == Channel::Oss
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "test-util")] {
+                LOCAL_ONLY_FOR_TEST.get()
+            } else {
+                Self::channel() == Channel::Oss
+            }
+        }
+    }
+
+    /// Makes [`Self::is_local_only`] true on this thread until the returned guard is dropped.
+    #[cfg(feature = "test-util")]
+    pub fn override_local_only_for_test() -> LocalOnlyTestGuard {
+        LOCAL_ONLY_FOR_TEST.set(true);
+        LocalOnlyTestGuard
     }
 
     #[cfg(feature = "test-util")]

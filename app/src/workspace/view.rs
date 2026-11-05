@@ -8321,6 +8321,10 @@ impl Workspace {
         object_id: CloudObjectTypeAndId,
         ctx: &mut ViewContext<Self>,
     ) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         if self.auth_state.is_anonymous_or_logged_out() {
             return;
         }
@@ -10053,10 +10057,15 @@ impl Workspace {
             }
         }
 
+        let is_local_only = ChannelState::is_local_only();
+        if !is_local_only {
+            items.push(
+                MenuItemFields::new("What's new")
+                    .with_on_select_action(WorkspaceAction::ViewLatestChangelog)
+                    .into_item(),
+            );
+        }
         items.extend([
-            MenuItemFields::new("What's new")
-                .with_on_select_action(WorkspaceAction::ViewLatestChangelog)
-                .into_item(),
             MenuItemFields::new("Settings")
                 .with_on_select_action(WorkspaceAction::ShowSettings)
                 .into_item(),
@@ -10067,10 +10076,14 @@ impl Workspace {
             MenuItemFields::new("Documentation")
                 .with_on_select_action(WorkspaceAction::ViewUserDocs)
                 .into_item(),
-            MenuItemFields::new("Feedback")
-                .with_on_select_action(WorkspaceAction::SendFeedback)
-                .into_item(),
         ]);
+        if !is_local_only {
+            items.push(
+                MenuItemFields::new("Feedback")
+                    .with_on_select_action(WorkspaceAction::SendFeedback)
+                    .into_item(),
+            );
+        }
 
         #[cfg(not(target_family = "wasm"))]
         items.push(
@@ -10078,6 +10091,10 @@ impl Workspace {
                 .with_on_select_action(WorkspaceAction::ViewLogs)
                 .into_item(),
         );
+
+        if is_local_only {
+            return items;
+        }
 
         items.extend([
             MenuItemFields::new("Join our Slack community")

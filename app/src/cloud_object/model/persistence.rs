@@ -344,6 +344,38 @@ impl CloudModel {
         (sync_ids_and_types, count)
     }
 
+    /// Returns `id` followed by everything nested under it.
+    pub fn sync_id_and_descendants(&self, id: SyncId) -> Vec<SyncId> {
+        let mut ids = vec![id];
+        let mut next = 0;
+        while let Some(parent) = ids.get(next).map(SyncId::uid) {
+            next += 1;
+            let children = self
+                .objects_by_id
+                .values()
+                .filter(|child| {
+                    child
+                        .metadata()
+                        .folder_id
+                        .is_some_and(|folder_id| folder_id.uid() == parent)
+                })
+                .map(|child| child.sync_id())
+                .filter(|child| !ids.contains(child))
+                .collect::<Vec<_>>();
+            ids.extend(children);
+        }
+        ids
+    }
+
+    /// Returns every object of `owner` that is in the trash, directly or through a parent folder.
+    pub fn trashed_sync_ids(&self, owner: Owner) -> Vec<SyncId> {
+        self.objects_by_id
+            .values()
+            .filter(|object| object.permissions().owner == owner && object.is_trashed(self))
+            .map(|object| object.sync_id())
+            .collect()
+    }
+
     /// Remove an object and all its descendants from `CloudModel` recursively.
     pub fn delete_object_and_descendants(
         &mut self,

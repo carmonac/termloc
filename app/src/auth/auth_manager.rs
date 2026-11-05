@@ -185,6 +185,10 @@ impl AuthManager {
         enforce_state_validation: bool,
         ctx: &mut ModelContext<Self>,
     ) {
+        if ChannelState::is_local_only() {
+            return;
+        }
+
         let AuthRedirectPayload {
             refresh_token,
             user_uid,
@@ -303,6 +307,13 @@ impl AuthManager {
             log::warn!("Attempted to refresh user without credentials");
             return;
         };
+
+        if matches!(credentials, Credentials::Local) {
+            TeamTesterStatus::handle(ctx).update(ctx, |model, ctx| {
+                model.initiate_data_pollers(false, ctx);
+            });
+            return;
+        }
 
         let Some(token) = credentials.login_token() else {
             log::info!("Attempted to refresh a user with no login token, skipping");

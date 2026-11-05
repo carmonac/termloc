@@ -258,6 +258,7 @@ impl AuthSession {
                 }
             }
             Credentials::SessionCookie => Ok(AuthToken::NoAuth),
+            Credentials::Local => bail!("local-only builds have no server to authenticate with"),
             #[cfg(any(feature = "integration_tests", feature = "skip_login"))]
             Credentials::Test => Ok(AuthToken::NoAuth),
         }
@@ -313,7 +314,10 @@ impl AuthSession {
         let current_refresh_token = match self.auth_state.credentials() {
             Some(Credentials::Firebase(tokens)) => Some(tokens.refresh_token),
             Some(
-                Credentials::ApiKey { .. } | Credentials::Bearer(_) | Credentials::SessionCookie,
+                Credentials::ApiKey { .. }
+                | Credentials::Bearer(_)
+                | Credentials::SessionCookie
+                | Credentials::Local,
             )
             | None => None,
             #[cfg(any(feature = "integration_tests", feature = "skip_login"))]
