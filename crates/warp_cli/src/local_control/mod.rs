@@ -65,7 +65,7 @@ impl ControlArgs {
 
     /// Parse Warp Control arguments only when the wrapper-injected mode flag is present.
     ///
-    /// Startup calls this before the normal Warp/Oz parser. Arguments through
+    /// Startup calls this before the normal Warp parser. Arguments through
     /// `--warpctrl` are removed, and the remaining arguments are parsed as if
     /// the standalone command name were `warpctrl`.
     pub fn from_control_mode_env() -> Option<Self> {

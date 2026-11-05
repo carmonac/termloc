@@ -27,10 +27,8 @@ fn tui_ownership_is_by_name_prefix_or_group() {
     assert!(!is_tui_owned("input:clear_screen", None));
 }
 
-/// Registering every TUI binding — including the orchestration card's
-/// enter/ctrl-e/escape/ctrl-c and Tab/Left/Right navigation set — must satisfy the debug-time
-/// cross-surface validators, which panic on any keystroke binding matching
-/// a TUI view's context that is not TUI-owned.
+/// Registering every TUI binding must satisfy the debug-time cross-surface validators, which
+/// panic on any keystroke binding matching a TUI view's context that is not TUI-owned.
 #[test]
 fn tui_binding_registration_passes_the_cross_surface_validators() {
     App::test((), |mut app| async move {

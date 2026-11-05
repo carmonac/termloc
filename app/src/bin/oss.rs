@@ -7,7 +7,7 @@ use std::env;
 use anyhow::Result;
 use egress::Policy;
 use warp_core::AppId;
-use warp_core::channel::{Channel, ChannelConfig, ChannelState, OzConfig, WarpServerConfig};
+use warp_core::channel::{Channel, ChannelConfig, ChannelState, WarpServerConfig};
 
 /// Comma-separated hosts the app may reach besides this machine.
 const ALLOWED_HOSTS_VAR: &str = "TERMLOC_EGRESS_ALLOW";
@@ -27,7 +27,6 @@ fn main() -> Result<()> {
             app_id: AppId::new("dev", "termloc", "Termloc"),
             logfile_name: "termloc.log".into(),
             server_config: WarpServerConfig::disabled(),
-            oz_config: OzConfig::disabled(),
             mcp_static_config: None,
         },
     );

@@ -30,22 +30,21 @@ use warpui::{App, ModelHandle, RetryOption};
 use websocket::{Error as WebsocketError, Message, Sink, Stream, WebsocketMessage as _};
 
 use super::{
-    AMBIENT_CREATE_SESSION_MAX_ATTEMPTS, ConfirmedReconnection, MAX_PRE_RECONNECT_BYTES,
-    MAX_PRE_RECONNECT_MESSAGES, Network, NetworkEvent, PTY_READS_BATCH_THRESHOLD,
-    PtyBytesBatchStatus, RECONNECT_ATTEMPT_TIMEOUT, RECONNECT_CYCLE_TIMEOUT,
-    RECONNECT_LIMIT_REACHED_MESSAGE, SERVER_MAX_WEBSOCKET_MESSAGE_BYTES, Stage, StartupFailure,
-    StartupRetryState, confirm_reconnection, share_with_team_uid_for_init_payload,
-    startup_max_attempts,
+    ConfirmedReconnection, MAX_PRE_RECONNECT_BYTES, MAX_PRE_RECONNECT_MESSAGES, Network,
+    NetworkEvent, PTY_READS_BATCH_THRESHOLD, PtyBytesBatchStatus, RECONNECT_ATTEMPT_TIMEOUT,
+    RECONNECT_CYCLE_TIMEOUT, RECONNECT_LIMIT_REACHED_MESSAGE, SERVER_MAX_WEBSOCKET_MESSAGE_BYTES,
+    Stage, StartupFailure, StartupRetryState, confirm_reconnection,
+    share_with_team_uid_for_init_payload,
 };
 use crate::auth::AuthStateProvider;
 use crate::auth::auth_manager::AuthManager;
 use crate::server::server_api::ServerApiProvider;
 use crate::server::telemetry::context_provider::AppTelemetryContextProvider;
 use crate::terminal::TerminalModel;
-use crate::terminal::shared_session::{
-    MAX_BYTES_SHAREABLE, SELECTION_THROTTLE_PERIOD, SharedSessionSource,
-};
+use crate::terminal::shared_session::{MAX_BYTES_SHAREABLE, SELECTION_THROTTLE_PERIOD};
 use crate::test_util::assert_eventually;
+
+const TEST_MAX_ATTEMPTS: usize = 3;
 
 fn is_upstream_message_pty_bytes_read(
     message: UpstreamMessage,
@@ -1020,7 +1019,7 @@ fn test_oversized_initialize_fails_startup_without_retry() {
             network.stage = Stage::BeforeStarted {
                 startup_retry: StartupRetryState {
                     current_attempt: 1,
-                    max_attempts: AMBIENT_CREATE_SESSION_MAX_ATTEMPTS,
+                    max_attempts: TEST_MAX_ATTEMPTS,
                     timeout_abort_handle: None,
                     transport_abort_handle: None,
                 },
@@ -1063,17 +1062,6 @@ fn test_share_with_team_uid_for_init_payload_omits_personal_view() {
 }
 
 #[test]
-fn test_startup_max_attempts_only_retries_ambient_agent_sources() {
-    assert_eq!(
-        startup_max_attempts(&SharedSessionSource::ambient_agent(Some(
-            "task-id".to_string()
-        ))),
-        AMBIENT_CREATE_SESSION_MAX_ATTEMPTS
-    );
-    assert_eq!(startup_max_attempts(&SharedSessionSource::user(None)), 1);
-}
-
-#[test]
 fn test_startup_failure_retryability() {
     assert!(StartupFailure::Transport.is_retryable());
     assert!(StartupFailure::InitializeSend.is_retryable());
@@ -1112,7 +1100,7 @@ fn test_should_retry_startup_failure_respects_attempt_budget() {
             network.stage = Stage::BeforeStarted {
                 startup_retry: StartupRetryState {
                     current_attempt: 1,
-                    max_attempts: AMBIENT_CREATE_SESSION_MAX_ATTEMPTS,
+                    max_attempts: TEST_MAX_ATTEMPTS,
                     timeout_abort_handle: None,
                     transport_abort_handle: None,
                 },
@@ -1121,8 +1109,8 @@ fn test_should_retry_startup_failure_respects_attempt_budget() {
 
             network.stage = Stage::BeforeStarted {
                 startup_retry: StartupRetryState {
-                    current_attempt: AMBIENT_CREATE_SESSION_MAX_ATTEMPTS,
-                    max_attempts: AMBIENT_CREATE_SESSION_MAX_ATTEMPTS,
+                    current_attempt: TEST_MAX_ATTEMPTS,
+                    max_attempts: TEST_MAX_ATTEMPTS,
                     timeout_abort_handle: None,
                     transport_abort_handle: None,
                 },
@@ -1152,7 +1140,7 @@ fn test_startup_attempt_stale_filtering() {
             network.stage = Stage::BeforeStarted {
                 startup_retry: StartupRetryState {
                     current_attempt: 1,
-                    max_attempts: AMBIENT_CREATE_SESSION_MAX_ATTEMPTS,
+                    max_attempts: TEST_MAX_ATTEMPTS,
                     timeout_abort_handle: None,
                     transport_abort_handle: None,
                 },
@@ -1747,6 +1735,97 @@ fn test_messages_are_buffered_before_session_initialized() {
 }
 
 #[test]
+fn test_events_are_saved_on_send_and_removed_on_ack() {
+    App::test((), |mut app| async move {
+        let (network, _) = create_network(&mut app, false);
+        let ws_proxy_rx = network.read(&app, |network, _ctx| network.ws_proxy_rx.clone());
+
+        // Simulate receiving the SessionInitialized message from the server.
+        network.update(&mut app, |network, ctx| {
+            let downstream_message = DownstreamMessage::SessionInitialized {
+                session_id: SessionId::new(),
+                session_secret: Default::default(),
+                reconnect_token: ReconnectToken::new(),
+                sharer_id: ParticipantId::new(),
+                sharer_firebase_uid: "mock_firebase_uid".to_string(),
+            };
+            let serialized = downstream_message.to_json().unwrap();
+            network.process_websocket_message(Message::new(serialized), ctx);
+        });
+
+        // We should have sent the latest prompt on connection.
+        assert_eq!(ws_proxy_rx.len(), 1);
+        let item = ws_proxy_rx.recv().await;
+        matches!(item.unwrap(), UpstreamMessage::UpdateActivePrompt(_));
+
+        // Try to send a couple messages to the server.
+        let event_type = OrderedTerminalEventType::CommandExecutionStarted {
+            participant_id: Default::default(),
+            ai_metadata: None,
+        };
+        let event = OrderedTerminalEvent {
+            event_no: 0,
+            event_type,
+        };
+        let message = UpstreamMessage::OrderedTerminalEvent(event);
+        network.update(&mut app, |network, _ctx| {
+            network.send_message_to_server(message)
+        });
+        let event_type = OrderedTerminalEventType::CommandExecutionStarted {
+            participant_id: Default::default(),
+            ai_metadata: None,
+        };
+        let event = OrderedTerminalEvent {
+            event_no: 1,
+            event_type,
+        };
+        let message = UpstreamMessage::OrderedTerminalEvent(event);
+        network.update(&mut app, |network, _ctx| {
+            network.send_message_to_server(message)
+        });
+
+        // The messages should be both sent and stored.
+        assert_eq!(ws_proxy_rx.len(), 2);
+        let item = ws_proxy_rx.recv().await;
+        assert!(is_upstream_message_command_executed(&item.unwrap(), 0));
+        let item = ws_proxy_rx.recv().await;
+        assert!(is_upstream_message_command_executed(&item.unwrap(), 1));
+        network.read(&app, |network, _| {
+            assert_eq!(network.unacked_terminal_events.len(), 2);
+            assert!(is_upstream_message_command_executed(
+                &UpstreamMessage::OrderedTerminalEvent(
+                    network.unacked_terminal_events.get(&0).unwrap().clone()
+                ),
+                0
+            ));
+            assert!(is_upstream_message_command_executed(
+                &UpstreamMessage::OrderedTerminalEvent(
+                    network.unacked_terminal_events.get(&1).unwrap().clone()
+                ),
+                1
+            ));
+        });
+
+        // Simulate receiving the EventsProcessedAck message from the server.
+        network.update(
+            &mut app,
+            |network, ctx: &mut warpui::ModelContext<'_, Network>| {
+                let downstream_message = DownstreamMessage::EventsProcessedAck {
+                    latest_processed_event_no: 1,
+                };
+                let serialized = downstream_message.to_json().unwrap();
+                network.process_websocket_message(Message::new(serialized), ctx);
+            },
+        );
+
+        // Both messages should be removed from the stored events to free up memory.
+        network.read(&app, |network, _| {
+            assert_eq!(network.unacked_terminal_events.len(), 0);
+        });
+    });
+}
+
+#[test]
 fn test_messages_are_buffered_while_reconnecting() {
     App::test((), |mut app| async move {
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
@@ -1756,7 +1835,6 @@ fn test_messages_are_buffered_while_reconnecting() {
             IapManager::new(
                 None,
                 Box::new(|_| futures::FutureExt::boxed(futures::future::ready(None::<String>))),
-                None,
                 ctx,
             )
         });
@@ -1851,97 +1929,6 @@ fn test_messages_are_buffered_while_reconnecting() {
 
         network.read(&app, |network, _| {
             assert!(matches!(&network.stage, Stage::StartedSuccessfully { .. }));
-        });
-    });
-}
-
-#[test]
-fn test_events_are_saved_on_send_and_removed_on_ack() {
-    App::test((), |mut app| async move {
-        let (network, _) = create_network(&mut app, false);
-        let ws_proxy_rx = network.read(&app, |network, _ctx| network.ws_proxy_rx.clone());
-
-        // Simulate receiving the SessionInitialized message from the server.
-        network.update(&mut app, |network, ctx| {
-            let downstream_message = DownstreamMessage::SessionInitialized {
-                session_id: SessionId::new(),
-                session_secret: Default::default(),
-                reconnect_token: ReconnectToken::new(),
-                sharer_id: ParticipantId::new(),
-                sharer_firebase_uid: "mock_firebase_uid".to_string(),
-            };
-            let serialized = downstream_message.to_json().unwrap();
-            network.process_websocket_message(Message::new(serialized), ctx);
-        });
-
-        // We should have sent the latest prompt on connection.
-        assert_eq!(ws_proxy_rx.len(), 1);
-        let item = ws_proxy_rx.recv().await;
-        matches!(item.unwrap(), UpstreamMessage::UpdateActivePrompt(_));
-
-        // Try to send a couple messages to the server.
-        let event_type = OrderedTerminalEventType::CommandExecutionStarted {
-            participant_id: Default::default(),
-            ai_metadata: None,
-        };
-        let event = OrderedTerminalEvent {
-            event_no: 0,
-            event_type,
-        };
-        let message = UpstreamMessage::OrderedTerminalEvent(event);
-        network.update(&mut app, |network, _ctx| {
-            network.send_message_to_server(message)
-        });
-        let event_type = OrderedTerminalEventType::CommandExecutionStarted {
-            participant_id: Default::default(),
-            ai_metadata: None,
-        };
-        let event = OrderedTerminalEvent {
-            event_no: 1,
-            event_type,
-        };
-        let message = UpstreamMessage::OrderedTerminalEvent(event);
-        network.update(&mut app, |network, _ctx| {
-            network.send_message_to_server(message)
-        });
-
-        // The messages should be both sent and stored.
-        assert_eq!(ws_proxy_rx.len(), 2);
-        let item = ws_proxy_rx.recv().await;
-        assert!(is_upstream_message_command_executed(&item.unwrap(), 0));
-        let item = ws_proxy_rx.recv().await;
-        assert!(is_upstream_message_command_executed(&item.unwrap(), 1));
-        network.read(&app, |network, _| {
-            assert_eq!(network.unacked_terminal_events.len(), 2);
-            assert!(is_upstream_message_command_executed(
-                &UpstreamMessage::OrderedTerminalEvent(
-                    network.unacked_terminal_events.get(&0).unwrap().clone()
-                ),
-                0
-            ));
-            assert!(is_upstream_message_command_executed(
-                &UpstreamMessage::OrderedTerminalEvent(
-                    network.unacked_terminal_events.get(&1).unwrap().clone()
-                ),
-                1
-            ));
-        });
-
-        // Simulate receiving the EventsProcessedAck message from the server.
-        network.update(
-            &mut app,
-            |network, ctx: &mut warpui::ModelContext<'_, Network>| {
-                let downstream_message = DownstreamMessage::EventsProcessedAck {
-                    latest_processed_event_no: 1,
-                };
-                let serialized = downstream_message.to_json().unwrap();
-                network.process_websocket_message(Message::new(serialized), ctx);
-            },
-        );
-
-        // Both messages should be removed from the stored events to free up memory.
-        network.read(&app, |network, _| {
-            assert_eq!(network.unacked_terminal_events.len(), 0);
         });
     });
 }

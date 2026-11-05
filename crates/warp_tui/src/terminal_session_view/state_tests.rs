@@ -14,17 +14,13 @@ use crate::terminal_session_view::{
 };
 use crate::terminal_use::TuiInputTarget;
 
-fn agent_editor_state(
-    mode: TuiComposerMode,
-    orchestration_available: bool,
-) -> TuiTerminalSessionState {
+fn agent_editor_state(mode: TuiComposerMode) -> TuiTerminalSessionState {
     TuiTerminalSessionState::Block(TuiBlockSessionState {
         interaction: TuiInteractionState::AgentEditor(TuiAgentEditorState {
             mode,
             suggestions_mode: TuiInputSuggestionsMode::Closed,
         }),
         transcript_is_empty: false,
-        orchestration_available,
         plan_available: false,
         can_attach_agent_to_running_command: false,
         agent_is_tagged_in: false,
@@ -36,12 +32,9 @@ fn tagged_in_composer_exposes_detach_shortcut() {
     App::test((), |mut app| async move {
         app.update(crate::keybindings::init);
         app.read(|ctx| {
-            let mut state = agent_editor_state(
-                TuiComposerMode::Agent {
-                    agent_controlled_terminal_use: false,
-                },
-                false,
-            );
+            let mut state = agent_editor_state(TuiComposerMode::Agent {
+                agent_controlled_terminal_use: false,
+            });
             let TuiTerminalSessionState::Block(block) = &mut state else {
                 unreachable!();
             };
@@ -78,7 +71,6 @@ fn alt_screen_state(
         state: TuiBlockSessionState {
             interaction,
             transcript_is_empty: false,
-            orchestration_available: false,
             plan_available: false,
             can_attach_agent_to_running_command: false,
             agent_is_tagged_in: false,
@@ -90,7 +82,6 @@ fn block_state(interaction: TuiInteractionState) -> TuiTerminalSessionState {
     TuiTerminalSessionState::Block(TuiBlockSessionState {
         interaction,
         transcript_is_empty: false,
-        orchestration_available: false,
         plan_available: false,
         can_attach_agent_to_running_command: false,
         agent_is_tagged_in: false,
@@ -112,21 +103,21 @@ fn resolve_returns_error_after_terminal_model_owner_drops() {
 }
 
 #[test]
-fn shell_hint_is_selected_with_additive_orchestration() {
-    let state = agent_editor_state(TuiComposerMode::Shell, true);
+fn shell_hint_is_selected_in_shell_mode() {
+    let state = agent_editor_state(TuiComposerMode::Shell);
     assert_eq!(state.hint_text().as_deref(), Some(SHELL_HINT));
 }
 
 #[test]
 fn transcript_state_selects_the_applicable_hint_segments() {
-    let zero_state = agent_input_hint(true, false);
+    let zero_state = agent_input_hint(true);
     assert!(zero_state.contains(COMMANDS_HINT));
     assert!(zero_state.contains(CONVERSATIONS_HINT));
     assert!(zero_state.contains(SHORTCUTS_HINT));
     assert!(!zero_state.contains(ASK_AGENT_HINT));
     assert!(!zero_state.contains(SHELL_MODE_HINT));
 
-    let started = agent_input_hint(false, false);
+    let started = agent_input_hint(false);
     assert!(started.contains(ASK_AGENT_HINT));
     assert!(started.contains(SHORTCUTS_HINT));
     assert!(started.contains(SHELL_MODE_HINT));
@@ -154,12 +145,9 @@ fn only_composer_interactions_produce_input_hints() {
         assert_eq!(state.hint_text(), None);
     }
 
-    let mut state = agent_editor_state(
-        TuiComposerMode::Agent {
-            agent_controlled_terminal_use: false,
-        },
-        false,
-    );
+    let mut state = agent_editor_state(TuiComposerMode::Agent {
+        agent_controlled_terminal_use: false,
+    });
     assert!(state.hint_text().is_some());
     {
         let TuiTerminalSessionState::Block(block) = &mut state else {
@@ -212,14 +200,14 @@ fn hierarchy_selects_one_input_surface() {
         TuiInputTarget::Pty
     );
 
-    let state = agent_editor_state(TuiComposerMode::Shell, false);
+    let state = agent_editor_state(TuiComposerMode::Shell);
     assert_eq!(state.input_target(), TuiInputTarget::AgentEditor);
     assert!(state.composer_shortcuts_active());
 }
 
 #[test]
 fn suggestions_overlay_disables_composer_shortcuts_without_changing_the_input_surface() {
-    let mut state = agent_editor_state(TuiComposerMode::Shell, false);
+    let mut state = agent_editor_state(TuiComposerMode::Shell);
     let TuiTerminalSessionState::Block(block) = &mut state else {
         unreachable!();
     };
@@ -250,11 +238,11 @@ fn alt_screen_can_retain_an_agent_composer() {
 }
 
 #[test]
-fn shell_and_orchestration_contribute_active_shortcut_sections() {
+fn shell_mode_contributes_active_shortcut_sections() {
     App::test((), |mut app| async move {
         app.update(crate::keybindings::init);
         app.read(|ctx| {
-            let mut state = agent_editor_state(TuiComposerMode::Shell, true);
+            let mut state = agent_editor_state(TuiComposerMode::Shell);
             let TuiTerminalSessionState::Block(block) = &mut state else {
                 unreachable!();
             };
@@ -268,7 +256,7 @@ fn shell_and_orchestration_contribute_active_shortcut_sections() {
                     .iter()
                     .map(|section| section.title)
                     .collect::<Vec<_>>(),
-                vec!["Shortcuts", "Orchestration"]
+                vec!["Shortcuts"]
             );
             let descriptions = sections[0]
                 .shortcuts
@@ -283,27 +271,18 @@ fn shell_and_orchestration_contribute_active_shortcut_sections() {
             assert!(!descriptions.contains(&"shell mode"));
             assert!(!descriptions.contains(&"conversations"));
             assert!(!descriptions.contains(&"input history"));
-            assert!(
-                sections[1]
-                    .shortcuts
-                    .iter()
-                    .any(|shortcut| shortcut.description == "navigate to agents")
-            );
         });
     });
 }
 
 #[test]
-fn agent_terminal_use_and_orchestration_are_additive() {
+fn agent_terminal_use_adds_a_shortcut_section() {
     App::test((), |mut app| async move {
         app.update(crate::keybindings::init);
         app.read(|ctx| {
-            let state = agent_editor_state(
-                TuiComposerMode::Agent {
-                    agent_controlled_terminal_use: true,
-                },
-                true,
-            );
+            let state = agent_editor_state(TuiComposerMode::Agent {
+                agent_controlled_terminal_use: true,
+            });
             let mut context = Context::default();
             context.set.insert(TuiTerminalSessionView::ui_name());
             let sections = state.shortcut_sections(&context, ctx);
@@ -313,19 +292,13 @@ fn agent_terminal_use_and_orchestration_are_additive() {
                     .iter()
                     .map(|section| section.title)
                     .collect::<Vec<_>>(),
-                vec!["Shortcuts", "Terminal use", "Orchestration"]
+                vec!["Shortcuts", "Terminal use"]
             );
             assert!(
                 sections[1]
                     .shortcuts
                     .iter()
                     .any(|shortcut| shortcut.description == "take control")
-            );
-            assert!(
-                sections[2]
-                    .shortcuts
-                    .iter()
-                    .any(|shortcut| shortcut.description == "navigate to agents")
             );
         });
     });

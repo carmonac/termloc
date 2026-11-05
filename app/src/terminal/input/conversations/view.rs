@@ -68,13 +68,8 @@ impl InlineConversationMenuView {
         active_session: ModelHandle<ActiveSession>,
         ctx: &mut ViewContext<Self>,
     ) -> Self {
-        let team_context_resolver = UserWorkspaces::team_context_resolver(ctx.handle());
         let data_source = ctx.add_model(move |_| {
-            ConversationMenuDataSource::new(
-                conversation_selection,
-                active_session,
-                team_context_resolver,
-            )
+            ConversationMenuDataSource::new(conversation_selection, active_session)
         });
         let window_id = ctx.window_id();
         ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), move |me, _, event, ctx| {

@@ -54,11 +54,10 @@ use crate::settings::{
     AgentModeQuerySuggestionsEnabled, AutoApproveBypassesCommandDenylist,
     EnableAiCommandSearchHashTrigger, GitOperationsAutogenEnabled, IncludeAgentCommandsInHistory,
     InputSettings, IntelligentAutosuggestionsEnabled, LongRunningCommandSubmissionMode,
-    NLDInTerminalEnabled, NaturalLanguageAutosuggestionsEnabled, OrchestrationMessageDisplayMode,
-    PromptSubmissionMode, SharedBlockTitleGenerationEnabled,
-    ShouldRenderUseAgentToolbarForUserCommands, ShowAgentTips, ShowConversationHistory,
-    ShowHintText, ThinkingDisplayMode, VOICE_INPUT_LANGUAGES, VoiceInputEnabled,
-    VoiceInputLanguage, VoiceInputToggleKey,
+    NLDInTerminalEnabled, NaturalLanguageAutosuggestionsEnabled, PromptSubmissionMode,
+    SharedBlockTitleGenerationEnabled, ShouldRenderUseAgentToolbarForUserCommands, ShowAgentTips,
+    ShowConversationHistory, ShowHintText, ThinkingDisplayMode, VOICE_INPUT_LANGUAGES,
+    VoiceInputEnabled, VoiceInputLanguage, VoiceInputToggleKey,
 };
 use crate::util::bindings;
 use crate::view_components::{Dropdown, DropdownItem, FilterableDropdown};
@@ -340,7 +339,6 @@ pub struct WarpAgentPageView {
     agent_toolbar_inline_editor: ViewHandle<AgentToolbarInlineEditor>,
 
     thinking_display_mode_dropdown: ViewHandle<Dropdown<WarpAgentPageAction>>,
-    orchestration_message_display_mode_dropdown: ViewHandle<Dropdown<WarpAgentPageAction>>,
     default_prompt_submission_mode_dropdown: ViewHandle<Dropdown<WarpAgentPageAction>>,
     lrc_submission_mode_dropdown: ViewHandle<Dropdown<WarpAgentPageAction>>,
     #[cfg(feature = "local_fs")]
@@ -428,17 +426,6 @@ impl WarpAgentPageView {
             thinking_display_mode_dropdown.update(ctx, |dropdown, ctx| {
                 dropdown.set_selected_by_action(
                     WarpAgentPageAction::SetThinkingDisplayMode(current_mode),
-                    ctx,
-                );
-            });
-        }
-        let orchestration_message_display_mode_dropdown =
-            OtherAIWidget::create_orchestration_message_display_mode_dropdown(ctx);
-        {
-            let current_mode = AISettings::as_ref(ctx).orchestration_message_display_mode;
-            orchestration_message_display_mode_dropdown.update(ctx, |dropdown, ctx| {
-                dropdown.set_selected_by_action(
-                    WarpAgentPageAction::SetOrchestrationMessageDisplayMode(current_mode),
                     ctx,
                 );
             });
@@ -568,18 +555,6 @@ impl WarpAgentPageView {
                             );
                         });
                 }
-                AISettingsChangedEvent::OrchestrationMessageDisplayMode { .. } => {
-                    let current_mode = AISettings::as_ref(ctx).orchestration_message_display_mode;
-                    me.orchestration_message_display_mode_dropdown
-                        .update(ctx, |dropdown, ctx| {
-                            dropdown.set_selected_by_action(
-                                WarpAgentPageAction::SetOrchestrationMessageDisplayMode(
-                                    current_mode,
-                                ),
-                                ctx,
-                            );
-                        });
-                }
                 AISettingsChangedEvent::PromptSubmissionMode { .. } => {
                     let current_mode = AISettings::as_ref(ctx).default_prompt_submission_mode;
                     me.default_prompt_submission_mode_dropdown
@@ -657,7 +632,6 @@ impl WarpAgentPageView {
             local_only_icon_tooltip_states: Default::default(),
             agent_toolbar_inline_editor,
             thinking_display_mode_dropdown,
-            orchestration_message_display_mode_dropdown,
             default_prompt_submission_mode_dropdown,
             lrc_submission_mode_dropdown,
             #[cfg(feature = "local_fs")]
@@ -752,15 +726,6 @@ impl WarpAgentPageView {
         }
 
         categories.push(Category::new(
-            "Cloud Handoff",
-            vec![
-                Box::new(CloudHandoffWidget::default()),
-                Box::new(AutoHandoffOnSleepWidget::default()),
-                Box::new(AmpersandHandoffWidget::default()),
-            ],
-        ));
-
-        categories.push(Category::new(
             "Agent Attribution",
             vec![Box::new(AgentAttributionWidget::default())],
         ));
@@ -771,18 +736,10 @@ impl WarpAgentPageView {
             Box::new(AgentToolbarLayoutEditorWidget),
             Box::new(ShowConversationHistoryWidget::default()),
             Box::new(ThinkingDisplayModeWidget),
-            Box::new(OrchestrationMessageDisplayModeWidget),
         ];
         #[cfg(feature = "local_fs")]
         other_widgets.push(Box::new(ConversationLayoutPreferenceWidget));
         categories.push(Category::new("Other", other_widgets));
-
-        if FeatureFlag::AgentModeComputerUse.is_enabled() {
-            categories.push(Category::new(
-                "Experimental",
-                vec![Box::new(CloudAgentComputerUseWidget::default())],
-            ));
-        }
 
         let global_ai_switch_state = SwitchStateHandle::default();
         PageType::new_categorized(
@@ -861,10 +818,8 @@ pub enum WarpAgentPageAction {
     ToggleAiCommandSearchHashTrigger,
     ToggleShowAgentTips,
     SetThinkingDisplayMode(ThinkingDisplayMode),
-    SetOrchestrationMessageDisplayMode(OrchestrationMessageDisplayMode),
     SetPromptSubmissionMode(PromptSubmissionMode),
     SetLongRunningCommandSubmissionMode(LongRunningCommandSubmissionMode),
-    ToggleCloudAgentComputerUse,
     ToggleFileBasedMcp,
     ToggleIncludeAgentCommandsInHistory,
     ToggleAutoApproveBypassesCommandDenylist,
@@ -872,9 +827,6 @@ pub enum WarpAgentPageAction {
 
     #[cfg(feature = "local_fs")]
     SetConversationLayout(crate::util::file::external_editor::settings::OpenConversationPreference),
-    ToggleCloudHandoff,
-    ToggleAmpersandHandoff,
-    ToggleAutoHandoffOnSleep,
     ToggleShowConversationHistory,
 }
 
@@ -1208,16 +1160,6 @@ impl TypedActionView for WarpAgentPageView {
                 });
                 ctx.notify();
             }
-            WarpAgentPageAction::SetOrchestrationMessageDisplayMode(mode) => {
-                AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                    report_if_error!(
-                        settings
-                            .orchestration_message_display_mode
-                            .set_value(*mode, ctx)
-                    );
-                });
-                ctx.notify();
-            }
             WarpAgentPageAction::SetPromptSubmissionMode(mode) => {
                 AISettings::handle(ctx).update(ctx, |settings, ctx| {
                     report_if_error!(
@@ -1234,16 +1176,6 @@ impl TypedActionView for WarpAgentPageView {
                         settings
                             .long_running_command_submission_mode
                             .set_value(*mode, ctx)
-                    );
-                });
-                ctx.notify();
-            }
-            WarpAgentPageAction::ToggleCloudAgentComputerUse => {
-                AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                    report_if_error!(
-                        settings
-                            .cloud_agent_computer_use_enabled
-                            .toggle_and_save_value(ctx)
                     );
                 });
                 ctx.notify();
@@ -1300,36 +1232,6 @@ impl TypedActionView for WarpAgentPageView {
                     report_if_error!(
                         settings
                             .show_conversation_history
-                            .toggle_and_save_value(ctx)
-                    );
-                });
-                ctx.notify();
-            }
-            WarpAgentPageAction::ToggleCloudHandoff => {
-                AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                    report_if_error!(
-                        settings
-                            .should_force_disable_cloud_handoff
-                            .toggle_and_save_value(ctx)
-                    );
-                });
-                ctx.notify();
-            }
-            WarpAgentPageAction::ToggleAmpersandHandoff => {
-                AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                    report_if_error!(
-                        settings
-                            .should_force_disable_ampersand_handoff
-                            .toggle_and_save_value(ctx)
-                    );
-                });
-                ctx.notify();
-            }
-            WarpAgentPageAction::ToggleAutoHandoffOnSleep => {
-                AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                    report_if_error!(
-                        settings
-                            .auto_handoff_on_sleep_enabled
                             .toggle_and_save_value(ctx)
                     );
                 });
@@ -1790,7 +1692,7 @@ impl SettingsWidget for NaturalLanguageDetectionWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "oz agent ai natural language detection autodetection prompt terminal command denylist permissions"
+        "agent ai natural language detection autodetection prompt terminal command denylist permissions"
     }
 
     fn render(
@@ -1821,7 +1723,7 @@ impl SettingsWidget for ShowInputHintTextWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "oz agent ai input show hint text"
+        "agent ai input show hint text"
     }
 
     fn render(
@@ -1883,7 +1785,7 @@ impl SettingsWidget for ShowAgentTipsWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "oz agent ai show agent tips"
+        "agent ai show agent tips"
     }
 
     fn should_render(&self, _app: &AppContext) -> bool {
@@ -1918,7 +1820,7 @@ impl SettingsWidget for IncludeAgentCommandsInHistoryWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "oz agent ai include agent-executed commands in history shell"
+        "agent ai include agent-executed commands in history shell"
     }
 
     fn render(
@@ -1950,7 +1852,7 @@ impl SettingsWidget for AutoApproveBypassesCommandDenylistWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "oz agent ai auto-approve fast forward bypass denylist permissions"
+        "agent ai auto-approve fast forward bypass denylist permissions"
     }
 
     fn render(
@@ -1987,7 +1889,7 @@ impl SettingsWidget for PromptSubmissionModeWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "oz agent ai default prompt submission mode queue interrupt steer next turn auto-queue long-running long running lrc"
+        "agent ai default prompt submission mode queue interrupt steer next turn auto-queue long-running long running lrc"
     }
 
     fn should_render(&self, _app: &AppContext) -> bool {
@@ -2265,7 +2167,7 @@ impl SettingsWidget for VoiceWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "voice agent oz ai a.i. speech input natural language talk english spanish french german estonian finnish"
+        "voice agent ai a.i. speech input natural language talk english spanish french german estonian finnish"
     }
 
     fn should_render(&self, app: &AppContext) -> bool {
@@ -2341,28 +2243,6 @@ impl OtherAIWidget {
                     )
                 })
                 .collect();
-
-        ctx.add_typed_action_view(|ctx| {
-            let mut dropdown = Dropdown::new(ctx);
-            dropdown.set_top_bar_max_width(AI_SETTINGS_DROPDOWN_WIDTH);
-            dropdown.set_menu_width(AI_SETTINGS_DROPDOWN_WIDTH, ctx);
-            dropdown.set_menu_max_height(AI_SETTINGS_DROPDOWN_MAX_HEIGHT, ctx);
-            dropdown.add_items(items, ctx);
-            dropdown
-        })
-    }
-
-    fn create_orchestration_message_display_mode_dropdown(
-        ctx: &mut ViewContext<WarpAgentPageView>,
-    ) -> ViewHandle<Dropdown<WarpAgentPageAction>> {
-        let items: Vec<DropdownItem<WarpAgentPageAction>> = OrchestrationMessageDisplayMode::iter()
-            .map(|mode| {
-                DropdownItem::new(
-                    mode.display_name(),
-                    WarpAgentPageAction::SetOrchestrationMessageDisplayMode(mode),
-                )
-            })
-            .collect();
 
         ctx.add_typed_action_view(|ctx| {
             let mut dropdown = Dropdown::new(ctx);
@@ -2513,40 +2393,6 @@ impl SettingsWidget for ThinkingDisplayModeWidget {
     }
 }
 
-#[derive(Default)]
-struct OrchestrationMessageDisplayModeWidget;
-
-impl SettingsWidget for OrchestrationMessageDisplayModeWidget {
-    type View = WarpAgentPageView;
-
-    fn search_terms(&self) -> &str {
-        "other orchestration messages child agents collapse expand hide display"
-    }
-
-    fn render(
-        &self,
-        view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let is_any_ai_enabled = AISettings::as_ref(app).is_any_ai_enabled(app);
-        render_dropdown_item(
-            appearance,
-            "Orchestration message display",
-            Some("Controls whether orchestration messages stay expanded."),
-            None,
-            LocalOnlyIconState::for_setting(
-                OrchestrationMessageDisplayMode::storage_key(),
-                OrchestrationMessageDisplayMode::sync_to_cloud(),
-                &mut view.local_only_icon_tooltip_states.borrow_mut(),
-                app,
-            ),
-            (!is_any_ai_enabled).then(|| appearance.theme().disabled_ui_text_color()),
-            &view.orchestration_message_display_mode_dropdown,
-        )
-    }
-}
-
 // TODO: OpenConversationLayoutPreference should not depend on local_fs, but it lives under the
 // external editor settings which does require local_fs. It was a mistake to put it there, but now
 // we keep it there for backward compatibility.
@@ -2633,7 +2479,7 @@ impl SettingsWidget for AgentAttributionWidget {
     type View = WarpAgentPageView;
 
     fn search_terms(&self) -> &str {
-        "agent attribution commit pull request co-author author credit oz warp"
+        "agent attribution commit pull request co-author author credit warp"
     }
 
     fn render(
@@ -2712,309 +2558,3 @@ impl SettingsWidget for AgentAttributionWidget {
 #[cfg(test)]
 #[path = "warp_agent_page_tests.rs"]
 mod tests;
-
-#[derive(Default)]
-struct CloudAgentComputerUseWidget {
-    toggle: SwitchStateHandle,
-}
-
-impl SettingsWidget for CloudAgentComputerUseWidget {
-    type View = WarpAgentPageView;
-
-    fn search_terms(&self) -> &str {
-        "oz cloud agent computer use orchestration multi-agent"
-    }
-
-    fn render(
-        &self,
-        view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        use crate::ai::execution_profiles::{
-            CloudAgentComputerUseState, resolve_cloud_agent_computer_use_state,
-        };
-
-        let is_any_ai_enabled = AISettings::as_ref(app).is_any_ai_enabled(app);
-
-        // Determine toggle state based on workspace autonomy setting and user preference
-        let CloudAgentComputerUseState {
-            enabled: is_checked,
-            is_forced_by_org,
-        } = {
-            let scope = UserWorkspaces::as_ref(app).team_context(&view.self_handle, app);
-            resolve_cloud_agent_computer_use_state(&scope, app)
-        };
-
-        // Toggle is disabled if forced by org settings OR if AI is globally disabled
-        let is_disabled = is_forced_by_org || !is_any_ai_enabled;
-
-        let ui_builder = appearance.ui_builder();
-        let toggle = if is_forced_by_org {
-            // Disabled by organization setting - show tooltip on hover
-            ui_builder
-                .switch(self.toggle.clone())
-                .check(is_checked)
-                .with_tooltip(TooltipConfig {
-                    text: "This option is enforced by your organization's settings and cannot be customized.".to_string(),
-                    styles: ui_builder.default_tool_tip_styles(),
-                })
-                .disable()
-                .build()
-                .finish()
-        } else if !is_any_ai_enabled {
-            // Disabled because AI is off globally - no tooltip needed
-            ui_builder
-                .switch(self.toggle.clone())
-                .check(is_checked)
-                .with_disabled(true)
-                .build()
-                .finish()
-        } else {
-            // Enabled - allow toggling
-            ui_builder
-                .switch(self.toggle.clone())
-                .check(is_checked)
-                .build()
-                .on_click(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(WarpAgentPageAction::ToggleCloudAgentComputerUse);
-                })
-                .finish()
-        };
-
-        let toggle_row = build_toggle_element(
-            render_body_item_label::<WarpAgentPageAction>(
-                "Computer use in Cloud Agents".to_string(),
-                Some(styles::header_font_color(!is_disabled, app)),
-                None,
-                LocalOnlyIconState::Hidden,
-                ToggleState::Enabled,
-                appearance,
-            ),
-            toggle,
-            appearance,
-            None,
-        );
-
-        Flex::column()
-            .with_child(toggle_row)
-            .with_child(render_ai_setting_description(
-                "Enable computer use in cloud agent conversations started from the Termloc app.",
-                !is_disabled,
-                app,
-            ))
-            .finish()
-    }
-}
-
-#[derive(Default)]
-struct CloudHandoffWidget {
-    handoff_toggle: SwitchStateHandle,
-}
-
-impl SettingsWidget for CloudHandoffWidget {
-    type View = WarpAgentPageView;
-
-    fn search_terms(&self) -> &str {
-        "cloud handoff move to cloud local"
-    }
-
-    fn should_render(&self, _app: &AppContext) -> bool {
-        FeatureFlag::OzHandoff.is_enabled() && FeatureFlag::HandoffLocalCloud.is_enabled()
-    }
-
-    fn render(
-        &self,
-        _view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        use crate::settings::PrivacySettings;
-
-        let ai_settings = AISettings::as_ref(app);
-        let is_any_ai_enabled = ai_settings.is_any_ai_enabled(app);
-
-        let privacy = PrivacySettings::as_ref(app);
-        let cloud_convos_off = !privacy.is_cloud_conversation_storage_enabled
-            || matches!(
-                UserWorkspaces::as_ref(app).get_cloud_conversation_storage_enablement_setting(),
-                AdminEnablementSetting::Disable
-            );
-        let is_force_disabled = !is_any_ai_enabled || cloud_convos_off;
-
-        let tooltip_text = if cloud_convos_off {
-            "Cloud handoff requires cloud conversations to be enabled."
-        } else {
-            ""
-        };
-
-        let ui_builder = appearance.ui_builder();
-
-        let handoff_toggle = if is_force_disabled {
-            let mut builder = ui_builder.switch(self.handoff_toggle.clone()).check(false);
-            if !tooltip_text.is_empty() {
-                builder = builder.with_tooltip(TooltipConfig {
-                    text: tooltip_text.to_string(),
-                    styles: ui_builder.default_tool_tip_styles(),
-                });
-            }
-            builder.disable().build().finish()
-        } else {
-            ui_builder
-                .switch(self.handoff_toggle.clone())
-                .check(!*ai_settings.should_force_disable_cloud_handoff)
-                .build()
-                .on_click(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(WarpAgentPageAction::ToggleCloudHandoff);
-                })
-                .finish()
-        };
-
-        let handoff_row = build_toggle_element(
-            render_body_item_label::<WarpAgentPageAction>(
-                "Cloud handoff".to_string(),
-                Some(styles::header_font_color(!is_force_disabled, app)),
-                None,
-                LocalOnlyIconState::Hidden,
-                ToggleState::Enabled,
-                appearance,
-            ),
-            handoff_toggle,
-            appearance,
-            None,
-        );
-
-        Flex::column()
-            .with_child(handoff_row)
-            .with_child(render_ai_setting_description(
-                "Hand off local agent conversations to a cloud agent.",
-                !is_force_disabled,
-                app,
-            ))
-            .finish()
-    }
-}
-
-#[derive(Default)]
-struct AutoHandoffOnSleepWidget {
-    toggle: SwitchStateHandle,
-}
-
-impl SettingsWidget for AutoHandoffOnSleepWidget {
-    type View = WarpAgentPageView;
-
-    fn search_terms(&self) -> &str {
-        "cloud handoff auto sleep before macos"
-    }
-
-    fn should_render(&self, app: &AppContext) -> bool {
-        FeatureFlag::OzHandoff.is_enabled()
-            && FeatureFlag::HandoffLocalCloud.is_enabled()
-            && AISettings::as_ref(app).is_cloud_handoff_enabled(app)
-            && AISettings::as_ref(app)
-                .auto_handoff_on_sleep_enabled
-                .is_supported_on_current_platform()
-    }
-
-    fn render(
-        &self,
-        _view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let ai_settings = AISettings::as_ref(app);
-        let ui_builder = appearance.ui_builder();
-
-        let auto_handoff_on_sleep_toggle = ui_builder
-            .switch(self.toggle.clone())
-            .check(*ai_settings.auto_handoff_on_sleep_enabled)
-            .build()
-            .on_click(move |ctx, _, _| {
-                ctx.dispatch_typed_action(WarpAgentPageAction::ToggleAutoHandoffOnSleep);
-            })
-            .finish();
-        let auto_handoff_on_sleep_row = build_toggle_element(
-            render_body_item_label::<WarpAgentPageAction>(
-                "Auto-handoff before sleep".to_string(),
-                Some(styles::header_font_color(true, app)),
-                None,
-                LocalOnlyIconState::Hidden,
-                ToggleState::Enabled,
-                appearance,
-            ),
-            auto_handoff_on_sleep_toggle,
-            appearance,
-            None,
-        );
-
-        Flex::column()
-            .with_child(auto_handoff_on_sleep_row)
-            .with_child(render_ai_setting_description(
-                "When macOS is about to sleep, automatically moves the most recently focused running local Local Agent conversation to Cloud Mode so it can keep working.",
-                true,
-                app,
-            ))
-            .finish()
-    }
-}
-
-#[derive(Default)]
-struct AmpersandHandoffWidget {
-    toggle: SwitchStateHandle,
-}
-
-impl SettingsWidget for AmpersandHandoffWidget {
-    type View = WarpAgentPageView;
-
-    fn search_terms(&self) -> &str {
-        "cloud handoff ampersand & trigger compose"
-    }
-
-    fn should_render(&self, app: &AppContext) -> bool {
-        FeatureFlag::OzHandoff.is_enabled()
-            && FeatureFlag::HandoffLocalCloud.is_enabled()
-            && AISettings::as_ref(app).is_cloud_handoff_enabled(app)
-    }
-
-    fn render(
-        &self,
-        _view: &Self::View,
-        appearance: &Appearance,
-        app: &AppContext,
-    ) -> Box<dyn Element> {
-        let ai_settings = AISettings::as_ref(app);
-        let ui_builder = appearance.ui_builder();
-
-        let ampersand_toggle = ui_builder
-            .switch(self.toggle.clone())
-            .check(!*ai_settings.should_force_disable_ampersand_handoff)
-            .build()
-            .on_click(move |ctx, _, _| {
-                ctx.dispatch_typed_action(WarpAgentPageAction::ToggleAmpersandHandoff);
-            })
-            .finish();
-
-        let ampersand_row = build_toggle_element(
-            render_body_item_label::<WarpAgentPageAction>(
-                "Use & to trigger handoff".to_string(),
-                Some(styles::header_font_color(true, app)),
-                None,
-                LocalOnlyIconState::Hidden,
-                ToggleState::Enabled,
-                appearance,
-            ),
-            ampersand_toggle,
-            appearance,
-            None,
-        );
-
-        Flex::column()
-            .with_child(ampersand_row)
-            .with_child(render_ai_setting_description(
-                "Type & as the first character to enter cloud handoff compose mode.",
-                true,
-                app,
-            ))
-            .finish()
-    }
-}

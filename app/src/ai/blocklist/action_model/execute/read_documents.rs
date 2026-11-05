@@ -42,8 +42,8 @@ impl ReadDocumentsExecutor {
         };
 
         // A requested plan may live in Warp Drive without being loaded into this conversation's
-        // document model (e.g. orchestration children reading parent plans, or plan IDs
-        // copy-pasted from another conversation), so fall back to hydrating it on a miss.
+        // document model (e.g. plan IDs copy-pasted from another conversation), so fall back to
+        // hydrating it on a miss.
         let mut documents = Vec::with_capacity(document_ids.len());
         let mut missing_documents = Vec::new();
         for id in document_ids {

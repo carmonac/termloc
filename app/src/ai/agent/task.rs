@@ -544,7 +544,7 @@ impl Task {
         self.try_get_source().ok()
     }
 
-    pub(super) fn source_for_persistence(&self) -> Option<api::Task> {
+    pub(crate) fn source_for_persistence(&self) -> Option<api::Task> {
         match &self.data {
             TaskImpl::Server(server_data) => Some(server_data.source.clone()),
             // Optimistic root tasks have a client-generated UUID and no

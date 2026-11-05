@@ -18,7 +18,7 @@ fn terminal_command_prefix_is_none() {
 
 #[test]
 fn oz_command_prefix_is_none() {
-    assert_eq!(SessionType::Oz.command_prefix(), None);
+    assert_eq!(SessionType::Local.command_prefix(), None);
 }
 
 #[test]
@@ -131,8 +131,8 @@ fn cli_agent_with_worktree() {
 
 #[test]
 fn oz_no_worktree_same_as_terminal() {
-    let oz = build_tab_config(
-        &SessionType::Oz,
+    let local = build_tab_config(
+        &SessionType::Local,
         Path::new("/home/user/project"),
         false,
         true,
@@ -144,14 +144,19 @@ fn oz_no_worktree_same_as_terminal() {
         true,
     );
 
-    assert_eq!(oz.panes[0].directory, terminal.panes[0].directory);
-    assert_eq!(oz.panes[0].commands, terminal.panes[0].commands);
-    assert_eq!(oz.params.len(), terminal.params.len());
+    assert_eq!(local.panes[0].directory, terminal.panes[0].directory);
+    assert_eq!(local.panes[0].commands, terminal.panes[0].commands);
+    assert_eq!(local.params.len(), terminal.params.len());
 }
 
 #[test]
 fn oz_with_worktree_has_worktree_commands_but_no_agent_command() {
-    let config = build_tab_config(&SessionType::Oz, Path::new("/home/user/repo"), true, false);
+    let config = build_tab_config(
+        &SessionType::Local,
+        Path::new("/home/user/repo"),
+        true,
+        false,
+    );
     let expected_worktree_path =
         generated_worktree_path_string("/home/user/repo", "{{worktree_branch_name}}");
 
@@ -598,7 +603,6 @@ fn snapshot_round_trip_toml() {
 // ── snapshot pane_type derivation ──
 
 use crate::ai::agent::conversation::AIConversationId;
-use crate::app_state::AmbientAgentPaneSnapshot;
 
 fn make_agent_leaf(cwd: Option<&str>, is_focused: bool) -> PaneNodeSnapshot {
     PaneNodeSnapshot::Leaf(LeafSnapshot {
@@ -619,17 +623,6 @@ fn make_agent_leaf(cwd: Option<&str>, is_focused: bool) -> PaneNodeSnapshot {
     })
 }
 
-fn make_cloud_leaf(is_focused: bool) -> PaneNodeSnapshot {
-    PaneNodeSnapshot::Leaf(LeafSnapshot {
-        is_focused,
-        custom_vertical_tabs_title: None,
-        contents: LeafContents::AmbientAgent(AmbientAgentPaneSnapshot {
-            uuid: vec![],
-            task_id: None,
-        }),
-    })
-}
-
 #[test]
 fn snapshot_agent_pane_gets_agent_type() {
     let snapshot = make_agent_leaf(Some("/home/user/project"), true);
@@ -645,16 +638,6 @@ fn snapshot_agent_pane_gets_agent_type() {
 }
 
 #[test]
-fn snapshot_cloud_pane_gets_cloud_type() {
-    let snapshot = make_cloud_leaf(true);
-    let config = tab_config_from_pane_snapshot(&snapshot, None, None);
-
-    assert_eq!(config.panes.len(), 1);
-    assert_eq!(config.panes[0].pane_type, Some(TabConfigPaneType::Cloud));
-    assert!(config.panes[0].directory.is_none());
-}
-
-#[test]
 fn snapshot_mixed_terminal_agent_cloud_split() {
     let snapshot = PaneNodeSnapshot::Branch(BranchSnapshot {
         direction: crate::app_state::SplitDirection::Horizontal,
@@ -667,7 +650,10 @@ fn snapshot_mixed_terminal_agent_cloud_split() {
                 crate::app_state::PaneFlex(0.33),
                 make_agent_leaf(Some("/home/user/b"), false),
             ),
-            (crate::app_state::PaneFlex(0.33), make_cloud_leaf(false)),
+            (
+                crate::app_state::PaneFlex(0.33),
+                make_terminal_leaf(Some("/home/user/c"), false),
+            ),
         ],
     });
 
@@ -677,7 +663,7 @@ fn snapshot_mixed_terminal_agent_cloud_split() {
     assert_eq!(config.panes.len(), 4);
     assert_eq!(config.panes[1].pane_type, Some(TabConfigPaneType::Terminal));
     assert_eq!(config.panes[2].pane_type, Some(TabConfigPaneType::Agent));
-    assert_eq!(config.panes[3].pane_type, Some(TabConfigPaneType::Cloud));
+    assert_eq!(config.panes[3].pane_type, Some(TabConfigPaneType::Terminal));
 }
 
 // ── nested / multi-level pane layout edge cases ──
@@ -832,7 +818,7 @@ fn snapshot_3_way_split() {
 }
 
 #[test]
-fn snapshot_round_trip_agent_and_cloud_pane_types() {
+fn snapshot_round_trip_agent_pane_types() {
     let snapshot = PaneNodeSnapshot::Branch(BranchSnapshot {
         direction: crate::app_state::SplitDirection::Horizontal,
         children: vec![
@@ -844,7 +830,10 @@ fn snapshot_round_trip_agent_and_cloud_pane_types() {
                 crate::app_state::PaneFlex(0.33),
                 make_agent_leaf(Some("/agent"), false),
             ),
-            (crate::app_state::PaneFlex(0.33), make_cloud_leaf(false)),
+            (
+                crate::app_state::PaneFlex(0.33),
+                make_terminal_leaf(Some("/home/user/c"), false),
+            ),
         ],
     });
 
@@ -857,8 +846,8 @@ fn snapshot_round_trip_agent_and_cloud_pane_types() {
     assert_eq!(parsed.panes[1].directory.as_deref(), Some("/term"));
     assert_eq!(parsed.panes[2].pane_type, Some(TabConfigPaneType::Agent));
     assert_eq!(parsed.panes[2].directory.as_deref(), Some("/agent"));
-    assert_eq!(parsed.panes[3].pane_type, Some(TabConfigPaneType::Cloud));
-    assert!(parsed.panes[3].directory.is_none());
+    assert_eq!(parsed.panes[3].pane_type, Some(TabConfigPaneType::Terminal));
+    assert_eq!(parsed.panes[3].directory.as_deref(), Some("/home/user/c"));
 }
 
 #[test]
@@ -870,7 +859,10 @@ fn snapshot_round_trip_3_deep_nesting() {
                 crate::app_state::PaneFlex(0.5),
                 make_agent_leaf(Some("/x"), false),
             ),
-            (crate::app_state::PaneFlex(0.5), make_cloud_leaf(true)),
+            (
+                crate::app_state::PaneFlex(0.5),
+                make_terminal_leaf(Some("/z"), true),
+            ),
         ],
     });
     let snapshot = PaneNodeSnapshot::Branch(BranchSnapshot {
@@ -901,7 +893,7 @@ fn snapshot_round_trip_3_deep_nesting() {
         Some(vec!["p3".to_string(), "p4".to_string()])
     );
     assert_eq!(parsed.panes[2].pane_type, Some(TabConfigPaneType::Agent));
-    assert_eq!(parsed.panes[3].pane_type, Some(TabConfigPaneType::Cloud));
+    assert_eq!(parsed.panes[3].pane_type, Some(TabConfigPaneType::Terminal));
     assert_eq!(parsed.panes[4].pane_type, Some(TabConfigPaneType::Terminal));
 }
 

@@ -373,7 +373,7 @@ impl SettingsWidget for AutoOpenCodeReviewPaneCodeWidget {
     type View = EditorAndCodeReviewPageView;
 
     fn search_terms(&self) -> &str {
-        "oz auto open code review pane panel agent mode change first time accepted diff view conversation"
+        "auto open code review pane panel agent mode change first time accepted diff view conversation"
     }
 
     fn render(

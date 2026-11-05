@@ -17,7 +17,7 @@ use crate::ui_components::icons::Icon;
 /// User-visible display name for a [`Harness`].
 pub fn display_name(harness: Harness) -> &'static str {
     match harness {
-        Harness::Oz => "Local Agent",
+        Harness::Local => "Local Agent",
         Harness::Claude => "Claude Code",
         Harness::OpenCode => "OpenCode",
         Harness::Gemini => "Gemini CLI",
@@ -30,7 +30,7 @@ pub fn display_name(harness: Harness) -> &'static str {
 /// Leading icon for a [`Harness`].
 pub fn icon_for(harness: Harness) -> Icon {
     match harness {
-        Harness::Oz => Icon::Agent,
+        Harness::Local => Icon::Agent,
         Harness::Claude => Icon::ClaudeLogo,
         Harness::OpenCode => Icon::OpenCodeLogo,
         Harness::Gemini => Icon::GeminiLogo,
@@ -40,24 +40,11 @@ pub fn icon_for(harness: Harness) -> Icon {
     }
 }
 
-/// Brand tint for a [`Harness`]'s icon. `None` means "use the surface's
-/// default foreground color".
-pub fn brand_color(harness: Harness) -> Option<ColorU> {
-    match harness {
-        Harness::Oz => None,
-        Harness::Claude => Some(CLAUDE_ORANGE),
-        Harness::OpenCode => None,
-        Harness::Gemini => Some(GEMINI_BLUE),
-        Harness::Codex => Some(OPENAI_COLOR),
-        Harness::Pi | Harness::Unknown => None,
-    }
-}
-
 /// Circle background fill for a [`Harness`] icon rendered in a branded circle.
 /// Matches the treatment used in the vertical-tabs sidebar.
 pub fn circle_background(harness: Harness, theme: &WarpTheme) -> WarpThemeFill {
     match harness {
-        Harness::Oz => theme.background(),
+        Harness::Local => theme.background(),
         Harness::Claude => WarpThemeFill::Solid(CLAUDE_ORANGE),
         Harness::Codex => WarpThemeFill::Solid(OPENAI_COLOR),
         Harness::Gemini => WarpThemeFill::Solid(GEMINI_BLUE),
@@ -69,7 +56,7 @@ pub fn circle_background(harness: Harness, theme: &WarpTheme) -> WarpThemeFill {
 /// Icon fill color when rendered on the branded circle background.
 pub fn icon_fill_on_circle(harness: Harness, theme: &WarpTheme) -> WarpThemeFill {
     match harness {
-        Harness::Oz => theme.main_text_color(theme.background()),
+        Harness::Local => theme.main_text_color(theme.background()),
         Harness::Claude | Harness::Codex | Harness::Gemini | Harness::OpenCode => {
             WarpThemeFill::Solid(ColorU::white())
         }
@@ -84,7 +71,7 @@ pub fn icon_fill_on_circle(harness: Harness, theme: &WarpTheme) -> WarpThemeFill
 impl From<AIAgentHarness> for Harness {
     fn from(harness: AIAgentHarness) -> Self {
         match harness {
-            AIAgentHarness::Oz => Harness::Oz,
+            AIAgentHarness::Local => Harness::Local,
             AIAgentHarness::ClaudeCode => Harness::Claude,
             AIAgentHarness::Gemini => Harness::Gemini,
             AIAgentHarness::Pi => Harness::Pi,

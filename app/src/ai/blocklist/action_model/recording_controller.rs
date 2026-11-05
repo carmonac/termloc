@@ -33,7 +33,6 @@ pub(crate) fn video_recording_enabled() -> bool {
 #[cfg_attr(target_family = "wasm", allow(dead_code))]
 pub(crate) enum FinalizeReason {
     StoppedByAgent,
-    RunEnded,
     LimitReached,
     FfmpegExited,
     RunCancelled,
@@ -48,7 +47,6 @@ impl FinalizeReason {
     pub(crate) fn telemetry_key(self) -> &'static str {
         match self {
             FinalizeReason::StoppedByAgent => "agent_stopped",
-            FinalizeReason::RunEnded => "run_ended",
             FinalizeReason::LimitReached => "limit_reached",
             FinalizeReason::FfmpegExited => "encoding_failed",
             FinalizeReason::RunCancelled => "run_cancelled",
@@ -70,9 +68,6 @@ impl FinalizeReason {
                     "Recording stopped before the agent requested it".to_string()
                 }
             },
-            FinalizeReason::RunEnded => {
-                "Finalized because the agent run ended without stopping the recording".to_string()
-            }
             FinalizeReason::LimitReached => {
                 "Stopped at the configured duration or size limit".to_string()
             }
@@ -140,10 +135,6 @@ pub(crate) struct ActiveRecording {
     pub(crate) pointer_session: computer_use::PointerSession,
     /// Action groups committed to the video, in completion order.
     pub(crate) actions: Vec<computer_use::ActionLogEntry>,
-    /// Short agent-authored title shown in badges (from StartRecording.summary).
-    pub(crate) summary: Option<String>,
-    /// Optional longer description shown in detail views (from StartRecording.description).
-    pub(crate) description: Option<String>,
     /// The currently in-flight `UseComputer` group, if any. It is committed with
     /// its finish offset on success or discarded on failure/cancellation.
     pub(crate) pending_group: Option<PendingActionGroup>,
@@ -258,8 +249,6 @@ impl RecordingController {
         conversation_id: AIConversationId,
         handle: computer_use::RecordingHandle,
         frame_rate: u32,
-        summary: Option<String>,
-        description: Option<String>,
         target: computer_use::Target,
     ) {
         if matches!(
@@ -279,8 +268,6 @@ impl RecordingController {
                 geometry,
                 pointer_session: computer_use::PointerSession::new(),
                 actions: Vec::new(),
-                summary,
-                description,
                 pending_group: None,
             }));
         }

@@ -24,7 +24,6 @@ use std::time::Duration;
 // Re-export types that were moved to the ai and ai_types crates.
 pub use ai::agent::action::*;
 pub use ai::agent::action_result::*;
-use ai::agent::orchestration_config::{OrchestrationConfig, OrchestrationConfigStatus};
 pub use ai::agent::{AIAgentCitation, FileLocations};
 use ai::skills::ParsedSkill;
 pub use ai_types::{AIAgentActionId, EntrypointType, PassiveSuggestionTriggerType};
@@ -41,7 +40,7 @@ use uuid::Uuid;
 use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
 use warp_editor::render::model::LineCount;
-use warp_multi_agent_api::{AgentEvent, AgentType, diff_hunk as diff_hunk_api};
+use warp_multi_agent_api::{AgentType, diff_hunk as diff_hunk_api};
 
 pub use self::api::{MaybeAIAgentOutputMessage, MessageToAIAgentOutputMessageError};
 pub use self::base_user_query::BaseUserQuery;
@@ -90,8 +89,6 @@ impl ServerOutputId {
 pub enum CancellationReason {
     /// The user explicitly cancelled without providing a follow-up.
     ManuallyCancelled,
-    /// Warp automatically cancelled the local run so it could continue in Cloud Mode.
-    AutomaticCloudHandoff,
 
     /// The user submitted a follow-up query during streaming which implicitly cancelled the current one.
     FollowUpSubmitted {
@@ -152,7 +149,6 @@ impl Display for CancellationReason {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CancellationReason::ManuallyCancelled => write!(f, "manual cancellation"),
-            CancellationReason::AutomaticCloudHandoff => write!(f, "automatic cloud handoff"),
             CancellationReason::FollowUpSubmitted { .. } => write!(f, "follow-up submission"),
             CancellationReason::UserCommandExecuted => write!(f, "user command execution"),
             CancellationReason::Reverted => write!(f, "revert"),
@@ -213,7 +209,6 @@ impl CancellationReason {
             // terminal `Error`, so the cancellation machinery must not stamp a status.
             CancellationReason::AgentExitedShell => CancellationOutcome::FinalizedExternally,
             CancellationReason::ManuallyCancelled
-            | CancellationReason::AutomaticCloudHandoff
             | CancellationReason::UserCommandExecuted
             | CancellationReason::Deleted
             | CancellationReason::FollowUpSubmitted {
@@ -651,14 +646,6 @@ impl AIAgentOutput {
                 }
                 AIAgentOutputMessageType::ArtifactCreated(_) => continue,
                 AIAgentOutputMessageType::SkillInvoked(_) => continue,
-                AIAgentOutputMessageType::MessagesReceivedFromAgents { messages } => {
-                    result.push(format!("Received {} messages", messages.len()));
-                    last_was_action = false;
-                }
-                AIAgentOutputMessageType::EventsFromAgents { event_ids } => {
-                    result.push(format!("Received {} agent events", event_ids.len()));
-                    last_was_action = false;
-                }
             }
         }
 
@@ -735,11 +722,6 @@ pub enum RenderableAIError {
     AgentExitedShell {
         command: String,
     },
-    /// A cloud-mode startup failure. Carries the raw server error message and
-    /// surfaces it without the generic apology prefix, matching the dedicated
-    /// GUI error card (`render_cloud_mode_error_screen`) which shows the
-    /// message directly.
-    CloudStartupFailed(String),
 }
 
 impl RenderableAIError {
@@ -908,7 +890,6 @@ impl Display for RenderableAIError {
                  could not continue. Ensure the agent is not asked to run commands or source \
                  scripts that can exit the shell."
             ),
-            Self::CloudStartupFailed(msg) => write!(f, "{msg}"),
         }
     }
 }
@@ -1240,32 +1221,6 @@ impl<'a> std::fmt::Display for MarkdownActionResult<'a> {
                 ReadFilesResult::Error(error) => write!(f, "\n_Read files error: {error} _"),
                 ReadFilesResult::Cancelled => write!(f, "\n_Read files cancelled_"),
             },
-            AIAgentActionResultType::UploadArtifact(result) => match result {
-                UploadArtifactResult::Success {
-                    artifact_uid,
-                    filepath,
-                    mime_type,
-                    description,
-                    size_bytes,
-                } => {
-                    write!(f, "\n**Artifact Uploaded:** `{artifact_uid}`")?;
-                    if let Some(filepath) = filepath {
-                        write!(f, "\n\n**File:** `{filepath}`")?;
-                    }
-                    write!(
-                        f,
-                        "\n\n**MIME Type:** `{mime_type}`\n\n**Size:** `{size_bytes}` bytes"
-                    )?;
-                    if let Some(description) = description {
-                        write!(f, "\n\n**Description:** {description}")?;
-                    }
-                    Ok(())
-                }
-                UploadArtifactResult::Error(error) => {
-                    write!(f, "\n_Upload artifact error: {error} _")
-                }
-                UploadArtifactResult::Cancelled => write!(f, "\n_Upload artifact cancelled_"),
-            },
             AIAgentActionResultType::SearchCodebase(result) => match result {
                 SearchCodebaseResult::Success { files } => {
                     write!(f, "\n\n**Codebase Search Results:**\n\n")?;
@@ -1411,7 +1366,6 @@ impl AIAgentActionResult {
                     RequestCommandOutputResult::CancelledBeforeExecution
                 )
                 | AIAgentActionResultType::ReadFiles(ReadFilesResult::Cancelled)
-                | AIAgentActionResultType::UploadArtifact(UploadArtifactResult::Cancelled)
                 | AIAgentActionResultType::SearchCodebase(SearchCodebaseResult::Cancelled)
                 | AIAgentActionResultType::Grep(GrepResult::Cancelled)
                 | AIAgentActionResultType::FileGlob(FileGlobResult::Cancelled)
@@ -1754,16 +1708,6 @@ pub struct InvokedSkill {
     pub name: String,
 }
 
-/// Data for a single received message, used for rendering in the UI.
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ReceivedMessageDisplay {
-    pub message_id: String,
-    pub sender_agent_id: String,
-    pub addresses: Vec<String>,
-    pub subject: String,
-    pub message_body: String,
-}
-
 impl Display for InvokedSkill {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "InvokedSkill: {}", self.name)
@@ -1806,14 +1750,6 @@ pub enum AIAgentOutputMessageType {
     /// Notification that an artifact was created (e.g. a PR).
     ArtifactCreated(ArtifactCreatedData),
     SkillInvoked(InvokedSkill),
-    /// Messages received from other agent conversations.
-    MessagesReceivedFromAgents {
-        messages: Vec<ReceivedMessageDisplay>,
-    },
-    /// Lifecycle events received from other agent conversations.
-    EventsFromAgents {
-        event_ids: Vec<String>,
-    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -2003,12 +1939,6 @@ impl Display for AIAgentOutputMessage {
             AIAgentOutputMessageType::SkillInvoked(invoked_skill) => {
                 write!(f, "Skill Invoked: {}", invoked_skill.name)?
             }
-            AIAgentOutputMessageType::MessagesReceivedFromAgents { messages } => {
-                write!(f, "Received {} messages", messages.len())?
-            }
-            AIAgentOutputMessageType::EventsFromAgents { event_ids } => {
-                write!(f, "Received {} agent events", event_ids.len())?
-            }
         }
 
         if !self.citations.is_empty() {
@@ -2133,25 +2063,6 @@ impl AIAgentOutputMessage {
         Self {
             id,
             message: AIAgentOutputMessageType::SkillInvoked(invoked_skill),
-            citations: vec![],
-        }
-    }
-
-    pub fn messages_received_from_agents(
-        id: MessageId,
-        messages: Vec<ReceivedMessageDisplay>,
-    ) -> Self {
-        Self {
-            id,
-            message: AIAgentOutputMessageType::MessagesReceivedFromAgents { messages },
-            citations: vec![],
-        }
-    }
-
-    pub fn events_from_agents(id: MessageId, event_ids: Vec<String>) -> Self {
-        Self {
-            id,
-            message: AIAgentOutputMessageType::EventsFromAgents { event_ids },
             citations: vec![],
         }
     }
@@ -2811,14 +2722,11 @@ pub enum UserQueryMode {
     #[default]
     Normal,
     Plan,
-    Orchestrate,
 }
 
 pub fn extract_user_query_mode(query: String) -> (String, UserQueryMode) {
     if let Some(query) = commands::strip_command_prefix(&query, commands::PLAN_NAME) {
         (query, UserQueryMode::Plan)
-    } else if let Some(query) = commands::strip_command_prefix(&query, commands::ORCHESTRATE_NAME) {
-        (query, UserQueryMode::Orchestrate)
     } else {
         (query, UserQueryMode::Normal)
     }
@@ -2835,7 +2743,6 @@ pub fn display_user_query_with_mode(mode: UserQueryMode, query: &str) -> String 
     match mode {
         UserQueryMode::Normal => query.to_owned(),
         UserQueryMode::Plan => format!("{} {query}", commands::PLAN.name),
-        UserQueryMode::Orchestrate => format!("{} {query}", commands::ORCHESTRATE.name),
     }
 }
 
@@ -2945,34 +2852,11 @@ pub enum AIAgentInput {
         user_query: Option<InvokeSkillUserQuery>,
     },
 
-    /// Start a conversation using the prompt stored for an ambient agent run.
-    /// The server resolves the prompt from the run's latest known prompt.
-    /// If runtime_skill is provided, the server will create an InvokeSkill message. The skill
-    /// instructions are sent to the LLM but not displayed in the UI query bubble.
-    StartFromAmbientRunPrompt {
-        ambient_run_id: String,
-        context: Arc<[AIAgentContext]>,
-        /// Optional skill to use as base context (content hidden from user in UI).
-        runtime_skill: Option<ai::skills::ParsedSkill>,
-        /// Optional directory path where the client downloaded task attachments.
-        /// Passed to the server so it can construct correct file paths for the LLM.
-        attachments_dir: Option<String>,
-    },
-
     /// The result of an `AIAgentAction`, relayed back to the LLM for it to continue answering a
     /// user query.
     ActionResult {
         result: AIAgentActionResult,
         context: Arc<[AIAgentContext]>,
-    },
-
-    /// Messages received from other agent conversations via the message bus.
-    MessagesReceivedFromAgents {
-        messages: Vec<ReceivedMessageInput>,
-    },
-    /// Events received from other agent conversations.
-    EventsFromAgents {
-        events: Vec<AgentEvent>,
     },
 
     /// The result of a passive suggestion that should be
@@ -2982,29 +2866,6 @@ pub enum AIAgentInput {
         suggestion: PassiveSuggestionResultType,
         context: Arc<[AIAgentContext]>,
     },
-
-    /// Piggybacked orchestration config update from the plan card.
-    /// Sent on the next outbound request after the user edits the
-    /// config block or toggles approval.
-    OrchestrationConfigUpdate {
-        plan_id: String,
-        config: OrchestrationConfig,
-        status: OrchestrationConfigStatus,
-    },
-
-    /// Reports that the run was woken; the server injects any pending agent messages into the
-    /// turn.
-    AgentWake,
-}
-
-/// Data for a single message received by an agent from another agent.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ReceivedMessageInput {
-    pub message_id: String,
-    pub sender_agent_id: String,
-    pub addresses: Vec<String>,
-    pub subject: String,
-    pub message_body: String,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -3079,16 +2940,7 @@ impl Display for AIAgentInput {
                     write!(f, "InvokeSkill: {}", skill.name)
                 }
             }
-            Self::StartFromAmbientRunPrompt { .. } => write!(f, "StartFromAmbientRunPrompt"),
-            Self::MessagesReceivedFromAgents { messages } => {
-                write!(f, "MessagesReceivedFromAgents({} messages)", messages.len())
-            }
-            Self::EventsFromAgents { events } => {
-                write!(f, "EventsFromAgents({} events)", events.len())
-            }
             Self::PassiveSuggestionResult { .. } => write!(f, "PassiveSuggestionResult"),
-            Self::OrchestrationConfigUpdate { .. } => write!(f, "OrchestrationConfigUpdate"),
-            Self::AgentWake => write!(f, "AgentWake"),
         }
     }
 }
@@ -3146,12 +2998,7 @@ impl AIAgentInput {
             | Self::TriggerPassiveSuggestion { .. }
             | Self::ResumeConversation { .. }
             | Self::SummarizeConversation { .. }
-            | Self::StartFromAmbientRunPrompt { .. }
-            | Self::MessagesReceivedFromAgents { .. }
-            | Self::EventsFromAgents { .. }
-            | Self::PassiveSuggestionResult { .. }
-            | Self::OrchestrationConfigUpdate { .. }
-            | Self::AgentWake => None,
+            | Self::PassiveSuggestionResult { .. } => None,
         }
     }
 
@@ -3251,13 +3098,8 @@ impl AIAgentInput {
             | Self::CloneRepository { context, .. }
             | Self::CodeReview { context, .. }
             | Self::InvokeSkill { context, .. }
-            | Self::StartFromAmbientRunPrompt { context, .. }
             | Self::PassiveSuggestionResult { context, .. } => Some(context),
             Self::SummarizeConversation { context, .. } => Some(context),
-            Self::MessagesReceivedFromAgents { .. }
-            | Self::EventsFromAgents { .. }
-            | Self::OrchestrationConfigUpdate { .. }
-            | Self::AgentWake => None,
         }
     }
 
@@ -3284,12 +3126,7 @@ impl AIAgentInput {
             | Self::CodeReview { .. }
             | Self::SummarizeConversation { .. }
             | Self::InvokeSkill { .. }
-            | Self::StartFromAmbientRunPrompt { .. }
-            | Self::MessagesReceivedFromAgents { .. }
-            | Self::EventsFromAgents { .. }
-            | Self::PassiveSuggestionResult { .. }
-            | Self::OrchestrationConfigUpdate { .. }
-            | Self::AgentWake => None,
+            | Self::PassiveSuggestionResult { .. } => None,
         }
     }
 

@@ -1,8 +1,6 @@
 //! [`TuiOptionSelector`]: a reusable single-select option list for TUI
-//! permission prompts, rendered from a frontend-neutral
-//! [`OptionSnapshot`]. One configuration page may show a header (title, "n of
-//! m" position, question) above a selectable option list with viewport
-//! scrolling, optional Loading/Failed/Empty status rows, and an optional
+//! permission prompts, rendered from an [`OptionSnapshot`]. One configuration
+//! page shows a selectable option list with viewport scrolling and an optional
 //! custom-text footer editor.
 //!
 //! Enter, Numpad Enter, arrows, viewport-relative digits, printable
@@ -12,13 +10,12 @@
 //! through [`TuiOptionSelector::handle_back`].
 use std::collections::{HashMap, HashSet};
 
-use warp::tui_export::{OptionBadge, OptionFooter, OptionRow, OptionSnapshot, OptionSourceStatus};
 use warp_search_core::inline_menu::InlineMenuSelection;
 use warpui_core::elements::MouseStateHandle;
 use warpui_core::elements::tui::{
-    Modifier, TuiChildView, TuiConstraint, TuiElement, TuiEvent, TuiEventContext, TuiFlex,
-    TuiHoverable, TuiLayoutContext, TuiPaintContext, TuiPaintSurface, TuiParentElement,
-    TuiPresentationContext, TuiScreenPoint, TuiScreenPosition, TuiSize, TuiStyle, TuiText,
+    TuiChildView, TuiConstraint, TuiElement, TuiEvent, TuiEventContext, TuiFlex, TuiHoverable,
+    TuiLayoutContext, TuiPaintContext, TuiPaintSurface, TuiParentElement, TuiPresentationContext,
+    TuiScreenPoint, TuiScreenPosition, TuiSize, TuiStyle, TuiText,
 };
 use warpui_core::keymap::EditableBinding;
 use warpui_core::keymap::macros::*;
@@ -63,23 +60,40 @@ pub(crate) fn init(app: &mut AppContext) {
     ]);
 }
 
-/// Optional header rendered above a selector page.
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct OptionSelectorHeader {
-    /// Short field label shown in the header row.
-    pub(crate) field_label: String,
-    /// One-based position in the current page sequence: `(current, total)`.
-    pub(crate) position: (usize, usize),
-    /// Full prompt shown above the available options.
-    pub(crate) prompt: String,
+/// One selectable row in an option snapshot.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct OptionRow {
+    pub(crate) id: String,
+    pub(crate) label: String,
+    pub(crate) badge: Option<OptionBadge>,
+    pub(crate) disabled_reason: Option<String>,
+}
+
+/// Secondary marker rendered next to a row's label.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum OptionBadge {
+    Recommended,
+}
+
+/// Trailing affordance below the option list.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum OptionFooter {
+    /// Free-form text entry.
+    CustomText { label: String },
+}
+
+/// A complete option list for one selector page.
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct OptionSnapshot {
+    pub(crate) rows: Vec<OptionRow>,
+    pub(crate) selected_id: Option<String>,
+    pub(crate) footer: Option<OptionFooter>,
 }
 
 /// Renderable fields for one selector page.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct OptionSelectorPage {
-    /// Header metadata, or `None` when the embedding view provides its own.
-    pub(crate) header: Option<OptionSelectorHeader>,
-    /// Options and catalog status rendered on this page.
+    /// Options rendered on this page.
     pub(crate) snapshot: OptionSnapshot,
     /// Whether this page offers label filtering.
     pub(crate) searchable: bool,
@@ -90,11 +104,9 @@ pub(crate) struct OptionSelectorPage {
 impl Default for OptionSelectorPage {
     fn default() -> Self {
         Self {
-            header: None,
             snapshot: OptionSnapshot {
                 rows: Vec::new(),
                 selected_id: None,
-                status: OptionSourceStatus::Ready,
                 footer: None,
             },
             searchable: false,
@@ -116,8 +128,6 @@ pub(crate) enum TuiOptionSelectorEvent {
     CustomTextOpened,
     /// The custom-text editor was left without submitting a new value.
     CustomTextClosed,
-    /// The Retry affordance of a `Failed` catalog was activated.
-    RetryRequested,
     /// The selector asked to be dismissed (element-level Escape fallback for
     /// hosts without their own Escape binding).
     Dismissed,
@@ -168,8 +178,6 @@ pub(crate) enum TuiOptionSelectorMoveDirection {
 enum SelectorItem {
     /// Index into `snapshot.rows`.
     Row(usize),
-    /// The Retry affordance shown for a `Failed` catalog.
-    Retry,
     /// The custom-text footer entry point.
     CustomText,
 }
@@ -239,10 +247,7 @@ impl CustomTextState {
             {
                 Some(selected_id.clone())
             }
-            (
-                Some(OptionFooter::CustomText { .. } | OptionFooter::CreateNewAuthSecret) | None,
-                Some(_) | None,
-            ) => None,
+            (Some(OptionFooter::CustomText { .. }) | None, Some(_) | None) => None,
         };
     }
 
@@ -520,7 +525,7 @@ impl TuiOptionSelector {
                 SelectorItem::Row(index) => {
                     self.page.snapshot.rows.get(index).map(|row| row.id.clone())
                 }
-                SelectorItem::Retry | SelectorItem::CustomText => None,
+                SelectorItem::CustomText => None,
             })
             .collect::<Vec<_>>();
         let Some(visible_index) = visible_row_ids.iter().position(|id| id == row_id) else {
@@ -587,11 +592,6 @@ impl TuiOptionSelector {
             .flatten()
     }
 
-    #[cfg(test)]
-    pub(crate) fn search_field_for_test(&self) -> Option<ViewHandle<TuiEditorView>> {
-        self.search_field.clone()
-    }
-
     /// Moves focus and highlight to an item without confirming it.
     pub(crate) fn select_item_without_confirm(
         &mut self,
@@ -633,30 +633,6 @@ impl TuiOptionSelector {
                 .editor
                 .update(ctx, |editor, ctx| editor.set_text(text, ctx));
         }
-    }
-
-    /// Refreshes the snapshot in place after a live catalog change,
-    /// preserving the active selection when it still exists and falling back
-    /// to the snapshot's committed selection otherwise.
-    pub(crate) fn refresh_snapshot(
-        &mut self,
-        snapshot: OptionSnapshot,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        let selected = self.selected_row_id();
-        self.page.snapshot = snapshot;
-        self.custom_text.sync_committed_value(&self.page.snapshot);
-        let target = selected
-            .filter(|id| self.page.snapshot.rows.iter().any(|row| &row.id == id))
-            .or_else(|| self.page.snapshot.selected_id.clone());
-        if matches!(self.focus_zone(ctx), SelectorFocusZone::Search) {
-            self.interaction.selection.clear();
-        } else {
-            self.select_id(target);
-        }
-        self.sync_after_items_changed();
-        // A refreshed catalog can change the row count and thus the height.
-        self.invalidate_layout(ctx);
     }
 
     /// Scrolls to keep `selected` visible, announcing the scroll change (it
@@ -806,13 +782,11 @@ impl TuiOptionSelector {
             })
             .map(SelectorItem::Row)
             .collect();
-        if matches!(self.page.snapshot.status, OptionSourceStatus::Failed { .. }) {
-            items.push(SelectorItem::Retry);
-        }
-        match &self.page.snapshot.footer {
-            Some(OptionFooter::CustomText { .. }) => items.push(SelectorItem::CustomText),
-            // Resource creation is out of scope in the TUI.
-            Some(OptionFooter::CreateNewAuthSecret) | None => {}
+        if matches!(
+            self.page.snapshot.footer,
+            Some(OptionFooter::CustomText { .. })
+        ) {
+            items.push(SelectorItem::CustomText);
         }
         items
     }
@@ -827,7 +801,7 @@ impl TuiOptionSelector {
                 .rows
                 .get(index)
                 .is_some_and(|row| row.disabled_reason.is_none()),
-            SelectorItem::Retry | SelectorItem::CustomText => true,
+            SelectorItem::CustomText => true,
         }
     }
 
@@ -846,7 +820,7 @@ impl TuiOptionSelector {
                 .rows
                 .get(*index)
                 .map(|row| row.id.clone()),
-            Some(SelectorItem::Retry) | Some(SelectorItem::CustomText) | None => None,
+            Some(SelectorItem::CustomText) | None => None,
         }
     }
 
@@ -865,7 +839,6 @@ impl TuiOptionSelector {
                     SelectorItem::CustomText => {
                         self.custom_text.committed_value.as_ref() == Some(&id)
                     }
-                    SelectorItem::Retry => false,
                 })
             })
             .or(if items.is_empty() { None } else { Some(0) });
@@ -997,7 +970,6 @@ impl TuiOptionSelector {
                     ctx.emit(TuiOptionSelectorEvent::Confirmed { id: row.id.clone() });
                 }
             }
-            SelectorItem::Retry => ctx.emit(TuiOptionSelectorEvent::RetryRequested),
             SelectorItem::CustomText => {
                 if self.show_selection_markers && self.custom_text.committed_value.is_some() {
                     self.clear_custom_text(ctx);
@@ -1074,47 +1046,6 @@ impl TuiOptionSelector {
 
     // ── Rendering ───────────────────────────────────────────────────
 
-    /// One header block: field label + position, then the page prompt.
-    fn render_header(header: &OptionSelectorHeader, builder: &TuiUiBuilder) -> Box<dyn TuiElement> {
-        let (current, total) = header.position;
-        let title = TuiText::new(header.field_label.clone())
-            .with_style(builder.primary_text_style())
-            .truncate()
-            .finish();
-        let previous_style = if current > 1 {
-            builder.primary_text_style()
-        } else {
-            builder.muted_text_style()
-        };
-        let next_style = if current < total {
-            builder.primary_text_style()
-        } else {
-            builder.muted_text_style()
-        };
-        let position = TuiText::from_spans([
-            ("←".to_string(), previous_style),
-            (format!(" {current} "), builder.primary_text_style()),
-            (format!("of {total} "), builder.muted_text_style()),
-            ("→".to_string(), next_style),
-        ])
-        .truncate()
-        .finish();
-        let title_row = TuiFlex::row()
-            .child(title)
-            .flex_child(TuiFlex::row().finish())
-            .child(position)
-            .finish();
-        TuiFlex::column()
-            .child(title_row)
-            .child(TuiText::new(" ").finish())
-            .child(
-                TuiText::new(header.prompt.clone())
-                    .with_style(builder.primary_text_style().add_modifier(Modifier::BOLD))
-                    .finish(),
-            )
-            .finish()
-    }
-
     /// One option row: shortcut, label, badge, and disabled
     /// reason, with the current selection rendered in bold magenta.
     fn render_row(
@@ -1165,13 +1096,7 @@ impl TuiOptionSelector {
             ));
         }
         spans.push((row.label.clone(), label_style));
-        let badge = match row.badge {
-            Some(OptionBadge::Default) => Some("default"),
-            Some(OptionBadge::Recent) => Some("recent"),
-            Some(OptionBadge::Connected) => Some("connected"),
-            Some(OptionBadge::Recommended) => Some("recommended"),
-            None => None,
-        };
+        let badge = row.badge.map(|OptionBadge::Recommended| "recommended");
         if let Some(badge) = badge {
             spans.push((format!("  ({badge})"), detail_style));
         }
@@ -1181,7 +1106,7 @@ impl TuiOptionSelector {
         TuiText::from_spans(spans).truncate().finish()
     }
 
-    /// A generic single-span selectable virtual row (Retry / custom text).
+    /// A generic single-span selectable virtual row.
     fn render_virtual_row(
         &self,
         text: String,
@@ -1271,8 +1196,7 @@ impl TuiOptionSelector {
         content.finish()
     }
 
-    /// The option list: visible window of items with digit prefixes, plus
-    /// non-selectable status rows for Loading/Failed/Empty.
+    /// The option list: visible window of items with digit prefixes.
     fn render_list(&self, builder: &TuiUiBuilder) -> Box<dyn TuiElement> {
         let items = self.items();
         let mut column = TuiFlex::column();
@@ -1319,14 +1243,6 @@ impl TuiOptionSelector {
                         .or_else(|| digit.and_then(|digit| char::from_digit(digit as u32, 10)));
                     self.render_row(row, shortcut, is_selected, builder)
                 }
-                SelectorItem::Retry => self.render_virtual_row(
-                    "↻ Retry".to_string(),
-                    digit,
-                    is_selected,
-                    None,
-                    builder.error_text_style(),
-                    builder,
-                ),
                 SelectorItem::CustomText => {
                     match (&self.page.snapshot.footer, self.custom_text.is_editing()) {
                         (Some(OptionFooter::CustomText { label }), true) => self
@@ -1358,7 +1274,7 @@ impl TuiOptionSelector {
                                 builder,
                             )
                         }
-                        (Some(OptionFooter::CreateNewAuthSecret) | None, _) => continue,
+                        (None, _) => continue,
                     }
                 }
             };
@@ -1383,33 +1299,6 @@ impl TuiOptionSelector {
             );
         }
 
-        match &self.page.snapshot.status {
-            OptionSourceStatus::Ready => {}
-            OptionSourceStatus::Loading => {
-                column.add_child(
-                    TuiText::new("Loading…")
-                        .with_style(builder.dim_text_style())
-                        .truncate()
-                        .finish(),
-                );
-            }
-            OptionSourceStatus::Failed { message } => {
-                column.add_child(
-                    TuiText::new(message.clone())
-                        .with_style(builder.error_text_style())
-                        .truncate()
-                        .finish(),
-                );
-            }
-            OptionSourceStatus::Empty { message } => {
-                column.add_child(
-                    TuiText::new(message.clone())
-                        .with_style(builder.dim_text_style())
-                        .truncate()
-                        .finish(),
-                );
-            }
-        }
         column.finish()
     }
 }
@@ -1440,9 +1329,6 @@ impl TuiView for TuiOptionSelector {
     fn render(&self, app: &AppContext) -> Box<dyn TuiElement> {
         let builder = TuiUiBuilder::from_app(app);
         let mut content = TuiFlex::column();
-        if let Some(header) = &self.page.header {
-            content.add_child(Self::render_header(header, &builder));
-        }
         if let Some(leading_editor) = self.leading_editor.as_ref() {
             content.add_child(TuiChildView::new(leading_editor).finish());
             if let Some(error) = self.leading_editor_error.as_ref() {

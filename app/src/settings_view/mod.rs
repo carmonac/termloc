@@ -48,7 +48,7 @@ use crate::ai::execution_profiles::ExecutionProfileId;
 use crate::appearance::Appearance;
 use crate::editor::{
     EditorView, Event as EditorEvent, PropagateAndNoOpNavigationKeys, SingleLineEditorOptions,
-    TextColors, TextOptions,
+    TextOptions,
 };
 use crate::menu::{self, Menu, MenuItem, MenuItemFields};
 use crate::pane_group::focus_state::PaneFocusHandle;
@@ -76,7 +76,6 @@ mod directory_color_add_picker;
 mod execution_profile_view;
 mod features;
 mod features_page;
-pub(crate) mod handoff_environment_creation_modal;
 pub mod keybindings;
 mod knowledge_page;
 #[cfg(not(target_family = "wasm"))]
@@ -90,7 +89,6 @@ mod privacy_page;
 mod scripting_page;
 mod settings_file_footer;
 pub(crate) mod settings_page;
-pub mod update_environment_form;
 mod warp_agent_page;
 mod warp_drive_page;
 mod warpify_page;
@@ -159,15 +157,6 @@ pub fn nav_umbrella_position_id(label: &str) -> String {
 /// Saved-position id for a subpage row nested under an umbrella.
 pub fn nav_subpage_position_id(section: SettingsSection) -> String {
     format!("settings_nav_subpage:{section:?}")
-}
-
-pub(super) fn editor_text_colors(appearance: &Appearance) -> TextColors {
-    let theme = appearance.theme();
-    TextColors {
-        default_color: theme.active_ui_text_color(),
-        disabled_color: theme.disabled_ui_text_color(),
-        hint_color: theme.disabled_ui_text_color(),
-    }
 }
 
 /// Small inline pill rendered next to a settings label to mark a feature as beta.
@@ -289,8 +278,6 @@ impl SettingsSection {
             Self::ThirdPartyCLIAgents => "Third party CLI agents",
             Self::CodeIndexing => "Indexing and projects",
             Self::EditorAndCodeReview => "Editor and Code Review",
-            // Keeps the "Oz" spelling the slug was seeded from; only the
-            // Display label above dropped it.
         }
     }
 
@@ -312,8 +299,8 @@ impl SettingsSection {
             "Local models" => Self::LocalModels,
             "Warp Drive" | "WarpDrive" | "Drive" => Self::WarpDrive,
             "Warpify" | "Shell integration" => Self::Warpify,
-            // "Oz" and "AI" are older names for what is now the Local Agent page.
-            "Warp Agent" | "Local Agent" | "Oz" | "AI" => Self::WarpAgent,
+            // "AI" is an older name for what is now the Local Agent page.
+            "Warp Agent" | "Local Agent" | "AI" => Self::WarpAgent,
             "Profiles" | "AgentProfiles" => Self::AgentProfiles,
             // "MCP Servers" named the standalone page before it moved under the
             // Agents umbrella; it differs from the current slug only by casing.
@@ -455,12 +442,6 @@ pub mod flags {
     pub const THINKING_DISPLAY_SHOW_AND_COLLAPSE: &str = "Thinking_Display_ShowAndCollapse";
     pub const THINKING_DISPLAY_ALWAYS_SHOW: &str = "Thinking_Display_AlwaysShow";
     pub const THINKING_DISPLAY_NEVER_SHOW: &str = "Thinking_Display_NeverShow";
-    pub const ORCHESTRATION_MESSAGE_DISPLAY_SHOW_AND_COLLAPSE: &str =
-        "Orchestration_Message_Display_ShowAndCollapse";
-    pub const ORCHESTRATION_MESSAGE_DISPLAY_ALWAYS_SHOW: &str =
-        "Orchestration_Message_Display_AlwaysShow";
-    pub const ORCHESTRATION_MESSAGE_DISPLAY_ALWAYS_COLLAPSE: &str =
-        "Orchestration_Message_Display_AlwaysCollapse";
     pub const PROMPT_SUBMISSION_INTERRUPT: &str = "Prompt_Submission_Interrupt";
     pub const PROMPT_SUBMISSION_STEER: &str = "Prompt_Submission_Steer";
     pub const PROMPT_SUBMISSION_QUEUE: &str = "Prompt_Submission_Queue";

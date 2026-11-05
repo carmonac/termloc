@@ -17,7 +17,7 @@ use warpui_core::elements::tui::{
 use warpui_core::{AppContext, ViewContext};
 
 use super::{
-    CTRL_C_EXIT_HINT, CTRL_C_KILL_CHILD_HINT, ConversationRestoreState, LOADING_CONVERSATION_HINT,
+    CTRL_C_EXIT_HINT, ConversationRestoreState, LOADING_CONVERSATION_HINT,
     RUNNING_COMMAND_DETACH_HINT, SHELL_MODE_HINT, TuiConversationRestoreOrigin,
     TuiTerminalSessionAction, TuiTerminalSessionView, render_mcp_install_footer,
     render_mcp_menu_footer,
@@ -347,12 +347,6 @@ impl TuiTerminalSessionView {
         ctx: &AppContext,
     ) -> Option<FooterHint<'_>> {
         if self.exit_confirmation.is_armed() {
-            // When the kill-child window is armed, show the child-specific hint
-            // so the user knows the next ctrl-c will kill the child agent rather
-            // than exiting the whole TUI.
-            if self.child_kill_armed_conversation.is_some() {
-                return Some(FooterHint::muted(CTRL_C_KILL_CHILD_HINT));
-            }
             return Some(FooterHint::muted(CTRL_C_EXIT_HINT));
         }
         if matches!(

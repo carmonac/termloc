@@ -5,14 +5,14 @@ use ordered_float::OrderedFloat;
 use regex::Regex;
 use warp_errors::report_error;
 use warp_graphql::billing::{
-    AiAutonomyPolicy as GqlAiAutonomyPolicy, AmbientAgentsPolicy as GqlAmbientAgentsPolicy,
+    AiAutonomyPolicy as GqlAiAutonomyPolicy,
     BillingCycleUsageHistory as GqlBillingCycleUsageHistory, BillingMetadata as GqlBillingMetadata,
     BonusGrant as GqlBonusGrant, BonusGrantScope as GqlBonusGrantScope,
     ByoApiKeyPolicy as GqlByoApiKeyPolicy, ByoEndpointPolicy as GqlByoEndpointPolicy,
     ChargeUnit as GqlChargeUnit, CodebaseContextPolicy as GqlCodebaseContextPolicy,
     CustomerType as GqlCustomerType, DelinquencyStatus as GqlDelinquencyStatus,
     EnterpriseCreditsAutoReloadPolicy as GqlEnterpriseCreditsAutoReloadPolicy,
-    EnterprisePayAsYouGoPolicy as GqlEnterprisePayAsYouGoPolicy, InstanceShape as GqlInstanceShape,
+    EnterprisePayAsYouGoPolicy as GqlEnterprisePayAsYouGoPolicy,
     ManagedByokByoePolicy as GqlManagedByokByoePolicy, MultiAdminPolicy as GqlMultiAdminPolicy,
     NativeWorkspacesPolicy as GqlNativeWorkspacesPolicy,
     PurchaseAddOnCreditsPolicy as GqlPurchaseAddOnCreditsPolicy, ServiceAgreementType,
@@ -58,19 +58,18 @@ use super::team::{
 use super::user_workspaces::WorkspacesMetadataResponse;
 use super::workspace::{
     AIAutonomyPolicy, AddonCreditsSettings, AdminEnablementSetting, AiAutonomySettings,
-    AiPermissionsSettings, AmbientAgentsPolicy, BillingCycleUsageData, BillingCycleUsageEntry,
-    BillingCycleUsageSummary, BillingMetadata, ByoEndpointMetadata, ByoEndpointModelMetadata,
-    ByoFirstPartyKey, CloudConversationStorageSettings, CodebaseContextSettings, CustomerType,
-    DelinquencyStatus, EmailInvite, EnforceableSetting, EnterpriseSecretRegex,
-    HostEnablementSetting, InstanceShape, InviteLinkDomainRestriction, LinkSharingSettings,
-    LlmSettings, MaxPriorCycles, SandboxedAgentSettings, SecretRedactionSettings,
-    SessionSharingPolicy, SharedNotebooksPolicy, SharedWorkflowsPolicy, SplitListSetting,
-    TeamAiAutonomySettings, TeamAiPermissionsSettings, TeamByoSettings, TeamLinkSharingSettings,
-    TeamSandboxedAgentSettings, TeamSecretRedactionSettings, TeamSettings,
-    TelemetryDataCollectionPolicy, TelemetrySettings, Tier, UgcCollectionEnablementSetting,
-    UgcCollectionSettings, UgcDataCollectionPolicy, UsageBasedPricingPolicy,
-    UsageVisibilityGranularity, UsageVisibilityPolicy, WarpAiPolicy, Workspace, WorkspaceMember,
-    WorkspaceMemberUsageInfo, WorkspaceSettings, WorkspaceSizePolicy,
+    AiPermissionsSettings, BillingCycleUsageData, BillingCycleUsageEntry, BillingCycleUsageSummary,
+    BillingMetadata, ByoEndpointMetadata, ByoEndpointModelMetadata, ByoFirstPartyKey,
+    CloudConversationStorageSettings, CodebaseContextSettings, CustomerType, DelinquencyStatus,
+    EmailInvite, EnforceableSetting, EnterpriseSecretRegex, HostEnablementSetting,
+    InviteLinkDomainRestriction, LinkSharingSettings, LlmSettings, MaxPriorCycles,
+    SandboxedAgentSettings, SecretRedactionSettings, SessionSharingPolicy, SharedNotebooksPolicy,
+    SharedWorkflowsPolicy, SplitListSetting, TeamAiAutonomySettings, TeamAiPermissionsSettings,
+    TeamByoSettings, TeamLinkSharingSettings, TeamSandboxedAgentSettings,
+    TeamSecretRedactionSettings, TeamSettings, TelemetryDataCollectionPolicy, TelemetrySettings,
+    Tier, UgcCollectionEnablementSetting, UgcCollectionSettings, UgcDataCollectionPolicy,
+    UsageBasedPricingPolicy, UsageVisibilityGranularity, UsageVisibilityPolicy, WarpAiPolicy,
+    Workspace, WorkspaceMember, WorkspaceMemberUsageInfo, WorkspaceSettings, WorkspaceSizePolicy,
 };
 use crate::ai::blocklist::usage::conversation_usage_view::ConversationUsageInfo;
 use crate::ai::execution_profiles::{
@@ -609,24 +608,6 @@ impl From<GqlNativeWorkspacesPolicy> for NativeWorkspacesPolicy {
     }
 }
 
-impl From<GqlInstanceShape> for InstanceShape {
-    fn from(gql_instance_shape: GqlInstanceShape) -> InstanceShape {
-        Self {
-            vcpus: gql_instance_shape.vcpus,
-            memory_gb: gql_instance_shape.memory_gb,
-        }
-    }
-}
-
-impl From<GqlAmbientAgentsPolicy> for AmbientAgentsPolicy {
-    fn from(gql_policy: GqlAmbientAgentsPolicy) -> AmbientAgentsPolicy {
-        Self {
-            max_concurrent_agents: gql_policy.max_concurrent_agents,
-            instance_shape: gql_policy.instance_shape.map(From::from),
-        }
-    }
-}
-
 impl From<GqlUsageVisibilityGranularity> for UsageVisibilityGranularity {
     fn from(gql_granularity: GqlUsageVisibilityGranularity) -> UsageVisibilityGranularity {
         match gql_granularity {
@@ -755,7 +736,6 @@ impl From<GqlTier> for Tier {
                 .map(From::from),
             multi_admin_policy: gql_tier.multi_admin_policy.map(From::from),
             native_workspaces_policy: gql_tier.native_workspaces_policy.map(From::from),
-            ambient_agents_policy: gql_tier.ambient_agents_policy.map(From::from),
             usage_visibility_policy: gql_tier.usage_visibility_policy.map(From::from),
         }
     }
@@ -1165,10 +1145,6 @@ impl From<GqlWorkspaceSettings> for WorkspaceSettings {
                 .as_ref()
                 .map(|s| s.enable_warp_attribution.clone().into())
                 .unwrap_or_default(),
-            default_host_slug: gql_workspace_settings
-                .ambient_agent_settings
-                .as_ref()
-                .and_then(|s| s.default_host_slug.clone()),
         }
     }
 }
@@ -1367,10 +1343,6 @@ impl From<GqlTeamSettings> for TeamSettings {
                 .as_ref()
                 .map(|s| s.enable_warp_attribution.clone().into())
                 .unwrap_or_default(),
-            default_host_slug: gql_team_settings
-                .ambient_agent_settings
-                .as_ref()
-                .and_then(|s| s.default_host_slug.clone()),
             team_byo: gql_team_settings.team_byo.map(From::from),
         }
     }

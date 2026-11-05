@@ -37,9 +37,8 @@ use session_sharing_protocol::sharer::InitPayload;
 use session_sharing_protocol::sharer::{
     AddGuestsResponse, DownstreamMessage, FailedToAddGuestsReason, FailedToInitializeSessionReason,
     Lifetime, LinkAccessLevelUpdateResponse, ReconnectPayload, ReconnectToken, RemoveGuestResponse,
-    RoleUpdateReason, SessionEndedReason, SessionRetentionReason, SessionSourceType,
-    SessionTerminatedReason, TeamAccessLevelUpdateResponse, UpdatePendingUserRoleResponse,
-    UpstreamMessage,
+    RoleUpdateReason, SessionEndedReason, SessionRetentionReason, SessionTerminatedReason,
+    TeamAccessLevelUpdateResponse, UpdatePendingUserRoleResponse, UpstreamMessage,
 };
 use warp_core::features::FeatureFlag;
 use warp_errors::report_error;
@@ -74,7 +73,7 @@ const PTY_READS_BATCH_THRESHOLD: Duration = Duration::from_millis(250);
 #[cfg_attr(any(test, feature = "integration_tests"), allow(dead_code))]
 const CREATE_SESSION_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(5);
 #[cfg_attr(any(test, feature = "integration_tests"), allow(dead_code))]
-const AMBIENT_CREATE_SESSION_MAX_ATTEMPTS: usize = 3;
+const CREATE_SESSION_MAX_ATTEMPTS: usize = 1;
 const RECONNECT_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(10);
 const RECONNECT_CYCLE_TIMEOUT: Duration = Duration::from_secs(128);
 const MAX_NO_PROGRESS_RECONNECTS: usize = 5;
@@ -362,15 +361,6 @@ fn share_with_team_uid_for_init_payload(
         .map(String::from)
 }
 
-#[cfg_attr(any(test, feature = "integration_tests"), allow(dead_code))]
-fn startup_max_attempts(source: &SharedSessionSource) -> usize {
-    if matches!(source.source_type, SessionSourceType::AmbientAgent { .. }) {
-        AMBIENT_CREATE_SESSION_MAX_ATTEMPTS
-    } else {
-        1
-    }
-}
-
 pub struct Network {
     model: Arc<FairMutex<TerminalModel>>,
     stage: Stage,
@@ -524,7 +514,7 @@ impl Network {
             .id
             .clone()
             .into();
-        let startup_retry = StartupRetryState::new(startup_max_attempts(&source));
+        let startup_retry = StartupRetryState::new(CREATE_SESSION_MAX_ATTEMPTS);
         let startup_config = StartupConfig {
             scrollback: scrollback.clone(),
             window_size,

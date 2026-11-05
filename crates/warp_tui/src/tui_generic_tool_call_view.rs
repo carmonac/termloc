@@ -194,9 +194,6 @@ impl TuiGenericToolCallView {
     fn permission_question(&self, server_name: Option<&str>) -> String {
         match &self.action.action {
             AIAgentActionType::ReadFiles(_) => "Is it OK if I read these files?".to_owned(),
-            AIAgentActionType::UploadArtifact(_) => {
-                "Is it OK if I upload this artifact?".to_owned()
-            }
             AIAgentActionType::SearchCodebase(_) => {
                 "Is it OK if I search this codebase?".to_owned()
             }
@@ -249,10 +246,6 @@ impl TuiGenericToolCallView {
                 .map(|location| format!("  - {}", location.name))
                 .collect::<Vec<_>>()
                 .join("\n"),
-            AIAgentActionType::UploadArtifact(request) => match &request.description {
-                Some(description) => format!("{}\n{}", request.file_path, description),
-                None => request.file_path.clone(),
-            },
             AIAgentActionType::SearchCodebase(request) => match &request.codebase_path {
                 Some(path) => format!("{}\n  in {path}", request.query),
                 None => request.query.clone(),

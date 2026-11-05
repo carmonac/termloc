@@ -13,7 +13,7 @@ description: GUI desktop app only. Repo-specific bug reproduction guidance for W
 
 This skill specializes the core `reproduce-bug-report` skill (named in the `specializes` frontmatter field) and is not functional on its own. Before applying its guidance, confirm the parent skill is installed and resolvable at `.agents/skills/reproduce-bug-report/SKILL.md`. If it is missing, install it first by copying the skill directory from the source declared in the `specializes_source` frontmatter field (`warpdotdev/common-skills:.agents/skills/reproduce-bug-report`). Then continue with the guidance below.
 
-This file is a companion to the core `reproduce-bug-report` skill. It does not redefine the shared Oz computer-use orchestration, artifact handling, safety rules, or reporting format. It specializes scope and setup for Warp bug reports.
+This file is a companion to the core `reproduce-bug-report` skill. It does not redefine the shared computer-use orchestration, artifact handling, safety rules, or reporting format. It specializes scope and setup for Warp bug reports.
 
 ## Scope
 

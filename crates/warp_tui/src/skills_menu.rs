@@ -225,7 +225,7 @@ impl TuiSkillMenuModel {
         let rows = if self
             .slash_commands_source
             .as_ref(ctx)
-            .local_skills_available(ctx)
+            .local_skills_available()
         {
             let working_directory = self
                 .active_session

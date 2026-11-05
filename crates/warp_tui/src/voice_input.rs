@@ -79,7 +79,7 @@ pub(crate) struct TuiVoiceInputModel {
     recording_handle: Option<SpawnedFutureHandle>,
     transcription_handle: Option<SpawnedFutureHandle>,
     /// Resolves this model's team context on demand, so transcription requests are scoped to
-    /// the owning input view's window rather than an ambient, unscoped workspace read.
+    /// the owning input view's window rather than an unscoped workspace read.
     team_context_resolver: TeamContextResolver,
 }
 

@@ -23,7 +23,6 @@ use warpui::{
 const SIDECAR_HORIZONTAL_GAP: f32 = 8.;
 const SIDECAR_POSITION_ID: &str = "model_sidecar_panel";
 
-use warp_cli::agent::Harness;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::color::{Opacity, coloru_with_opacity};
 use warp_core::ui::theme::Fill;
@@ -33,16 +32,12 @@ use crate::ai::blocklist::prompt::PromptIconButtonTheme;
 use crate::ai::blocklist::{
     BlocklistAIController, BlocklistAIControllerEvent, BlocklistAIInputEvent, BlocklistAIInputModel,
 };
-use crate::ai::cloud_agent_settings::CloudAgentSettings;
 use crate::ai::execution_profiles::ExecutionProfileId;
 use crate::ai::execution_profiles::model_menu_items::{
     CollapsedModelVariants, available_model_menu_items, has_reasoning_variants, is_auto,
 };
 use crate::ai::execution_profiles::profiles::{
     AIExecutionProfilesModel, AIExecutionProfilesModelEvent,
-};
-use crate::ai::harness_availability::{
-    HarnessAvailabilityEvent, HarnessAvailabilityModel, HarnessModelInfo,
 };
 use crate::ai::llms::{
     LLMId, LLMInfo, LLMPreferences, LLMPreferencesEvent, LLMSpec, dedupe_model_display_names,
@@ -55,7 +50,6 @@ use crate::menu::{Event as MenuEvent, Menu, MenuItem, MenuItemFields};
 use crate::settings_view::SettingsSection;
 use crate::terminal::TerminalModel;
 use crate::terminal::input::{MenuPositioning, MenuPositioningProvider};
-use crate::terminal::view::ambient_agent::{AmbientAgentViewModel, AmbientAgentViewModelEvent};
 use crate::ui_components::icons::Icon;
 use crate::view_components::action_button::{ActionButton, ActionButtonTheme, ButtonSize};
 use crate::view_components::{FeaturePopup, NewFeaturePopupEvent, NewFeaturePopupLabel};
@@ -80,9 +74,7 @@ const PROFILE_SELECTOR_POSITION_ID: &str = "profile_selector";
 
 const PROFILE_PICKER_TOOLTIP: &str = "Choose an AI execution profile";
 const MODEL_PICKER_TOOLTIP: &str = "Choose an agent model";
-const MODEL_LOCKED_FOR_FOLLOWUP_TOOLTIP: &str = "Follow-ups use the original run's model";
 const MODEL_REQUIRES_EDIT_ACCESS_TOOLTIP: &str = "Request edit access to change model";
-const HARNESS_DEFAULT_MODEL_LABEL: &str = "default";
 
 pub fn calculate_scaled_font_size(appearance: &warp_core::ui::appearance::Appearance) -> f32 {
     if FeatureFlag::AgentView.is_enabled() {
@@ -141,17 +133,6 @@ impl ActionButtonTheme for SelectorChipTheme {
             color
         }
     }
-
-    fn font_properties(&self) -> Option<warpui::fonts::Properties> {
-        if FeatureFlag::CloudModeInputV2.is_enabled() {
-            Some(warpui::fonts::Properties {
-                weight: warpui::fonts::Weight::Semibold,
-                ..Default::default()
-            })
-        } else {
-            None
-        }
-    }
 }
 
 /// A unified profile and model selector component that combines both selectors
@@ -174,7 +155,6 @@ pub struct ProfileModelSelector {
     is_blurred: bool,
     new_model_popup: ViewHandle<FeaturePopup>,
     input_model: ModelHandle<BlocklistAIInputModel>,
-    ambient_agent_view_model: Option<ModelHandle<AmbientAgentViewModel>>,
     render_compact: bool,
     hovered_llm_info: Option<LLMInfo>,
     terminal_model: Arc<FairMutex<TerminalModel>>,
@@ -193,10 +173,6 @@ pub enum ProfileModelSelectorAction {
     SelectModel(LLMId),
     SelectAutoModel,
     SelectReasoningModel(String),
-    SelectHarnessModel {
-        model_id: String,
-        reasoning_level: Option<String>,
-    },
     ManageProfiles,
     ToggleProfileMenu,
     ToggleModelMenu,
@@ -236,7 +212,6 @@ impl ProfileModelSelector {
         menu_positioning_provider: Arc<dyn crate::terminal::input::MenuPositioningProvider>,
         terminal_view_id: EntityId,
         input_model: ModelHandle<BlocklistAIInputModel>,
-        ambient_agent_view_model: Option<ModelHandle<AmbientAgentViewModel>>,
         terminal_model: Arc<FairMutex<TerminalModel>>,
         controller: Option<ModelHandle<BlocklistAIController>>,
         ctx: &mut ViewContext<Self>,
@@ -502,15 +477,6 @@ impl ProfileModelSelector {
             },
         );
 
-        ctx.subscribe_to_model(
-            &HarnessAvailabilityModel::handle(ctx),
-            |me, _, event, ctx| {
-                if let HarnessAvailabilityEvent::Changed = event {
-                    me.refresh_state(ctx);
-                }
-            },
-        );
-
         let mut me = Self {
             self_handle: ctx.handle(),
             profile_button,
@@ -533,50 +499,13 @@ impl ProfileModelSelector {
             is_blurred: false,
             new_model_popup,
             input_model,
-            ambient_agent_view_model: None,
             render_compact: false,
             hovered_llm_info: None,
             terminal_model,
             all_model_choices: Vec::new(),
         };
-        // Route ambient wiring through the setter so construction and the lazy shared-session
-        // viewer path share one implementation.
-        if let Some(ambient_agent_view_model) = ambient_agent_view_model {
-            me.set_ambient_agent_view_model(ambient_agent_view_model, ctx);
-        } else {
-            me.refresh_state(ctx);
-        }
+        me.refresh_state(ctx);
         me
-    }
-
-    /// Attaches an ambient agent view model to an already-constructed selector. Used on the
-    /// shared-session viewer path where the model is created lazily at `SessionJoined`, after the
-    /// selector was built with `None`. Without this, the model / harness chip reflects the local
-    /// default instead of the viewed cloud run. Mirrors the ambient subscription in [`Self::new`].
-    /// Idempotent: a no-op when a model is already set.
-    pub fn set_ambient_agent_view_model(
-        &mut self,
-        ambient_agent_view_model: ModelHandle<AmbientAgentViewModel>,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        if self.ambient_agent_view_model.is_some() {
-            return;
-        }
-        ctx.subscribe_to_model(&ambient_agent_view_model, |me, _, event, ctx| {
-            if matches!(
-                event,
-                AmbientAgentViewModelEvent::HarnessSelected
-                    | AmbientAgentViewModelEvent::HarnessModelSelected
-                    | AmbientAgentViewModelEvent::RunLifecycleChanged
-                    | AmbientAgentViewModelEvent::SessionReady { .. }
-                    | AmbientAgentViewModelEvent::FollowupDispatched
-            ) {
-                me.refresh_state(ctx);
-            }
-        });
-        self.ambient_agent_view_model = Some(ambient_agent_view_model);
-        self.refresh_state(ctx);
-        ctx.notify();
     }
 
     pub fn set_profile_menu_visibility(&mut self, is_open: bool, ctx: &mut ViewContext<Self>) {
@@ -625,40 +554,6 @@ impl ProfileModelSelector {
         format!("{PROFILE_SELECTOR_POSITION_ID}_{llm_id}")
     }
 
-    /// Locked because the user is composing a follow-up to a Cloud Mode run
-    /// that has ended. The server inherits the original task's model config
-    /// when accepting the follow-up, so changing the model locally is
-    /// meaningless.
-    fn is_locked_for_cloud_followup(&self, app: &AppContext) -> bool {
-        self.ambient_agent_view_model
-            .as_ref()
-            .is_some_and(|m| m.as_ref(app).is_ready_for_cloud_followup_prompt())
-    }
-
-    /// Locked because a non-Oz cloud run (e.g. Claude Code, Codex) has been
-    /// spawned. The harness owns model selection, so changing the model
-    /// locally has no effect on the run. We lock silently in this case
-    /// because the harness selection itself communicates the lock.
-    fn is_locked_for_non_oz_run(&self, app: &AppContext) -> bool {
-        self.ambient_agent_view_model.as_ref().is_some_and(|m| {
-            let model = m.as_ref(app);
-            model.task_id().is_some()
-                && !matches!(model.selected_harness(), Harness::Oz | Harness::Unknown)
-        })
-    }
-
-    fn is_model_locked(&self, app: &AppContext) -> bool {
-        self.is_locked_for_cloud_followup(app) || self.is_locked_for_non_oz_run(app)
-    }
-
-    /// True when a non-Oz harness is selected.
-    fn is_third_party_harness(&self, app: &AppContext) -> bool {
-        self.ambient_agent_view_model.as_ref().is_some_and(|m| {
-            let model = m.as_ref(app);
-            !matches!(model.selected_harness(), Harness::Oz | Harness::Unknown)
-        })
-    }
-
     fn refresh_state(&mut self, ctx: &mut ViewContext<Self>) {
         self.refresh_profile_menu(ctx);
         self.refresh_model_menu(ctx);
@@ -676,57 +571,30 @@ impl ProfileModelSelector {
             });
         }
 
-        let model_name = if self.is_third_party_harness(ctx) {
-            self.harness_model_display_name(ctx)
+        let scope =
+            ResolvedTeamScope::from_scope(&UserWorkspaces::as_ref(ctx).team_context_for_view(ctx));
+        let llm_preferences = LLMPreferences::as_ref(ctx);
+        let active_llm = if FeatureFlag::InlineMenuHeaders.is_enabled()
+            && self
+                .terminal_model
+                .lock()
+                .block_list()
+                .active_block()
+                .is_agent_in_control_or_tagged_in()
+        {
+            llm_preferences.get_active_cli_agent_model(&scope, ctx, Some(self.terminal_view_id))
         } else {
-            let scope = ResolvedTeamScope::from_scope(
-                &UserWorkspaces::as_ref(ctx).team_context_for_view(ctx),
-            );
-            let llm_preferences = LLMPreferences::as_ref(ctx);
-            let active_llm = if FeatureFlag::InlineMenuHeaders.is_enabled()
-                && self
-                    .terminal_model
-                    .lock()
-                    .block_list()
-                    .active_block()
-                    .is_agent_in_control_or_tagged_in()
-            {
-                llm_preferences.get_active_cli_agent_model(&scope, ctx, Some(self.terminal_view_id))
-            } else {
-                llm_preferences.get_active_base_model(&scope, ctx, Some(self.terminal_view_id))
-            };
-
-            if let Some(description) = &active_llm.description {
-                format!("{} ({})", active_llm.display_name, description)
-            } else {
-                active_llm.display_name.clone()
-            }
+            llm_preferences.get_active_base_model(&scope, ctx, Some(self.terminal_view_id))
         };
 
-        // Non-Oz runs lock silently: the harness owns model selection, and the
-        // user already knows that, so no tooltip is shown.
-        let model_tooltip: Option<&str> = if self.is_locked_for_cloud_followup(ctx) {
-            Some(MODEL_LOCKED_FOR_FOLLOWUP_TOOLTIP)
-        } else if self.is_locked_for_non_oz_run(ctx) {
-            None
+        let model_name = if let Some(description) = &active_llm.description {
+            format!("{} ({})", active_llm.display_name, description)
         } else {
-            Some(MODEL_PICKER_TOOLTIP)
+            active_llm.display_name.clone()
         };
-        let locked = self.is_model_locked(ctx);
+
         self.model_button.update(ctx, |button, ctx| {
             button.set_label(model_name, ctx);
-            button.set_disabled(locked, ctx);
-            match model_tooltip {
-                Some(t) => button.set_tooltip(Some(t), ctx),
-                None => button.clear_tooltip(ctx),
-            }
-        });
-        self.model_compact_button.update(ctx, |button, ctx| {
-            button.set_disabled(locked, ctx);
-            match model_tooltip {
-                Some(t) => button.set_tooltip(Some(t), ctx),
-                None => button.clear_tooltip(ctx),
-            }
         });
         ctx.notify();
     }
@@ -856,103 +724,7 @@ impl ProfileModelSelector {
         });
     }
 
-    // Checks that we have a harness in the `AmbientAgentViewModel` and returns model options from
-    // the `HarnessAvailabilityModel` for that harness.
-    fn active_harness_model_info<'a>(&self, app: &'a AppContext) -> Option<&'a HarnessModelInfo> {
-        let ambient_model = self.ambient_agent_view_model.as_ref()?.as_ref(app);
-        let harness = ambient_model.selected_harness();
-        let model_id = ambient_model.selected_harness_model_id()?;
-        let reasoning_level = ambient_model.selected_harness_reasoning_level();
-        HarnessAvailabilityModel::as_ref(app)
-            .models_for(harness)?
-            .iter()
-            .find(|m| m.id == model_id && m.reasoning_level.as_deref() == reasoning_level)
-    }
-
-    fn harness_model_display_name(&self, app: &AppContext) -> String {
-        self.active_harness_model_info(app)
-            .map(|info| info.display_name.clone())
-            .unwrap_or_else(|| HARNESS_DEFAULT_MODEL_LABEL.to_string())
-    }
-
-    fn refresh_harness_model_menu(&mut self, ctx: &mut ViewContext<Self>) {
-        let ambient_model = match self.ambient_agent_view_model.as_ref() {
-            Some(m) => m,
-            None => return,
-        };
-        let harness = ambient_model.as_ref(ctx).selected_harness();
-        let selected_model_id = ambient_model
-            .as_ref(ctx)
-            .selected_harness_model_id()
-            .map(str::to_owned);
-        let selected_reasoning = ambient_model
-            .as_ref(ctx)
-            .selected_harness_reasoning_level()
-            .map(str::to_owned);
-
-        let models = HarnessAvailabilityModel::as_ref(ctx).models_for(harness);
-
-        let mut items: Vec<MenuItem<ProfileModelSelectorAction>> = Vec::new();
-
-        let default_selected = selected_model_id.is_none();
-        let default_action = ProfileModelSelectorAction::SelectHarnessModel {
-            model_id: String::new(),
-            reasoning_level: None,
-        };
-        let mut default_fields =
-            MenuItemFields::new(HARNESS_DEFAULT_MODEL_LABEL).with_on_select_action(default_action);
-        if default_selected {
-            default_fields = default_fields.with_icon(Icon::Check);
-        } else {
-            default_fields = default_fields.with_indent();
-        }
-        items.push(MenuItem::Item(default_fields));
-
-        if let Some(models) = models {
-            for model in models {
-                let is_selected = selected_model_id.as_deref() == Some(&model.id)
-                    && selected_reasoning.as_deref() == model.reasoning_level.as_deref();
-                let mut fields = MenuItemFields::new(model.display_name.clone())
-                    .with_on_select_action(ProfileModelSelectorAction::SelectHarnessModel {
-                        model_id: model.id.clone(),
-                        reasoning_level: model.reasoning_level.clone(),
-                    });
-                if is_selected {
-                    fields = fields.with_icon(Icon::Check);
-                } else {
-                    fields = fields.with_indent();
-                }
-                items.push(MenuItem::Item(fields));
-            }
-        }
-
-        let selected_index = items
-            .iter()
-            .position(|item| {
-                matches!(
-                    item.item_on_select_action(),
-                    Some(ProfileModelSelectorAction::SelectHarnessModel { model_id, reasoning_level })
-                        if (model_id.is_empty() && default_selected)
-                            || (selected_model_id.as_deref() == Some(model_id.as_str())
-                                && selected_reasoning.as_deref() == reasoning_level.as_deref())
-                )
-            })
-            .unwrap_or(0);
-
-        self.model_dropdown.update(ctx, |menu, ctx| {
-            menu.set_width(MENU_WIDTH);
-            menu.set_items(items, ctx);
-            menu.set_selected_by_index(selected_index, ctx);
-            ctx.notify();
-        });
-    }
-
     fn refresh_model_menu(&mut self, ctx: &mut ViewContext<Self>) {
-        if self.is_third_party_harness(ctx) {
-            self.refresh_harness_model_menu(ctx);
-            return;
-        }
-
         let scope =
             ResolvedTeamScope::from_scope(&UserWorkspaces::as_ref(ctx).team_context_for_view(ctx));
         let llm_preferences = LLMPreferences::as_ref(ctx);
@@ -1610,19 +1382,10 @@ impl ProfileModelSelector {
         let theme = appearance.theme();
         let llm_preferences = LLMPreferences::as_ref(app);
 
-        // Allow editing if composing an ambient agent query, or if the user has edit access
-        // in a shared session (i.e., not a viewer, or is an executor).
-        let is_composing_ambient_agent =
-            self.ambient_agent_view_model
-                .as_ref()
-                .is_some_and(|ambient_agent_model| {
-                    ambient_agent_model
-                        .as_ref(app)
-                        .is_configuring_ambient_agent()
-                });
+        // Allow editing if the user has edit access in a shared session (i.e., not a viewer, or
+        // is an executor).
         let terminal_model = self.terminal_model.lock();
-        let has_edit_access = is_composing_ambient_agent
-            || !terminal_model.shared_session_status().is_viewer()
+        let has_edit_access = !terminal_model.shared_session_status().is_viewer()
             || terminal_model.shared_session_status().is_executor();
         let is_lrc = FeatureFlag::InlineMenuHeaders.is_enabled()
             && terminal_model
@@ -1631,17 +1394,13 @@ impl ProfileModelSelector {
                 .is_agent_in_control_or_tagged_in();
         drop(terminal_model);
 
-        let model_display_name = if self.is_third_party_harness(app) {
-            self.harness_model_display_name(app)
+        let scope = UserWorkspaces::as_ref(app).team_context(&self.self_handle, app);
+        let active_llm = if is_lrc {
+            llm_preferences.get_active_cli_agent_model(&scope, app, Some(self.terminal_view_id))
         } else {
-            let scope = UserWorkspaces::as_ref(app).team_context(&self.self_handle, app);
-            let active_llm = if is_lrc {
-                llm_preferences.get_active_cli_agent_model(&scope, app, Some(self.terminal_view_id))
-            } else {
-                llm_preferences.get_active_base_model(&scope, app, Some(self.terminal_view_id))
-            };
-            active_llm.menu_display_name()
+            llm_preferences.get_active_base_model(&scope, app, Some(self.terminal_view_id))
         };
+        let model_display_name = active_llm.menu_display_name();
 
         let text_color = if self.is_blurred {
             theme.disabled_text_color(theme.surface_1()).into()
@@ -1702,12 +1461,8 @@ impl ProfileModelSelector {
         let button_with_save_position =
             SavePosition::new(button, "profile_model_selector_model_button").finish();
 
-        let is_locked_for_followup = self.is_locked_for_cloud_followup(app);
-        let is_locked_for_non_oz = self.is_locked_for_non_oz_run(app);
-        let is_locked = is_locked_for_followup || is_locked_for_non_oz;
-        let can_interact = has_edit_access && !is_locked;
         let hoverable = Hoverable::new(self.model_mouse_state.clone(), move |state| {
-            if state.is_hovered() && can_interact {
+            if state.is_hovered() && has_edit_access {
                 let button_with_hover = Container::new(button_with_save_position)
                     .with_background(theme.surface_2())
                     .with_corner_radius(CornerRadius::with_right(Radius::Pixels(
@@ -1731,38 +1486,27 @@ impl ProfileModelSelector {
                 );
                 stack.finish()
             } else if state.is_hovered() {
-                // Non-Oz runs lock silently — skip the tooltip entirely.
-                let tooltip_text: Option<&str> = if is_locked_for_followup {
-                    Some(MODEL_LOCKED_FOR_FOLLOWUP_TOOLTIP)
-                } else if is_locked_for_non_oz {
-                    None
-                } else {
-                    Some(MODEL_REQUIRES_EDIT_ACCESS_TOOLTIP)
-                };
-
-                if let Some(text) = tooltip_text {
-                    let tooltip = appearance.ui_builder().tool_tip(text.to_owned());
-                    let mut stack = Stack::new();
-                    stack.add_child(button_with_save_position);
-                    stack.add_positioned_overlay_child(
-                        tooltip.build().finish(),
-                        OffsetPositioning::offset_from_parent(
-                            vec2f(0., -10.),
-                            ParentOffsetBounds::WindowByPosition,
-                            ParentAnchor::TopLeft,
-                            ChildAnchor::BottomLeft,
-                        ),
-                    );
-                    stack.finish()
-                } else {
-                    button_with_save_position
-                }
+                let tooltip = appearance
+                    .ui_builder()
+                    .tool_tip(MODEL_REQUIRES_EDIT_ACCESS_TOOLTIP.to_owned());
+                let mut stack = Stack::new();
+                stack.add_child(button_with_save_position);
+                stack.add_positioned_overlay_child(
+                    tooltip.build().finish(),
+                    OffsetPositioning::offset_from_parent(
+                        vec2f(0., -10.),
+                        ParentOffsetBounds::WindowByPosition,
+                        ParentAnchor::TopLeft,
+                        ChildAnchor::BottomLeft,
+                    ),
+                );
+                stack.finish()
             } else {
                 button_with_save_position
             }
         });
 
-        if can_interact {
+        if has_edit_access {
             hoverable
                 .on_click(|ctx, _app, _position| {
                     ctx.dispatch_typed_action(ProfileModelSelectorAction::ToggleModelMenu);
@@ -2041,35 +1785,6 @@ impl TypedActionView for ProfileModelSelector {
             | ProfileModelSelectorAction::SelectReasoningModel(_) => {
                 self.handle_sidecar_selection(ctx);
             }
-            ProfileModelSelectorAction::SelectHarnessModel {
-                model_id,
-                reasoning_level,
-            } => {
-                let is_default = model_id.is_empty();
-                if let Some(ambient_agent_model) = self.ambient_agent_view_model.clone() {
-                    ambient_agent_model.update(ctx, |model, ctx| {
-                        model.set_harness_model_selection(
-                            (!is_default).then(|| model_id.clone()),
-                            if is_default {
-                                None
-                            } else {
-                                reasoning_level.clone()
-                            },
-                            ctx,
-                        );
-                    });
-                    let harness = ambient_agent_model.as_ref(ctx).selected_harness();
-                    CloudAgentSettings::handle(ctx).update(ctx, |settings, ctx| {
-                        settings.persist_harness_model_selection(
-                            harness,
-                            model_id,
-                            reasoning_level.clone(),
-                            ctx,
-                        );
-                    });
-                }
-                self.set_model_menu_visibility(false, ctx);
-            }
             ProfileModelSelectorAction::ManageProfiles => {
                 self.set_profile_menu_visibility(false, ctx);
                 ctx.emit(ProfileModelSelectorEvent::OpenSettings(
@@ -2080,12 +1795,7 @@ impl TypedActionView for ProfileModelSelector {
                 self.set_profile_menu_visibility(!self.is_profile_menu_open, ctx);
             }
             ProfileModelSelectorAction::ToggleModelMenu => {
-                if self.is_model_locked(ctx) {
-                    return;
-                }
-                if self.is_third_party_harness(ctx) {
-                    self.set_model_menu_visibility(!self.is_model_menu_open, ctx);
-                } else if FeatureFlag::InlineMenuHeaders.is_enabled() {
+                if FeatureFlag::InlineMenuHeaders.is_enabled() {
                     ctx.emit(ProfileModelSelectorEvent::ToggleInlineModelSelector);
                 } else {
                     self.set_model_menu_visibility(!self.is_model_menu_open, ctx);
@@ -2117,8 +1827,7 @@ impl View for ProfileModelSelector {
 
         // Only add profile button to compact layout if there are multiple profiles
         // and the user is not a viewer (we currently don't support profiles in shared sessions).
-        let is_ambient_agent = self.ambient_agent_view_model.is_some();
-        let should_show_profile_section = has_multiple_profiles && !is_viewer && !is_ambient_agent;
+        let should_show_profile_section = has_multiple_profiles && !is_viewer;
         if should_show_profile_section {
             let profile_button_with_save_position = SavePosition::new(
                 ChildView::new(&self.profile_compact_button).finish(),

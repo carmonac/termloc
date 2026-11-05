@@ -544,18 +544,6 @@ pub fn render_permissions_section(
     ));
     column.add_child(render_permission_row(
         appearance,
-        Icon::Atom,
-        "Run orchestrated agents",
-        &view.run_agents_dropdown,
-        profile_data.run_agents.description(),
-        !ai_settings.is_run_agents_permissions_editable(app),
-        view.tooltip_mouse_state_handles
-            .run_agents_tooltip_mouse_state
-            .clone(),
-    ));
-
-    column.add_child(render_permission_row(
-        appearance,
         Icon::Dataflow,
         "Call MCP servers",
         &view.call_mcp_servers_dropdown,
@@ -732,7 +720,7 @@ fn render_command_allowlist_section(
 
     render_list_section(
         "Command allowlist",
-        "Regular expressions to match commands that can be automatically executed by Oz.",
+        "Regular expressions to match commands that can be automatically executed by the Local Agent.",
         &profile_data.command_allowlist,
         &view.command_allowlist_mouse_state_handles,
         Some(&view.command_allowlist_editor),
@@ -799,7 +787,7 @@ fn render_command_denylist_section(
 
     let mut column = Flex::column().with_child(create_section_header(
         "Command denylist",
-        "Regular expressions to match commands that Oz should always ask permission to execute.",
+        "Regular expressions to match commands that the Local Agent should always ask permission to execute.",
         appearance,
     ));
     column = column.with_child(list);
@@ -827,7 +815,7 @@ fn render_mcp_allowlist_section(
 
     render_list_section(
         "MCP allowlist",
-        "MCP servers that are allowed to be called by Oz.",
+        "MCP servers that are allowed to be called by the Local Agent.",
         &profile_data.mcp_allowlist,
         &view.mcp_allowlist_mouse_state_handles,
         None,
@@ -853,7 +841,7 @@ fn render_mcp_denylist_section(
 
     render_list_section(
         "MCP denylist",
-        "MCP servers that are not allowed to be called by Oz.",
+        "MCP servers that are not allowed to be called by the Local Agent.",
         &profile_data.mcp_denylist,
         &view.mcp_denylist_mouse_state_handles,
         None,

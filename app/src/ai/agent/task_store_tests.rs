@@ -288,22 +288,6 @@ fn test_remove_exchange_from_nonexistent_task() {
 }
 
 #[test]
-fn test_tasks_iteration() {
-    let task1 = create_test_task_with_exchanges(2);
-    let task1_id = task1.id().clone();
-    let mut store = TaskStore::with_root_task(task1);
-
-    let task2 = create_test_subtask_with_exchanges(1);
-    let task2_id = task2.id().clone();
-    store.insert(task2);
-
-    let task_ids: HashSet<_> = store.tasks().map(|t| t.id().clone()).collect();
-    assert_eq!(task_ids.len(), 2);
-    assert!(task_ids.contains(&task1_id));
-    assert!(task_ids.contains(&task2_id));
-}
-
-#[test]
 fn test_multiple_tasks_exchange_order() {
     // Create root task with 1 exchange, then add subagent call exchange
     let root_task = create_test_task_with_exchanges(1);

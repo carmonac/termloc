@@ -486,18 +486,6 @@ pub struct NativeWorkspacesPolicy {
     pub enabled: bool,
 }
 
-#[derive(Clone, Debug, Copy, Serialize, Deserialize)]
-pub struct AmbientAgentsPolicy {
-    pub max_concurrent_agents: i32,
-    pub instance_shape: Option<InstanceShape>,
-}
-
-#[derive(Clone, Debug, Copy, Serialize, Deserialize)]
-pub struct InstanceShape {
-    pub vcpus: i32,
-    pub memory_gb: i32,
-}
-
 /// Granularity at which a viewer can see AI usage across their team.
 /// Non-admins always collapse to `OwnOnly` regardless of tier.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -572,7 +560,6 @@ pub struct Tier {
     pub enterprise_credits_auto_reload_policy: Option<EnterpriseCreditsAutoReloadPolicy>,
     pub multi_admin_policy: Option<MultiAdminPolicy>,
     pub native_workspaces_policy: Option<NativeWorkspacesPolicy>,
-    pub ambient_agents_policy: Option<AmbientAgentsPolicy>,
     pub usage_visibility_policy: Option<UsageVisibilityPolicy>,
 }
 
@@ -1083,8 +1070,6 @@ pub struct WorkspaceSettings {
     /// user toggle is locked. When `RespectUserSetting` (or absent), the user can choose.
     #[serde(default)]
     pub enable_warp_attribution: AdminEnablementSetting,
-    #[serde(default)]
-    pub default_host_slug: Option<String>,
 }
 
 /// A workspace-governable setting carried on [`TeamSettings`]: the effective
@@ -1242,8 +1227,6 @@ pub struct TeamSettings {
     /// user toggle is locked. When `RespectUserSetting` (or absent), the user can choose.
     #[serde(default)]
     pub enable_warp_attribution: AdminEnablementSetting,
-    #[serde(default)]
-    pub default_host_slug: Option<String>,
     pub team_byo: Option<TeamByoSettings>,
 }
 

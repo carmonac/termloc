@@ -26,8 +26,8 @@ fn prompt_chip_log_path_stays_beside_resolved_frontend_log() {
             "/tmp/warp-logs/warp-cli/warp_preview.prompt_chips.log",
         ),
         (
-            "/tmp/warp-logs/oz/warp.log",
-            "/tmp/warp-logs/oz/warp.prompt_chips.log",
+            "/tmp/warp-logs/cli/warp.log",
+            "/tmp/warp-logs/cli/warp.prompt_chips.log",
         ),
     ] {
         assert_eq!(

@@ -221,8 +221,6 @@
 
 # Agent SDK and platform crates
 /app/src/ai/agent_sdk/ @bnavetta @ianhodge
-/crates/isolation_platform/ @bnavetta @ianhodge
-/crates/managed_secrets/ @bnavetta @ianhodge
 /crates/warp_web_event_bus/ @bnavetta @ianhodge
 
 

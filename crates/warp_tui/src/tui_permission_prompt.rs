@@ -1,9 +1,6 @@
 //! Reusable interaction for TUI tool-call permission requests.
 
-use warp::tui_export::{
-    AIAgentActionId, BlocklistAIActionEvent, BlocklistAIActionModel, OptionFooter, OptionRow,
-    OptionSnapshot, OptionSourceStatus,
-};
+use warp::tui_export::{AIAgentActionId, BlocklistAIActionEvent, BlocklistAIActionModel};
 use warpui_core::elements::CrossAxisAlignment;
 use warpui_core::elements::tui::{
     Modifier, TuiChildView, TuiContainer, TuiElement, TuiFlex, TuiParentElement, TuiText,
@@ -18,7 +15,8 @@ use warpui_core::{
 use crate::editor_view::TuiEditorView;
 use crate::keybindings::{TUI_BINDING_GROUP, is_tui_owned_binding};
 use crate::option_selector::{
-    OptionSelectorPage, TuiOptionSelector, TuiOptionSelectorAction, TuiOptionSelectorEvent,
+    OptionFooter, OptionRow, OptionSelectorPage, OptionSnapshot, TuiOptionSelector,
+    TuiOptionSelectorAction, TuiOptionSelectorEvent,
 };
 use crate::tui_builder::TuiUiBuilder;
 
@@ -108,25 +106,21 @@ impl TuiPermissionPrompt {
                 OptionRow {
                     id: YES_ID.to_owned(),
                     label: "yes".to_owned(),
-                    harness: None,
                     badge: None,
                     disabled_reason: None,
                 },
                 OptionRow {
                     id: NO_ID.to_owned(),
                     label: "no".to_owned(),
-                    harness: None,
                     badge: None,
                     disabled_reason: None,
                 },
             ];
             selector.set_page(
                 OptionSelectorPage {
-                    header: None,
                     snapshot: OptionSnapshot {
                         rows,
                         selected_id: Some(YES_ID.to_owned()),
-                        status: OptionSourceStatus::Ready,
                         footer: Some(OptionFooter::CustomText {
                             label: "Other".to_owned(),
                         }),
@@ -231,7 +225,7 @@ impl TuiPermissionPrompt {
             | TuiOptionSelectorEvent::CustomTextOpened
             | TuiOptionSelectorEvent::CustomTextClosed => self.invalidate_layout(ctx),
             TuiOptionSelectorEvent::RowsReordered { .. } => {}
-            TuiOptionSelectorEvent::Confirmed { .. } | TuiOptionSelectorEvent::RetryRequested => {}
+            TuiOptionSelectorEvent::Confirmed { .. } => {}
         }
     }
     /// Requests remeasurement by the tool host.

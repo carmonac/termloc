@@ -65,7 +65,6 @@ fn first_zero_state_matches_welcome_design_copy() {
             "✶ State of the art coding agents",
             "✶ Frontier and open-weight models",
             "✶ Fully customizable model routers",
-            "✶ Orchestration for fleets of agents",
             "✶ Better shell command support",
         ] {
             assert!(

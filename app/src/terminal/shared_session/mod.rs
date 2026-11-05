@@ -57,15 +57,6 @@ impl SharedSessionSource {
         }
     }
 
-    pub fn ambient_agent(task_id: Option<String>) -> Self {
-        Self {
-            source_type: SessionSourceType::AmbientAgent {
-                task_id: task_id.clone(),
-            },
-            source_task_id: task_id,
-        }
-    }
-
     /// Sidecar first, then `AmbientAgent.task_id` for legacy producers.
     pub fn orchestrator_task_id(&self) -> Option<&str> {
         self.source_task_id.as_deref().or(match &self.source_type {

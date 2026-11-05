@@ -1,31 +1,23 @@
 //! [`TuiSessions`]: registry and foreground selection for live TUI sessions.
 //!
-//! Sessions retain either a terminal view with its manager or a lightweight
-//! cloud-run view. The container owns session lifetime and focus; the root view
-//! renders and routes input only to the focused session.
+//! Sessions retain a terminal view with its manager. The container owns session
+//! lifetime and focus; the root view renders and routes input only to the focused session.
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
 use pathfinder_geometry::vector::Vector2F;
 use warp::tui_export::{
-    AIConversation, AIConversationAutoexecuteMode, AIConversationId, AmbientAgentTaskId,
-    BannerState, BlocklistAIHistoryModel, GlobalResourceHandlesProvider, IsSharedSessionCreator,
-    LocalTtyTerminalManager, PersistenceWriter, ServerConversationToken,
-    TEAM_CHANGED_DURING_CHILD_LAUNCH_ERROR, TerminalManagerTrait, TerminalSurfaceResult,
-    UserWorkspaces, oz_run_url,
+    AIConversationAutoexecuteMode, BannerState, GlobalResourceHandlesProvider,
+    IsSharedSessionCreator, LocalTtyTerminalManager, PersistenceWriter, ServerConversationToken,
+    TerminalManagerTrait, TerminalSurfaceResult,
 };
 use warpui::SingletonEntity;
 use warpui_core::runtime::TuiDriverHandle;
 use warpui_core::{AppContext, Entity, EntityId, ModelContext, ModelHandle, ViewHandle, WindowId};
 
-use crate::cloud_run::TuiCloudRunState;
-use crate::cloud_run_view::TuiCloudRunView;
-use crate::orchestration_model::{
-    MaterializedLocalOzChildSession, TuiOrchestrationEvent, TuiOrchestrationModel,
-};
 use crate::resume::TuiExitSummaryHandle;
-use crate::terminal_session_view::{TuiTerminalSessionEvent, TuiTerminalSessionView};
+use crate::terminal_session_view::TuiTerminalSessionView;
 use crate::transcript_view::TRANSCRIPT_BLOCK_SPACING;
 
 /// Identifies a TUI terminal session.
@@ -42,78 +34,16 @@ impl TuiSessionId {
     }
 }
 
-/// A retained view hosted by the TUI session registry.
-#[derive(Clone)]
-pub(crate) enum TuiSessionView {
-    Terminal(ViewHandle<TuiTerminalSessionView>),
-    Cloud(ViewHandle<TuiCloudRunView>),
-}
-
-impl TuiSessionView {
-    pub(crate) fn id(&self) -> EntityId {
-        match self {
-            Self::Terminal(view) => view.id(),
-            Self::Cloud(view) => view.id(),
-        }
-    }
-
-    pub(crate) fn window_id(&self, ctx: &AppContext) -> WindowId {
-        match self {
-            Self::Terminal(view) => view.window_id(ctx),
-            Self::Cloud(view) => view.window_id(ctx),
-        }
-    }
-
-    pub(crate) fn activate(&self, ctx: &mut AppContext) {
-        match self {
-            Self::Terminal(view) => view.update(ctx, |view, ctx| view.activate(ctx)),
-            Self::Cloud(view) => view.update(ctx, |view, ctx| view.activate(ctx)),
-        }
-    }
-
-    pub(crate) fn refresh_orchestration_tab_state(&self, ctx: &mut AppContext) {
-        match self {
-            Self::Terminal(view) => {
-                view.update(ctx, |view, ctx| view.refresh_orchestration_tab_state(ctx));
-            }
-            Self::Cloud(view) => {
-                view.update(ctx, |view, ctx| view.refresh_orchestration_tab_state(ctx));
-            }
-        }
-    }
-
-    pub(crate) fn set_orchestration_tab_focus(&self, focused: bool, ctx: &mut AppContext) {
-        match self {
-            Self::Terminal(view) => {
-                view.update(ctx, |view, ctx| {
-                    view.set_orchestration_tab_focus(focused, ctx);
-                });
-            }
-            Self::Cloud(view) => {
-                view.update(ctx, |view, ctx| {
-                    view.set_orchestration_tab_focus(focused, ctx);
-                });
-            }
-        }
-    }
-}
-
 /// A live TUI session and any resources required to retain it.
 pub(crate) struct TuiSession {
     id: TuiSessionId,
-    view: TuiSessionView,
-    /// Present for terminal sessions to keep their PTY and event loop alive.
-    _manager: Option<ModelHandle<Box<dyn TerminalManagerTrait>>>,
-}
-
-/// Retained TUI session resources for a remote child.
-pub(crate) struct RemoteChildSession {
-    pub(crate) session_id: TuiSessionId,
-    pub(crate) cloud_run_state: ModelHandle<TuiCloudRunState>,
+    view: ViewHandle<TuiTerminalSessionView>,
+    /// Keeps the session's PTY and event loop alive.
+    _manager: ModelHandle<Box<dyn TerminalManagerTrait>>,
 }
 
 impl TuiSession {
-    pub(crate) fn view(&self) -> &TuiSessionView {
+    pub(crate) fn view(&self) -> &ViewHandle<TuiTerminalSessionView> {
         &self.view
     }
 }
@@ -221,98 +151,7 @@ impl TuiSessions {
         (session_id, surface)
     }
 
-    /// Creates and registers a lightweight cloud-run session.
-    pub(crate) fn create_cloud_run_session(
-        sessions: &ModelHandle<Self>,
-        window_id: WindowId,
-        cloud_run_state: ModelHandle<TuiCloudRunState>,
-        focus: bool,
-        ctx: &mut AppContext,
-    ) -> (TuiSessionId, ViewHandle<TuiCloudRunView>) {
-        let surface = ctx
-            .add_typed_action_tui_view(window_id, |ctx| TuiCloudRunView::new(cloud_run_state, ctx));
-        let session_id = Self::register_cloud_session(sessions, surface.clone(), focus, ctx);
-        (session_id, surface)
-    }
-
-    /// Creates and registers the retained session resources for a remote child.
-    pub(crate) fn create_remote_child_session(
-        sessions: &ModelHandle<Self>,
-        parent_session_id: TuiSessionId,
-        ctx: &mut AppContext,
-    ) -> RemoteChildSession {
-        let window_id = sessions
-            .as_ref(ctx)
-            .session(parent_session_id)
-            .expect("the dispatching parent session must remain registered")
-            .view()
-            .window_id(ctx);
-        let cloud_run_state = ctx.add_model(|_| TuiCloudRunState::new());
-        let (session_id, _) = Self::create_cloud_run_session(
-            sessions,
-            window_id,
-            cloud_run_state.clone(),
-            false,
-            ctx,
-        );
-        RemoteChildSession {
-            session_id,
-            cloud_run_state,
-        }
-    }
-
-    /// Creates an unfocused local terminal session for a restored child and
-    /// restores its persisted transcript onto it, without relaunching the child
-    /// or resending its prompt.
-    pub(crate) fn create_restored_local_child_session(
-        sessions: &ModelHandle<Self>,
-        window_id: WindowId,
-        startup_directory: Option<PathBuf>,
-        conversation: AIConversation,
-        ctx: &mut AppContext,
-    ) -> (TuiSessionId, ViewHandle<TuiTerminalSessionView>) {
-        let (session_id, surface) = Self::create_local_terminal_session(
-            sessions,
-            window_id,
-            false,
-            false,
-            startup_directory,
-            ctx,
-        );
-        surface.update(ctx, |view, ctx| {
-            view.restore_orchestrated_child_conversation(conversation, ctx);
-        });
-        (session_id, surface)
-    }
-
-    /// Creates an unfocused lightweight cloud session for a restored remote
-    /// child and associates its conversation with that cloud surface so it is
-    /// discoverable in the orchestration snapshot. The session starts in the
-    /// spawned state from the persisted task/run identity; no new task is
-    /// created.
-    pub(crate) fn create_restored_remote_child_session(
-        sessions: &ModelHandle<Self>,
-        window_id: WindowId,
-        conversation: AIConversation,
-        task_id: AmbientAgentTaskId,
-        run_id: String,
-        ctx: &mut AppContext,
-    ) -> TuiSessionId {
-        let conversation_id = conversation.id();
-        let run_url = oz_run_url(&run_id);
-        let cloud_run_state = ctx.add_model(|_| {
-            TuiCloudRunState::new_restored(conversation_id, task_id, run_id, run_url)
-        });
-        let (session_id, _surface) =
-            Self::create_cloud_run_session(sessions, window_id, cloud_run_state, false, ctx);
-        BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-            history.restore_conversations(session_id.surface_id(), vec![conversation], ctx);
-            history.set_active_conversation_id(conversation_id, session_id.surface_id(), ctx);
-        });
-        session_id
-    }
-
-    /// Wires a session view to orchestration before registering it.
+    /// Registers a session view with the manager that retains it.
     pub(crate) fn register_session(
         sessions: &ModelHandle<Self>,
         view: ViewHandle<TuiTerminalSessionView>,
@@ -321,34 +160,6 @@ impl TuiSessions {
         ctx: &mut AppContext,
     ) -> TuiSessionId {
         let id = TuiSessionId(view.id());
-        if ctx.has_singleton_model::<TuiOrchestrationModel>() {
-            let orchestration = TuiOrchestrationModel::handle(ctx);
-            ctx.subscribe_to_view(&view, move |_, event, ctx| match event {
-                TuiTerminalSessionEvent::StartAgentConversation {
-                    request,
-                    working_directory,
-                } => {
-                    orchestration.update(ctx, |orchestration, ctx| {
-                        orchestration.dispatch_create_agent(
-                            id,
-                            (**request).clone(),
-                            working_directory.clone(),
-                            ctx,
-                        );
-                    });
-                }
-                TuiTerminalSessionEvent::CleanupFailedChildLaunch { conversation_id } => {
-                    orchestration.update(ctx, |orchestration, ctx| {
-                        orchestration.cleanup_child(conversation_id, ctx);
-                    });
-                }
-                TuiTerminalSessionEvent::ExecuteCommand(_)
-                | TuiTerminalSessionEvent::InterruptPty
-                | TuiTerminalSessionEvent::WriteAgentInput { .. }
-                | TuiTerminalSessionEvent::WriteUserInput(_)
-                | TuiTerminalSessionEvent::Resize(_) => {}
-            });
-        }
         sessions.update(ctx, |sessions, ctx| {
             debug_assert!(
                 sessions.session(id).is_none(),
@@ -356,8 +167,8 @@ impl TuiSessions {
             );
             sessions.sessions.push(TuiSession {
                 id,
-                view: TuiSessionView::Terminal(view),
-                _manager: Some(manager),
+                view,
+                _manager: manager,
             });
             if focus {
                 sessions.focus_session(id, ctx);
@@ -365,242 +176,6 @@ impl TuiSessions {
             ctx.notify();
             id
         })
-    }
-
-    fn register_cloud_session(
-        sessions: &ModelHandle<Self>,
-        view: ViewHandle<TuiCloudRunView>,
-        focus: bool,
-        ctx: &mut AppContext,
-    ) -> TuiSessionId {
-        let id = TuiSessionId(view.id());
-        sessions.update(ctx, |sessions, ctx| {
-            debug_assert!(
-                sessions.session(id).is_none(),
-                "a session must not be registered twice"
-            );
-            sessions.sessions.push(TuiSession {
-                id,
-                view: TuiSessionView::Cloud(view),
-                _manager: None,
-            });
-            if focus {
-                sessions.focus_session(id, ctx);
-            }
-            ctx.notify();
-            id
-        })
-    }
-
-    /// Subscribes the session owner to orchestration lifecycle requests.
-    pub(crate) fn wire_orchestration(
-        sessions: &ModelHandle<Self>,
-        orchestration: &ModelHandle<TuiOrchestrationModel>,
-        ctx: &mut AppContext,
-    ) {
-        let sessions_for_model_updates = sessions.clone();
-        ctx.observe_model(orchestration, move |_, ctx| {
-            let focused_view = sessions_for_model_updates
-                .as_ref(ctx)
-                .focused_session()
-                .map(|session| session.view().clone());
-            if let Some(focused_view) = focused_view {
-                focused_view.refresh_orchestration_tab_state(ctx);
-            }
-        });
-
-        let sessions_for_focus_updates = sessions.clone();
-        ctx.subscribe_to_model(sessions, move |_, event, ctx| {
-            let TuiSessionsEvent::FocusChanged(session_id) = event else {
-                return;
-            };
-            let focused_view = sessions_for_focus_updates
-                .as_ref(ctx)
-                .session(*session_id)
-                .map(|session| session.view().clone());
-            if let Some(focused_view) = focused_view {
-                focused_view.refresh_orchestration_tab_state(ctx);
-            }
-        });
-        let sessions = sessions.clone();
-        let orchestration_for_events = orchestration.clone();
-        ctx.subscribe_to_model(orchestration, move |_, event, ctx| match event {
-            TuiOrchestrationEvent::CreateLocalChildSession {
-                parent_session_id,
-                request,
-                model_id,
-                working_directory,
-                task_id,
-                conversation_name,
-            } => {
-                let window_id = sessions
-                    .as_ref(ctx)
-                    .session(*parent_session_id)
-                    .expect("the dispatching parent session must remain registered")
-                    .view()
-                    .window_id(ctx);
-                let team_context =
-                    UserWorkspaces::as_ref(ctx).team_context_for_window_operation(window_id);
-                if !request.request_team_scope.matches_scope(&team_context) {
-                    orchestration_for_events.update(ctx, |orchestration, ctx| {
-                        orchestration.fail_child_request(
-                            request,
-                            TEAM_CHANGED_DURING_CHILD_LAUNCH_ERROR.to_string(),
-                            ctx,
-                        );
-                    });
-                    return;
-                }
-                let (session_id, session_view) = Self::create_local_terminal_session(
-                    &sessions,
-                    window_id,
-                    false,
-                    false,
-                    working_directory.clone(),
-                    ctx,
-                );
-                orchestration_for_events.update(ctx, |orchestration, ctx| {
-                    orchestration.register_local_oz_child_session(
-                        MaterializedLocalOzChildSession {
-                            parent_session_id: *parent_session_id,
-                            session_id,
-                            session_view,
-                            request: (**request).clone(),
-                            model_id: model_id.clone(),
-                            task_id: *task_id,
-                            conversation_name: conversation_name.clone(),
-                        },
-                        &team_context,
-                        ctx,
-                    );
-                });
-            }
-            TuiOrchestrationEvent::CreateRemoteChildSession {
-                parent_session_id,
-                request,
-                prepared,
-                team_scope,
-            } => {
-                let window_id = sessions
-                    .as_ref(ctx)
-                    .session(*parent_session_id)
-                    .expect("the dispatching parent session must remain registered")
-                    .view()
-                    .window_id(ctx);
-                let team_context =
-                    UserWorkspaces::as_ref(ctx).team_context_for_window_operation(window_id);
-                if !request.request_team_scope.matches_scope(&team_context) {
-                    orchestration_for_events.update(ctx, |orchestration, ctx| {
-                        orchestration.fail_child_request(
-                            request,
-                            TEAM_CHANGED_DURING_CHILD_LAUNCH_ERROR.to_string(),
-                            ctx,
-                        );
-                    });
-                    return;
-                }
-                let child = Self::create_remote_child_session(&sessions, *parent_session_id, ctx);
-                orchestration_for_events.update(ctx, |orchestration, ctx| {
-                    orchestration.register_remote_child_session(
-                        child,
-                        (**request).clone(),
-                        (**prepared).clone(),
-                        *team_scope,
-                        ctx,
-                    );
-                });
-            }
-            TuiOrchestrationEvent::KillLocalChildSession {
-                session_id,
-                conversation_id,
-            } => {
-                let child_view = sessions
-                    .as_ref(ctx)
-                    .session(*session_id)
-                    .map(|session| session.view().clone());
-                if let Some(child_view) = child_view {
-                    match child_view {
-                        TuiSessionView::Terminal(view) => {
-                            view.update(ctx, |view, ctx| {
-                                view.cancel_active_conversation(ctx);
-                            });
-                        }
-                        TuiSessionView::Cloud(_) => {}
-                    }
-                }
-                orchestration_for_events.update(ctx, |orchestration, ctx| {
-                    orchestration.cleanup_child(conversation_id, ctx);
-                });
-            }
-            TuiOrchestrationEvent::RestoreLocalChildSession {
-                root_session_id,
-                conversation,
-            } => {
-                let Some(window_id) = sessions
-                    .as_ref(ctx)
-                    .session(*root_session_id)
-                    .map(|session| session.view().window_id(ctx))
-                else {
-                    return;
-                };
-                let conversation_id = conversation.id();
-                let startup_directory = conversation
-                    .current_working_directory()
-                    .or_else(|| conversation.initial_working_directory())
-                    .map(PathBuf::from);
-                let (session_id, _session_view) = Self::create_restored_local_child_session(
-                    &sessions,
-                    window_id,
-                    startup_directory,
-                    (**conversation).clone(),
-                    ctx,
-                );
-                orchestration_for_events.update(ctx, |orchestration, ctx| {
-                    orchestration.register_restored_local_oz_child_session(
-                        session_id,
-                        conversation_id,
-                        ctx,
-                    );
-                });
-            }
-            TuiOrchestrationEvent::RestoreRemoteChildSession {
-                root_session_id,
-                conversation,
-                task_id,
-                run_id,
-            } => {
-                let Some(window_id) = sessions
-                    .as_ref(ctx)
-                    .session(*root_session_id)
-                    .map(|session| session.view().window_id(ctx))
-                else {
-                    return;
-                };
-                let conversation_id = conversation.id();
-                let session_id = Self::create_restored_remote_child_session(
-                    &sessions,
-                    window_id,
-                    (**conversation).clone(),
-                    *task_id,
-                    run_id.clone(),
-                    ctx,
-                );
-                orchestration_for_events.update(ctx, |orchestration, ctx| {
-                    orchestration.register_restored_remote_child_session(
-                        session_id,
-                        conversation_id,
-                        *task_id,
-                        ctx,
-                    );
-                });
-            }
-            TuiOrchestrationEvent::RemoveChildSession(session_id) => {
-                sessions.update(ctx, |sessions, ctx| {
-                    sessions.remove_session(*session_id, ctx);
-                });
-            }
-            TuiOrchestrationEvent::RestoredRemoteChildStatusUpdated { .. } => {}
-        });
     }
 
     /// Creates the app's session container.
@@ -651,10 +226,7 @@ impl TuiSessions {
         let terminal_views = self
             .sessions
             .iter()
-            .filter_map(|session| match &session.view {
-                TuiSessionView::Terminal(view) => Some(view.clone()),
-                TuiSessionView::Cloud(_) => None,
-            })
+            .map(|session| session.view.clone())
             .collect::<Vec<_>>();
         // Reconfigure the terminal before the sessions react, so a failed write
         // leaves them consistent with the reporting that is still in effect.
@@ -669,29 +241,6 @@ impl TuiSessions {
         Ok(())
     }
 
-    /// Removes a session. When the focused session is removed, focus falls
-    /// back to the most recently added remaining session, if any.
-    pub(crate) fn remove_session(&mut self, id: TuiSessionId, ctx: &mut ModelContext<Self>) {
-        let before = self.sessions.len();
-        self.sessions.retain(|session| session.id != id);
-        if self.sessions.len() == before {
-            return;
-        }
-        if ctx.has_singleton_model::<TuiOrchestrationModel>() {
-            TuiOrchestrationModel::handle(ctx).update(ctx, |orchestration, ctx| {
-                orchestration.handle_session_removed(id, ctx);
-            });
-        }
-        ctx.emit(TuiSessionsEvent::SessionRemoved(id));
-        if self.focused_session_id == Some(id) {
-            self.focused_session_id = None;
-            if let Some(fallback) = self.sessions.last().map(|session| session.id) {
-                self.focus_session(fallback, ctx);
-            }
-        }
-        ctx.notify();
-    }
-
     /// Removes every retained session without focusing an intermediate fallback.
     pub(crate) fn clear(&mut self, ctx: &mut ModelContext<Self>) {
         let removed_ids = self
@@ -701,13 +250,6 @@ impl TuiSessions {
             .collect::<Vec<_>>();
         self.focused_session_id = None;
         self.sessions.clear();
-        if ctx.has_singleton_model::<TuiOrchestrationModel>() {
-            for id in &removed_ids {
-                TuiOrchestrationModel::handle(ctx).update(ctx, |orchestration, ctx| {
-                    orchestration.handle_session_removed(*id, ctx);
-                });
-            }
-        }
         for id in removed_ids {
             ctx.emit(TuiSessionsEvent::SessionRemoved(id));
         }
@@ -724,7 +266,7 @@ impl TuiSessions {
             .expect("focused session was validated above")
             .view
             .clone();
-        view.activate(ctx);
+        view.update(ctx, |view, ctx| view.activate(ctx));
         ctx.emit(TuiSessionsEvent::FocusChanged(id));
         ctx.notify();
         true
@@ -744,41 +286,6 @@ impl TuiSessions {
     pub(crate) fn session(&self, id: TuiSessionId) -> Option<&TuiSession> {
         self.sessions.iter().find(|session| session.id == id)
     }
-
-    /// Looks up a retained session by its terminal surface id.
-    pub(crate) fn session_id_for_surface(&self, surface_id: EntityId) -> Option<TuiSessionId> {
-        self.sessions
-            .iter()
-            .find_map(|session| (session.id.surface_id() == surface_id).then_some(session.id))
-    }
-    pub(crate) fn set_orchestration_tab_focus(
-        session_id: TuiSessionId,
-        focused: bool,
-        ctx: &mut AppContext,
-    ) {
-        let view = Self::as_ref(ctx)
-            .session(session_id)
-            .map(|session| session.view.clone());
-        if let Some(view) = view {
-            view.set_orchestration_tab_focus(focused, ctx);
-        }
-    }
-
-    /// Builds the loaded conversation-to-session index used by one topology snapshot.
-    pub(crate) fn session_ids_by_conversation(
-        &self,
-        history: &BlocklistAIHistoryModel,
-    ) -> HashMap<AIConversationId, TuiSessionId> {
-        self.sessions
-            .iter()
-            .flat_map(|session| {
-                history
-                    .all_live_conversations_for_terminal_surface(session.id.surface_id())
-                    .map(move |conversation| (conversation.id(), session.id))
-            })
-            .collect()
-    }
-
     /// Whether no session has been registered.
     pub(crate) fn is_empty(&self) -> bool {
         self.sessions.is_empty()

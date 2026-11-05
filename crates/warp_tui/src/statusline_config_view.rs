@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use warp::settings::{TuiStatuslineConfig, TuiStatuslineItem};
 use warp::tui_export::{
     AskUserQuestionAction, AskUserQuestionItem, AskUserQuestionOption, AskUserQuestionSession,
-    AskUserQuestionType, OptionRow, OptionSnapshot, OptionSourceStatus, QuestionDraft,
+    AskUserQuestionType, QuestionDraft,
 };
 use warpui_core::elements::tui::{
     Modifier, TuiChildView, TuiContainer, TuiElement, TuiFlex, TuiText,
@@ -18,7 +18,8 @@ use warpui_core::{
 
 use crate::keybindings::{TUI_BINDING_GROUP, is_tui_owned_binding};
 use crate::option_selector::{
-    OptionSelectorPage, TuiOptionSelector, TuiOptionSelectorEvent, TuiOptionSelectorMoveDirection,
+    OptionRow, OptionSelectorPage, OptionSnapshot, TuiOptionSelector, TuiOptionSelectorEvent,
+    TuiOptionSelectorMoveDirection,
 };
 use crate::tui_builder::TuiUiBuilder;
 
@@ -147,7 +148,6 @@ impl TuiStatuslineConfigView {
                     .map(|index| OptionRow {
                         id: index.to_string(),
                         label: item.label().to_owned(),
-                        harness: None,
                         badge: None,
                         disabled_reason: None,
                     })
@@ -157,11 +157,9 @@ impl TuiStatuslineConfigView {
         self.selector.update(ctx, |selector, ctx| {
             selector.set_page(
                 OptionSelectorPage {
-                    header: None,
                     snapshot: OptionSnapshot {
                         rows,
                         selected_id,
-                        status: OptionSourceStatus::Ready,
                         footer: None,
                     },
                     searchable: true,
@@ -216,8 +214,7 @@ impl TuiStatuslineConfigView {
             TuiOptionSelectorEvent::CustomTextSubmitted { .. }
             | TuiOptionSelectorEvent::CustomTextCleared
             | TuiOptionSelectorEvent::CustomTextOpened
-            | TuiOptionSelectorEvent::CustomTextClosed
-            | TuiOptionSelectorEvent::RetryRequested => {}
+            | TuiOptionSelectorEvent::CustomTextClosed => {}
         }
     }
 

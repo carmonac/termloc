@@ -1,31 +1,22 @@
 //! WASM-only view functions for the Workspace.
 
-use warp_core::channel::ChannelState;
 use warpui::elements::{ChildView, Element};
 use warpui::{AppContext, SingletonEntity, ViewContext, ViewHandle};
 
 use super::PanelPosition;
 use crate::BlocklistAIHistoryModel;
-use crate::ai::agent_conversations_model::AgentConversationsModel;
 use crate::ai::conversation_details_panel::{
     ConversationDetailsData, ConversationDetailsPanel, ConversationDetailsPanelEvent,
 };
 use crate::terminal::TerminalView;
 use crate::ui_components::icons;
 use crate::uri::browser_url_handler::parse_current_url;
-use crate::view_components::action_button::{
-    ActionButton, ButtonSize, NakedTheme, PrimaryTheme, SecondaryTheme,
-};
+use crate::view_components::action_button::{ActionButton, ButtonSize, NakedTheme, PrimaryTheme};
 use crate::wasm_nux_dialog::{WasmNUXDialog, WasmNUXDialogEvent};
 use crate::workspace::action::WorkspaceAction;
 use crate::workspace::view::{NotebookSource, OpenWarpDriveObjectSettings, Workspace};
 
 const TRANSCRIPT_PANEL_WIDTH: f32 = 280.0;
-
-/// Builds the OZ runs URL for viewing all cloud runs.
-fn build_oz_runs_url() -> String {
-    format!("{}/runs", ChannelState::oz_root_url())
-}
 
 impl Workspace {
     pub(super) fn build_wasm_nux_dialog(ctx: &mut ViewContext<Self>) -> ViewHandle<WasmNUXDialog> {
@@ -50,17 +41,6 @@ impl Workspace {
                 } else {
                     log::warn!("Could not get URL for Open in Warp button");
                 }
-            })
-        })
-    }
-
-    pub(super) fn build_view_cloud_runs_button(
-        ctx: &mut ViewContext<Self>,
-    ) -> ViewHandle<ActionButton> {
-        let url = build_oz_runs_url();
-        ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("View all cloud runs", SecondaryTheme).on_click(move |ctx| {
-                ctx.dispatch_typed_action(WorkspaceAction::OpenLink(url.clone()));
             })
         })
     }
@@ -156,39 +136,7 @@ impl Workspace {
         }
 
         let terminal_view_id = terminal_view.id();
-        let task_id = terminal_view
-            .as_ref(ctx)
-            .ambient_agent_task_id_for_details_panel(ctx);
-
         self.transcript_details_panel.update(ctx, |panel, ctx| {
-            // If we have an ambient agent task ID, try to populate from task data
-            if let Some(task_id) = task_id {
-                let conversations_model_handle = AgentConversationsModel::handle(ctx);
-                let task = conversations_model_handle.update(ctx, |conversations_model, ctx| {
-                    conversations_model.get_or_async_fetch_task_data(&task_id, ctx)
-                });
-                if let Some(task) = task {
-                    let details = ConversationDetailsData::from_task(&task, None, None, ctx);
-                    panel.set_conversation_details(details, ctx);
-                    ctx.notify();
-                    return;
-                }
-
-                // Task not yet available - check if the fetch failed and show error state
-                if let Some(error_message) = conversations_model_handle
-                    .as_ref(ctx)
-                    .task_fetch_error(&task_id)
-                    .cloned()
-                {
-                    let details =
-                        ConversationDetailsData::from_task_id(task_id, Some(error_message));
-                    panel.set_conversation_details(details, ctx);
-                    ctx.notify();
-                    return;
-                }
-            }
-
-            // Otherwise, populate from conversation
             let history_model = BlocklistAIHistoryModel::handle(ctx).as_ref(ctx);
             if let Some(conversation) = history_model.active_conversation(terminal_view_id) {
                 let details = ConversationDetailsData::from_conversation(conversation, ctx);

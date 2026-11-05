@@ -3,8 +3,8 @@ use std::sync::Arc;
 use parking_lot::FairMutex;
 use warp::tui_export::{
     AIConversationAutoexecuteMode, AIConversationId, AgentConversationEntry,
-    AgentConversationListEntryState, AgentConversationListPolicy, AgentRunDisplayStatus,
-    AgentViewEntryOrigin, BlocklistAIHistoryEvent, BlocklistAIHistoryModel, ConversationSelection,
+    AgentConversationListEntryState, AgentConversationListPolicy, AgentViewEntryOrigin,
+    BlocklistAIHistoryEvent, BlocklistAIHistoryModel, ConversationSelection,
     ConversationSelectionEvent, EnterAgentViewError, Harness, PendingQueryState, TerminalModel,
 };
 use warpui::{AppContext, EntityId, ModelContext, SingletonEntity};
@@ -159,60 +159,35 @@ impl AgentConversationListPolicy for TuiConversationSelection {
             selected_id: self.selected_id(),
             local_conversation_id: entry.identity.local_conversation_id,
             has_server_token: entry.identity.server_conversation_token.is_some(),
-            is_cloud_agent_run: entry.is_cloud_agent_run(),
             harness: entry.display.harness,
-            status: &entry.display.status,
         })
     }
 }
 
-struct ConversationListEntryContext<'a> {
+struct ConversationListEntryContext {
     selected_id: Option<AIConversationId>,
     local_conversation_id: Option<AIConversationId>,
     has_server_token: bool,
-    is_cloud_agent_run: bool,
     harness: Option<Harness>,
-    status: &'a AgentRunDisplayStatus,
 }
 
 fn classify_conversation_list_entry(
-    context: ConversationListEntryContext<'_>,
+    context: ConversationListEntryContext,
 ) -> AgentConversationListEntryState {
     let ConversationListEntryContext {
         selected_id,
         local_conversation_id,
         has_server_token,
-        is_cloud_agent_run,
         harness,
-        status,
     } = context;
     if selected_id.is_some_and(|selected_id| local_conversation_id == Some(selected_id)) {
         return AgentConversationListEntryState::Selected;
     }
-    if harness != Some(Harness::Oz) {
+    if harness != Some(Harness::Local) {
         return AgentConversationListEntryState::Unavailable;
     }
 
-    let has_terminal_status = match status {
-        AgentRunDisplayStatus::TaskQueued
-        | AgentRunDisplayStatus::TaskPending
-        | AgentRunDisplayStatus::TaskClaimed
-        | AgentRunDisplayStatus::TaskInProgress
-        | AgentRunDisplayStatus::TaskBlocked { .. }
-        | AgentRunDisplayStatus::ConversationInProgress
-        | AgentRunDisplayStatus::ConversationBlocked { .. } => false,
-        AgentRunDisplayStatus::TaskSucceeded
-        | AgentRunDisplayStatus::TaskFailed
-        | AgentRunDisplayStatus::TaskError
-        | AgentRunDisplayStatus::TaskCancelled
-        | AgentRunDisplayStatus::TaskUnknown
-        | AgentRunDisplayStatus::ConversationSucceeded
-        | AgentRunDisplayStatus::ConversationError
-        | AgentRunDisplayStatus::ConversationCancelled => true,
-    };
-    if (!is_cloud_agent_run || has_terminal_status)
-        && (local_conversation_id.is_some() || has_server_token)
-    {
+    if local_conversation_id.is_some() || has_server_token {
         AgentConversationListEntryState::Available
     } else {
         AgentConversationListEntryState::Unavailable

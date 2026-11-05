@@ -1,5 +1,3 @@
-#[cfg(test)]
-use std::rc::Rc;
 use std::sync::{Arc, Weak};
 use std::{error, fmt};
 
@@ -18,13 +16,11 @@ use crate::input_mode_policy;
 use crate::input_suggestions_mode::{TuiInputSuggestionsMode, TuiInputSuggestionsModeModel};
 use crate::keybindings::{PLAN_TOGGLE_BINDING_NAME, binding_hint};
 use crate::read_only_menu::TuiReadOnlyMenuKind;
-use crate::tab_bar::TuiTabBarView;
 use crate::terminal_use::{TuiInputTarget, inline_process_owns_input, tui_input_target};
 use crate::transcript_view::TuiTranscriptView;
 use crate::tui_cli_subagent_view::{HAND_BACK_KEY_BINDING, TAKE_CONTROL_KEY_BINDING};
 
 const ASK_AGENT_HINT: &str = "Ask the agent anything";
-const ORCHESTRATION_HINT: &str = "Shift + ↑ for other agents";
 const SHORTCUTS_HINT: &str = "? for shortcuts";
 const SHELL_MODE_HINT: &str = "! for shell mode";
 const COMMANDS_HINT: &str = "/ for commands";
@@ -38,13 +34,11 @@ enum TuiTerminalSessionStateSource {
         transcript: WeakViewHandle<TuiTranscriptView>,
         input_mode: WeakModelHandle<BlocklistAIInputModel>,
         suggestions_mode: WeakModelHandle<TuiInputSuggestionsModeModel>,
-        orchestration_tab_bar: WeakViewHandle<TuiTabBarView>,
     },
     #[cfg(test)]
     InputTest {
         input_mode: WeakModelHandle<BlocklistAIInputModel>,
         suggestions_mode: WeakModelHandle<TuiInputSuggestionsModeModel>,
-        orchestration_tabs_available: Rc<dyn Fn(&AppContext) -> bool>,
     },
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -72,7 +66,6 @@ pub(crate) enum TuiTerminalSessionStateResolveError {
     Transcript,
     InputMode,
     SuggestionsMode,
-    OrchestrationTabBar,
 }
 
 impl fmt::Display for TuiTerminalSessionStateResolveError {
@@ -83,7 +76,6 @@ impl fmt::Display for TuiTerminalSessionStateResolveError {
             Self::Transcript => "transcript view is unavailable",
             Self::InputMode => "input-mode model is unavailable",
             Self::SuggestionsMode => "suggestions-mode model is unavailable",
-            Self::OrchestrationTabBar => "orchestration tab bar is unavailable",
         })
     }
 }
@@ -109,7 +101,6 @@ impl TuiTerminalSessionStateModel {
         transcript: &ViewHandle<TuiTranscriptView>,
         input_mode: &ModelHandle<BlocklistAIInputModel>,
         suggestions_mode: &ModelHandle<TuiInputSuggestionsModeModel>,
-        orchestration_tab_bar: &ViewHandle<TuiTabBarView>,
         first_zero_state: TuiFirstZeroStateState,
     ) -> Self {
         Self {
@@ -119,7 +110,6 @@ impl TuiTerminalSessionStateModel {
                 transcript: transcript.downgrade(),
                 input_mode: input_mode.downgrade(),
                 suggestions_mode: suggestions_mode.downgrade(),
-                orchestration_tab_bar: orchestration_tab_bar.downgrade(),
             },
             first_zero_state,
         }
@@ -158,13 +148,11 @@ impl TuiTerminalSessionStateModel {
     pub(crate) fn new_for_input(
         input_mode: &ModelHandle<BlocklistAIInputModel>,
         suggestions_mode: &ModelHandle<TuiInputSuggestionsModeModel>,
-        orchestration_tabs_available: impl Fn(&AppContext) -> bool + 'static,
     ) -> Self {
         Self {
             source: TuiTerminalSessionStateSource::InputTest {
                 input_mode: input_mode.downgrade(),
                 suggestions_mode: suggestions_mode.downgrade(),
-                orchestration_tabs_available: Rc::new(orchestration_tabs_available),
             },
             first_zero_state: TuiFirstZeroStateState::Dismissed,
         }
@@ -181,7 +169,6 @@ impl TuiTerminalSessionStateModel {
                 transcript,
                 input_mode,
                 suggestions_mode,
-                orchestration_tab_bar,
             } => {
                 let terminal_model = upgrade_terminal_model(terminal_model)?;
                 let cli_subagent_controller = cli_subagent_controller
@@ -196,9 +183,6 @@ impl TuiTerminalSessionStateModel {
                 let suggestions_mode = suggestions_mode
                     .upgrade(ctx)
                     .ok_or(TuiTerminalSessionStateResolveError::SuggestionsMode)?;
-                let orchestration_tab_bar = orchestration_tab_bar
-                    .upgrade(ctx)
-                    .ok_or(TuiTerminalSessionStateResolveError::OrchestrationTabBar)?;
                 let (
                     alt_screen_active,
                     input_target,
@@ -260,7 +244,6 @@ impl TuiTerminalSessionStateModel {
                 let state = TuiBlockSessionState {
                     interaction,
                     transcript_is_empty: transcript.as_ref(ctx).is_empty(),
-                    orchestration_available: orchestration_tab_bar.as_ref(ctx).has_tabs(),
                     plan_available: transcript.as_ref(ctx).has_toggleable_plan(ctx),
                     can_attach_agent_to_running_command,
                     agent_is_tagged_in,
@@ -278,7 +261,6 @@ impl TuiTerminalSessionStateModel {
             TuiTerminalSessionStateSource::InputTest {
                 input_mode,
                 suggestions_mode,
-                orchestration_tabs_available,
             } => {
                 let input_mode = input_mode
                     .upgrade(ctx)
@@ -290,7 +272,6 @@ impl TuiTerminalSessionStateModel {
                     input_mode_policy::is_shell_mode(input_mode.as_ref(ctx)),
                     suggestions_mode.as_ref(ctx).mode(),
                     true,
-                    orchestration_tabs_available(ctx),
                 ))
             }
         }
@@ -312,13 +293,12 @@ pub(crate) enum TuiTerminalSessionState {
 
 /// State available only while the block UI is the active surface.
 ///
-/// `interaction` is exclusive, while orchestration and plan availability are
-/// additive capabilities that may contribute shortcuts to a composer.
+/// `interaction` is exclusive, while plan availability is an additive capability
+/// that may contribute shortcuts to a composer.
 #[derive(Clone)]
 pub(crate) struct TuiBlockSessionState {
     pub(super) interaction: TuiInteractionState,
     pub(super) transcript_is_empty: bool,
-    pub(super) orchestration_available: bool,
     pub(super) plan_available: bool,
     pub(super) can_attach_agent_to_running_command: bool,
     pub(super) agent_is_tagged_in: bool,
@@ -372,13 +352,6 @@ pub(crate) struct TuiShortcutSection {
 }
 
 impl TuiTerminalSessionState {
-    pub(super) fn with_blocking_input_source(mut self, source: BlockingInputSource) -> Self {
-        let state = match &mut self {
-            Self::AltScreen { state, .. } | Self::Block(state) => state,
-        };
-        state.interaction = TuiInteractionState::Blocking(source);
-        self
-    }
     fn state(&self) -> &TuiBlockSessionState {
         match self {
             Self::AltScreen { state, .. } | Self::Block(state) => state,
@@ -414,7 +387,6 @@ impl TuiTerminalSessionState {
         input_is_shell: bool,
         suggestions_mode: TuiInputSuggestionsMode,
         transcript_is_empty: bool,
-        orchestration_available: bool,
     ) -> Self {
         let mode = if input_is_shell {
             TuiComposerMode::Shell
@@ -429,7 +401,6 @@ impl TuiTerminalSessionState {
                 suggestions_mode,
             }),
             transcript_is_empty,
-            orchestration_available,
             plan_available: false,
             can_attach_agent_to_running_command: false,
             agent_is_tagged_in: false,
@@ -442,10 +413,9 @@ impl TuiTerminalSessionState {
             Self::Block(state) => match &state.interaction {
                 TuiInteractionState::Blocking(source) => match source {
                     BlockingInputSource::LongRunningCommand => TuiInputTarget::Pty,
-                    BlockingInputSource::AskQuestion(_)
-                    | BlockingInputSource::Permission(_)
-                    | BlockingInputSource::Orchestration(_)
-                    | BlockingInputSource::Handoff(_) => TuiInputTarget::Disabled,
+                    BlockingInputSource::AskQuestion(_) | BlockingInputSource::Permission(_) => {
+                        TuiInputTarget::Disabled
+                    }
                 },
                 TuiInteractionState::StartingShell => TuiInputTarget::Disabled,
                 TuiInteractionState::AgentEditor(_) => TuiInputTarget::AgentEditor,
@@ -460,10 +430,6 @@ impl TuiTerminalSessionState {
             TuiInteractionState::Blocking(BlockingInputSource::LongRunningCommand)
                 | TuiInteractionState::Pty(TuiPtyState::UserControlledTerminalUse)
         )
-    }
-
-    pub(crate) fn orchestration_available(&self) -> bool {
-        self.state().orchestration_available
     }
 
     pub(crate) fn plan_available(&self) -> bool {
@@ -505,9 +471,7 @@ impl TuiTerminalSessionState {
         }
         Some(match agent_editor.mode {
             TuiComposerMode::Shell => SHELL_HINT.to_owned(),
-            TuiComposerMode::Agent { .. } => {
-                agent_input_hint(state.transcript_is_empty, state.orchestration_available)
-            }
+            TuiComposerMode::Agent { .. } => agent_input_hint(state.transcript_is_empty),
         })
     }
 
@@ -535,10 +499,7 @@ impl TuiTerminalSessionState {
                 }];
             }
             TuiInteractionState::Blocking(
-                BlockingInputSource::AskQuestion(_)
-                | BlockingInputSource::Permission(_)
-                | BlockingInputSource::Orchestration(_)
-                | BlockingInputSource::Handoff(_),
+                BlockingInputSource::AskQuestion(_) | BlockingInputSource::Permission(_),
             )
             | TuiInteractionState::StartingShell
             | TuiInteractionState::Pty(TuiPtyState::Process) => return Vec::new(),
@@ -628,35 +589,21 @@ impl TuiTerminalSessionState {
                 }],
             });
         }
-        if state.orchestration_available {
-            sections.push(TuiShortcutSection {
-                title: "Orchestration",
-                shortcuts: vec![TuiShortcut {
-                    key: "Shift+↑".to_owned(),
-                    description: "navigate to agents",
-                }],
-            });
-        }
         sections
     }
 }
 
-fn agent_input_hint(transcript_is_empty: bool, orchestration_tabs_available: bool) -> String {
-    let mut hints = Vec::with_capacity(5);
-    if transcript_is_empty {
-        hints.push(SHORTCUTS_HINT);
-        if orchestration_tabs_available {
-            hints.push(ORCHESTRATION_HINT);
-        }
-        hints.extend([COMMANDS_HINT, CONVERSATIONS_HINT]);
+fn agent_input_hint(transcript_is_empty: bool) -> String {
+    let hints: &[&str] = if transcript_is_empty {
+        &[SHORTCUTS_HINT, COMMANDS_HINT, CONVERSATIONS_HINT]
     } else {
-        hints.push(ASK_AGENT_HINT);
-        hints.push(SHORTCUTS_HINT);
-        if orchestration_tabs_available {
-            hints.push(ORCHESTRATION_HINT);
-        }
-        hints.extend([SHELL_MODE_HINT, COMMANDS_HINT]);
-    }
+        &[
+            ASK_AGENT_HINT,
+            SHORTCUTS_HINT,
+            SHELL_MODE_HINT,
+            COMMANDS_HINT,
+        ]
+    };
     hints.join(HINT_SEPARATOR)
 }
 

@@ -59,6 +59,7 @@ This fork runs entirely on the user's machine: `termloc` is the only GUI binary,
 - `crates/local_agent` produces the `ResponseEvent` stream the server used to send; `app/src/ai/local.rs` connects it to the app.
 - `LocalObjectClient` stands in for the server in Drive, whose objects live in SQLite.
 - `LocalStore` stands in for the server in codebase indexing, with one embeddings log per Ollama model.
+- `app/src/ai/acp` is the Agent Client Protocol client, entered through the `acp-bridge` worker; nothing in the app starts an ACP session yet.
 
 ## Architecture Overview
 

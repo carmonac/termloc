@@ -52,14 +52,11 @@ impl TerminalView {
         origin: AgentViewEntryOrigin,
         ctx: &mut ViewContext<Self>,
     ) {
-        // Don't allow starting a new conversation while the agent is in control. 3p cloud
-        // viewers enter agent view to wrap an existing run's content and are not starting a
-        // new conversation, so they are exempt from this guard.
-        if !matches!(&origin, AgentViewEntryOrigin::ThirdPartyCloudAgent)
-            && !self
-                .ai_context_model
-                .as_ref(ctx)
-                .can_start_new_conversation()
+        // Don't allow starting a new conversation while the agent is in control.
+        if !self
+            .ai_context_model
+            .as_ref(ctx)
+            .can_start_new_conversation()
         {
             let window_id = ctx.window_id();
             ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
@@ -83,40 +80,6 @@ impl TerminalView {
             self.show_error_toast(e.to_string(), ctx);
         }
         self.redetermine_global_focus(ctx);
-    }
-
-    // Enters the agent view for a restored CLI agent transcript, setting the title using the
-    // restored CLI conversation metadata if we have it.
-    pub(crate) fn enter_agent_view_for_restored_cli_agent(
-        &mut self,
-        fallback_title: String,
-        ctx: &mut ViewContext<Self>,
-    ) -> Option<AIConversationId> {
-        let origin = AgentViewEntryOrigin::ThirdPartyCloudAgent;
-
-        match self.try_enter_agent_view(None, origin.clone(), None, ctx) {
-            Ok(conversation_id) => {
-                let title = fallback_title.trim();
-                if !title.is_empty() {
-                    BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, _| {
-                        if let Some(conversation) = history.conversation_mut(&conversation_id) {
-                            conversation.set_fallback_display_title(title.to_owned());
-                        }
-                    });
-                }
-                self.redetermine_global_focus(ctx);
-                Some(conversation_id)
-            }
-            Err(e) => {
-                report_error!(
-                    anyhow::Error::new(e).context("Failed to enter agent view for restored CLI agent"),
-                    extra: { "origin" => ?origin }
-                );
-                self.show_error_toast(e.to_string(), ctx);
-                self.redetermine_global_focus(ctx);
-                None
-            }
-        }
     }
 
     pub fn enter_agent_view_for_conversation(
@@ -183,7 +146,7 @@ impl TerminalView {
                     );
                     return;
                 };
-                // For Oz conversations, restore data and then re-enter agent view (the
+                // For local agent conversations, restore data and then re-enter agent view (the
                 // conversation will be in memory after restoration).
                 // For CLI agent conversations, restore the block snapshot only. Because we
                 // don't update the in-memory model in this case, attempting to re-enter agent
@@ -192,7 +155,7 @@ impl TerminalView {
                 #[allow(clippy::type_complexity)]
                 let on_restored: Box<
                     dyn FnOnce(&mut Self, &mut ViewContext<Self>),
-                > = if matches!(&conversation, CloudConversationData::Oz(_)) {
+                > = if matches!(&conversation, CloudConversationData::Local(_)) {
                     Box::new(move |me, ctx| {
                         me.enter_agent_view_for_conversation(
                             initial_prompt,

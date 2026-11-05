@@ -91,10 +91,7 @@ warp_features = { path = "crates/warp_features" }
 warp_files = { path = "crates/warp_files" }
 warp_graphql = { path = "crates/graphql" }
 warp_graphql_schema = { path = "crates/warp_graphql_schema" }
-warp_harness_usage = { path = "crates/warp_harness_usage" }
-warp_isolation_platform = { path = "crates/isolation_platform" }
 warp_logging = { path = "crates/warp_logging" }
-warp_managed_secrets = { path = "crates/managed_secrets" }
 warp_multi_agent_client = { path = "crates/warp_multi_agent_client" }
 warp_ripgrep = { path = "crates/warp_ripgrep" }
 warp_search_core = { path = "crates/warp_search_core" }
@@ -483,7 +480,7 @@ debug-assertions = true
 [profile.rltoda]
 inherits = "release-lto-debug_assertions"
 
-# A profile tuned for the `oz` CLI tarball. The CLI is shipped over the network
+# A profile tuned for the `warpctrl` CLI tarball. The CLI is shipped over the network
 # and run headlessly, so we trade some compile time and a small amount of
 # runtime perf for a smaller binary by mirroring the size-leaning settings used
 # by `release-wasm`.

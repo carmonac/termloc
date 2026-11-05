@@ -11,36 +11,14 @@
 #   - BUNDLE_ID: The app ID for the bundle (e.g.: "dev.warp.WarpDev").
 #   - EXECUTABLE_PATH: The path to the compiled executable we want to install.
 #   - BINARY_NAME: The name that the compiled executable should have on the target machine.
-#   - ARTIFACT: Which artifact to build: app or cli.
 
 set -e
 
 # Extract channel suffix from BINARY_NAME
-if [ "$ARTIFACT" = "cli" ]; then
-  CHANNEL_SUFFIX="${BINARY_NAME#oz}"
-else
-  CHANNEL_SUFFIX="${BINARY_NAME#termloc}"
-fi
+CHANNEL_SUFFIX="${BINARY_NAME#termloc}"
 
-# On Linux, we keep the `-stable` suffix for stable to avoid package conflicts.
-# The binary name is still `oz`, and the repo name is still `warpdotdev`.
-if [ "$ARTIFACT" = "cli" -a "$RELEASE_CHANNEL" = "stable" ]; then
-  CHANNEL_SUFFIX="-stable"
-fi
-
-case "$ARTIFACT" in
-  app)
-    PACKAGE_NAME="termloc$CHANNEL_SUFFIX"
-    ;;
-  cli)
-    PACKAGE_NAME="oz$CHANNEL_SUFFIX"
-    ;;
-  *)
-    echo "::error ::Unknown ARTIFACT: $ARTIFACT (expected 'app' or 'cli')"
-    exit 1
-    ;;
-esac
-TEMPLATE_DIR="$WORKSPACE_ROOT_DIR/resources/linux/debian/$ARTIFACT"
+PACKAGE_NAME="termloc$CHANNEL_SUFFIX"
+TEMPLATE_DIR="$WORKSPACE_ROOT_DIR/resources/linux/debian/app"
 
 BUILD_ARCH="${BUILD_ARCH:-$(uname -m)}"
 if [ "$BUILD_ARCH" = "aarch64" ]; then

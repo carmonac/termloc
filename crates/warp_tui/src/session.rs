@@ -24,7 +24,6 @@ use warpui_core::runtime::{TuiDriverStartupError, TuiFocusPolicy, spawn_tui_driv
 use warpui_core::{AddWindowOptions, AppContext, ModelHandle, ViewHandle};
 
 use crate::clipboard::copy_to_clipboard;
-use crate::orchestration_model::TuiOrchestrationModel;
 use crate::resume::TuiExitSummaryHandle;
 use crate::root_view::RootTuiView;
 use crate::session_registry::{TuiSessions, TuiSessionsEvent};
@@ -49,7 +48,7 @@ struct TuiArgs {
     #[command(subcommand)]
     command: Option<TuiCommand>,
 
-    /// Resume an Oz/Warp conversation by server token.
+    /// Resume a local agent conversation by server token.
     #[arg(long)]
     resume: Option<String>,
 
@@ -228,8 +227,6 @@ fn init(
                     TuiSessionsEvent::FocusChanged(_) => ctx.notify(),
                 });
             });
-            let orchestration = TuiOrchestrationModel::register(ctx);
-            TuiSessions::wire_orchestration(&sessions, &orchestration, ctx);
             let sessions_for_login = sessions.clone();
             let root_for_login = root.clone();
             let login_model = TuiLoginModel::handle(ctx);

@@ -4,11 +4,9 @@ use warpui::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity, Win
 use crate::ai::agent_conversations_model::{
     AgentConversationEntry, AgentConversationEntryId, AgentConversationsModel,
     AgentConversationsModelEvent, AgentManagementFilters, ArtifactFilter, ConversationUpdateKind,
-    CreatedOnFilter, CreatorFilter, OwnerFilter, SourceFilter, StatusFilter,
+    CreatedOnFilter, StatusFilter,
 };
-use crate::workspaces::user_workspaces::{
-    TeamContextResolver, UserWorkspaces, UserWorkspacesEvent,
-};
+use crate::workspaces::user_workspaces::{UserWorkspaces, UserWorkspacesEvent};
 
 pub struct ConversationListViewModelEvent;
 
@@ -23,7 +21,6 @@ pub struct ConversationListViewModel {
     cached_entry_ids: Vec<AgentConversationEntryId>,
     filtered_items: Vec<ConversationEntry>,
     search_query: String,
-    team_context_resolver: TeamContextResolver,
 }
 
 impl Entity for ConversationListViewModel {
@@ -31,20 +28,14 @@ impl Entity for ConversationListViewModel {
 }
 
 impl ConversationListViewModel {
-    pub fn new(
-        window_id: WindowId,
-        team_context_resolver: TeamContextResolver,
-        ctx: &mut ModelContext<Self>,
-    ) -> Self {
+    pub fn new(window_id: WindowId, ctx: &mut ModelContext<Self>) -> Self {
         let conversations_model = AgentConversationsModel::handle(ctx);
 
         ctx.subscribe_to_model(&conversations_model, |me, _, event, ctx| {
             match event {
                 // These events change the set of items in the list, so we need
                 // to rebuild the cached ID list.
-                AgentConversationsModelEvent::ConversationsLoaded
-                | AgentConversationsModelEvent::NewTasksReceived
-                | AgentConversationsModelEvent::TasksUpdated => {
+                AgentConversationsModelEvent::ConversationsLoaded => {
                     me.refresh_cached_items(ctx);
                 }
                 // Status changes don't affect the set of IDs (status is read
@@ -80,7 +71,6 @@ impl ConversationListViewModel {
             cached_entry_ids: Vec::new(),
             filtered_items: Vec::new(),
             search_query: String::new(),
-            team_context_resolver,
         };
         model.refresh_cached_items(ctx);
         model
@@ -95,20 +85,14 @@ impl ConversationListViewModel {
     /// emitting `ConversationListViewModelEvent` is sufficient there.
     fn refresh_cached_items(&mut self, ctx: &mut ModelContext<Self>) {
         let model = self.conversations_model.as_ref(ctx);
-        let scope = (self.team_context_resolver)(ctx);
         self.cached_entry_ids = model
             .get_entries(
                 &AgentManagementFilters {
-                    owners: OwnerFilter::PersonalOnly,
                     status: StatusFilter::All,
-                    source: SourceFilter::All,
                     created_on: CreatedOnFilter::All,
-                    creator: CreatorFilter::All,
                     artifact: ArtifactFilter::All,
-                    environment: Default::default(),
                     harness: Default::default(),
                 },
-                &scope,
                 ctx,
             )
             .into_iter()

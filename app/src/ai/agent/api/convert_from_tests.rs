@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use ai::agent::action::AskUserQuestionType;
 use ai::skills::SkillPathOrigin;
 use warp_multi_agent_api as api;
@@ -10,29 +8,6 @@ use super::{
 };
 use crate::ai::agent::task::TaskId;
 use crate::ai::agent::{AIAgentActionType, AIAgentOutputMessageType};
-
-fn upload_artifact_tool_call_message(path: &str, description: &str) -> api::Message {
-    api::Message {
-        fetched_memories: vec![],
-        id: "message-id".to_string(),
-        task_id: "task-id".to_string(),
-        server_message_data: String::new(),
-        citations: vec![],
-        message: Some(api::message::Message::ToolCall(api::message::ToolCall {
-            tool_call_id: "tool-call-id".to_string(),
-            tool: Some(api::message::tool_call::Tool::UploadFileArtifact(
-                api::UploadFileArtifact {
-                    file: Some(api::FilePathReference {
-                        file_path: path.to_string(),
-                    }),
-                    description: description.to_string(),
-                },
-            )),
-        })),
-        request_id: "request-id".to_string(),
-        timestamp: None,
-    }
-}
 
 fn file_artifact_created_message(filepath: &str, description: &str) -> api::Message {
     api::Message {
@@ -112,19 +87,6 @@ fn convert_api_question_uses_zero_based_recommended_index_when_present() {
     assert!(!options[1].recommended);
 }
 
-fn extract_upload_artifact_action(output: MaybeAIAgentOutputMessage) -> (String, Option<String>) {
-    let MaybeAIAgentOutputMessage::Message(output_message) = output else {
-        panic!("expected output message");
-    };
-    let AIAgentOutputMessageType::Action(action) = output_message.message else {
-        panic!("expected action output message");
-    };
-    let AIAgentActionType::UploadArtifact(request) = action.action else {
-        panic!("expected UploadArtifact action");
-    };
-    (request.file_path, request.description)
-}
-
 fn extract_file_artifact_created(
     output: MaybeAIAgentOutputMessage,
 ) -> (String, String, Option<String>, i64) {
@@ -145,73 +107,6 @@ fn extract_file_artifact_created(
         panic!("expected file artifact created output message");
     };
     (filepath, filename, description, size_bytes)
-}
-
-#[test]
-fn converts_run_agents_metadata_maps() {
-    let task_id = TaskId::new("task-id".to_string());
-    let metadata = HashMap::from([("ticket_id".to_string(), "ENG-42".to_string())]);
-    let child_metadata = HashMap::from([("stage".to_string(), String::new())]);
-    let message = api::Message {
-        message: Some(api::message::Message::ToolCall(api::message::ToolCall {
-            tool_call_id: "run-agents".to_string(),
-            tool: Some(api::message::tool_call::Tool::RunAgents(api::RunAgents {
-                metadata: metadata.clone(),
-                agent_run_configs: vec![api::run_agents::AgentRunConfig {
-                    name: "child".to_string(),
-                    metadata: child_metadata.clone(),
-                    ..Default::default()
-                }],
-                ..Default::default()
-            })),
-        })),
-        ..Default::default()
-    };
-    let output = message
-        .to_client_output_message(ConversionParams {
-            task_id: &task_id,
-            current_todo_list: None,
-            active_code_review: None,
-            skill_path_origin: &SkillPathOrigin::Local,
-        })
-        .unwrap();
-    let MaybeAIAgentOutputMessage::Message(output) = output else {
-        panic!("expected message");
-    };
-    let AIAgentOutputMessageType::Action(action) = output.message else {
-        panic!("expected action");
-    };
-    let AIAgentActionType::RunAgents(request) = action.action else {
-        panic!("expected run_agents");
-    };
-    assert_eq!(request.metadata, metadata);
-    assert_eq!(request.agent_run_configs[0].metadata, child_metadata);
-}
-
-#[test]
-fn converts_upload_artifact_tool_call_to_action() {
-    let task_id = TaskId::new("task-id".to_string());
-    let message = upload_artifact_tool_call_message(
-        "/tmp/build/output.log",
-        "Build output for the latest run",
-    );
-
-    let output = message
-        .to_client_output_message(ConversionParams {
-            task_id: &task_id,
-            current_todo_list: None,
-            active_code_review: None,
-            skill_path_origin: &SkillPathOrigin::Local,
-        })
-        .expect("conversion should succeed");
-
-    let (file_path, description) = extract_upload_artifact_action(output);
-
-    assert_eq!(file_path, "/tmp/build/output.log");
-    assert_eq!(
-        description.as_deref(),
-        Some("Build output for the latest run")
-    );
 }
 
 #[test]

@@ -164,7 +164,7 @@ pub struct ConversationSummaryBackfill {
 /// Returns the previously-persisted data, if any, and handles for
 /// writing updated data to persist, if the persistence subsystem is
 /// available.
-#[tracing::instrument(name = "persistence::initialize", skip_all, fields(tags.cloud_agent = true))]
+#[tracing::instrument(name = "persistence::initialize", skip_all)]
 #[cfg_attr(not(feature = "local_fs"), allow(unused_variables))]
 pub fn initialize(
     ctx: &mut AppContext,
@@ -183,8 +183,8 @@ pub fn initialize(
     }
 }
 
-// Remove sqlite database as part of Logout v0.
 // TODO: Implement per user scoping of sqlite.
+#[cfg(feature = "tui")]
 #[cfg_attr(not(feature = "local_fs"), allow(unused_variables))]
 pub fn remove(sender: &Option<SyncSender<ModelEvent>>) {
     cfg_if::cfg_if! {

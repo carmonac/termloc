@@ -24,8 +24,8 @@ use warp::tui_export::{
     AIBlockModel, AIBlockOutputStatus, AIConversationAutoexecuteMode, AIConversationId,
     AIRequestType, AgentViewEntryOrigin, AskUserQuestionItem, AskUserQuestionOption,
     AskUserQuestionType, BlockPadding, BlocklistAIHistoryEvent, BlocklistAIHistoryModel,
-    ChargeUnit, ConversationStatus, ConversationUsageTotals, Harness, InputTypeAutoDetectionSource,
-    LLMId, LLMPreferences, LinkedWorkflowData, LongRunningCommandControlState, MessageId,
+    ChargeUnit, ConversationStatus, ConversationUsageTotals, InputTypeAutoDetectionSource, LLMId,
+    LLMPreferences, LinkedWorkflowData, LongRunningCommandControlState, MessageId,
     OutputStatusUpdateCallback, ParsedSlashCommandInput, PtyIntent, PtyIntentEvent,
     ResolvedTeamScope, ServerOutputId, Session, Shared, SizeInfo, SizeUpdate,
     SlashCommandDataSource as _, SlashCommandKind, TaskId, TranscriptScope, TuiMcpAction,
@@ -36,19 +36,15 @@ use warp::tui_export::{
     set_tui_workspace_teams_for_test, slash_commands,
 };
 use warp_core::channel::{Channel, ChannelState};
-use warp_core::features::FeatureFlag;
 use warp_core::settings::Setting as _;
 use warp_editor::model::CoreEditorModel;
 use warpui::platform::WindowStyle;
-use warpui::{
-    AddWindowOptions, EntityIdMap, ModelHandle, ReadModel, SingletonEntity, UpdateModel, ViewHandle,
-};
+use warpui::{AddWindowOptions, EntityIdMap, ModelHandle, SingletonEntity, ViewHandle};
 use warpui_core::r#async::{FutureExt as _, Timer};
 use warpui_core::elements::tui::{
-    Color, TuiBuffer, TuiBufferExt, TuiConstrainedBox, TuiConstraint, TuiContainer, TuiElement,
-    TuiEvent, TuiEventContext, TuiFlex, TuiLayoutContext, TuiPaintContext, TuiPaintSurface,
-    TuiPoint, TuiRect, TuiScene, TuiScreenPosition, TuiSize, TuiStyle, TuiText,
-    TuiViewportPosition,
+    TuiBuffer, TuiBufferExt, TuiConstrainedBox, TuiConstraint, TuiContainer, TuiElement, TuiEvent,
+    TuiEventContext, TuiFlex, TuiLayoutContext, TuiPaintContext, TuiPaintSurface, TuiPoint,
+    TuiRect, TuiScene, TuiScreenPosition, TuiSize, TuiStyle, TuiText, TuiViewportPosition,
 };
 #[cfg(feature = "voice_input")]
 use warpui_core::event::KeyState;
@@ -69,10 +65,9 @@ use super::{
     AUTO_APPROVE_DISABLED_HINT, AUTO_APPROVE_ENABLED_HINT, AUTO_APPROVE_FEEDBACK_DURATION,
     AUTO_APPROVE_TOGGLE_BINDING_NAME, BlockingInputSource, COST_CONVERSATION_IN_PROGRESS_HINT,
     COST_EMPTY_CONVERSATION_HINT, COST_NO_ACTIVE_CONVERSATION_HINT, CTRL_C_EXIT_HINT,
-    CTRL_C_KILL_CHILD_HINT, ConversationRestoreState,
-    DETACH_AGENT_FROM_RUNNING_COMMAND_BINDING_NAME, INLINE_MENU_TOP_PADDING_ROWS,
-    LOADING_CONVERSATION_HINT, LOG_BUNDLE_FAILED_HINT, RUNNING_COMMAND_DETACH_HINT,
-    SESSION_CAN_ACCEPT_BLOCKED_TERMINAL_USE_ACTION_FLAG,
+    ConversationRestoreState, DETACH_AGENT_FROM_RUNNING_COMMAND_BINDING_NAME,
+    INLINE_MENU_TOP_PADDING_ROWS, LOADING_CONVERSATION_HINT, LOG_BUNDLE_FAILED_HINT,
+    RUNNING_COMMAND_DETACH_HINT, SESSION_CAN_ACCEPT_BLOCKED_TERMINAL_USE_ACTION_FLAG,
     SESSION_CAN_ATTACH_AGENT_TO_RUNNING_COMMAND_FLAG,
     SESSION_CAN_DETACH_AGENT_FROM_RUNNING_COMMAND_FLAG, SHELL_MODE_HINT, STATUSLINE_RESET_HINT,
     TuiConversationRestoreOrigin, TuiTerminalSessionAction, TuiTerminalSessionEvent,
@@ -94,12 +89,6 @@ use crate::input_suggestions_mode::TuiInputSuggestionsMode;
 use crate::keybindings::{
     CONTEXTUAL_PLAN_TOGGLE_BINDING_NAME, KEYBOARD_ENHANCEMENT_AVAILABLE_FLAG,
     PLAN_TOGGLE_AVAILABLE_FLAG, PLAN_TOGGLE_BINDING_NAME, TUI_BINDING_GROUP,
-};
-use crate::orchestrated_agent_identity_styling::AgentIdentity;
-use crate::orchestration_model::TuiOrchestrationModel;
-use crate::orchestration_tab_bar::{
-    ORCHESTRATION_TAB_BAR_FOCUSED_FLAG, orchestration_tab_icon,
-    render_orchestration_child_selected_tab_footer, render_orchestration_tab_footer,
 };
 use crate::read_only_menu::TuiReadOnlyMenuKind;
 use crate::root_view::RootTuiView;
@@ -1142,7 +1131,7 @@ fn tui_cli_shell_command_uses_channel_entry_points() {
 #[test]
 fn log_bundle_failure_hint_does_not_hardcode_a_frontend_path() {
     assert!(!LOG_BUNDLE_FAILED_HINT.contains("warp.log"));
-    assert!(!LOG_BUNDLE_FAILED_HINT.contains("/oz/"));
+    assert!(!LOG_BUNDLE_FAILED_HINT.contains("/cli/"));
     assert!(!LOG_BUNDLE_FAILED_HINT.contains("/tui/"));
     assert!(!LOG_BUNDLE_FAILED_HINT.contains("/warp-cli/"));
 }
@@ -2602,10 +2591,7 @@ fn footer_model_label_is_a_bounded_click_target() {
         // Force the bootstrap (Disabled) state so the footer — and its
         // clickable model label — render deterministically.
         view.update(&mut app, |view, _| {
-            view.terminal_model
-                .lock()
-                .block_list_mut()
-                .reinit_shell(None);
+            view.terminal_model.lock().block_list_mut().reinit_shell();
         });
 
         let model_name = view.read(&app, |view, ctx| {
@@ -2704,8 +2690,6 @@ fn focus_test_fixture(app: &mut App) -> FocusTestFixture {
         )
     });
     let sessions = app.add_singleton_model(|_| TuiSessions::new_for_test());
-    let orchestration = app.update(TuiOrchestrationModel::register);
-    app.update(|ctx| TuiSessions::wire_orchestration(&sessions, &orchestration, ctx));
     FocusTestFixture {
         window_id,
         sessions,
@@ -3200,10 +3184,7 @@ fn bootstrap_renders_starting_shell_above_input() {
         let fixture = focus_test_fixture(&mut app);
         let (view, _) = add_focus_test_session(&mut app, &fixture, true);
         view.update(&mut app, |view, _| {
-            view.terminal_model
-                .lock()
-                .block_list_mut()
-                .reinit_shell(None);
+            view.terminal_model.lock().block_list_mut().reinit_shell();
         });
 
         let lines = render_session(&mut app, &view, 80, 40);
@@ -3238,10 +3219,7 @@ fn zero_state_position_stays_stable_across_shell_bootstrap() {
         );
 
         view.update(&mut app, |view, _| {
-            view.terminal_model
-                .lock()
-                .block_list_mut()
-                .reinit_shell(None);
+            view.terminal_model.lock().block_list_mut().reinit_shell();
         });
         let bootstrap_lines = render_session(&mut app, &view, 80, 40);
         assert!(
@@ -3346,10 +3324,7 @@ fn submit_is_blocked_during_bootstrap_and_allowed_at_prompt() {
             view.input_view.update(ctx, |input, ctx| {
                 input.set_text("draft", ctx);
             });
-            view.terminal_model
-                .lock()
-                .block_list_mut()
-                .reinit_shell(None);
+            view.terminal_model.lock().block_list_mut().reinit_shell();
             view.handle_submitted("draft".to_owned(), None, ctx);
         });
 
@@ -4018,7 +3993,7 @@ fn visible_startup_script_shows_no_running_command_hint() {
         view.update(&mut app, |view, ctx| {
             {
                 let mut terminal_model = view.terminal_model.lock();
-                terminal_model.block_list_mut().reinit_shell(None);
+                terminal_model.block_list_mut().reinit_shell();
                 terminal_model
                     .update_blockheight_items(TRANSCRIPT_BLOCK_SPACING.block_padding, 0.0);
                 // Advance past WarpInput, then leave an unfinished startup-script
@@ -4065,7 +4040,7 @@ fn zero_state_renders_with_only_zero_height_bootstrap_blocks() {
         let (view, _) = add_focus_test_session(&mut app, &fixture, true);
         view.update(&mut app, |view, _| {
             let mut terminal_model = view.terminal_model.lock();
-            terminal_model.block_list_mut().reinit_shell(None);
+            terminal_model.block_list_mut().reinit_shell();
             terminal_model.update_blockheight_items(TRANSCRIPT_BLOCK_SPACING.block_padding, 0.0);
             terminal_model.simulate_block("bootstrap", "");
             terminal_model.simulate_long_running_block("shell init", "");
@@ -4346,7 +4321,7 @@ fn zero_state_transitions_through_bootstrap_lifecycle() {
         // routed to the block, so the zero state must stay hidden while the block runs.
         view.update(&mut app, |view, _| {
             let mut terminal_model = view.terminal_model.lock();
-            terminal_model.block_list_mut().reinit_shell(None);
+            terminal_model.block_list_mut().reinit_shell();
             terminal_model.update_blockheight_items(TRANSCRIPT_BLOCK_SPACING.block_padding, 0.0);
             // Advance past WarpInput to ScriptExecution.
             terminal_model.simulate_block("bootstrap", "");
@@ -4737,46 +4712,6 @@ fn clear_slash_command_clears_shell_commands_from_transcript() {
                 1,
                 "/clear should leave only the active prompt block"
             );
-        });
-    });
-}
-
-#[test]
-fn orchestration_tab_icon_replaces_identity_only_while_active_or_blocked() {
-    App::test((), |mut app| async move {
-        app.update(|ctx| {
-            ctx.add_singleton_model(|_| Appearance::mock());
-            let builder = TuiUiBuilder::from_app(ctx);
-            let identity = AgentIdentity {
-                glyph: "✠",
-                style: TuiStyle::default().fg(Color::Blue),
-            };
-            for (status, expected_glyph) in [
-                (ConversationStatus::InProgress, "●"),
-                (ConversationStatus::TransientError, "●"),
-                (ConversationStatus::WaitingForEvents, "●"),
-                (
-                    ConversationStatus::Blocked {
-                        blocked_action: "approval".to_owned(),
-                    },
-                    "■",
-                ),
-            ] {
-                assert_eq!(
-                    orchestration_tab_icon(&status, &identity, &builder).0,
-                    expected_glyph,
-                );
-            }
-            for status in [
-                ConversationStatus::Success,
-                ConversationStatus::Error,
-                ConversationStatus::Cancelled,
-            ] {
-                assert_eq!(
-                    orchestration_tab_icon(&status, &identity, &builder),
-                    (identity.glyph, identity.style),
-                );
-            }
         });
     });
 }
@@ -5545,65 +5480,6 @@ fn resize_event_maps_to_pty_resize_intent() {
 }
 
 #[test]
-fn alternate_screen_clears_orchestration_tab_focus_and_bindings() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (view, _) = add_focus_test_session(&mut app, &fixture, true);
-
-        view.update(&mut app, |view, ctx| {
-            view.orchestration_tabs_focused = true;
-            view.terminal_model.lock().process_bytes("\u{1b}[?1049h");
-            view.focus_current_owner(ctx);
-        });
-        view.read(&app, |view, ctx| {
-            assert!(!view.orchestration_tabs_focused);
-            assert!(
-                !view
-                    .keymap_context(ctx)
-                    .set
-                    .contains(ORCHESTRATION_TAB_BAR_FOCUSED_FLAG)
-            );
-        });
-    });
-}
-
-#[test]
-fn orchestration_updates_refresh_only_the_focused_session() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (foreground, foreground_id) = add_focus_test_session(&mut app, &fixture, true);
-        let (background, background_id) = add_focus_test_session(&mut app, &fixture, false);
-
-        background.update(&mut app, |view, _| {
-            view.orchestration_tabs_focused = true;
-        });
-        app.update(|ctx| {
-            TuiOrchestrationModel::handle(ctx).update(ctx, |_, ctx| {
-                ctx.notify();
-            });
-        });
-
-        assert_eq!(
-            app.read_model(&fixture.sessions, |sessions, _| {
-                sessions.focused_session_id()
-            }),
-            Some(foreground_id)
-        );
-        assert!(
-            app.read(|ctx| {
-                ctx.check_view_or_child_focused(fixture.window_id, &foreground.id())
-            })
-        );
-        assert!(background.read(&app, |view, _| view.orchestration_tabs_focused));
-
-        app.update_model(&fixture.sessions, |sessions, ctx| {
-            assert!(sessions.focus_session(background_id, ctx));
-        });
-        assert!(!background.read(&app, |view, _| view.orchestration_tabs_focused));
-    });
-}
-
-#[test]
 fn terminal_wakeup_redraws_only_the_focused_session() {
     App::test((), |mut app| async move {
         let fixture = focus_test_fixture(&mut app);
@@ -5900,366 +5776,6 @@ fn foreground_session_focuses_an_already_blocked_permission_when_materialized() 
         });
     });
 }
-fn tab_focused_context() -> Context {
-    let mut context = Context::default();
-    context.set.insert(super::TuiTerminalSessionView::ui_name());
-    context.set.insert(ORCHESTRATION_TAB_BAR_FOCUSED_FLAG);
-    context
-}
-
-fn input_only_context() -> Context {
-    let mut context = Context::default();
-    context.set.insert(crate::input::TuiInputView::ui_name());
-    context
-}
-
-#[test]
-fn focus_input_bindings_match_down_and_shift_down_in_tab_context_only() {
-    App::test((), |mut app| async move {
-        app.update(crate::keybindings::init);
-        app.read(|ctx| {
-            let down = Trigger::Keystrokes(vec![Keystroke::parse("down").unwrap()]);
-            let shift_down = Trigger::Keystrokes(vec![Keystroke::parse("shift-down").unwrap()]);
-
-            let focus_input_bindings: Vec<_> = ctx
-                .editable_bindings()
-                .filter(|b| b.name == "tui:orchestration_tabs:focus_input")
-                .collect();
-            assert_eq!(
-                focus_input_bindings.len(),
-                2,
-                "down + shift-down bindings should be registered"
-            );
-            assert!(
-                focus_input_bindings.iter().any(|b| *b.trigger == down),
-                "plain down should focus the input"
-            );
-            assert!(
-                focus_input_bindings
-                    .iter()
-                    .any(|b| *b.trigger == shift_down),
-                "shift-down should remain an alias"
-            );
-
-            let tab_context = tab_focused_context();
-            for binding in &focus_input_bindings {
-                assert!(
-                    binding.in_context(&tab_context),
-                    "focus-input binding {:?} should match the tab-focused context",
-                    binding.trigger
-                );
-            }
-
-            let input_context = input_only_context();
-            for binding in &focus_input_bindings {
-                assert!(
-                    !binding.in_context(&input_context),
-                    "focus-input binding {:?} must not match a normal input context",
-                    binding.trigger
-                );
-            }
-        });
-    });
-}
-
-#[test]
-fn escape_binding_targets_main_agent_in_tab_context_only() {
-    App::test((), |mut app| async move {
-        app.update(crate::keybindings::init);
-        app.read(|ctx| {
-            let escape = Trigger::Keystrokes(vec![Keystroke::parse("escape").unwrap()]);
-            let binding = ctx
-                .editable_bindings()
-                .find(|b| b.name == "tui:orchestration_tabs:focus_main")
-                .expect("escape focus-main binding is registered");
-            assert_eq!(*binding.trigger, escape);
-
-            assert!(binding.in_context(&tab_focused_context()));
-            assert!(!binding.in_context(&input_only_context()));
-        });
-    });
-}
-
-#[test]
-fn orchestration_tab_navigation_bindings_remain_scoped_to_tab_context() {
-    App::test((), |mut app| async move {
-        app.update(crate::keybindings::init);
-        app.read(|ctx| {
-            let tab_context = tab_focused_context();
-            let input_context = input_only_context();
-            for (name, key) in [
-                ("tui:orchestration_tabs:previous", "left"),
-                ("tui:orchestration_tabs:next", "right"),
-                ("tui:orchestration_tabs:tree_previous", "shift-tab"),
-                ("tui:orchestration_tabs:tree_next", "tab"),
-                ("tui:orchestration_tabs:first_child", "shift-left"),
-                ("tui:orchestration_tabs:last_child", "shift-right"),
-            ] {
-                let trigger = Trigger::Keystrokes(vec![Keystroke::parse(key).unwrap()]);
-                let binding = ctx
-                    .editable_bindings()
-                    .find(|b| b.name == name && *b.trigger == trigger)
-                    .unwrap_or_else(|| panic!("missing {name} on {key}"));
-                assert!(
-                    binding.in_context(&tab_context),
-                    "{name} {key} should match the tab-focused context"
-                );
-                assert!(
-                    !binding.in_context(&input_context),
-                    "{name} {key} must not match a normal input context"
-                );
-            }
-        });
-    });
-}
-
-#[test]
-fn orchestration_tab_footer_advertises_down_without_shift_or_escape_hint() {
-    App::test((), |mut app| async move {
-        app.update(|ctx| {
-            ctx.add_singleton_model(|_| Appearance::mock());
-            let builder = TuiUiBuilder::from_app(ctx);
-            let buffer = render_element(render_orchestration_tab_footer(&builder), ctx, 80);
-            let footer = buffer.to_lines().join("\n");
-            assert!(
-                footer.contains("↓ to send a message"),
-                "footer should advertise ↓: {footer}"
-            );
-            assert!(
-                !footer.contains("Shift + ↓"),
-                "footer must not advertise Shift + ↓: {footer}"
-            );
-            assert!(
-                !footer.to_lowercase().contains("esc"),
-                "footer must not advertise an Escape hint: {footer}"
-            );
-        });
-    });
-}
-
-/// Registers a session with a live active conversation, returning its view and conversation id.
-fn add_orchestration_session(
-    app: &mut App,
-    fixture: &FocusTestFixture,
-    focus: bool,
-) -> (
-    ViewHandle<super::TuiTerminalSessionView>,
-    TuiSessionId,
-    AIConversationId,
-) {
-    let (view, manager) = add_test_terminal_session(app, fixture.window_id);
-    let session_id = app.update(|ctx| {
-        TuiSessions::register_session(&fixture.sessions, view.clone(), manager, focus, ctx)
-    });
-    let conversation_id = app.update(|ctx| {
-        BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-            let conversation_id =
-                history.start_new_conversation(session_id.surface_id(), false, false, false, ctx);
-            history.set_active_conversation_id(conversation_id, session_id.surface_id(), ctx);
-            conversation_id
-        })
-    });
-    (view, session_id, conversation_id)
-}
-
-/// Registers a child session under a parent conversation.
-fn add_orchestration_child(
-    app: &mut App,
-    fixture: &FocusTestFixture,
-    parent_conversation_id: AIConversationId,
-    name: &str,
-) -> (
-    ViewHandle<super::TuiTerminalSessionView>,
-    TuiSessionId,
-    AIConversationId,
-) {
-    let (view, manager) = add_test_terminal_session(app, fixture.window_id);
-    let session_id = app.update(|ctx| {
-        TuiSessions::register_session(&fixture.sessions, view.clone(), manager, false, ctx)
-    });
-    let conversation_id = app.update(|ctx| {
-        BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-            let conversation_id = history.start_new_child_conversation(
-                session_id.surface_id(),
-                name.to_owned(),
-                parent_conversation_id,
-                Some(Harness::Oz),
-                false,
-                ctx,
-            );
-            history.set_active_conversation_id(conversation_id, session_id.surface_id(), ctx);
-            conversation_id
-        })
-    });
-    (view, session_id, conversation_id)
-}
-
-#[test]
-fn new_slash_command_kills_descendant_agents() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (parent_view, _parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (_child_view, _child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-        let (_grandchild_view, _grandchild_session_id, grandchild_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, child_conversation_id, "grandchild");
-
-        parent_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    parent_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.execute_tui_slash_command(&slash_commands::NEW, None, ctx);
-        });
-
-        app.read(|ctx| {
-            let history = BlocklistAIHistoryModel::as_ref(ctx);
-            assert!(
-                history.conversation(&child_conversation_id).is_none(),
-                "/new should delete direct child conversations"
-            );
-            assert!(
-                history.conversation(&grandchild_conversation_id).is_none(),
-                "/new should delete nested child conversations"
-            );
-            let new_conversation_id = parent_view
-                .as_ref(ctx)
-                .conversation_selection
-                .as_ref(ctx)
-                .selected_conversation_id(ctx)
-                .expect("/new should select a replacement conversation");
-            assert_ne!(new_conversation_id, parent_conversation_id);
-            assert!(history.conversation(&new_conversation_id).is_some());
-        });
-    });
-}
-#[test]
-fn escape_from_child_tab_switches_to_root_and_clears_tab_focus() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (parent_view, parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Focus the child session and point its conversation selection at the child
-        // conversation so the orchestration snapshot resolves the parent as root.
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-            view.orchestration_tabs_focused = true;
-            view.refresh_orchestration_tab_bar(ctx);
-        });
-        app.read(|ctx| {
-            assert_eq!(
-                child_view
-                    .as_ref(ctx)
-                    .orchestration_tab_bar
-                    .as_ref(ctx)
-                    .tree_root_key(),
-                Some(parent_conversation_id.to_string()),
-                "tab bar should expose the parent as the tree root"
-            );
-        });
-
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::FocusMainOrchestrationTab, ctx);
-        });
-
-        app.read(|ctx| {
-            assert_eq!(
-                TuiSessions::as_ref(ctx).focused_session_id(),
-                Some(parent_session_id),
-                "escape should switch focus to the root/main session"
-            );
-            assert!(
-                !child_view.as_ref(ctx).orchestration_tabs_focused,
-                "child tab focus should be cleared"
-            );
-            assert!(
-                !parent_view.as_ref(ctx).orchestration_tabs_focused,
-                "parent tab focus should remain cleared"
-            );
-            assert!(
-                ctx.check_view_or_child_focused(fixture.window_id, &parent_view.id()),
-                "root session input should own focus after escape"
-            );
-        });
-    });
-}
-
-#[test]
-fn escape_with_root_selected_clears_tab_focus_without_switching() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (parent_view, parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (_child_view, _child_session_id, _child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Point the parent session's conversation selection at the root conversation so
-        // the orchestration snapshot resolves the root as both root and selected.
-        parent_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    parent_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-            view.orchestration_tabs_focused = true;
-            view.refresh_orchestration_tab_bar(ctx);
-        });
-        app.read(|ctx| {
-            assert_eq!(
-                parent_view
-                    .as_ref(ctx)
-                    .orchestration_tab_bar
-                    .as_ref(ctx)
-                    .tree_root_key(),
-                Some(parent_conversation_id.to_string()),
-                "root tab bar should expose the root as the tree root"
-            );
-        });
-
-        parent_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::FocusMainOrchestrationTab, ctx);
-        });
-
-        app.read(|ctx| {
-            assert_eq!(
-                TuiSessions::as_ref(ctx).focused_session_id(),
-                Some(parent_session_id),
-                "escape with root selected should not switch sessions"
-            );
-            assert!(
-                !parent_view.as_ref(ctx).orchestration_tabs_focused,
-                "root tab focus should be cleared"
-            );
-            assert!(
-                ctx.check_view_or_child_focused(fixture.window_id, &parent_view.id()),
-                "root session input should own focus after escape"
-            );
-        });
-    });
-}
-
 // ── Vim mode tests ───────────────────────────────────────────────────────────
 
 /// The `/vim-mode` slash command static definition must be correctly
@@ -6366,30 +5882,6 @@ fn copy_debugging_id_available_in_active_commands_at_zero_state() {
             assert!(
                 has_copy_debugging_id,
                 "/copy-debugging-id must be available for the blank active conversation",
-            );
-        });
-    });
-}
-
-/// Verifies that `/handoff` remains available for the TUI's blank active conversation.
-#[test]
-fn handoff_is_available_at_zero_state() {
-    App::test((), |mut app| async move {
-        let _oz_handoff = FeatureFlag::OzHandoff.override_enabled(true);
-        let _local_cloud = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-        let fixture = focus_test_fixture(&mut app);
-        let (view, _) = add_focus_test_session(&mut app, &fixture, true);
-        view.read(&app, |view, ctx| {
-            let active_names: Vec<&str> = view
-                .slash_commands_source
-                .as_ref(ctx)
-                .active_commands()
-                .map(|(_, cmd)| cmd.name)
-                .collect();
-
-            assert!(
-                active_names.contains(&slash_commands::MOVE_TO_CLOUD.name),
-                "/handoff must be active at zero state",
             );
         });
     });
@@ -6553,539 +6045,6 @@ fn copy_debugging_id_shows_error_hint_when_no_server_token() {
                 hint.map(|(_, tone)| tone),
                 Some(super::super::transient_hint::TransientHintTone::Error),
                 "the no-token hint must use the error tone",
-            );
-        });
-    });
-}
-
-#[test]
-fn kill_child_hint_constant_matches_expected_text() {
-    assert_eq!(CTRL_C_KILL_CHILD_HINT, "ctrl-c again to kill child agent");
-}
-
-#[test]
-fn orchestration_child_selected_footer_shows_kill_hint() {
-    App::test((), |mut app| async move {
-        app.update(|ctx| {
-            ctx.add_singleton_model(|_| Appearance::mock());
-            let builder = TuiUiBuilder::from_app(ctx);
-            let buffer = render_element(
-                render_orchestration_child_selected_tab_footer(&builder, 0),
-                ctx,
-                120,
-            );
-            let footer = buffer.to_lines().join("\n");
-            assert!(
-                footer.contains("Ctrl+C"),
-                "child-selected footer should show Ctrl+C: {footer}"
-            );
-            assert!(
-                footer.contains("kill sub-agent"),
-                "child-selected footer should describe the kill action: {footer}"
-            );
-            assert!(
-                !footer.contains("nested"),
-                "leaf footer must not name a nested blast radius: {footer}"
-            );
-            let group_buffer = render_element(
-                render_orchestration_child_selected_tab_footer(&builder, 2),
-                ctx,
-                120,
-            );
-            let group_footer = group_buffer.to_lines().join("\n");
-            assert!(
-                group_footer.contains("kill sub-agent +2 nested"),
-                "group footer should name the blast radius: {group_footer}"
-            );
-            assert!(
-                footer.contains('\u{2193}'),
-                "child-selected footer should still show the send-message \u{2193} hint: {footer}"
-            );
-        });
-    });
-}
-
-#[test]
-fn ctrl_c_on_child_tab_with_tabs_focused_kills_immediately() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (_parent_view, parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Focus the child session and point its selection at the child conversation so
-        // the orchestration snapshot resolves the parent as root and the child as selected.
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-            view.orchestration_tabs_focused = true;
-            view.refresh_orchestration_tab_bar(ctx);
-        });
-
-        // Verify the snapshot sees the child tab as the selected non-root tab.
-        app.read(|ctx| {
-            assert!(
-                child_view
-                    .as_ref(ctx)
-                    .is_child_conversation_selected(ctx)
-                    .is_some(),
-                "child conversation should be detected as selected"
-            );
-        });
-
-        // Single ctrl-c should kill the child immediately (no double-press window).
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        app.read(|ctx| {
-            assert!(
-                !child_view.as_ref(ctx).exit_confirmation.is_armed(),
-                "kill path must not arm the exit confirmation window"
-            );
-            assert_eq!(
-                child_view.as_ref(ctx).child_kill_armed_conversation,
-                None,
-                "kill path must not set child_kill_armed_conversation"
-            );
-            // The child conversation should be deleted from history.
-            assert!(
-                BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&child_conversation_id)
-                    .is_none(),
-                "child conversation should be deleted from history after kill"
-            );
-            // Focus should return to the parent session.
-            assert_eq!(
-                TuiSessions::as_ref(ctx).focused_session_id(),
-                Some(parent_session_id),
-                "focus should return to the root/main agent after kill"
-            );
-        });
-    });
-}
-
-#[test]
-fn ctrl_c_on_drilled_anchor_with_tabs_focused_kills_the_subtree() {
-    let _flag = FeatureFlag::MultiLevelOrchestration.override_enabled(true);
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (_parent_view, parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-        let (_grandchild_view, _grandchild_session_id, grandchild_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, child_conversation_id, "grandchild");
-
-        // Select the group child: it re-anchors the bar, occupying the
-        // main-tab slot (selected == anchor != root).
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-            view.orchestration_tabs_focused = true;
-            view.refresh_orchestration_tab_bar(ctx);
-        });
-        app.read(|ctx| {
-            assert_eq!(
-                child_view.as_ref(ctx).bar_focused_kill_target(ctx),
-                Some((child_conversation_id, 1)),
-                "the drilled-in anchor must be the kill target with its blast radius"
-            );
-        });
-
-        // A single ctrl-c kills the anchor and its subtree — it must not
-        // cancel the conversation and arm the app-exit window.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        app.read(|ctx| {
-            assert!(
-                !child_view.as_ref(ctx).exit_confirmation.is_armed(),
-                "the drilled-anchor kill must not arm the exit confirmation window"
-            );
-            let history = BlocklistAIHistoryModel::as_ref(ctx);
-            assert!(
-                history.conversation(&child_conversation_id).is_none(),
-                "the anchor conversation must be deleted"
-            );
-            assert!(
-                history.conversation(&grandchild_conversation_id).is_none(),
-                "the anchor's subtree must be deleted with it"
-            );
-            assert!(
-                history.conversation(&parent_conversation_id).is_some(),
-                "the root must survive"
-            );
-            assert_eq!(
-                TuiSessions::as_ref(ctx).focused_session_id(),
-                Some(parent_session_id),
-                "focus should return to the root agent after the subtree kill"
-            );
-        });
-    });
-}
-
-#[test]
-fn ctrl_c_on_child_conversation_without_tab_focus_arms_kill_window() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (_parent_view, _parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Focus the child session but without tab-bar focus.
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-            // orchestration_tabs_focused stays false (default)
-        });
-
-        // First ctrl-c should arm the kill window, not delete the conversation.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        app.read(|ctx| {
-            assert!(
-                child_view.as_ref(ctx).exit_confirmation.is_armed(),
-                "first ctrl-c on a child conversation should arm the kill window"
-            );
-            assert_eq!(
-                child_view.as_ref(ctx).child_kill_armed_conversation,
-                Some(child_conversation_id),
-                "child_kill_armed_conversation should target the viewed child"
-            );
-            // Conversation should NOT be deleted yet.
-            assert!(
-                BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&child_conversation_id)
-                    .is_some(),
-                "child conversation must not be deleted after only one ctrl-c"
-            );
-        });
-    });
-}
-
-#[test]
-fn footer_shows_kill_hint_when_child_kill_window_is_armed() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (_parent_view, _parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Focus the child session (no tab-bar focus).
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-        });
-
-        // Footer before any ctrl-c: should NOT show the kill hint.
-        let lines_before = render_footer_lines(&mut app, &child_view, 80);
-        assert!(
-            !lines_before.join("\n").contains(CTRL_C_KILL_CHILD_HINT),
-            "footer should not show kill hint before arming: {lines_before:?}"
-        );
-
-        // First ctrl-c: arm the kill window.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        // Footer after first ctrl-c: must show the child-kill hint, not the exit hint.
-        let lines_after = render_footer_lines(&mut app, &child_view, 80);
-        assert_eq!(
-            lines_after,
-            vec![CTRL_C_KILL_CHILD_HINT],
-            "footer must show the kill-child hint when the kill window is armed"
-        );
-        let lines_str = lines_after.join("\n");
-        assert!(
-            !lines_str.contains(CTRL_C_EXIT_HINT),
-            "kill-armed footer must not show the exit hint: {lines_str:?}"
-        );
-    });
-}
-
-#[test]
-fn second_ctrl_c_within_window_kills_the_child_agent() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (_parent_view, parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Focus the child session (no tab-bar focus).
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-        });
-
-        // First ctrl-c: arms the kill window.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        // Confirm the kill window is armed.
-        assert!(
-            child_view.read(&app, |view, _| view.exit_confirmation.is_armed()),
-            "kill window must be armed after first ctrl-c"
-        );
-
-        // Second ctrl-c within the window: kills the child.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        app.read(|ctx| {
-            assert_eq!(
-                child_view.as_ref(ctx).child_kill_armed_conversation,
-                None,
-                "kill window should be cleared after the kill"
-            );
-            assert!(
-                !child_view.as_ref(ctx).exit_confirmation.is_armed(),
-                "exit window should be cleared after the kill"
-            );
-            // Child conversation should be gone from history.
-            assert!(
-                BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&child_conversation_id)
-                    .is_none(),
-                "child conversation should be deleted after double ctrl-c kill"
-            );
-            // Focus should return to the root/main session.
-            assert_eq!(
-                TuiSessions::as_ref(ctx).focused_session_id(),
-                Some(parent_session_id),
-                "focus should return to the root/main agent after kill"
-            );
-        });
-    });
-}
-
-#[test]
-fn ctrl_c_on_root_conversation_does_not_trigger_kill_path() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (parent_view, _parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (_child_view, _child_session_id, _child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // The parent session is focused and pointing at the root conversation.
-        // ctrl-c should follow the normal exit path, not the kill path.
-        parent_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        app.read(|ctx| {
-            assert!(
-                parent_view.as_ref(ctx).exit_confirmation.is_armed(),
-                "ctrl-c on root should arm the normal exit window"
-            );
-            assert_eq!(
-                parent_view.as_ref(ctx).child_kill_armed_conversation,
-                None,
-                "ctrl-c on root must not set child_kill_armed_conversation"
-            );
-        });
-    });
-}
-
-#[test]
-fn lapsed_kill_window_does_not_kill_child_on_next_ctrl_c() {
-    // If the 1-second kill window lapses without a second press, the next
-    // ctrl-c is a fresh first press and must arm a new window, NOT kill the child.
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (_parent_view, _parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Focus the child session (no tab-bar focus).
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-        });
-
-        // First ctrl-c: arms the kill window.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-        assert!(
-            child_view.read(&app, |view, _| view.exit_confirmation.is_armed()),
-            "kill window must be armed after first ctrl-c"
-        );
-
-        // Simulate window lapse: disarm + clear the armed conversation (as the
-        // timer callback does), without triggering the kill.
-        child_view.update(&mut app, |view, _| {
-            view.exit_confirmation.disarm();
-            view.child_kill_armed_conversation = None;
-        });
-
-        // Next ctrl-c: armed = None, should arm a new kill window rather than kill.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        app.read(|ctx| {
-            // Child conversation must still exist — lapse prevented the kill.
-            assert!(
-                BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&child_conversation_id)
-                    .is_some(),
-                "child conversation must survive a ctrl-c after the window lapsed"
-            );
-            // A new kill window should now be armed, not executed.
-            assert!(
-                child_view.as_ref(ctx).exit_confirmation.is_armed(),
-                "a new kill window should be armed by the post-lapse ctrl-c"
-            );
-            assert_eq!(
-                child_view.as_ref(ctx).child_kill_armed_conversation,
-                Some(child_conversation_id),
-                "post-lapse ctrl-c should re-arm for the same child"
-            );
-        });
-    });
-}
-
-#[test]
-fn killing_child_does_not_exit_tui_parent_session_remains_alive() {
-    // Killing a child agent must never cause the whole TUI to exit.
-    // The parent session must remain focused and its conversation intact.
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (parent_view, parent_session_id, parent_conversation_id) =
-            add_orchestration_session(&mut app, &fixture, true);
-        let (child_view, child_session_id, child_conversation_id) =
-            add_orchestration_child(&mut app, &fixture, parent_conversation_id, "child");
-
-        // Kill via the tab-bar-focused single-press path.
-        app.update(|ctx| {
-            TuiSessions::handle(ctx).update(ctx, |sessions, ctx| {
-                sessions.focus_session(child_session_id, ctx);
-            });
-        });
-        child_view.update(&mut app, |view, ctx| {
-            view.conversation_selection.update(ctx, |selection, ctx| {
-                selection.select_existing_conversation(
-                    child_conversation_id,
-                    AgentViewEntryOrigin::Tui,
-                    ctx,
-                );
-            });
-            view.refresh_orchestration_tab_state(ctx);
-            view.orchestration_tabs_focused = true;
-            view.refresh_orchestration_tab_bar(ctx);
-        });
-        // Single ctrl-c kills the child.
-        child_view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::Interrupt, ctx);
-        });
-
-        // TUI must still be alive: the singleton models exist, the parent
-        // session is focused, and the parent's conversation is untouched.
-        app.read(|ctx| {
-            assert!(
-                ctx.has_singleton_model::<TuiSessions>(),
-                "TuiSessions singleton must survive the child kill"
-            );
-            assert!(
-                ctx.has_singleton_model::<TuiOrchestrationModel>(),
-                "TuiOrchestrationModel singleton must survive the child kill"
-            );
-            assert_eq!(
-                TuiSessions::as_ref(ctx).focused_session_id(),
-                Some(parent_session_id),
-                "parent session must be focused after child kill"
-            );
-            assert!(
-                BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&parent_conversation_id)
-                    .is_some(),
-                "parent conversation must survive child kill"
-            );
-            assert!(
-                parent_view
-                    .as_ref(ctx)
-                    .child_kill_armed_conversation
-                    .is_none(),
-                "parent view must not have a stale kill window after kill"
             );
         });
     });

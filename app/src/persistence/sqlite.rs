@@ -68,16 +68,15 @@ use super::{
     PersistenceScope, StartedCommandMetadata, WriterHandles, schema,
 };
 use crate::ai::agent::conversation::AIConversationId;
-use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::mcp::templatable_installation::VariableValue;
 use crate::ai::mcp::{TemplatableMCPServer, TemplatableMCPServerInstallation};
 use crate::ai::persisted_workspace::EnablementState;
 use crate::app_state::{
-    AIFactPaneSnapshot, AmbientAgentPaneSnapshot, AppState, BranchSnapshot, CodePaneSnapShot,
-    CodePaneTabSnapshot, CodeReviewPaneSnapshot, EnvVarCollectionPaneSnapshot, LeafContents,
-    LeafSnapshot, LeftPanelSnapshot, NotebookPaneSnapshot, PaneFlex, PaneNodeSnapshot,
-    RightPanelSnapshot, SettingsPaneSnapshot, SplitDirection, TabGroupSnapshot, TabSnapshot,
-    TerminalPaneSnapshot, WindowSnapshot, WorkflowPaneSnapshot,
+    AIFactPaneSnapshot, AppState, BranchSnapshot, CodePaneSnapShot, CodePaneTabSnapshot,
+    CodeReviewPaneSnapshot, EnvVarCollectionPaneSnapshot, LeafContents, LeafSnapshot,
+    LeftPanelSnapshot, NotebookPaneSnapshot, PaneFlex, PaneNodeSnapshot, RightPanelSnapshot,
+    SettingsPaneSnapshot, SplitDirection, TabGroupSnapshot, TabSnapshot, TerminalPaneSnapshot,
+    WindowSnapshot, WorkflowPaneSnapshot,
 };
 use crate::auth::UserUid;
 use crate::auth::auth_manager::PersistedCurrentUserInformation;
@@ -472,10 +471,11 @@ fn ensure_owner_only_file(_path: &Path) -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "tui")]
 pub(super) fn remove(sender: SyncSender<ModelEvent>) {
     // Instruct the writer thread to remove the database and pause processing
     // events.
-    // Ideally, we'd drop any other events in the channel, but it's not worth the complexity right
+    // Ideally, we'd drop any other events in the channel, but it's not worth the complexity for
     // now. Having the writer thread remove the database file prevents race conditions if the
     // thread is in the middle of another update.
     report_if_error!(
@@ -1159,7 +1159,6 @@ fn save_pane_state(
         LeafContents::Settings(_) => SETTINGS_PANE_KIND,
         LeafContents::AIFact(_) => AI_FACT_PANE_KIND,
         LeafContents::CodeReview(_) => CODE_REVIEW_PANE_KIND,
-        LeafContents::AmbientAgent(_) => AMBIENT_AGENT_PANE_KIND,
         LeafContents::ExecutionProfileEditor => EXECUTION_PROFILE_EDITOR_PANE_KIND,
         LeafContents::GetStarted => GET_STARTED_PANE_KIND,
         LeafContents::AIDocument(_) => AI_DOCUMENT_PANE_KIND,
@@ -1377,17 +1376,6 @@ fn save_pane_state(
                     .execute(conn)?;
             }
         },
-        LeafContents::AmbientAgent(snapshot) => {
-            let ambient_agent_pane = model::NewAmbientAgentPane {
-                id,
-                uuid: snapshot.uuid.clone(),
-                task_id: snapshot.task_id.map(|t| t.to_string()),
-            };
-
-            diesel::insert_into(schema::ambient_agent_panes::dsl::ambient_agent_panes)
-                .values(ambient_agent_pane)
-                .execute(conn)?;
-        }
         LeafContents::NetworkLog => {
             // Unreachable: filtered by `is_persisted` in `save_app_state`.
         }
@@ -2355,19 +2343,24 @@ fn read_node(conn: &mut SqliteConnection, node: model::PaneNode) -> Result<PaneN
                         title: ai_document_pane.title,
                     })
                 }
+                // Rows written by older versions restore as a fresh shell so the tab survives.
                 AMBIENT_AGENT_PANE_KIND => {
                     let pane = schema::ambient_agent_panes::dsl::ambient_agent_panes
                         .find(node.id)
                         .select(model::AmbientAgentPane::as_select())
                         .first(conn)?;
 
-                    let task_id = pane
-                        .task_id
-                        .and_then(|id_str| id_str.parse::<AmbientAgentTaskId>().ok());
-
-                    LeafContents::AmbientAgent(AmbientAgentPaneSnapshot {
+                    LeafContents::Terminal(TerminalPaneSnapshot {
                         uuid: pane.uuid,
-                        task_id,
+                        cwd: None,
+                        shell_launch_data: None,
+                        is_active: false,
+                        is_read_only: false,
+                        input_config: None,
+                        llm_model_override: None,
+                        active_profile_id: None,
+                        conversation_ids_to_restore: vec![],
+                        active_conversation_id: None,
                     })
                 }
                 other => bail!("Unrecognized pane kind: {other}"),
@@ -2411,17 +2404,17 @@ fn read_node(conn: &mut SqliteConnection, node: model::PaneNode) -> Result<PaneN
 
 fn box_persisted_generic_string_object(
     object: PersistedGenericStringObject,
-) -> Box<dyn CloudObject> {
+) -> Option<Box<dyn CloudObject>> {
     match object {
-        PersistedGenericStringObject::Preference(object) => Box::new(object),
-        PersistedGenericStringObject::EnvVarCollection(object) => Box::new(object),
-        PersistedGenericStringObject::WorkflowEnum(object) => Box::new(object),
-        PersistedGenericStringObject::AIFact(object) => Box::new(object),
-        PersistedGenericStringObject::MCPServer(object) => Box::new(object),
-        PersistedGenericStringObject::TemplatableMCPServer(object) => Box::new(object),
-        PersistedGenericStringObject::AIExecutionProfile(object) => Box::new(object),
-        PersistedGenericStringObject::CloudEnvironment(object) => Box::new(object),
-        PersistedGenericStringObject::ScheduledAmbientAgent(object) => Box::new(object),
+        PersistedGenericStringObject::Preference(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::EnvVarCollection(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::WorkflowEnum(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::AIFact(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::MCPServer(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::TemplatableMCPServer(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::AIExecutionProfile(object) => Some(Box::new(object)),
+        PersistedGenericStringObject::CloudEnvironment(_)
+        | PersistedGenericStringObject::ScheduledAmbientAgent(_) => None,
     }
 }
 
@@ -2695,7 +2688,7 @@ fn read_sqlite_data(
     cloud_objects.extend(
         generic_string_persistence::read_generic_string_objects(conn, &read_context)?
             .into_iter()
-            .map(box_persisted_generic_string_object),
+            .filter_map(box_persisted_generic_string_object),
     );
 
     let db_teams: Vec<model::Team> = schema::teams::dsl::teams.load(conn)?;

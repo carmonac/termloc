@@ -2,7 +2,7 @@
 //!
 //! The parser, completion context, and
 //! [`BlocklistAIInputModel`](warp::tui_export::BlocklistAIInputModel) classifier
-//! are shared with the GUI input. The orchestration remains frontend-specific:
+//! are shared with the GUI input. The coordination remains frontend-specific:
 //! GUI input detection is coupled to command decorations, parsed-token caching,
 //! shared-session edits, and GUI suggestion modes, while the TUI owns a
 //! separate editor, inline menus, future lifecycle, and short-input Agent bias.

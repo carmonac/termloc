@@ -86,25 +86,6 @@ fn steering_row_passes_plain_prompts_but_keeps_its_own_order_and_edit_hold() {
 }
 
 #[test]
-fn steering_row_does_not_pass_command_or_locked_rows() {
-    with_model(|mut app, model, _| {
-        for barrier in [
-            initial_cloud_mode_query("setup"),
-            command_query("sleep 1"),
-            QueuedQuery::new("pending".into(), QueuedQueryOrigin::PendingLrcAutoQueue),
-            QueuedQuery::new("command finish".into(), QueuedQueryOrigin::LrcAutoQueue),
-        ] {
-            let id = AIConversationId::new();
-            model.update(&mut app, |queue, ctx| {
-                queue.append(id, barrier, ctx);
-                queue.append(id, steering_query("correction"), ctx);
-                assert!(queue.next_row_for_request(id).is_none());
-            });
-        }
-    });
-}
-
-#[test]
 fn next_row_for_request_prefers_injections_then_steered_heads() {
     with_model(|mut app, model, _| {
         let id = AIConversationId::new();
@@ -181,106 +162,6 @@ fn effective_mode_applies_the_binary_toggle_on_top_of_each_default() {
     });
 }
 
-#[test]
-fn native_setup_barrier_blocks_dispatch_until_finished() {
-    with_model(|mut app, model, _| {
-        let id = AIConversationId::new();
-        model.update(&mut app, |queue, ctx| {
-            queue.begin_native_setup(id, ctx);
-            assert!(queue.is_dispatch_blocked(id));
-            assert!(queue.has_pending_native_injections(id));
-
-            queue.append(
-                id,
-                QueuedQuery::new_shared_session_prompt(
-                    "first".into(),
-                    ParticipantId::new(),
-                    vec![],
-                    None,
-                ),
-                ctx,
-            );
-            assert!(queue.has_pending_native_injections(id));
-
-            // The barrier -- not `clear_queue` itself -- is what gates when a caller is
-            // allowed to dispatch; the row sits untouched until then.
-            queue.finish_native_setup(id, ctx);
-            assert!(!queue.is_dispatch_blocked(id));
-            assert!(queue.has_pending_native_injections(id));
-
-            let cleared = queue.clear_queue(id, ctx);
-            assert_eq!(cleared.len(), 1);
-            assert_eq!(cleared[0].text(), "first");
-            assert!(!queue.has_pending_native_injections(id));
-
-            // Idempotent once already released.
-            queue.finish_native_setup(id, ctx);
-            assert!(!queue.is_dispatch_blocked(id));
-        });
-    });
-}
-
-#[test]
-fn clear_queue_removes_every_row_regardless_of_origin_in_fifo_order() {
-    with_model(|mut app, model, events| {
-        let id = AIConversationId::new();
-        let (shared, local, command) = model.update(&mut app, |queue, ctx| {
-            let shared = queue.append(
-                id,
-                QueuedQuery::new_shared_session_prompt(
-                    "shared".into(),
-                    ParticipantId::new(),
-                    vec![],
-                    None,
-                ),
-                ctx,
-            );
-            let local = queue.append(id, user_query("local"), ctx);
-            let command = queue.append(id, command_query("ls"), ctx);
-            (shared, local, command)
-        });
-        events.borrow_mut().clear();
-
-        let cleared = model.update(&mut app, |queue, ctx| queue.clear_queue(id, ctx));
-        assert_eq!(
-            cleared.iter().map(QueuedQuery::text).collect::<Vec<_>>(),
-            vec!["shared", "local", "ls"],
-            "every row is cleared regardless of origin, in FIFO order"
-        );
-        assert_eq!(cleared[0].id(), shared);
-        assert_eq!(cleared[1].id(), local);
-        assert_eq!(cleared[2].id(), command);
-
-        model.read(&app, |queue, _| {
-            assert!(!queue.has_queue(id));
-            assert!(!queue.has_pending_native_injections(id));
-        });
-
-        let evts = events.borrow();
-        assert_eq!(evts.len(), 3);
-        assert!(evts.iter().all(|e| matches!(
-            e,
-            QueuedQueryEvent::Removed { conversation_id, .. } if *conversation_id == id
-        )));
-    });
-}
-
-#[test]
-fn clear_queue_no_ops_when_nothing_queued() {
-    with_model(|mut app, model, events| {
-        let id = AIConversationId::new();
-        events.borrow_mut().clear();
-
-        let cleared = model.update(&mut app, |queue, ctx| queue.clear_queue(id, ctx));
-        assert!(cleared.is_empty());
-        assert!(events.borrow().is_empty());
-    });
-}
-
-fn initial_cloud_mode_query(text: &str) -> QueuedQuery {
-    QueuedQuery::new(text.to_owned(), QueuedQueryOrigin::InitialCloudMode)
-}
-
 fn command_query(text: &str) -> QueuedQuery {
     QueuedQuery::new_command(text.to_owned(), QueuedQueryOrigin::AutoQueueToggle)
 }
@@ -303,101 +184,6 @@ fn append_user(
     model.update(app, |model, ctx| {
         model.append(conversation_id, user_query(text), ctx)
     })
-}
-
-#[test]
-fn initial_cloud_mode_head_rejects_user_mutations_and_autofire() {
-    with_model(|mut app, model, _events| {
-        let conv = AIConversationId::new();
-        let initial_id = model.update(&mut app, |model, ctx| {
-            model.append(conv, initial_cloud_mode_query("initial"), ctx)
-        });
-        let followup_id = append_user(&model, &mut app, conv, "follow up");
-
-        let removed = model.update(&mut app, |model, ctx| {
-            model.remove_by_id(conv, initial_id, ctx)
-        });
-        assert!(removed.is_none());
-
-        model.update(&mut app, |model, ctx| {
-            model.enter_edit_mode(conv, initial_id, ctx);
-            model.reorder(conv, initial_id, 1, ctx);
-            model.reorder(conv, followup_id, 0, ctx);
-        });
-
-        let action = model.read(&app, |model, _| model.peek_autofire(conv));
-        assert!(action.is_none());
-
-        model.read(&app, |model, _| {
-            let queue = model.queue(conv);
-            assert_eq!(queue.len(), 2);
-            assert_eq!(queue[0].id(), initial_id);
-            assert_eq!(queue[0].origin(), QueuedQueryOrigin::InitialCloudMode);
-            assert_eq!(queue[1].id(), followup_id);
-            assert_eq!(model.editing_row(conv), None);
-        });
-    });
-}
-
-#[test]
-fn pop_front_no_ops_when_head_is_locked() {
-    // The Error/Cancelled drain path calls `pop_front` to restore a row to the editor. A locked
-    // initial Cloud Mode head must not be popped even if a status-transition arrives before the
-    // ambient-agent cleanup events fire `remove_initial_cloud_mode_row`.
-    with_model(|mut app, model, _events| {
-        let conv = AIConversationId::new();
-        let initial_id = model.update(&mut app, |model, ctx| {
-            model.append(conv, initial_cloud_mode_query("locked initial"), ctx)
-        });
-        let followup_id = append_user(&model, &mut app, conv, "follow up");
-
-        let popped = model.update(&mut app, |model, ctx| model.pop_front(conv, ctx));
-        assert!(popped.is_none());
-
-        model.read(&app, |model, _| {
-            let queue = model.queue(conv);
-            assert_eq!(queue.len(), 2);
-            assert_eq!(queue[0].id(), initial_id);
-            assert_eq!(queue[1].id(), followup_id);
-        });
-    });
-}
-
-#[test]
-fn remove_initial_cloud_mode_row_only_removes_the_locked_head() {
-    with_model(|mut app, model, events| {
-        let conv = AIConversationId::new();
-        let initial_id = model.update(&mut app, |model, ctx| {
-            model.append(conv, initial_cloud_mode_query("initial"), ctx)
-        });
-        append_user(&model, &mut app, conv, "follow up");
-        events.borrow_mut().clear();
-
-        let removed = model.update(&mut app, |model, ctx| {
-            model.remove_initial_cloud_mode_row(conv, ctx)
-        });
-        assert_eq!(
-            removed.map(|query| query.text().to_owned()),
-            Some("initial".to_owned())
-        );
-
-        let removed_again = model.update(&mut app, |model, ctx| {
-            model.remove_initial_cloud_mode_row(conv, ctx)
-        });
-        assert!(removed_again.is_none());
-
-        let action = model.read(&app, |model, _| model.peek_autofire(conv));
-        match action {
-            Some(AutofireAction::Submit { text, .. }) => assert_eq!(text, "follow up"),
-            other => panic!("expected Submit, got {other:?}"),
-        }
-
-        let evts = events.borrow();
-        assert!(matches!(
-            evts.first(),
-            Some(QueuedQueryEvent::Removed { query_id, .. }) if *query_id == initial_id
-        ));
-    });
 }
 
 #[test]
@@ -653,61 +439,6 @@ fn peek_autofire_leaves_row_until_remove_fired_row_drops_it() {
             assert_eq!(queue.len(), 1);
             assert_eq!(queue[0].text(), "second");
         });
-    });
-}
-
-#[test]
-fn restore_fired_row_reinserts_removed_row_for_retry() {
-    with_model(|mut app, model, events| {
-        let conv = AIConversationId::new();
-        let first_id = model.update(&mut app, |model, ctx| {
-            model.append(
-                conv,
-                QueuedQuery::new_with_attachments(
-                    "first".to_owned(),
-                    QueuedQueryOrigin::QueueSlashCommand,
-                    vec![image_attachment("a.png")],
-                ),
-                ctx,
-            )
-        });
-        append_user(&model, &mut app, conv, "second");
-
-        let (retry_index, retry_query) = model.read(&app, |model, _| {
-            model
-                .queue(conv)
-                .iter()
-                .enumerate()
-                .find(|(_, query)| query.id() == first_id)
-                .map(|(index, query)| (index, query.clone()))
-                .expect("queued row should exist")
-        });
-
-        model.update(&mut app, |model, ctx| {
-            model.remove_fired_row(conv, first_id, ctx);
-        });
-        events.borrow_mut().clear();
-
-        model.update(&mut app, |model, ctx| {
-            model.restore_fired_row(conv, retry_index, retry_query, ctx);
-        });
-
-        model.read(&app, |model, _| {
-            let queue = model.queue(conv);
-            assert_eq!(queue.len(), 2);
-            assert_eq!(queue[0].id(), first_id);
-            assert_eq!(queue[0].text(), "first");
-            assert_eq!(queue[0].attachments()[0].file_name(), "a.png");
-            assert_eq!(queue[1].text(), "second");
-        });
-        let evts = events.borrow();
-        assert!(matches!(
-            evts.as_slice(),
-            [QueuedQueryEvent::Appended {
-                conversation_id,
-                query_id
-            }] if *conversation_id == conv && *query_id == first_id
-        ));
     });
 }
 
@@ -1124,62 +855,6 @@ fn preparing_query() -> QueuedQuery {
 }
 
 #[test]
-fn preparation_blocks_fifo_and_emits_ready_once_even_on_download_failure() {
-    with_model(|mut app, model, events| {
-        let conv = AIConversationId::new();
-        let id = model.update(&mut app, |m, ctx| m.append(conv, preparing_query(), ctx));
-        append_user(&model, &mut app, conv, "later");
-        model.read(&app, |m, _| {
-            assert!(m.ready_head(conv).is_none());
-            assert!(m.ready_query(conv, id).is_none());
-            assert!(m.peek_autofire(conv).is_none());
-            assert!(!m.has_autofireable_prompt(conv));
-            assert!(m.has_pending_native_injections(conv));
-        });
-        events.borrow_mut().clear();
-        model.update(&mut app, |m, ctx| {
-            m.complete_preparation(conv, id, HashMap::new(), ctx);
-            m.complete_preparation(conv, id, HashMap::new(), ctx);
-        });
-        model.read(&app, |m, _| {
-            let head = m.ready_head(conv).unwrap();
-            assert_eq!(head.id(), id);
-            assert!(
-                head.text()
-                    .contains("could not be downloaded: event-payload.json")
-            );
-            assert!(m.has_autofireable_prompt(conv));
-        });
-        assert!(matches!(events.borrow().as_slice(),
-            [QueuedQueryEvent::PromptReady { conversation_id, query_id }]
-                if *conversation_id == conv && *query_id == id));
-    });
-}
-
-#[test]
-fn preparation_completion_after_removal_or_clear_does_not_resurrect_rows() {
-    with_model(|mut app, model, events| {
-        let conv = AIConversationId::new();
-        for clear_all in [false, true] {
-            let id = model.update(&mut app, |m, ctx| m.append(conv, preparing_query(), ctx));
-            model.update(&mut app, |m, ctx| {
-                if clear_all {
-                    m.clear_queue(conv, ctx);
-                } else {
-                    m.remove_by_id(conv, id, ctx);
-                }
-            });
-            events.borrow_mut().clear();
-            model.update(&mut app, |m, ctx| {
-                m.complete_preparation(conv, id, HashMap::new(), ctx)
-            });
-            assert!(events.borrow().is_empty());
-            model.read(&app, |m, _| assert!(!m.has_pending_native_injections(conv)));
-        }
-    });
-}
-
-#[test]
 fn later_download_finishing_first_does_not_overtake_fifo_head() {
     with_model(|mut app, model, _| {
         let conv = AIConversationId::new();
@@ -1254,31 +929,6 @@ fn has_autofireable_prompt_is_true_for_a_queued_prompt() {
         let conv = AIConversationId::new();
         append_user(&model, &mut app, conv, "follow up");
         model.read(&app, |m, _| assert!(m.has_autofireable_prompt(conv)));
-    });
-}
-
-#[test]
-fn has_autofireable_prompt_is_false_when_only_a_locked_head_is_queued() {
-    // A locked initial Cloud Mode head never auto-fires on finish, so it must not count.
-    with_model(|mut app, model, _events| {
-        let conv = AIConversationId::new();
-        model.update(&mut app, |m, ctx| {
-            m.append(conv, initial_cloud_mode_query("initial"), ctx)
-        });
-        model.read(&app, |m, _| assert!(!m.has_autofireable_prompt(conv)));
-    });
-}
-
-#[test]
-fn has_autofireable_prompt_is_false_when_a_locked_head_precedes_a_prompt() {
-    // The head row gates auto-fire; a locked head blocks the trailing prompt from firing.
-    with_model(|mut app, model, _events| {
-        let conv = AIConversationId::new();
-        model.update(&mut app, |m, ctx| {
-            m.append(conv, initial_cloud_mode_query("initial"), ctx)
-        });
-        append_user(&model, &mut app, conv, "follow up");
-        model.read(&app, |m, _| assert!(!m.has_autofireable_prompt(conv)));
     });
 }
 

@@ -714,107 +714,6 @@ fn permission_request_still_populates_summary_and_tool_fields() {
     ));
 }
 
-#[test]
-fn needs_input_blocks_session_with_the_event_summary() {
-    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
-
-    let event = CLIAgentEvent {
-        payload: CLIAgentEventPayload {
-            summary: Some("Some dialog text".to_owned()),
-            ..Default::default()
-        },
-        ..rich_event(CLIAgentEventType::NeedsInput)
-    };
-
-    let new_status = session.apply_event(&event);
-
-    let expected = CLIAgentSessionStatus::Blocked {
-        message: Some("Some dialog text".to_owned()),
-        source: BlockedSource::NeedsInput,
-    };
-    assert_eq!(new_status, Some(expected.clone()));
-    assert_eq!(session.status, expected);
-    assert!(session.is_blocked_on_needs_input());
-}
-
-#[test]
-fn needs_input_without_a_summary_blocks_session_with_the_generic_message() {
-    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
-
-    let new_status = session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
-
-    let expected = CLIAgentSessionStatus::Blocked {
-        message: Some("Agent requires user input".to_owned()),
-        source: BlockedSource::NeedsInput,
-    };
-    assert_eq!(new_status, Some(expected));
-    assert!(session.is_blocked_on_needs_input());
-}
-
-#[test]
-fn blocked_status_records_the_event_that_caused_it() {
-    for (event, expected_source) in [
-        (
-            CLIAgentEventType::PermissionRequest,
-            BlockedSource::PermissionRequest,
-        ),
-        (
-            CLIAgentEventType::QuestionAsked,
-            BlockedSource::QuestionAsked,
-        ),
-        (CLIAgentEventType::NeedsInput, BlockedSource::NeedsInput),
-    ] {
-        let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
-
-        session.apply_event(&rich_event(event));
-
-        let CLIAgentSessionStatus::Blocked { source, .. } = session.status else {
-            panic!("expected a blocked status");
-        };
-        assert_eq!(source, expected_source);
-        assert_eq!(
-            session.is_blocked_on_needs_input(),
-            expected_source == BlockedSource::NeedsInput
-        );
-    }
-}
-
-#[test]
-fn permission_request_after_needs_input_is_no_longer_blocked_on_needs_input() {
-    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
-    session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
-
-    session.apply_event(&rich_event(CLIAgentEventType::PermissionRequest));
-
-    assert!(!session.is_blocked_on_needs_input());
-}
-
-#[test]
-fn tool_complete_after_needs_input_returns_session_to_in_progress() {
-    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
-    session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
-
-    session.apply_event(&rich_event(CLIAgentEventType::ToolComplete));
-
-    assert_eq!(session.status, CLIAgentSessionStatus::InProgress);
-    assert!(!session.is_blocked_on_needs_input());
-}
-
-#[test]
-fn idle_prompt_after_needs_input_keeps_session_blocked() {
-    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
-    session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
-
-    let new_status = session.apply_event(&rich_event(CLIAgentEventType::IdlePrompt));
-
-    assert_eq!(new_status, None);
-    assert!(matches!(
-        session.status,
-        CLIAgentSessionStatus::Blocked { .. }
-    ));
-    assert!(session.is_blocked_on_needs_input());
-}
-
 fn assert_needs_input_blocks_session_in_mode(mode: ExecutionMode, expect_blocked: bool) {
     App::test((), |mut app| async move {
         app.add_singleton_model(|ctx| AppExecutionMode::new(mode, false, ctx));
@@ -1455,4 +1354,115 @@ fn second_ctrl_c_while_armed_reuses_the_existing_window() {
             );
         });
     });
+}
+
+#[test]
+fn idle_prompt_after_needs_input_keeps_session_blocked() {
+    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
+    session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
+
+    let new_status = session.apply_event(&rich_event(CLIAgentEventType::IdlePrompt));
+
+    assert_eq!(new_status, None);
+    assert!(matches!(
+        session.status,
+        CLIAgentSessionStatus::Blocked { .. }
+    ));
+    assert!(is_blocked_on_needs_input(&session));
+}
+
+#[test]
+fn tool_complete_after_needs_input_returns_session_to_in_progress() {
+    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
+    session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
+
+    session.apply_event(&rich_event(CLIAgentEventType::ToolComplete));
+
+    assert_eq!(session.status, CLIAgentSessionStatus::InProgress);
+    assert!(!is_blocked_on_needs_input(&session));
+}
+
+#[test]
+fn permission_request_after_needs_input_is_no_longer_blocked_on_needs_input() {
+    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
+    session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
+
+    session.apply_event(&rich_event(CLIAgentEventType::PermissionRequest));
+
+    assert!(!is_blocked_on_needs_input(&session));
+}
+
+#[test]
+fn blocked_status_records_the_event_that_caused_it() {
+    for (event, expected_source) in [
+        (
+            CLIAgentEventType::PermissionRequest,
+            BlockedSource::PermissionRequest,
+        ),
+        (
+            CLIAgentEventType::QuestionAsked,
+            BlockedSource::QuestionAsked,
+        ),
+        (CLIAgentEventType::NeedsInput, BlockedSource::NeedsInput),
+    ] {
+        let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
+
+        session.apply_event(&rich_event(event));
+
+        let CLIAgentSessionStatus::Blocked { source, .. } = session.status else {
+            panic!("expected a blocked status");
+        };
+        assert_eq!(source, expected_source);
+        assert_eq!(
+            is_blocked_on_needs_input(&session),
+            expected_source == BlockedSource::NeedsInput
+        );
+    }
+}
+
+#[test]
+fn needs_input_without_a_summary_blocks_session_with_the_generic_message() {
+    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
+
+    let new_status = session.apply_event(&rich_event(CLIAgentEventType::NeedsInput));
+
+    let expected = CLIAgentSessionStatus::Blocked {
+        message: Some("Agent requires user input".to_owned()),
+        source: BlockedSource::NeedsInput,
+    };
+    assert_eq!(new_status, Some(expected));
+    assert!(is_blocked_on_needs_input(&session));
+}
+
+#[test]
+fn needs_input_blocks_session_with_the_event_summary() {
+    let mut session = cli_agent_session(CLIAgentSessionStatus::InProgress, true);
+
+    let event = CLIAgentEvent {
+        payload: CLIAgentEventPayload {
+            summary: Some("Some dialog text".to_owned()),
+            ..Default::default()
+        },
+        ..rich_event(CLIAgentEventType::NeedsInput)
+    };
+
+    let new_status = session.apply_event(&event);
+
+    let expected = CLIAgentSessionStatus::Blocked {
+        message: Some("Some dialog text".to_owned()),
+        source: BlockedSource::NeedsInput,
+    };
+    assert_eq!(new_status, Some(expected.clone()));
+    assert_eq!(session.status, expected);
+    assert!(is_blocked_on_needs_input(&session));
+}
+
+fn is_blocked_on_needs_input(session: &CLIAgentSession) -> bool {
+    matches!(
+        session.status,
+        CLIAgentSessionStatus::Blocked {
+            source: BlockedSource::NeedsInput,
+            ..
+        }
+    )
 }

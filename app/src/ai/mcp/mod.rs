@@ -49,8 +49,6 @@ cfg_if::cfg_if! {
 
 pub mod gallery;
 pub use gallery::MCPGalleryManager;
-#[cfg(not(target_family = "wasm"))]
-pub mod builtin;
 pub mod templatable;
 #[cfg(not(target_family = "wasm"))]
 pub use cloud_object_models::{
@@ -440,13 +438,12 @@ impl MCPServerExt for MCPServer {
             Some(TemplatableMCPServerInstallation::new(
                 uuid::Uuid::new_v4(),
                 templatable_mcp_server.clone(),
-                variable_values.clone(),
+                variable_values,
             ));
 
         ParsedTemplatableMCPServerResult {
             templatable_mcp_server,
             templatable_mcp_server_installation,
-            variable_values,
         }
     }
 

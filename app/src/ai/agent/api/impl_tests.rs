@@ -2,7 +2,7 @@ use warp_core::HostId;
 use warp_core::features::FeatureFlag;
 use warp_multi_agent_api as api;
 
-use super::{get_supported_cli_agent_tools, get_supported_tools, supports_orchestration_v2};
+use super::{get_supported_cli_agent_tools, get_supported_tools};
 use crate::ai::agent::api::RequestParams;
 use crate::ai::blocklist::SessionContext;
 use crate::ai::llms::LLMId;
@@ -15,7 +15,6 @@ fn request_params_with_ask_user_question_enabled(ask_user_question_enabled: bool
         input: vec![],
         conversation_token: None,
         forked_from_conversation_token: None,
-        ambient_agent_task_id: None,
         tasks: vec![],
         existing_suggestions: None,
         metadata: None,
@@ -36,10 +35,7 @@ fn request_params_with_ask_user_question_enabled(ask_user_question_enabled: bool
         computer_use_enabled: false,
         ask_user_question_enabled,
         research_agent_enabled: false,
-        orchestration_enabled: false,
         supported_tools_override: None,
-        parent_agent_id: None,
-        agent_name: None,
     }
 }
 
@@ -52,31 +48,6 @@ fn request_params_for_remote(host_id: Option<HostId>) -> RequestParams {
     params
 }
 
-#[test]
-fn supports_orchestration_v2_matches_request_orchestration_setting() {
-    assert!(supports_orchestration_v2(true));
-    assert!(!supports_orchestration_v2(false));
-}
-
-#[test]
-fn supported_tools_include_orchestration_tools_when_orchestration_enabled() {
-    let mut params = request_params_with_ask_user_question_enabled(false);
-    params.orchestration_enabled = true;
-
-    let supported_tools = get_supported_tools(&params);
-
-    assert!(supported_tools.contains(&api::ToolType::RunAgents));
-    assert!(supported_tools.contains(&api::ToolType::SendMessageToAgent));
-}
-
-#[test]
-fn supported_tools_omit_orchestration_tools_when_orchestration_disabled() {
-    let params = request_params_with_ask_user_question_enabled(false);
-    let supported_tools = get_supported_tools(&params);
-
-    assert!(!supported_tools.contains(&api::ToolType::RunAgents));
-    assert!(!supported_tools.contains(&api::ToolType::SendMessageToAgent));
-}
 #[test]
 fn supported_tools_omits_ask_user_question_when_disabled() {
     let params = request_params_with_ask_user_question_enabled(false);
@@ -95,24 +66,6 @@ fn supported_tools_includes_ask_user_question_when_enabled_and_feature_flag_is_e
     let supported_tools = get_supported_tools(&params);
 
     assert!(supported_tools.contains(&api::ToolType::AskUserQuestion));
-}
-
-#[test]
-fn supported_tools_include_upload_artifact_when_feature_flag_is_enabled() {
-    let _flag = FeatureFlag::ArtifactCommand.override_enabled(true);
-    let params = request_params_with_ask_user_question_enabled(false);
-    let supported_tools = get_supported_tools(&params);
-
-    assert!(supported_tools.contains(&api::ToolType::UploadFileArtifact));
-}
-
-#[test]
-fn supported_tools_omit_upload_artifact_when_feature_flag_is_disabled() {
-    let _flag = FeatureFlag::ArtifactCommand.override_enabled(false);
-    let params = request_params_with_ask_user_question_enabled(false);
-    let supported_tools = get_supported_tools(&params);
-
-    assert!(!supported_tools.contains(&api::ToolType::UploadFileArtifact));
 }
 
 #[test]

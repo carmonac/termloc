@@ -112,14 +112,12 @@ impl BlocklistAIController {
             return false;
         };
         log::info!(
-            "event=cancel_routed_to_external_harness task_id={:?} terminal_id={:?} conversation_id={conversation_id}",
-            self.ambient_agent_task_id,
+            "event=cancel_routed_to_external_harness terminal_id={:?} conversation_id={conversation_id}",
             self.terminal_surface_id,
         );
         if sink.try_send(ExternalHarnessCancel).is_err() {
             log::info!(
-                "event=cancel_fell_back_to_native task_id={:?} terminal_id={:?} conversation_id={conversation_id} reason=harness_stopped",
-                self.ambient_agent_task_id,
+                "event=cancel_fell_back_to_native terminal_id={:?} conversation_id={conversation_id} reason=harness_stopped",
                 self.terminal_surface_id,
             );
             return false;
@@ -234,8 +232,7 @@ impl BlocklistAIController {
             return;
         }
         log::info!(
-            "event=queued_injections_relayed_to_external_harness task_id={:?} terminal_id={:?} conversation_id={conversation_id} count={}",
-            self.ambient_agent_task_id,
+            "event=queued_injections_relayed_to_external_harness terminal_id={:?} conversation_id={conversation_id} count={}",
             self.terminal_surface_id,
             queued.len(),
         );

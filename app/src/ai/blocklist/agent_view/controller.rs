@@ -11,9 +11,6 @@ use warpui::{AppContext, Entity, EntityId, ModelContext, ModelHandle, SingletonE
 use super::{DismissalStrategy, EphemeralMessage, EphemeralMessageModel};
 use crate::BlocklistAIHistoryModel;
 use crate::ai::agent::conversation::AIConversationId;
-use crate::ai::blocklist::orchestration_topology::{
-    OrchestrationNavigationDirection, adjacent_orchestration_child_conversation_id,
-};
 use crate::terminal::TerminalModel;
 use crate::terminal::input::message_bar::{Message, MessageItem};
 use crate::terminal::input::slash_commands::SlashCommandTrigger;
@@ -35,8 +32,6 @@ pub enum ExitAgentViewError {
     LongRunningCommand,
     #[error("Cannot exit conversation as a viewer.")]
     ConversationViewer,
-    #[error("Cannot exit cloud agent.")]
-    AmbientAgent,
 }
 
 /// The display mode for an active agent view.
@@ -129,11 +124,6 @@ pub enum AgentViewEntryOrigin {
     AcceptedPassiveCodeDiff,
     /// Entered agent view by starting conversation with an inline code review submission.
     InlineCodeReview,
-    /// Entered agent view through a cloud agent prompt.
-    CloudAgent,
-    /// Entered agent view by opening an existing non-Oz cloud agent run (live shared-session
-    /// viewer or transcript viewer).
-    ThirdPartyCloudAgent,
     /// Entered agent view via the CLI (e.g. `warp agent run`).
     Cli,
     /// Entered agent view via the headless TUI frontend.
@@ -165,14 +155,6 @@ pub enum AgentViewEntryOrigin {
 
     /// Entered agent view from the onboarding flow.
     Onboarding,
-
-    /// Entered agent view because a parent agent started this child agent via StartAgent.
-    ChildAgent,
-
-    /// Entered agent view by clicking a pill / breadcrumb in the orchestration
-    /// pill bar (or breadcrumb row) to navigate the current pane to a sibling
-    /// or parent conversation in the same orchestration tree.
-    OrchestrationPillBar,
 
     /// Entered agent view after opening project from OS directory picker.
     ProjectEntry,
@@ -211,10 +193,6 @@ pub enum AutoTriggerBehavior {
 }
 
 impl AgentViewEntryOrigin {
-    pub fn is_cloud_agent(&self) -> bool {
-        matches!(self, Self::CloudAgent)
-    }
-
     pub fn should_autotrigger_request(&self) -> AutoTriggerBehavior {
         match self {
             AgentViewEntryOrigin::Input {
@@ -425,21 +403,6 @@ impl AgentViewController {
         &self.agent_view_state
     }
 
-    /// Resolves the conversation adjacent to the active agent-view conversation
-    /// in the canonical orchestration pill order.
-    pub fn adjacent_orchestration_conversation_id(
-        &self,
-        direction: OrchestrationNavigationDirection,
-        app: &AppContext,
-    ) -> Option<AIConversationId> {
-        let active_conversation_id = self.agent_view_state.active_conversation_id()?;
-        adjacent_orchestration_child_conversation_id(
-            BlocklistAIHistoryModel::as_ref(app),
-            active_conversation_id,
-            direction,
-        )
-    }
-
     /// Returns whether the user is allowed to exit agent view.
     /// This is used to determine both whether the escape key should work
     /// and whether the escape keybinding should be displayed.
@@ -452,10 +415,7 @@ impl AgentViewController {
                 .active_block()
                 .is_active_and_long_running();
 
-        // Cloud agent panes do not have the same underlying terminal ownership
-        // constraint (no local shell process), so long-running third party agent
-        // commands should not trap the user in agent view.
-        if is_fullscreen_with_long_running && !model.is_dummy_cloud_mode_session() {
+        if is_fullscreen_with_long_running {
             return Err(ExitAgentViewError::LongRunningCommand);
         }
 
@@ -743,7 +703,6 @@ impl AgentViewController {
                 .active_block()
                 .is_active_and_long_running()
                 && !terminal_model.is_conversation_transcript_viewer()
-                && !matches!(&origin, AgentViewEntryOrigin::ThirdPartyCloudAgent)
         };
 
         if is_long_running {
@@ -804,29 +763,22 @@ impl AgentViewController {
         }
 
         let history_model = BlocklistAIHistoryModel::handle(ctx);
-        let (conversation_id, exchange_count, is_existing_child_placeholder) =
-            if let Some(conversation) =
-                conversation_id.and_then(|id| history_model.as_ref(ctx).conversation(&id))
-            {
-                (
-                    conversation.id(),
-                    conversation.exchange_count(),
-                    conversation.is_remote_child()
-                        || (conversation.is_viewing_shared_session()
-                            && conversation.parent_conversation_id().is_some()),
+        let (conversation_id, exchange_count) = if let Some(conversation) =
+            conversation_id.and_then(|id| history_model.as_ref(ctx).conversation(&id))
+        {
+            (conversation.id(), conversation.exchange_count())
+        } else {
+            let id = history_model.update(ctx, |history_model, ctx| {
+                history_model.start_new_conversation(
+                    self.terminal_view_id,
+                    false,
+                    false,
+                    false,
+                    ctx,
                 )
-            } else {
-                let id = history_model.update(ctx, |history_model, ctx| {
-                    history_model.start_new_conversation(
-                        self.terminal_view_id,
-                        false,
-                        matches!(&origin, AgentViewEntryOrigin::CloudAgent),
-                        matches!(&origin, AgentViewEntryOrigin::ThirdPartyCloudAgent),
-                        ctx,
-                    )
-                });
-                (id, 0, false)
-            };
+            });
+            (id, 0)
+        };
         history_model.update(ctx, |history_model, ctx| {
             history_model.set_active_conversation_id(conversation_id, self.terminal_view_id, ctx)
         });
@@ -838,22 +790,12 @@ impl AgentViewController {
             original_conversation_length: exchange_count,
         };
 
-        let is_cloud = matches!(
-            origin,
-            AgentViewEntryOrigin::CloudAgent | AgentViewEntryOrigin::ThirdPartyCloudAgent
-        );
-
         self.terminal_model
             .lock()
             .block_list_mut()
-            .enter_conversation_context(conversation_id, display_mode.is_inline(), is_cloud);
+            .enter_conversation_context(conversation_id, display_mode.is_inline(), false);
 
-        // An empty child placeholder is still an existing run, not a brand-new
-        // cloud conversation. This applies to owner-side remote children and
-        // viewer-side shared-session children. Preserve that distinction so
-        // TerminalView does not insert cloud composition UI while the child is
-        // restoring or waiting for its first streamed exchange.
-        let is_new = exchange_count == 0 && !is_existing_child_placeholder;
+        let is_new = exchange_count == 0;
         ctx.emit(AgentViewControllerEvent::EnteredAgentView {
             conversation_id,
             is_new,
@@ -884,6 +826,7 @@ impl AgentViewController {
     }
 
     /// Exits the active agent view without any confirmation.
+    #[cfg(test)]
     pub(crate) fn exit_agent_view_without_confirmation(&mut self, ctx: &mut ModelContext<Self>) {
         self.exit_agent_view_internal(
             ExitAgentViewOptions {
@@ -986,14 +929,12 @@ impl AgentViewController {
             .map(|conversation| conversation.exchange_count())
             .unwrap_or(0);
 
-        let was_ambient_agent = origin == AgentViewEntryOrigin::CloudAgent;
         ctx.emit(AgentViewControllerEvent::ExitedAgentView {
             conversation_id,
             origin,
             display_mode,
             original_exchange_count: original_conversation_length,
             final_exchange_count,
-            was_ambient_agent,
             is_exit_before_new_entrance,
         });
     }
@@ -1018,8 +959,6 @@ pub enum AgentViewControllerEvent {
         original_exchange_count: usize,
         /// The number of exchanges in the conversation when agent view is being exited.
         final_exchange_count: usize,
-        /// Whether this was an ambient (cloud) agent session.
-        was_ambient_agent: bool,
         /// Whether this exit is immediately followed by entering a new agent view.
         /// (e.g. Cmd+K while already in agent view to start a new conversation).
         is_exit_before_new_entrance: bool,

@@ -183,8 +183,6 @@ pub enum PaneMode {
     Terminal,
     /// A terminal that immediately enters Agent Mode.
     Agent,
-    /// A cloud-mode (ambient agent) pane with no local shell.
-    Cloud,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -253,8 +251,7 @@ impl TryFrom<PaneNodeSnapshot> for PaneTemplateType {
                 | LeafContents::ExecutionProfileEditor
                 | LeafContents::GetStarted
                 | LeafContents::NetworkLog
-                | LeafContents::AIDocument(_)
-                | LeafContents::AmbientAgent(_) => {
+                | LeafContents::AIDocument(_) => {
                     // TODO: Handle AIDocument in launch config
                     Err(())
                 }

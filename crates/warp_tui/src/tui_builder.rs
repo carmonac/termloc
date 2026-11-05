@@ -23,24 +23,12 @@ use warpui_core::elements::tui::{
 };
 use warpui_core::elements::{Fill as CoreFill, MouseStateHandle};
 
-use crate::orchestrated_agent_identity_styling::{AgentIdentity, agent_identity_palette};
-use crate::tab_bar::TuiTabBarStyles;
 use crate::terminal_background::probed_colors;
 
-#[derive(Clone, Copy)]
-pub(crate) struct CloudRunMarkStyles {
-    pub(crate) base: TuiStyle,
-    pub(crate) light: TuiStyle,
-    pub(crate) lighter: TuiStyle,
-    pub(crate) bright: TuiStyle,
-    pub(crate) brightest: TuiStyle,
-    pub(crate) ansi_bright: TuiStyle,
-}
 #[derive(Clone, Copy, Debug)]
 struct TuiDesignPalette {
     brand_primary: ColorU,
     brand_accent: ColorU,
-    agent_colors: [ColorU; 7],
 }
 
 /// Theme-derived styles and components for the TUI, mirroring the GUI's
@@ -64,28 +52,10 @@ impl TuiUiBuilder {
             ColorScheme::LightOnDark => TuiDesignPalette {
                 brand_primary: ColorU::from_u32(0xD2B5FFFF),
                 brand_accent: ColorU::from_u32(0xE2FFD4FF),
-                agent_colors: [
-                    ColorU::from_u32(0xD0D1FEFF),
-                    ColorU::from_u32(0xA5D5FEFF),
-                    ColorU::from_u32(0xFF8FFDFF),
-                    ColorU::from_u32(0xD2B5FFFF),
-                    ColorU::from_u32(0xFF8AA6FF),
-                    ColorU::from_u32(0xE2FFD4FF),
-                    ColorU::from_u32(0xFBDC79FF),
-                ],
             },
             ColorScheme::DarkOnLight => TuiDesignPalette {
                 brand_primary: ColorU::from_u32(0x9C58F0FF),
                 brand_accent: ColorU::from_u32(0x33770BFF),
-                agent_colors: [
-                    ColorU::from_u32(0x20A5BAFF),
-                    ColorU::from_u32(0x008EC4FF),
-                    ColorU::from_u32(0x523C79FF),
-                    ColorU::from_u32(0x9C58F0FF),
-                    ColorU::from_u32(0xFF8AA6FF),
-                    ColorU::from_u32(0x33770BFF),
-                    ColorU::from_u32(0xC79A18FF),
-                ],
             },
         }
     }
@@ -205,24 +175,6 @@ impl TuiUiBuilder {
     /// Theme-blue link text, matching linked filenames in tool-call headers.
     pub(crate) fn link_text_style(&self) -> TuiStyle {
         TuiStyle::default().fg(cell_color(ThemeFill::Solid(self.warp_theme.ansi_fg_blue())))
-    }
-
-    pub(crate) fn cloud_run_mark_styles(&self) -> CloudRunMarkStyles {
-        let blue = ThemeFill::from(self.warp_theme.terminal_colors().normal.blue);
-        let foreground = self.warp_theme.foreground();
-        let blend = |opacity| {
-            TuiStyle::default().fg(cell_color(blue.blend(&foreground.with_opacity(opacity))))
-        };
-        CloudRunMarkStyles {
-            base: TuiStyle::default().fg(cell_color(blue)),
-            light: blend(25),
-            lighter: blend(50),
-            bright: blend(80),
-            brightest: blend(90),
-            ansi_bright: TuiStyle::default().fg(cell_color(ThemeFill::from(
-                self.warp_theme.terminal_colors().bright.blue,
-            ))),
-        }
     }
 
     /// Blue command-name text used by the slash-command menu and recognized
@@ -435,25 +387,6 @@ impl TuiUiBuilder {
         TuiStyle::default().fg(cell_color(self.warping_base_fill()))
     }
 
-    /// The magenta-tinted background behind the orchestration permission
-    /// card, pre-blended over the probed base background.
-    pub(crate) fn orchestration_surface_background(&self) -> Color {
-        let magenta = ThemeFill::from(self.warp_theme.terminal_colors().normal.magenta);
-        cell_color(self.base_background().blend(&magenta.with_opacity(10)))
-    }
-
-    /// Stronger magenta tint for the orchestration permission title row:
-    /// the surface overlay applied twice, matching the design's stacked
-    /// header overlays.
-    pub(crate) fn orchestration_header_background(&self) -> Color {
-        let magenta = ThemeFill::from(self.warp_theme.terminal_colors().normal.magenta);
-        cell_color(
-            self.base_background()
-                .blend(&magenta.with_opacity(10))
-                .blend(&magenta.with_opacity(10)),
-        )
-    }
-
     /// Bold magenta text for a selected option-selector row.
     pub(crate) fn option_selector_selected_style(&self) -> TuiStyle {
         TuiStyle::default()
@@ -461,47 +394,6 @@ impl TuiUiBuilder {
                 self.warp_theme.terminal_colors().normal.magenta,
             )))
             .add_modifier(Modifier::BOLD)
-    }
-
-    /// Bold primary text for selected configuration metadata.
-    pub(crate) fn orchestration_selected_value_style(&self) -> TuiStyle {
-        self.primary_text_style().add_modifier(Modifier::BOLD)
-    }
-
-    /// Styles for the reusable component when rendered as orchestration tabs.
-    pub(crate) fn orchestration_tab_bar_styles(&self) -> TuiTabBarStyles {
-        let background = self.orchestration_surface_background();
-        let selected_fill = ThemeFill::from(self.warp_theme.terminal_colors().normal.magenta);
-        let selected_background = cell_color(selected_fill);
-        let selected_foreground =
-            cell_color(self.warp_theme.font_color(selected_fill.into_solid()));
-        TuiTabBarStyles {
-            background: Some(background),
-            leading: self.orchestration_tab_bar_label_style(),
-            chrome: self.orchestration_tab_bar_chrome_style(),
-            tab: self.muted_text_style().bg(background),
-            selected_focused: TuiStyle::default()
-                .fg(selected_foreground)
-                .bg(selected_background)
-                .add_modifier(Modifier::BOLD),
-            selected_unfocused: self
-                .primary_text_style()
-                .bg(background)
-                .add_modifier(Modifier::BOLD),
-        }
-    }
-
-    /// Bold fixed-label style over the orchestration tab-bar background.
-    pub(crate) fn orchestration_tab_bar_label_style(&self) -> TuiStyle {
-        self.primary_text_style()
-            .bg(self.orchestration_surface_background())
-            .add_modifier(Modifier::BOLD)
-    }
-
-    /// Muted divider/overflow style over the orchestration tab background.
-    pub(crate) fn orchestration_tab_bar_chrome_style(&self) -> TuiStyle {
-        self.muted_text_style()
-            .bg(self.orchestration_surface_background())
     }
 
     /// Solid selection style shared by editors and transcript viewports.
@@ -515,11 +407,6 @@ impl TuiUiBuilder {
             .remove_modifier(Modifier::REVERSED)
     }
 
-    /// The deterministic agent identity palette for this theme. See
-    /// [`crate::orchestrated_agent_identity_styling`].
-    pub(crate) fn agent_identity_palette(&self) -> Vec<AgentIdentity> {
-        agent_identity_palette(&self.design_palette().agent_colors)
-    }
     /// Bold cyan option text for the ask-question card.
     pub(crate) fn question_option_selected_style(&self) -> TuiStyle {
         self.accent_text_style().add_modifier(Modifier::BOLD)

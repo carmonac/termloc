@@ -23,7 +23,6 @@ use crate::settings::{AISettings, AISettingsChangedEvent};
 use crate::terminal::TerminalModel;
 use crate::terminal::input::slash_commands::AcceptSlashCommandOrSavedPrompt;
 use crate::terminal::model::session::active_session::ActiveSession;
-use crate::terminal::view::resolve_ai_query_routing;
 use crate::workspaces::user_workspaces::{TeamContextResolver, UserWorkspaces};
 
 pub struct TuiDataSourceArgs {
@@ -87,12 +86,12 @@ impl TuiSlashCommandDataSource {
     }
 
     /// Returns whether this TUI surface routes AI work to its local execution host.
-    ///
-    /// This reuses the GUI's canonical routing decision. TUI surfaces have no
-    /// `AmbientAgentViewModel`, so shared-session state comes from the terminal model.
-    pub fn local_skills_available(&self, app: &AppContext) -> bool {
-        let terminal_model = self.terminal_model.lock();
-        resolve_ai_query_routing(self.terminal_view_id(), None, &terminal_model, app).is_local()
+    pub fn local_skills_available(&self) -> bool {
+        !self
+            .terminal_model
+            .lock()
+            .shared_session_status()
+            .is_active_viewer()
     }
 
     pub fn manage_billing_url(&self, app: &AppContext) -> Option<String> {
@@ -116,7 +115,7 @@ impl TuiSlashCommandDataSource {
         let voice_command_is_available = AISettings::as_ref(ctx).is_voice_input_enabled(ctx)
             && UserWorkspaces::as_ref(ctx).is_voice_enabled()
             && AIRequestUsageModel::as_ref(ctx).can_request_voice()
-            && self.local_skills_available(ctx);
+            && self.local_skills_available();
         #[cfg(not(feature = "voice_input"))]
         let voice_command_is_available = false;
         let commands = HashMap::from_iter(
@@ -137,10 +136,7 @@ impl TuiSlashCommandDataSource {
     }
 
     fn availability(&self, ctx: &AppContext) -> Availability {
-        self.base_availability(ctx)
-            | Availability::AGENT_VIEW
-            | Availability::ACTIVE_CONVERSATION
-            | Availability::NOT_CLOUD_AGENT
+        self.base_availability(ctx) | Availability::AGENT_VIEW | Availability::ACTIVE_CONVERSATION
     }
 }
 
@@ -158,7 +154,7 @@ impl SyncDataSource for TuiSlashCommandDataSource {
 
         let query_text = query.text.trim().to_lowercase();
         let mut results = self.match_active_commands(&query_text, app);
-        if self.local_skills_available(app) {
+        if self.local_skills_available() {
             results.extend(self.match_skills(&query_text, app));
         }
         Ok(results

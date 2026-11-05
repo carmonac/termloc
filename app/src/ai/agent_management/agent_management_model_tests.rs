@@ -125,7 +125,7 @@ fn add_notification_tracks_unread_activity_when_in_app_notifications_are_hidden(
                 "Agent task".to_owned(),
                 "Task completed.".to_owned(),
                 NotificationCategory::Complete,
-                NotificationSourceAgent::Oz { is_ambient: false },
+                NotificationSourceAgent::Local,
                 NotificationOrigin::Conversation(conversation_id),
                 terminal_view_id,
                 vec![],
@@ -216,7 +216,6 @@ fn deletion_cleans_up_pending_artifacts() {
                 terminal_surface_id: terminal_view_id,
                 conversation_id,
                 conversation_title: None,
-                run_id: None,
             });
         });
 
@@ -331,7 +330,7 @@ fn seed_stale_notification(
             "Agent task".to_owned(),
             "Task completed.".to_owned(),
             NotificationCategory::Complete,
-            NotificationSourceAgent::Oz { is_ambient: false },
+            NotificationSourceAgent::Local,
             NotificationOrigin::Conversation(conversation_id),
             terminal_view_id,
             vec![],

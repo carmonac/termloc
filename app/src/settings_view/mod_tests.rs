@@ -166,14 +166,6 @@ fn from_slug_accepts_display_labels_and_their_older_spellings() {
 
 #[test]
 fn from_slug_accepts_legacy_spellings() {
-    // Both the legacy "Oz" name and the current "Warp Agent" slug must resolve
-    // to SettingsSection::WarpAgent so existing deep links, persisted sessions
-    // and external callers keep working after the user-facing rename (see
-    // specs/GH1063/product.md, Behavior #8).
-    assert_eq!(
-        SettingsSection::from_slug("Oz"),
-        Some(SettingsSection::WarpAgent)
-    );
     assert_eq!(
         SettingsSection::from_slug("WarpDrive"),
         Some(SettingsSection::WarpDrive)
@@ -865,10 +857,10 @@ fn category_whose_sole_widget_cannot_render_has_no_visible_content_before_any_fi
         app.update(|ctx| {
             let children: Vec<Box<dyn SettingsWidget<View = TestSettingsView>>> =
                 vec![Box::new(NeverRendersWidget {
-                    terms: "cloud handoff",
+                    terms: "code review",
                 })];
             let page =
-                PageType::new_categorized(vec![Category::new("Cloud Handoff", children)], None);
+                PageType::new_categorized(vec![Category::new("Code Review", children)], None);
 
             let FilteredPageType::Categorized { categories, .. } = page.get_filtered() else {
                 panic!("expected Categorized page");
@@ -892,10 +884,10 @@ fn category_whose_sole_widget_cannot_render_has_no_visible_content_after_an_empt
         app.update(|ctx| {
             let children: Vec<Box<dyn SettingsWidget<View = TestSettingsView>>> =
                 vec![Box::new(NeverRendersWidget {
-                    terms: "cloud handoff",
+                    terms: "code review",
                 })];
             let mut page =
-                PageType::new_categorized(vec![Category::new("Cloud Handoff", children)], None);
+                PageType::new_categorized(vec![Category::new("Code Review", children)], None);
             page.update_filter("", ctx);
 
             let FilteredPageType::Categorized { categories, .. } = page.get_filtered() else {

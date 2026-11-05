@@ -1,7 +1,7 @@
 use ai::agent::action_result::StopRecordingResult;
 use computer_use::RecordingHandle;
 use instant::Instant;
-use warpui::{App, SingletonEntity};
+use warpui::App;
 
 use super::super::recording_controller::ActiveRecording;
 use super::*;
@@ -48,32 +48,24 @@ async fn invalid_processed_recording_falls_back_to_validated_raw() {
     );
     std::fs::write(&processed_path, b"not a video").unwrap();
 
-    let (upload_path, duration, retained_processed_path) =
-        validated_recording_for_upload(&raw_path, Some(processed_path.clone()))
+    let (video_path, duration, retained_processed_path) =
+        validated_recording(&raw_path, Some(processed_path.clone()))
             .await
             .unwrap();
 
-    assert_eq!(upload_path, raw_path);
+    assert_eq!(video_path, raw_path);
     assert!(duration > Duration::ZERO);
     assert_eq!(retained_processed_path, None);
     assert!(!processed_path.exists());
     std::fs::remove_dir_all(root).unwrap();
 }
 
-/// Conversation cancellation must not upload the recording: it kills ffmpeg (by
-/// dropping the handle) and resolves as `Cancelled` without touching the
-/// uploader.
+/// Conversation cancellation must not keep the recording: it kills ffmpeg (by dropping the handle)
+/// and resolves as `Cancelled`.
 #[test]
-fn cancellation_finalization_skips_upload_even_without_actions() {
+fn cancellation_finalization_discards_even_without_actions() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
-
-        let uploader = app.update(|ctx| {
-            FileArtifactUploader::new(
-                ServerApiProvider::as_ref(ctx).get_ai_client(),
-                ServerApiProvider::as_ref(ctx).get(),
-            )
-        });
 
         let (handle, _exit_state) = RecordingHandle::new_test(1, 1);
         let geometry = handle.geometry();
@@ -87,19 +79,10 @@ fn cancellation_finalization_skips_upload_even_without_actions() {
             geometry,
             pointer_session: computer_use::PointerSession::new(),
             actions: Vec::new(),
-            summary: None,
-            description: None,
             pending_group: None,
         };
 
-        let result = finalize_recording(
-            recording,
-            FinalizeReason::RunCancelled,
-            false,
-            uploader,
-            None,
-        )
-        .await;
+        let result = finalize_recording(recording, FinalizeReason::RunCancelled, false).await;
 
         assert_eq!(result, StopRecordingResult::Cancelled);
     });
@@ -109,16 +92,9 @@ fn cancellation_finalization_skips_upload_even_without_actions() {
 /// it kills ffmpeg (by dropping the handle) and resolves as `Discarded` without
 /// touching the uploader, so the agent's turn continues.
 #[test]
-fn agent_discard_finalization_skips_upload() {
+fn agent_discard_finalization_discards_recording() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
-
-        let uploader = app.update(|ctx| {
-            FileArtifactUploader::new(
-                ServerApiProvider::as_ref(ctx).get_ai_client(),
-                ServerApiProvider::as_ref(ctx).get(),
-            )
-        });
 
         let (handle, _exit_state) = RecordingHandle::new_test(1, 1);
         let geometry = handle.geometry();
@@ -132,19 +108,10 @@ fn agent_discard_finalization_skips_upload() {
             geometry,
             pointer_session: computer_use::PointerSession::new(),
             actions: Vec::new(),
-            summary: None,
-            description: None,
             pending_group: None,
         };
 
-        let result = finalize_recording(
-            recording,
-            FinalizeReason::StoppedByAgent,
-            false,
-            uploader,
-            None,
-        )
-        .await;
+        let result = finalize_recording(recording, FinalizeReason::StoppedByAgent, false).await;
 
         assert_eq!(result, StopRecordingResult::Discarded);
     });
@@ -155,16 +122,9 @@ fn agent_discard_finalization_skips_upload() {
 /// kill-on-drops ffmpeg and removes the partial capture). This returns before
 /// `recorder.stop`, so it needs no live recorder or uploader.
 #[test]
-fn empty_actions_finalization_is_an_error_without_upload() {
+fn empty_actions_finalization_is_an_error() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
-
-        let uploader = app.update(|ctx| {
-            FileArtifactUploader::new(
-                ServerApiProvider::as_ref(ctx).get_ai_client(),
-                ServerApiProvider::as_ref(ctx).get(),
-            )
-        });
 
         let (handle, _exit_state) = RecordingHandle::new_test(1, 1);
         let geometry = handle.geometry();
@@ -178,19 +138,10 @@ fn empty_actions_finalization_is_an_error_without_upload() {
             geometry,
             pointer_session: computer_use::PointerSession::new(),
             actions: Vec::new(),
-            summary: None,
-            description: None,
             pending_group: None,
         };
 
-        let result = finalize_recording(
-            recording,
-            FinalizeReason::StoppedByAgent,
-            true,
-            uploader,
-            None,
-        )
-        .await;
+        let result = finalize_recording(recording, FinalizeReason::StoppedByAgent, true).await;
 
         assert!(
             matches!(result, StopRecordingResult::Error(ref msg) if msg.contains("no committed actions")),

@@ -3300,7 +3300,6 @@ pub(crate) fn user_query_mode_prefix_highlight_len(mode: UserQueryMode) -> Optio
     match mode {
         UserQueryMode::Normal => None,
         UserQueryMode::Plan => Some(commands::PLAN.name.len()),
-        UserQueryMode::Orchestrate => Some(commands::ORCHESTRATE.name.len()),
     }
 }
 
@@ -3316,9 +3315,7 @@ pub(super) fn query_prefix_highlight_len(
         return Some(prefix_len);
     }
 
-    if displayed_query.starts_with(commands::CREATE_ENVIRONMENT.name) {
-        Some(commands::CREATE_ENVIRONMENT.name.len())
-    } else if displayed_query.starts_with(commands::AGENT.name) {
+    if displayed_query.starts_with(commands::AGENT.name) {
         Some(commands::AGENT.name.len())
     } else if displayed_query.starts_with(commands::NEW.name) {
         Some(commands::NEW.name.len())
@@ -3335,13 +3332,8 @@ pub(super) fn query_prefix_highlight_len(
             | AIAgentInput::CloneRepository { .. }
             | AIAgentInput::CodeReview { .. }
             | AIAgentInput::SummarizeConversation { .. }
-            | AIAgentInput::StartFromAmbientRunPrompt { .. }
             | AIAgentInput::ActionResult { .. }
-            | AIAgentInput::MessagesReceivedFromAgents { .. }
-            | AIAgentInput::EventsFromAgents { .. }
-            | AIAgentInput::PassiveSuggestionResult { .. }
-            | AIAgentInput::OrchestrationConfigUpdate { .. }
-            | AIAgentInput::AgentWake => None,
+            | AIAgentInput::PassiveSuggestionResult { .. } => None,
         }
     }
 }
@@ -3405,7 +3397,7 @@ pub fn render_query_text(props: UserQueryProps<'_>, app: &AppContext) -> Text {
 /// Renders a scrollable collapsible content area with auto-scroll-to-bottom
 /// during streaming. Returns `None` if the state is collapsed.
 ///
-/// Shared by reasoning/summarization blocks and orchestration blocks.
+/// Shared by reasoning and summarization blocks.
 pub(crate) fn render_scrollable_collapsible_content(
     message_id: &MessageId,
     state: &CollapsibleElementState,

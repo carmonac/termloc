@@ -10,9 +10,7 @@ use warpui::fonts::{Properties, Style, Weight};
 use warpui::keymap::Keystroke;
 use warpui::platform::OperatingSystem;
 use warpui::text_layout::ClipConfig;
-use warpui::{
-    AppContext, Element, Entity, EntityId, ModelContext, ModelHandle, SingletonEntity as _,
-};
+use warpui::{AppContext, Element, Entity, EntityId, SingletonEntity as _};
 
 use super::model_spec_scores::{
     MODEL_SPECS_DESCRIPTION, MODEL_SPECS_TITLE, ModelSpecScoresLayout, REASONING_LEVEL_DESCRIPTION,
@@ -30,7 +28,6 @@ use crate::terminal::input::inline_menu::{
     default_navigation_message_items, styles as inline_styles,
 };
 use crate::terminal::input::message_bar::{Message, MessageItem};
-use crate::terminal::view::ambient_agent::AmbientAgentViewModel;
 use crate::workspaces::user_workspaces::TeamContextResolver;
 
 /// Auto models pick their concrete model server-side, so the cost line names the
@@ -180,36 +177,14 @@ pub fn query_model_picker_choices<'a>(
 pub struct ModelSelectorDataSource {
     terminal_view_id: EntityId,
     team_context: TeamContextResolver,
-    ambient_agent_view_model: Option<ModelHandle<AmbientAgentViewModel>>,
 }
 
 impl ModelSelectorDataSource {
-    pub fn new(
-        terminal_view_id: EntityId,
-        team_context: TeamContextResolver,
-        ambient_agent_view_model: Option<ModelHandle<AmbientAgentViewModel>>,
-    ) -> Self {
+    pub fn new(terminal_view_id: EntityId, team_context: TeamContextResolver) -> Self {
         Self {
             terminal_view_id,
             team_context,
-            ambient_agent_view_model,
         }
-    }
-
-    /// Attaches an ambient agent view model after construction so the picker treats this pane as a
-    /// cloud pane. Used on the shared-session viewer path where the model is created lazily at
-    /// `SessionJoined`. Idempotent: a no-op when a model is already set. The next `run_query`
-    /// (menu open / typing) picks up the new value.
-    pub fn set_ambient_agent_view_model(
-        &mut self,
-        ambient_agent_view_model: ModelHandle<AmbientAgentViewModel>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        if self.ambient_agent_view_model.is_some() {
-            return;
-        }
-        self.ambient_agent_view_model = Some(ambient_agent_view_model);
-        ctx.notify();
     }
 
     fn order_model_choices(choices: Vec<&LLMInfo>) -> Vec<&LLMInfo> {

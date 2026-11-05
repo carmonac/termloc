@@ -189,56 +189,6 @@ fn begin_turn_with_query(
 }
 
 #[test]
-fn shared_session_injections_go_to_the_prompt_sink_instead_of_the_queue() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let terminal = add_window_with_terminal(&mut app, None);
-        let (sink, prompts) = async_channel::unbounded();
-        terminal.update(&mut app, |terminal, ctx| {
-            terminal.ai_controller().update(ctx, |controller, ctx| {
-                let id = controller.bind_native_prompt_conversation(None, ctx);
-                controller.set_external_harness_prompt_sink(sink, ctx);
-                controller.execute_warp_agent_prompt_from_shared_session_injection(
-                    "follow-up".into(),
-                    None,
-                    vec![AgentAttachment::PlainText {
-                        content: "selected text".into(),
-                    }],
-                    ParticipantId::new(),
-                    None,
-                    ctx,
-                );
-                let relayed = prompts.try_recv().unwrap();
-                assert_eq!(relayed.text, "follow-up");
-                assert!(
-                    matches!(
-                        relayed.attachments.as_slice(),
-                        [AgentAttachment::PlainText { content }] if content == "selected text"
-                    ),
-                    "attachments must reach the harness alongside the prompt: {:?}",
-                    relayed.attachments
-                );
-                assert!(!QueuedQueryModel::as_ref(ctx).has_queue(id));
-                assert_eq!(
-                    BlocklistAIHistoryModel::as_ref(ctx)
-                        .conversation(&id)
-                        .unwrap()
-                        .exchange_count(),
-                    0,
-                    "the harness owns the turn; nothing is sent to Warp's agent"
-                );
-
-                controller.unbind_native_prompt_conversation(ctx);
-                assert!(
-                    prompts.is_closed(),
-                    "unbinding must drop the sink so the harness sees the channel close"
-                );
-            });
-        });
-    });
-}
-
-#[test]
 fn injections_queued_before_the_sink_exists_are_relayed_when_it_is_installed() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
@@ -340,56 +290,6 @@ fn injections_queued_before_the_sink_exists_are_relayed_when_it_is_installed() {
                     0,
                     "nothing is sent to Warp's agent"
                 );
-            });
-        });
-    });
-}
-
-#[test]
-fn cancelling_a_harness_driven_conversation_goes_to_the_cancel_sink() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let terminal = add_window_with_terminal(&mut app, None);
-        let (sink, cancels) = async_channel::unbounded();
-        terminal.update(&mut app, |terminal, ctx| {
-            terminal.ai_controller().update(ctx, |controller, ctx| {
-                let id = controller.bind_native_prompt_conversation(None, ctx);
-                assert!(
-                    !controller.cancel_via_external_harness(id, ctx),
-                    "without a sink the caller cancels the conversation itself"
-                );
-                controller.set_external_harness_cancel_sink(sink);
-                assert!(
-                    !controller.cancel_via_external_harness(id, ctx),
-                    "before the harness opens a turn the conversation is not its to cancel"
-                );
-
-                controller
-                    .begin_external_harness_turn(id, Some("run-1".into()), ctx)
-                    .unwrap();
-                assert!(controller.cancel_via_external_harness(id, ctx));
-                assert_eq!(cancels.try_recv().unwrap(), ExternalHarnessCancel);
-                assert_eq!(
-                    status(ctx, id),
-                    ConversationStatus::InProgress,
-                    "the harness settles the status once the agent answers the cancel"
-                );
-
-                // The generic cancel path routes the same way, so a local stop never reaches
-                // the PTY.
-                controller.cancel_conversation_progress(
-                    id,
-                    crate::ai::agent::CancellationReason::ManuallyCancelled,
-                    ctx,
-                );
-                assert_eq!(cancels.try_recv().unwrap(), ExternalHarnessCancel);
-                assert_eq!(status(ctx, id), ConversationStatus::InProgress);
-
-                controller.mark_external_harness_conversation_cancelled(id, ctx);
-                assert_eq!(status(ctx, id), ConversationStatus::Cancelled);
-
-                controller.unbind_native_prompt_conversation(ctx);
-                assert!(cancels.is_closed(), "unbinding drops the cancel sink too");
             });
         });
     });
@@ -590,89 +490,6 @@ fn a_turn_without_tool_calls_settles_when_its_stream_finishes() {
 }
 
 #[test]
-fn a_turn_on_a_restored_conversation_extends_its_root_task_under_the_same_server_id() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let terminal = add_window_with_terminal(&mut app, None);
-        terminal.update(&mut app, |terminal, ctx| {
-            terminal.ai_controller().update(ctx, |controller, ctx| {
-                let root = "restored-root";
-                let restored = AIConversation::new_restored(
-                    AIConversationId::new(),
-                    vec![Task {
-                        id: root.to_owned(),
-                        messages: vec![
-                            user_query(root, "prior-request", "before"),
-                            message(
-                                root,
-                                "prior-request",
-                                MessageKind::AgentOutput(AgentOutput {
-                                    text: "earlier answer".into(),
-                                }),
-                            ),
-                        ],
-                        ..Default::default()
-                    }],
-                    Some(AgentConversationData {
-                        server_conversation_token: Some("server-conversation".into()),
-                        ..Default::default()
-                    }),
-                )
-                .unwrap();
-                let id = restored.id();
-                let terminal_surface_id = controller.terminal_surface_id;
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.restore_conversations(terminal_surface_id, vec![restored], ctx);
-                });
-                assert_eq!(
-                    controller.bind_native_prompt_conversation(Some(id), ctx),
-                    id
-                );
-
-                let turn = controller
-                    .begin_external_harness_turn(id, None, ctx)
-                    .unwrap();
-                assert_eq!(root_task_id(ctx, id), root);
-                controller.apply_external_harness_event(
-                    &turn.stream_id,
-                    client_actions(vec![add_messages(
-                        root,
-                        vec![user_query(root, &turn.request_id, "after")],
-                    )]),
-                    ctx,
-                );
-                controller.apply_external_harness_event(&turn.stream_id, done(), ctx);
-
-                let conversation = BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&id)
-                    .unwrap();
-                assert_eq!(
-                    conversation
-                        .server_conversation_token()
-                        .map(|token| token.as_str()),
-                    Some("server-conversation")
-                );
-                let snapshot = conversation.to_conversation_data();
-                assert_eq!(
-                    snapshot.tasks.len(),
-                    1,
-                    "the turn must not add a second root"
-                );
-                let queries: Vec<_> = snapshot.tasks[0]
-                    .messages
-                    .iter()
-                    .filter_map(|message| match &message.message {
-                        Some(MessageKind::UserQuery(query)) => Some(query.query.as_str()),
-                        _ => None,
-                    })
-                    .collect();
-                assert_eq!(queries, vec!["before", "after"]);
-            });
-        });
-    });
-}
-
-#[test]
 fn tool_call_results_are_applied_as_finished_and_settle_in_the_next_stream() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
@@ -819,6 +636,179 @@ fn a_tool_call_rewritten_by_a_message_update_is_stored_with_its_new_input() {
                     panic!("expected a CallMcpTool, got {:?}", stored.message);
                 };
                 assert!(call.args.as_ref().unwrap().fields.contains_key("message"));
+            });
+        });
+    });
+}
+
+#[test]
+fn a_turn_on_a_restored_conversation_extends_its_root_task_under_the_same_server_id() {
+    App::test((), |mut app| async move {
+        initialize_app_for_terminal_view(&mut app);
+        let terminal = add_window_with_terminal(&mut app, None);
+        terminal.update(&mut app, |terminal, ctx| {
+            terminal.ai_controller().update(ctx, |controller, ctx| {
+                let root = "restored-root";
+                let restored = AIConversation::new_restored(
+                    AIConversationId::new(),
+                    vec![Task {
+                        id: root.to_owned(),
+                        messages: vec![
+                            user_query(root, "prior-request", "before"),
+                            message(
+                                root,
+                                "prior-request",
+                                MessageKind::AgentOutput(AgentOutput {
+                                    text: "earlier answer".into(),
+                                }),
+                            ),
+                        ],
+                        ..Default::default()
+                    }],
+                    Some(AgentConversationData {
+                        server_conversation_token: Some("server-conversation".into()),
+                        ..Default::default()
+                    }),
+                )
+                .unwrap();
+                let id = restored.id();
+                let terminal_surface_id = controller.terminal_surface_id;
+                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
+                    history.restore_conversations(terminal_surface_id, vec![restored], ctx);
+                });
+                assert_eq!(
+                    controller.bind_native_prompt_conversation(Some(id), ctx),
+                    id
+                );
+
+                let turn = controller
+                    .begin_external_harness_turn(id, None, ctx)
+                    .unwrap();
+                assert_eq!(root_task_id(ctx, id), root);
+                controller.apply_external_harness_event(
+                    &turn.stream_id,
+                    client_actions(vec![add_messages(
+                        root,
+                        vec![user_query(root, &turn.request_id, "after")],
+                    )]),
+                    ctx,
+                );
+                controller.apply_external_harness_event(&turn.stream_id, done(), ctx);
+
+                let conversation = BlocklistAIHistoryModel::as_ref(ctx)
+                    .conversation(&id)
+                    .unwrap();
+                assert_eq!(
+                    conversation
+                        .server_conversation_token()
+                        .map(|token| token.as_str()),
+                    Some("server-conversation")
+                );
+                let tasks: Vec<_> = conversation
+                    .all_tasks()
+                    .filter_map(|task| task.source_for_persistence())
+                    .collect();
+                assert_eq!(tasks.len(), 1, "the turn must not add a second root");
+                let queries: Vec<_> = tasks[0]
+                    .messages
+                    .iter()
+                    .filter_map(|message| match &message.message {
+                        Some(MessageKind::UserQuery(query)) => Some(query.query.as_str()),
+                        _ => None,
+                    })
+                    .collect();
+                assert_eq!(queries, vec!["before", "after"]);
+            });
+        });
+    });
+}
+
+#[test]
+fn cancelling_a_harness_driven_conversation_goes_to_the_cancel_sink() {
+    App::test((), |mut app| async move {
+        initialize_app_for_terminal_view(&mut app);
+        let terminal = add_window_with_terminal(&mut app, None);
+        let (sink, cancels) = async_channel::unbounded();
+        terminal.update(&mut app, |terminal, ctx| {
+            terminal.ai_controller().update(ctx, |controller, ctx| {
+                let id = controller.bind_native_prompt_conversation(None, ctx);
+                assert!(
+                    !controller.cancel_via_external_harness(id, ctx),
+                    "without a sink the caller cancels the conversation itself"
+                );
+                controller.set_external_harness_cancel_sink(sink);
+                assert!(
+                    !controller.cancel_via_external_harness(id, ctx),
+                    "before the harness opens a turn the conversation is not its to cancel"
+                );
+
+                controller
+                    .begin_external_harness_turn(id, Some("run-1".into()), ctx)
+                    .unwrap();
+                assert!(controller.cancel_via_external_harness(id, ctx));
+                assert_eq!(cancels.try_recv().unwrap(), ExternalHarnessCancel);
+                assert_eq!(
+                    status(ctx, id),
+                    ConversationStatus::InProgress,
+                    "the harness settles the status once the agent answers the cancel"
+                );
+
+                // The generic cancel path routes the same way, so a local stop never reaches
+                // the PTY.
+                controller.cancel_conversation_progress(
+                    id,
+                    crate::ai::agent::CancellationReason::ManuallyCancelled,
+                    ctx,
+                );
+                assert_eq!(cancels.try_recv().unwrap(), ExternalHarnessCancel);
+                assert_eq!(status(ctx, id), ConversationStatus::InProgress);
+
+                controller.mark_external_harness_conversation_cancelled(id, ctx);
+                assert_eq!(status(ctx, id), ConversationStatus::Cancelled);
+            });
+        });
+    });
+}
+
+#[test]
+fn shared_session_injections_go_to_the_prompt_sink_instead_of_the_queue() {
+    App::test((), |mut app| async move {
+        initialize_app_for_terminal_view(&mut app);
+        let terminal = add_window_with_terminal(&mut app, None);
+        let (sink, prompts) = async_channel::unbounded();
+        terminal.update(&mut app, |terminal, ctx| {
+            terminal.ai_controller().update(ctx, |controller, ctx| {
+                let id = controller.bind_native_prompt_conversation(None, ctx);
+                controller.set_external_harness_prompt_sink(sink, ctx);
+                controller.execute_warp_agent_prompt_from_shared_session_injection(
+                    "follow-up".into(),
+                    None,
+                    vec![AgentAttachment::PlainText {
+                        content: "selected text".into(),
+                    }],
+                    ParticipantId::new(),
+                    None,
+                    ctx,
+                );
+                let relayed = prompts.try_recv().unwrap();
+                assert_eq!(relayed.text, "follow-up");
+                assert!(
+                    matches!(
+                        relayed.attachments.as_slice(),
+                        [AgentAttachment::PlainText { content }] if content == "selected text"
+                    ),
+                    "attachments must reach the harness alongside the prompt: {:?}",
+                    relayed.attachments
+                );
+                assert!(!QueuedQueryModel::as_ref(ctx).has_queue(id));
+                assert_eq!(
+                    BlocklistAIHistoryModel::as_ref(ctx)
+                        .conversation(&id)
+                        .unwrap()
+                        .exchange_count(),
+                    0,
+                    "the harness owns the turn; nothing is sent to Warp's agent"
+                );
             });
         });
     });

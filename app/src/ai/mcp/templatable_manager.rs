@@ -92,21 +92,9 @@ pub struct TemplatableMCPServerManager {
     /// Short-lived authorization URLs for interactive OAuth flows.
     #[cfg(not(target_family = "wasm"))]
     authorization_urls: HashMap<Uuid, String>,
-    /// UUIDs of MCP servers started via the Oz CLI. We track these so they can be distinguished from
+    /// UUIDs of MCP servers started from the command line. We track these so they can be distinguished from
     /// file-based ephemeral MCP servers, which are directory-scoped.
     cli_spawned_server_uuids: HashSet<Uuid>,
-    /// UUIDs of built-in Warp-hosted servers (e.g. the Factory MCP), which are
-    /// spawned automatically from in-code definitions and authenticated with
-    /// the logged-in user's session credentials.
-    builtin_server_uuids: HashSet<Uuid>,
-    /// The bearer credential the current built-in server spawn was created
-    /// with. Compared on credential-rotation events so back-to-back auth
-    /// events with the same token (common at startup) don't respawn the
-    /// server and open redundant server-side MCP sessions. Native-only like
-    /// the spawn path that reads it; on wasm the built-in server is never
-    /// spawned, so the field would be dead code there.
-    #[cfg(not(target_family = "wasm"))]
-    builtin_server_token: Option<String>,
     /// Log-file handles for spawned server instances, keyed by installation
     /// UUID. `LogManager` reserves one log path per template UUID and rejects
     /// re-registration while an unclosed logger holds it, so shutdown paths
@@ -395,18 +383,9 @@ impl TemplatableMCPServerManager {
             .collect()
     }
 
-    /// Returns CLI-spawned ephemeral servers (started via `oz agent run --mcp`) that are currently active.
+    /// Returns CLI-spawned ephemeral servers that are currently active.
     pub fn get_active_cli_spawned_servers(&self) -> HashMap<Uuid, &TemplatableMCPServerInfo> {
         self.cli_spawned_server_uuids
-            .iter()
-            .filter_map(|uuid| self.active_servers.get(uuid).map(|info| (*uuid, info)))
-            .collect()
-    }
-
-    /// Returns built-in Warp-hosted servers (e.g. the Factory MCP) that are
-    /// currently active.
-    pub fn get_active_builtin_servers(&self) -> HashMap<Uuid, &TemplatableMCPServerInfo> {
-        self.builtin_server_uuids
             .iter()
             .filter_map(|uuid| self.active_servers.get(uuid).map(|info| (*uuid, info)))
             .collect()

@@ -1,13 +1,11 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, HashMap};
 use std::hash::{Hash, Hasher};
 
-use handlebars::{get_arguments, render_template};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use siphasher::sip::SipHasher;
 use uuid::Uuid;
 use warp_errors::report_error;
-use warp_managed_secrets::ManagedSecretValue;
 
 use crate::ai::mcp::{TemplatableMCPServer, TemplateVariable};
 
@@ -120,76 +118,6 @@ impl TemplatableMCPServerInstallation {
 
     pub fn variable_values(&self) -> &HashMap<String, VariableValue> {
         &self.variable_values
-    }
-
-    /// Apply Warp-managed secrets to the installation's variable values.
-    ///
-    /// Precedence for each template variable:
-    /// 1. Explicit reference: if the current value contains `{{secret_name}}`
-    ///    placeholders, they are rendered against the secrets map. Any other
-    ///    secrets that happen to share the variable's key name are ignored.
-    /// 2. Implicit key-name match: if the current value has no `{{...}}`
-    ///    placeholders but a secret exists whose name equals the variable key,
-    ///    that secret's value is inserted.
-    ///
-    /// Variables with no matching explicit refs and no matching secret are left
-    /// unchanged.
-    ///
-    /// Returns the sorted, deduplicated referenced secret names that are not
-    /// available as injectable raw values.
-    pub fn apply_secrets(&mut self, secrets: &HashMap<String, ManagedSecretValue>) -> Vec<String> {
-        let secret_strings: HashMap<String, String> = secrets
-            .iter()
-            .filter_map(|(k, v)| {
-                let ManagedSecretValue::RawValue { value } = v else {
-                    return None;
-                };
-                Some((k.clone(), value.clone()))
-            })
-            .collect();
-
-        let mut unresolved_secret_names = BTreeSet::new();
-
-        // Access templatable_mcp_server directly instead of using template_variables() to allow mutating
-        // variable_values while borrowing the template.
-        for variable in self.templatable_mcp_server.template.variables.iter() {
-            let explicit_refs = self
-                .variable_values
-                .get(&variable.key)
-                .map(|value| get_arguments(&value.value))
-                .unwrap_or_default();
-
-            if !explicit_refs.is_empty() {
-                for name in explicit_refs {
-                    if !secret_strings.contains_key(&name) {
-                        unresolved_secret_names.insert(name);
-                    }
-                }
-                let rendered =
-                    render_template(&self.variable_values[&variable.key].value, &secret_strings);
-                self.variable_values.insert(
-                    variable.key.clone(),
-                    VariableValue {
-                        variable_type: VariableType::Text,
-                        value: rendered,
-                    },
-                );
-            } else if let Some(secret) = secrets.get(&variable.key) {
-                let ManagedSecretValue::RawValue { value } = secret else {
-                    // We don't support injecting other secret types.
-                    continue;
-                };
-                self.variable_values.insert(
-                    variable.key.clone(),
-                    VariableValue {
-                        variable_type: VariableType::Text,
-                        value: value.clone(),
-                    },
-                );
-            }
-        }
-
-        unresolved_secret_names.into_iter().collect()
     }
 
     pub fn gallery_uuid(&self) -> Option<Uuid> {

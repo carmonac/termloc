@@ -225,9 +225,7 @@ pub mod testing {
 
     use super::{AIBlockModel, AIBlockOutputStatus, OutputStatusUpdateCallback};
     use crate::ai::agent::conversation::AIConversationId;
-    use crate::ai::agent::{
-        AIAgentInput, AIAgentOutput, CancellationReason, ServerOutputId, Shared,
-    };
+    use crate::ai::agent::{AIAgentInput, AIAgentOutput, ServerOutputId, Shared};
     use crate::ai::blocklist::AIBlock;
     use crate::ai::blocklist::model::{
         AIRequestType, PassiveRequestType, PassiveSuggestionTriggerType,
@@ -239,7 +237,6 @@ pub mod testing {
     enum FakeOutput {
         Streaming,
         Complete(Shared<AIAgentOutput>),
-        Cancelled(Shared<AIAgentOutput>),
     }
 
     pub struct FakeAIBlockModel {
@@ -266,16 +263,6 @@ pub mod testing {
                 model_id: "fake-llm".to_owned().into(),
             }
         }
-
-        /// Builds a fake model for a block whose stream was cancelled by the
-        /// user partway through, keeping `output` as the partial output.
-        pub fn new_cancelled(input: Vec<AIAgentInput>, output: AIAgentOutput) -> Self {
-            Self {
-                input,
-                output: FakeOutput::Cancelled(Shared::new(output)),
-                model_id: "fake-llm".to_owned().into(),
-            }
-        }
     }
 
     impl AIBlockModel for FakeAIBlockModel {
@@ -286,10 +273,6 @@ pub mod testing {
                 FakeOutput::Streaming => AIBlockOutputStatus::Pending,
                 FakeOutput::Complete(output) => AIBlockOutputStatus::Complete {
                     output: output.clone(),
-                },
-                FakeOutput::Cancelled(output) => AIBlockOutputStatus::Cancelled {
-                    partial_output: Some(output.clone()),
-                    reason: CancellationReason::ManuallyCancelled,
                 },
             }
         }

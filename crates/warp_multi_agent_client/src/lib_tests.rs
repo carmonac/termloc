@@ -1,11 +1,8 @@
 use base64::Engine as _;
 use base64::prelude::BASE64_URL_SAFE;
 use prost::Message as _;
-use warp_server_client::base_client::AmbientHeaderPolicy;
 
-use super::{
-    Error, ambient_policy, decode_response_event, endpoint_url, is_passive_suggestion_request,
-};
+use super::{Error, decode_response_event, endpoint_url, is_passive_suggestion_request};
 
 #[test]
 fn detects_passive_suggestion_requests() {
@@ -36,12 +33,6 @@ fn routes_regular_and_passive_requests_to_distinct_endpoints() {
 
     assert!(endpoint_url(false).ends_with(&format!("/{prefix}/multi-agent")));
     assert!(endpoint_url(true).ends_with(&format!("/{prefix}/passive-suggestions")));
-}
-
-#[test]
-fn selects_endpoint_specific_ambient_header_policies() {
-    assert_eq!(ambient_policy(false), AmbientHeaderPolicy::workload_only());
-    assert_eq!(ambient_policy(true), AmbientHeaderPolicy::omit_all());
 }
 
 #[test]

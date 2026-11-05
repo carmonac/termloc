@@ -3,9 +3,7 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use string_offset::CharOffset;
-use warp::tui_export::{
-    Appearance, OptionBadge, OptionFooter, OptionRow, OptionSnapshot, OptionSourceStatus,
-};
+use warp::tui_export::Appearance;
 use warpui::platform::WindowStyle;
 use warpui::{AddWindowOptions, EntityId, EntityIdMap};
 use warpui_core::elements::tui::{
@@ -16,9 +14,9 @@ use warpui_core::keymap::Keystroke;
 use warpui_core::{App, AppContext, TuiView as _, TypedActionView as _, ViewHandle};
 
 use super::{
-    OptionSelectorHeader, OptionSelectorPage, SELECTOR_NAVIGATION_ACTIVE, SelectorFocusZone,
-    SelectorItem, TuiOptionSelector, TuiOptionSelectorAction, TuiOptionSelectorEvent,
-    TuiOptionSelectorMoveDirection,
+    OptionBadge, OptionFooter, OptionRow, OptionSelectorPage, OptionSnapshot,
+    SELECTOR_NAVIGATION_ACTIVE, SelectorFocusZone, SelectorItem, TuiOptionSelector,
+    TuiOptionSelectorAction, TuiOptionSelectorEvent, TuiOptionSelectorMoveDirection,
 };
 use crate::editor_element::TuiEditorAction;
 use crate::editor_interaction::TuiEditorCommand;
@@ -31,7 +29,6 @@ fn row(id: &str) -> OptionRow {
     OptionRow {
         id: id.to_string(),
         label: id.to_string(),
-        harness: None,
         badge: None,
         disabled_reason: None,
     }
@@ -148,7 +145,7 @@ fn focus_zone_tracks_each_selector_surface() {
 }
 
 #[test]
-fn leading_editor_arrows_move_within_multiline_before_list_handoff() {
+fn leading_editor_arrows_move_within_multiline_before_reaching_the_list() {
     App::test((), |mut app| async move {
         let (selector, _) = add_selector(&mut app);
         let leading_editor = app.update(|ctx| {
@@ -223,19 +220,13 @@ fn snapshot_of(rows: Vec<OptionRow>, selected: Option<&str>) -> OptionSnapshot {
     OptionSnapshot {
         rows,
         selected_id: selected.map(str::to_string),
-        status: OptionSourceStatus::Ready,
         footer: None,
     }
 }
 
-/// Builds one selector page with shared test metadata.
+/// Builds one selector page.
 fn page(snapshot: OptionSnapshot, searchable: bool) -> OptionSelectorPage {
     OptionSelectorPage {
-        header: Some(OptionSelectorHeader {
-            field_label: "Host".to_string(),
-            position: (4, 6),
-            prompt: "Which host should run the agents?".to_string(),
-        }),
         snapshot,
         searchable,
         row_shortcuts: Default::default(),
@@ -278,7 +269,7 @@ fn add_selector(app: &mut App) -> (ViewHandle<TuiOptionSelector>, CapturedEvents
     (selector, events)
 }
 
-/// Sets the page under the shared test header.
+/// Replaces the selector's page.
 fn set_page(app: &mut App, selector: &ViewHandle<TuiOptionSelector>, snapshot: OptionSnapshot) {
     selector.update(app, |selector, ctx| {
         selector.set_page(page(snapshot, false), ctx);
@@ -560,7 +551,7 @@ fn search_no_matches_and_escape_clear_are_rendered_without_moving_the_field() {
     });
 }
 
-/// Sets a searchable page under the shared test header.
+/// Replaces the selector's page with a searchable one.
 fn set_searchable_page(
     app: &mut App,
     selector: &ViewHandle<TuiOptionSelector>,
@@ -695,14 +686,17 @@ fn selected_line(app: &App, selector: &ViewHandle<TuiOptionSelector>) -> String 
         let digit = index - selector.interaction.scroll_offset + 1;
         let label = match selector.items()[index] {
             SelectorItem::Row(row_index) => selector.page.snapshot.rows[row_index].label.clone(),
-            SelectorItem::Retry => "↻ Retry".to_string(),
             SelectorItem::CustomText => selector
                 .custom_text
                 .committed_value
                 .clone()
-                .or_else(|| match &selector.page.snapshot.footer {
-                    Some(OptionFooter::CustomText { label }) => Some(label.clone()),
-                    Some(OptionFooter::CreateNewAuthSecret) | None => None,
+                .or_else(|| {
+                    selector
+                        .page
+                        .snapshot
+                        .footer
+                        .as_ref()
+                        .map(|OptionFooter::CustomText { label }| label.clone())
                 })
                 .expect("custom-text footer label"),
         };
@@ -715,19 +709,10 @@ fn selected_line(app: &App, selector: &ViewHandle<TuiOptionSelector>) -> String 
 }
 
 #[test]
-fn renders_field_label_position_prompt_and_initial_selection() {
+fn renders_initial_selection() {
     App::test((), |mut app| async move {
         let (selector, _) = add_selector(&mut app);
         set_page(&mut app, &selector, snapshot(&["a", "b", "c"], Some("b")));
-        let lines = render_lines(&app, &selector, 60);
-        // Header: field label, position in the current sequence, and prompt.
-        assert!(lines[0].contains("Host"));
-        assert!(lines[0].contains("←"));
-        assert!(lines[0].contains("4 of 6"));
-        assert!(lines[0].contains("→"));
-        assert!(lines[0].ends_with("← 4 of 6 →"));
-        assert!(lines[1].is_empty());
-        assert!(lines[2].contains("Which host should run the agents?"));
         // The selection starts on the snapshot's current value.
         let selected = selected_line(&app, &selector);
         assert!(selected.contains("(2) b"));
@@ -735,7 +720,7 @@ fn renders_field_label_position_prompt_and_initial_selection() {
 
         let buffer = render_buffer(&app, &selector, 60);
         let builder = app.read(TuiUiBuilder::from_app);
-        let selected = &buffer[(0, 4)];
+        let selected = &buffer[(0, 1)];
         assert_eq!(
             selected.fg,
             builder
@@ -763,7 +748,7 @@ fn normal_selector_selected_row_does_not_depend_on_question_selected_ids() {
             .option_selector_selected_style()
             .fg
             .expect("selected option has a foreground");
-        for cell in [&buffer[(0, 4)], &buffer[(4, 4)]] {
+        for cell in [&buffer[(0, 1)], &buffer[(4, 1)]] {
             assert_eq!(cell.fg, selected_fg);
             assert!(cell.modifier.contains(Modifier::BOLD));
         }
@@ -786,8 +771,8 @@ fn selected_custom_answer_number_is_not_highlighted_after_the_cursor_moves_away(
 
         let buffer = render_buffer(&app, &selector, 60);
         let builder = app.read(TuiUiBuilder::from_app);
-        let number = &buffer[(0, 5)];
-        let label = &buffer[(8, 5)];
+        let number = &buffer[(0, 2)];
+        let label = &buffer[(8, 2)];
         assert_eq!(number.symbol(), "(");
         assert_eq!(label.symbol(), "C");
         assert_eq!(
@@ -981,61 +966,6 @@ fn disabled_rows_are_selectable_but_not_confirmable() {
 }
 
 #[test]
-fn loading_and_empty_states_render_non_selectable_status_rows() {
-    App::test((), |mut app| async move {
-        let (selector, events) = add_selector(&mut app);
-        let mut loading = snapshot(&["Skip (advanced)"], None);
-        loading.status = OptionSourceStatus::Loading;
-        set_page(&mut app, &selector, loading);
-        assert!(
-            render_lines(&app, &selector, 60)
-                .iter()
-                .any(|line| line.contains("Loading…"))
-        );
-
-        let mut empty = snapshot_of(Vec::new(), None);
-        empty.status = OptionSourceStatus::Empty {
-            message: "No harnesses available".to_string(),
-        };
-        set_page(&mut app, &selector, empty);
-        assert!(
-            render_lines(&app, &selector, 60)
-                .iter()
-                .any(|line| line.contains("No harnesses available"))
-        );
-        // Nothing is confirmable in an empty list.
-        confirm(&mut app, &selector);
-        assert!(primary_events(&events).is_empty());
-    });
-}
-
-#[test]
-fn failed_state_offers_a_retry_row_that_emits_retry_requested() {
-    App::test((), |mut app| async move {
-        let (selector, events) = add_selector(&mut app);
-        let mut failed = snapshot(&["Skip (advanced)"], None);
-        failed.status = OptionSourceStatus::Failed {
-            message: "Unable to load secrets".to_string(),
-        };
-        set_page(&mut app, &selector, failed);
-        let lines = render_lines(&app, &selector, 60);
-        assert!(
-            lines
-                .iter()
-                .any(|line| line.contains("Unable to load secrets"))
-        );
-        assert!(lines.iter().any(|line| line.contains("Retry")));
-        // The Retry row is reachable by keyboard.
-        act(&mut app, &selector, TuiOptionSelectorAction::MoveDown);
-        confirm(&mut app, &selector);
-        assert_eq!(
-            primary_events(&events),
-            [TuiOptionSelectorEvent::RetryRequested],
-        );
-    });
-}
-
-#[test]
 fn custom_text_editor_trims_validates_and_submits() {
     App::test((), |mut app| async move {
         let (selector, events) = add_selector(&mut app);
@@ -1159,23 +1089,6 @@ fn arrows_leave_custom_text_and_navigate_adjacent_options() {
     });
 }
 
-#[test]
-fn create_new_auth_secret_footer_is_ignored() {
-    App::test((), |mut app| async move {
-        let (selector, _) = add_selector(&mut app);
-        let mut with_footer = snapshot(&["Skip (advanced)"], None);
-        with_footer.footer = Some(OptionFooter::CreateNewAuthSecret);
-        set_page(&mut app, &selector, with_footer);
-        // Resource creation is out of scope in the TUI: the
-        // footer contributes no navigable item.
-        assert!(
-            render_lines(&app, &selector, 60)
-                .iter()
-                .all(|line| !line.contains("New API key"))
-        );
-    });
-}
-
 /// Page replacement invalidates any host-cached selector measurement.
 #[test]
 fn set_page_invalidates_layout() {
@@ -1256,50 +1169,6 @@ fn layout_invalidated_is_emitted_when_the_custom_text_error_row_toggles() {
             events
                 .borrow()
                 .contains(&TuiOptionSelectorEvent::LayoutInvalidated)
-        );
-    });
-}
-
-#[test]
-fn snapshot_refresh_preserves_the_selected_row() {
-    App::test((), |mut app| async move {
-        let (selector, events) = add_selector(&mut app);
-        set_page(&mut app, &selector, snapshot(&["a", "b", "c"], Some("a")));
-        act(&mut app, &selector, TuiOptionSelectorAction::MoveDown);
-        act(&mut app, &selector, TuiOptionSelectorAction::MoveDown);
-        // The selected row survives a catalog refresh that reorders rows
-        //.
-        selector.update(&mut app, |selector, ctx| {
-            selector.refresh_snapshot(snapshot(&["c", "a"], Some("a")), ctx);
-        });
-        confirm(&mut app, &selector);
-        assert_eq!(
-            primary_events(&events),
-            [TuiOptionSelectorEvent::Confirmed {
-                id: "c".to_string()
-            }],
-        );
-    });
-}
-
-#[test]
-fn snapshot_refresh_falls_back_to_the_selected_value_when_the_selection_vanishes() {
-    App::test((), |mut app| async move {
-        let (selector, events) = add_selector(&mut app);
-        set_page(&mut app, &selector, snapshot(&["a", "b"], Some("a")));
-        act(&mut app, &selector, TuiOptionSelectorAction::MoveDown);
-        // "b" disappears from the catalog; the selection falls back to the
-        // snapshot's current value rather than silently confirming anything
-        //.
-        selector.update(&mut app, |selector, ctx| {
-            selector.refresh_snapshot(snapshot(&["a", "x"], Some("a")), ctx);
-        });
-        confirm(&mut app, &selector);
-        assert_eq!(
-            primary_events(&events),
-            [TuiOptionSelectorEvent::Confirmed {
-                id: "a".to_string()
-            }],
         );
     });
 }
@@ -1385,24 +1254,12 @@ fn paste_is_consumed_only_while_editing_custom_text() {
 fn badges_render_next_to_their_rows() {
     App::test((), |mut app| async move {
         let (selector, _) = add_selector(&mut app);
-        let rows = vec![
-            OptionRow {
-                badge: Some(OptionBadge::Default),
-                ..row("team-host")
-            },
-            OptionRow {
-                badge: Some(OptionBadge::Connected),
-                ..row("worker-1")
-            },
-            OptionRow {
-                badge: Some(OptionBadge::Recent),
-                ..row("old-host")
-            },
-        ];
-        set_page(&mut app, &selector, snapshot_of(rows, Some("team-host")));
+        let rows = vec![OptionRow {
+            badge: Some(OptionBadge::Recommended),
+            ..row("yes")
+        }];
+        set_page(&mut app, &selector, snapshot_of(rows, Some("yes")));
         let lines = render_lines(&app, &selector, 60);
-        assert!(lines.iter().any(|line| line.contains("(default)")));
-        assert!(lines.iter().any(|line| line.contains("(connected)")));
-        assert!(lines.iter().any(|line| line.contains("(recent)")));
+        assert!(lines.iter().any(|line| line.contains("(recommended)")));
     });
 }

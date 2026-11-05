@@ -4,15 +4,12 @@ use futures::StreamExt as _;
 use prost::Message as _;
 use tracing_futures::Instrument as _;
 use warp_core::channel::ChannelState;
-use warp_server_client::base_client::{AmbientHeaderPolicy, BaseClient, TEAM_UID_HEADER};
+use warp_server_client::base_client::{BaseClient, TEAM_UID_HEADER};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Failed to authenticate multi-agent request")]
     Authentication(#[source] anyhow::Error),
-
-    #[error("Failed to resolve ambient headers for multi-agent request")]
-    AmbientHeaders(#[source] anyhow::Error),
 
     #[error("Failed to decode base64 multi-agent response event")]
     Base64Decode(#[source] base64::DecodeError),
@@ -66,13 +63,6 @@ pub async fn generate_multi_agent_output(
         request_builder = request_builder.bearer_auth(token);
     }
 
-    for (name, value) in client
-        .ambient_headers(ambient_policy(is_passive))
-        .await
-        .map_err(Error::AmbientHeaders)?
-    {
-        request_builder = request_builder.header(name, value);
-    }
     if let Some(team_uid) = team_uid {
         request_builder = request_builder.header(TEAM_UID_HEADER, team_uid);
     }
@@ -147,15 +137,6 @@ fn endpoint_url(is_passive: bool) -> String {
             "multi-agent"
         }
     )
-}
-
-fn ambient_policy(is_passive: bool) -> AmbientHeaderPolicy {
-    if is_passive {
-        // Passive suggestions read from the main conversation, but cannot modify it.
-        AmbientHeaderPolicy::omit_all()
-    } else {
-        AmbientHeaderPolicy::workload_only()
-    }
 }
 
 fn decode_response_event(data: &str) -> Result<warp_multi_agent_api::ResponseEvent, Error> {

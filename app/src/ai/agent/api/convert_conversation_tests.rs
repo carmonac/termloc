@@ -9,10 +9,10 @@ use crate::ai::agent::conversation::{
     AIAgentHarness, AIConversationId, ServerAIConversationMetadata,
 };
 use crate::ai::agent::{AIAgentInput, UserQueryMode};
-use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::cloud_object::{Revision, ServerMetadata, ServerPermissions};
 use crate::persistence::model::ConversationUsageMetadata;
 use crate::server::ids::ServerId;
+use ai_types::AmbientAgentTaskId;
 
 #[test]
 fn terminal_busy_restores_as_recoverable_error() {
@@ -57,7 +57,7 @@ fn test_server_metadata(
     ServerAIConversationMetadata {
         title: "test conversation".to_string(),
         working_directory: None,
-        harness: AIAgentHarness::Oz,
+        harness: AIAgentHarness::Local,
         usage: ConversationUsageMetadata {
             was_summarized: false,
             context_window_usage: 0.0,
@@ -111,47 +111,6 @@ fn test_skill() -> api::Skill {
             line_range: None,
         }),
     }
-}
-
-#[test]
-#[allow(deprecated)]
-fn test_convert_conversation_data_to_ai_conversation_sets_restored_run_id() {
-    let conversation_id = AIConversationId::new();
-    let ambient_agent_task_id: AmbientAgentTaskId =
-        "550e8400-e29b-41d4-a716-446655440000".parse().unwrap();
-    let conversation_data = api::ConversationData {
-        tasks: vec![api::Task {
-            id: "root".to_string(),
-            messages: vec![],
-            dependencies: None,
-            description: String::new(),
-            summary: String::new(),
-            server_data: String::new(),
-        }],
-        ordered_message_ids: vec![],
-    };
-
-    let mut server_metadata = test_server_metadata("server-token", Some(ambient_agent_task_id));
-    server_metadata.usage.total_billed_cost_in_cents = Some(3.2);
-    let conversation = convert_conversation_data_to_ai_conversation(
-        conversation_id,
-        &conversation_data,
-        server_metadata,
-        RestorationMode::Continue,
-    )
-    .expect("conversation should restore");
-
-    assert_eq!(conversation.id(), conversation_id);
-    assert_eq!(conversation.task_id(), Some(ambient_agent_task_id));
-    assert_eq!(
-        conversation.run_id(),
-        Some(ambient_agent_task_id.to_string())
-    );
-    assert_eq!(
-        conversation.usage_metadata().billed_cost_in_cents(),
-        Some(3.2)
-    );
-    assert!(conversation.usage_totals().has_usage);
 }
 
 /// Asynchronous GraphQL metadata snapshots can be stale relative to live stream accounting: a
@@ -286,90 +245,6 @@ fn test_convert_tool_call_result_to_input_transfer_control_snapshot() {
                 assert_eq!(cursor, "<|cursor|>");
             }
             other => panic!("Expected transfer-control snapshot result, got {other:?}"),
-        },
-        other => panic!("Expected action-result input, got {other:?}"),
-    }
-}
-
-#[test]
-fn test_convert_tool_call_result_to_input_upload_artifact_success() {
-    let task_id = crate::ai::agent::task::TaskId::new("task".to_string());
-    let mut document_versions = HashMap::new();
-    let tool_call_result = api::message::ToolCallResult {
-        tool_call_id: "tool_call".to_string(),
-        context: None,
-        result: Some(api::message::tool_call_result::Result::UploadFileArtifact(
-            api::UploadFileArtifactResult {
-                result: Some(api::upload_file_artifact_result::Result::Success(
-                    api::upload_file_artifact_result::Success {
-                        artifact_uid: "artifact-123".to_string(),
-                        mime_type: "text/plain".to_string(),
-                        size_bytes: 42,
-                    },
-                )),
-            },
-        )),
-    };
-
-    let input = convert_tool_call_result_to_input(
-        &task_id,
-        &tool_call_result,
-        &HashMap::new(),
-        &mut document_versions,
-    )
-    .unwrap();
-
-    match input {
-        AIAgentInput::ActionResult { result, .. } => match result.result {
-            crate::ai::agent::AIAgentActionResultType::UploadArtifact(
-                crate::ai::agent::UploadArtifactResult::Success {
-                    artifact_uid,
-                    filepath,
-                    mime_type,
-                    description,
-                    size_bytes,
-                },
-            ) => {
-                assert_eq!(artifact_uid, "artifact-123");
-                assert_eq!(filepath, None);
-                assert_eq!(mime_type, "text/plain");
-                assert_eq!(description, None);
-                assert_eq!(size_bytes, 42);
-            }
-            other => panic!("Expected upload-artifact success result, got {other:?}"),
-        },
-        other => panic!("Expected action-result input, got {other:?}"),
-    }
-}
-
-#[test]
-fn test_convert_tool_call_result_to_input_upload_artifact_missing_result_is_error() {
-    let task_id = crate::ai::agent::task::TaskId::new("task".to_string());
-    let mut document_versions = HashMap::new();
-    let tool_call_result = api::message::ToolCallResult {
-        tool_call_id: "tool_call".to_string(),
-        context: None,
-        result: Some(api::message::tool_call_result::Result::UploadFileArtifact(
-            api::UploadFileArtifactResult { result: None },
-        )),
-    };
-
-    let input = convert_tool_call_result_to_input(
-        &task_id,
-        &tool_call_result,
-        &HashMap::new(),
-        &mut document_versions,
-    )
-    .unwrap();
-
-    match input {
-        AIAgentInput::ActionResult { result, .. } => match result.result {
-            crate::ai::agent::AIAgentActionResultType::UploadArtifact(
-                crate::ai::agent::UploadArtifactResult::Error(message),
-            ) => {
-                assert_eq!(message, "Upload artifact tool call returned no result");
-            }
-            other => panic!("Expected upload-artifact error result, got {other:?}"),
         },
         other => panic!("Expected action-result input, got {other:?}"),
     }

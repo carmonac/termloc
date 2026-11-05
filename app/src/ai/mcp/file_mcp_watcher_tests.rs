@@ -16,7 +16,6 @@ use super::{
     providers_in_scope, should_watch_repository, substitute_env_vars,
 };
 use crate::ai::mcp::MCPProvider;
-use crate::test_util::terminal::initialize_app_for_terminal_view;
 
 fn setup_watcher(
     app: &mut App,
@@ -109,43 +108,6 @@ fn abort_config_parse_cancels_and_removes_inflight_task() {
 
     assert!(observed_handle.is_aborted());
     assert!(!watcher.in_flight_parses.contains_key(&key));
-}
-
-#[test]
-fn repository_discovery_is_surface_aware() {
-    assert!(should_watch_repository(
-        RepoDetectionSource::TerminalNavigation,
-        SettingsMode::Gui
-    ));
-    assert!(should_watch_repository(
-        RepoDetectionSource::CloudEnvironmentPrep,
-        SettingsMode::Gui
-    ));
-    assert!(!should_watch_repository(
-        RepoDetectionSource::ProjectRulesIndexing,
-        SettingsMode::Gui
-    ));
-    assert!(!should_watch_repository(
-        RepoDetectionSource::CodeReviewInitialization,
-        SettingsMode::Gui
-    ));
-
-    assert!(should_watch_repository(
-        RepoDetectionSource::TerminalNavigation,
-        SettingsMode::Tui
-    ));
-    assert!(!should_watch_repository(
-        RepoDetectionSource::ProjectRulesIndexing,
-        SettingsMode::Tui
-    ));
-    assert!(!should_watch_repository(
-        RepoDetectionSource::CodeReviewInitialization,
-        SettingsMode::Tui
-    ));
-    assert!(!should_watch_repository(
-        RepoDetectionSource::CloudEnvironmentPrep,
-        SettingsMode::Tui
-    ));
 }
 
 #[test]
@@ -331,42 +293,6 @@ async fn parse_outcomes_distinguish_missing_invalid_and_valid_configs() {
 }
 
 #[test]
-fn pending_scan_completes_once_every_owed_source_settles() {
-    let repo = PathBuf::from("/work/repository");
-    let claude = (repo.join(".mcp.json"), MCPProvider::Claude);
-    let codex = (repo.join(".codex/config.toml"), MCPProvider::Codex);
-    let scan = PendingScan::CloudEnvRepo(repo.clone());
-
-    App::test((), |mut app| async move {
-        let watcher = setup_watcher(
-            &mut app,
-            HashMap::from([(scan.clone(), HashSet::from([claude.clone(), codex.clone()]))]),
-        );
-        let (_collector, events) = collect_watcher_events(&mut app, &watcher);
-
-        // Settling the same source repeatedly must not stand in for the sources still owed.
-        for _ in 0..2 {
-            watcher.update(&mut app, |watcher, ctx| {
-                watcher.settle_pending_source(&claude.0, claude.1, ctx);
-            });
-            assert!(events.borrow().is_empty());
-        }
-
-        watcher.update(&mut app, |watcher, ctx| {
-            watcher.remove_config(codex.0.clone(), repo.clone(), codex.1, ctx);
-        });
-        assert_eq!(
-            *events.borrow(),
-            vec![
-                CollectedEvent::ConfigRemoved(MCPProvider::Codex),
-                CollectedEvent::ScanComplete(scan),
-            ]
-        );
-        watcher.read(&app, |watcher, _| assert!(watcher.pending_scans.is_empty()));
-    });
-}
-
-#[test]
 fn scan_completes_after_the_current_parse_of_a_reparsed_source() {
     let directory = tempfile::tempdir().expect("temporary directory should be created");
     let root = directory.path().to_path_buf();
@@ -467,57 +393,30 @@ fn stale_completion_callback_cannot_reclaim_a_superseded_source() {
 }
 
 #[test]
-#[serial_test::serial]
-fn startup_scan_parses_existing_subdir_config_before_completion() {
-    let home = tempfile::tempdir().expect("temporary home should be created");
-    let codex_dir = home.path().join(".codex");
-    std::fs::create_dir_all(&codex_dir).expect("Codex directory should be created");
-    std::fs::write(
-        codex_dir.join("config.toml"),
-        "[mcp_servers.test]\ncommand = \"test-command\"\n",
-    )
-    .expect("Codex config should be written");
+fn repository_discovery_is_surface_aware() {
+    assert!(should_watch_repository(
+        RepoDetectionSource::TerminalNavigation,
+        SettingsMode::Gui
+    ));
+    assert!(!should_watch_repository(
+        RepoDetectionSource::ProjectRulesIndexing,
+        SettingsMode::Gui
+    ));
+    assert!(!should_watch_repository(
+        RepoDetectionSource::CodeReviewInitialization,
+        SettingsMode::Gui
+    ));
 
-    let previous_home = std::env::var_os("HOME");
-    // TODO: Audit that the environment access only happens in single-threaded code.
-    unsafe { std::env::set_var("HOME", home.path()) };
-
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let watcher = app.add_singleton_model(FileMCPWatcher::new);
-        let collector = app.add_model(|_| WatcherEventCollector);
-        let (tx, rx) = futures::channel::oneshot::channel();
-        let mut tx = Some(tx);
-        let mut parsed_codex = false;
-        collector.update(&mut app, |_, ctx| {
-            ctx.subscribe_to_model(&watcher, move |_, _, event, _| match event {
-                FileMCPWatcherEvent::ConfigParsed { provider, .. }
-                    if *provider == MCPProvider::Codex =>
-                {
-                    parsed_codex = true;
-                }
-                FileMCPWatcherEvent::ScanComplete(PendingScan::InitialGlobal) => {
-                    if let Some(sender) = tx.take() {
-                        let _ = sender.send(parsed_codex);
-                    }
-                }
-                FileMCPWatcherEvent::ConfigParsed { .. }
-                | FileMCPWatcherEvent::ConfigRemoved { .. }
-                | FileMCPWatcherEvent::ConfigError { .. }
-                | FileMCPWatcherEvent::ScanComplete(PendingScan::CloudEnvRepo(_)) => {}
-            });
-        });
-
-        assert!(
-            rx.await.expect("startup scan should complete"),
-            "the Codex config must be parsed before startup scan completion"
-        );
-    });
-
-    match previous_home {
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        Some(home) => unsafe { std::env::set_var("HOME", home) },
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        None => unsafe { std::env::remove_var("HOME") },
-    }
+    assert!(should_watch_repository(
+        RepoDetectionSource::TerminalNavigation,
+        SettingsMode::Tui
+    ));
+    assert!(!should_watch_repository(
+        RepoDetectionSource::ProjectRulesIndexing,
+        SettingsMode::Tui
+    ));
+    assert!(!should_watch_repository(
+        RepoDetectionSource::CodeReviewInitialization,
+        SettingsMode::Tui
+    ));
 }

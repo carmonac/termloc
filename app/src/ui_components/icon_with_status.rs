@@ -12,9 +12,9 @@ use crate::ai::agent::conversation::{ConversationStatus, StatusColorStyle};
 use crate::terminal::CLIAgent;
 use crate::themes::theme::Fill as ThemeFill;
 
-/// Background color used for the Oz agent's circle when it is running in an ambient (cloud)
-/// run. Matches the Oz brand purple used in the cloud-mode design spec.
-const OZ_AMBIENT_BACKGROUND_COLOR: ColorU = ColorU {
+/// Background color used for the local agent's circle when it is running in an ambient (cloud)
+/// run. Matches the the local agent brand purple used in the cloud-mode design spec.
+const AMBIENT_BACKGROUND_COLOR: ColorU = ColorU {
     r: 203,
     g: 176,
     b: 247,
@@ -46,7 +46,6 @@ pub(crate) struct StatusBadgeStyle {
 #[derive(Clone, Copy)]
 pub(crate) enum BadgeInnerShape {
     Circle,
-    RoundedSquare { radius_px: f32 },
 }
 
 impl StatusBadgeStyle {
@@ -133,24 +132,13 @@ pub(crate) enum IconWithStatusVariant {
     /// A Warp agent conversation: monochrome Warp glyph and circle. Local conversations
     /// use a foreground/background pair that flips for light and dark themes; ambient
     /// (cloud) conversations retain the purple brand background and cloud status badge.
-    OzAgent {
+    LocalAgent {
         status: Option<ConversationStatus>,
         is_ambient: bool,
     },
     /// A CLI agent icon on the agent's brand color background.
     CLIAgent {
         agent: CLIAgent,
-        status: Option<ConversationStatus>,
-        is_ambient: bool,
-    },
-    /// A pre-rendered avatar with an optional status overlay (cloud lobe when
-    /// ambient). The overlay is anchored to the `total_size` box's bottom-right
-    /// corner however big `avatar` is, so pass either an avatar sized to
-    /// `circle_size(total_size)` (to match the overhang of the other variants)
-    /// or an element that already fills the `total_size` box and places its own
-    /// artwork inside it.
-    CustomAvatar {
-        avatar: Box<dyn Element>,
         status: Option<ConversationStatus>,
         is_ambient: bool,
     },
@@ -207,7 +195,7 @@ pub(crate) fn render_icon_with_status_with_badge_style(
             internal_colors::fg_overlay_2(theme),
             total_size,
         ),
-        IconWithStatusVariant::OzAgent { status, is_ambient } => {
+        IconWithStatusVariant::LocalAgent { status, is_ambient } => {
             let (circle_background, glyph_color) = warp_agent_circle_colors(theme, is_ambient);
             let circle = render_circle(
                 WarpIcon::Agent.to_warpui_icon(glyph_color).finish(),
@@ -253,27 +241,13 @@ pub(crate) fn render_icon_with_status_with_badge_style(
                 status_container_background,
             )
         }
-        IconWithStatusVariant::CustomAvatar {
-            avatar,
-            status,
-            is_ambient,
-        } => attach_status_overlay(
-            avatar,
-            status.as_ref(),
-            is_ambient,
-            total_size,
-            overlay_extra_overhang_ratio,
-            badge_style,
-            theme,
-            status_container_background,
-        ),
     }
 }
 
 fn warp_agent_circle_colors(theme: &WarpTheme, is_ambient: bool) -> (WarpThemeFill, WarpThemeFill) {
     if is_ambient {
         return (
-            ThemeFill::Solid(OZ_AMBIENT_BACKGROUND_COLOR),
+            ThemeFill::Solid(AMBIENT_BACKGROUND_COLOR),
             WarpThemeFill::Solid(ColorU::black()),
         );
     }
@@ -463,7 +437,6 @@ fn render_with_optional_status_badge(
         .finish();
     let inner_radius = match badge_style.inner_shape {
         BadgeInnerShape::Circle => Radius::Percentage(50.),
-        BadgeInnerShape::RoundedSquare { radius_px } => Radius::Pixels(radius_px),
     };
     let badge = Container::new(badge_icon)
         .with_uniform_padding(pad)

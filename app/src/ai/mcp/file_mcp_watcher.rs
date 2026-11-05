@@ -136,7 +136,6 @@ struct InFlightParse {
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum PendingScan {
     /// Every provider config file in a cloud-environment repo, keyed by repo root.
-    CloudEnvRepo(PathBuf),
     /// Every global (home-directory and Warp-managed) config source read at startup.
     InitialGlobal,
 }
@@ -185,14 +184,6 @@ impl FileMCPWatcher {
                 let DetectedRepositoriesEvent::DetectedGitRepo { repository, source } = event;
                 if should_watch_repository(*source, settings_mode) {
                     let repo_path = repository.as_ref(ctx).root_dir().to_local_path_lossy();
-                    if matches!(source, RepoDetectionSource::CloudEnvironmentPrep) {
-                        me.pending_scans.insert(
-                            PendingScan::CloudEnvRepo(repo_path.clone()),
-                            providers_in_scope(repo_path.clone(), repo_path.clone())
-                                .map(|(provider, config_path)| (config_path, provider))
-                                .collect(),
-                        );
-                    }
                     me.register_repo_for_file_mcp_watching(repo_path, ctx, file_mcp_tx.clone());
                 }
             }
@@ -696,17 +687,14 @@ fn should_watch_repository(
 ) -> bool {
     match settings_mode {
         settings::SettingsMode::Gui => match source {
-            RepoDetectionSource::TerminalNavigation | RepoDetectionSource::CloudEnvironmentPrep => {
-                true
-            }
+            RepoDetectionSource::TerminalNavigation => true,
             RepoDetectionSource::ProjectRulesIndexing
             | RepoDetectionSource::CodeReviewInitialization => false,
         },
         settings::SettingsMode::Tui => match source {
             RepoDetectionSource::TerminalNavigation => true,
             RepoDetectionSource::ProjectRulesIndexing
-            | RepoDetectionSource::CodeReviewInitialization
-            | RepoDetectionSource::CloudEnvironmentPrep => false,
+            | RepoDetectionSource::CodeReviewInitialization => false,
         },
     }
 }

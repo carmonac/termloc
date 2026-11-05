@@ -25,7 +25,7 @@ use warpui::{
 };
 
 use super::view_model::{ConversationEntry, ConversationListViewModel};
-use crate::ai::active_agent_views_model::{ActiveAgentViewsModel, ConversationOrTaskId};
+use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::agent_conversations_model::{
     AgentConversationEntryId, AgentConversationNavigationSubject, AgentConversationsModel,
@@ -52,7 +52,6 @@ use crate::workspace::view::conversation_list::item::{
     render_item, render_static_item,
 };
 use crate::workspace::{ToastStack, WorkspaceAction};
-use crate::workspaces::user_workspaces::UserWorkspaces;
 
 const VIEW_ALL_LABEL: &str = "View all";
 /// Maximum number of past items to show before the user toggles "view all".
@@ -213,10 +212,7 @@ pub fn register_conversation_list_view_bindings(app: &mut AppContext) {
 impl ConversationListView {
     pub fn new(ctx: &mut ViewContext<Self>) -> Self {
         let window_id = ctx.window_id();
-        let team_context_resolver = UserWorkspaces::team_context_resolver(ctx.handle());
-        let view_model = ctx.add_model(move |ctx| {
-            ConversationListViewModel::new(window_id, team_context_resolver, ctx)
-        });
+        let view_model = ctx.add_model(move |ctx| ConversationListViewModel::new(window_id, ctx));
 
         ctx.subscribe_to_model(&view_model, |me, _, _, ctx| {
             me.sync_list_items(ctx);
@@ -392,18 +388,10 @@ impl ConversationListView {
         // Sort active items by last opened time (most recently opened first).
         active_items.sort_by(|a, b| {
             let get_time = |item: &ListItem| match item {
-                ListItem::Conversation { entry, .. } => {
-                    let entry_time = active_views_model
-                        .get_last_opened_time(&ConversationOrTaskId::from(entry.id));
-                    let local_time = model
-                        .get_item_by_id(&entry.id, ctx)
-                        .and_then(|item| item.identity.local_conversation_id)
-                        .and_then(|id| {
-                            active_views_model
-                                .get_last_opened_time(&ConversationOrTaskId::ConversationId(id))
-                        });
-                    entry_time.max(local_time)
-                }
+                ListItem::Conversation { entry, .. } => model
+                    .get_item_by_id(&entry.id, ctx)
+                    .and_then(|item| item.identity.local_conversation_id)
+                    .and_then(|id| active_views_model.get_last_opened_time(&id)),
                 _ => None,
             };
             get_time(b).cmp(&get_time(a))
@@ -625,15 +613,6 @@ impl ConversationListView {
                 send_telemetry_from_ctx!(
                     AgentManagementTelemetryEvent::ConversationOpened {
                         conversation_id: conversation_id.to_string(),
-                        opened_from: OpenedFrom::ConversationList,
-                    },
-                    ctx
-                );
-            }
-            AgentConversationEntryId::AmbientRun(task_id) => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::CloudRunOpened {
-                        task_id: task_id.to_string(),
                         opened_from: OpenedFrom::ConversationList,
                     },
                     ctx
@@ -1402,8 +1381,7 @@ impl View for ConversationListView {
                                     // a prompt is sent).
                                     let can_rename = local_conversation_id.is_some_and(|id| {
                                         *section == ConversationSection::Active
-                                            || open_conversation_ids
-                                                .contains(&ConversationOrTaskId::ConversationId(id))
+                                            || open_conversation_ids.contains(&id)
                                     });
 
                                     let overflow_menu_display = match overflow_menu_state {

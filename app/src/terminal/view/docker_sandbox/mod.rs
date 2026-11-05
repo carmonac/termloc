@@ -5,51 +5,28 @@ use std::path::PathBuf;
 #[cfg(feature = "local_tty")]
 use std::sync::mpsc::SyncSender;
 
-#[cfg(not(target_family = "wasm"))]
-use warp_cli::agent::Harness;
 #[cfg(any(feature = "local_tty", not(target_family = "wasm")))]
 use warp_errors::report_error;
 #[cfg(feature = "local_tty")]
 use warpui::ModelHandle;
 use warpui::ViewContext;
-#[cfg(not(target_family = "wasm"))]
-use warpui::r#async::FutureExt;
 #[cfg(feature = "local_tty")]
 use warpui::geometry::vector::Vector2F;
-#[cfg(not(target_family = "wasm"))]
-use warpui::{SingletonEntity, View, ViewHandle};
+use warpui::{SingletonEntity, ViewHandle};
 
 use super::TerminalView;
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::agent_sdk::driver::{
-    WARP_DRIVE_SYNC_TIMEOUT,
-    environment::{WorkspaceConfiguration, prepare_environment},
-    terminal::TerminalDriver,
-};
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::agent_sdk::environment_snapshot::EnvironmentSnapshotReporter;
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::agent_sdk::setup_observability::SetupClientEventReporter;
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::cloud_environments::CloudAmbientAgentEnvironment;
 #[cfg(all(feature = "local_tty", not(feature = "remote_tty")))]
 use crate::banner::BannerState;
 #[cfg(feature = "local_tty")]
 use crate::pane_group::TerminalViewResources;
 #[cfg(feature = "local_tty")]
 use crate::persistence::ModelEvent;
-#[cfg(not(target_family = "wasm"))]
-use crate::server::cloud_objects::update_manager::UpdateManager;
-#[cfg(not(target_family = "wasm"))]
-use crate::server::ids::{ServerId, SyncId};
 #[cfg(any(feature = "local_tty", not(target_family = "wasm")))]
 use crate::server::server_api::ServerApiProvider;
 #[cfg(feature = "local_tty")]
 use crate::terminal::TerminalManager;
 #[cfg(all(feature = "local_tty", not(feature = "remote_tty")))]
 use crate::terminal::available_shells::AvailableShell;
-#[cfg(not(target_family = "wasm"))]
-use crate::terminal::local_tty::docker_sandbox::DOCKER_SANDBOX_HOME_DIR;
 #[cfg(feature = "local_tty")]
 use crate::terminal::local_tty::docker_sandbox::resolve_sbx_path_from_user_shell;
 #[cfg(all(feature = "local_tty", not(feature = "remote_tty")))]
@@ -65,12 +42,6 @@ use crate::terminal::shared_session::IsSharedSessionCreator;
 /// Default base Docker image used for newly created sandbox shells.
 ///
 /// `None` means "let sbx pick its own default template".
-///
-/// TODO(advait): Replace this with the base image read off the associated
-/// `AmbientAgentEnvironment` (see `BaseImage::DockerImage`). Requires moving
-/// the environment lookup ahead of `create_and_push_docker_sandbox`, which
-/// currently happens asynchronously in `initialize_docker_sandbox_environment`
-/// after the PTY is spawned. Tracked in Ben's review comment on PR #24550.
 #[cfg(feature = "local_tty")]
 pub(crate) const DEFAULT_DOCKER_SANDBOX_BASE_IMAGE: Option<&str> = None;
 
@@ -226,126 +197,10 @@ impl TerminalView {
             view.set_pane_configuration(pane_configuration);
         });
 
-        #[cfg(not(target_family = "wasm"))]
-        let terminal_view_for_init = terminal_view.clone();
-
         pane_stack.update(ctx, |stack, ctx| {
             stack.push(terminal_manager, terminal_view, ctx);
         });
 
-        #[cfg(not(target_family = "wasm"))]
-        Self::initialize_docker_sandbox_environment(&terminal_view_for_init, ctx);
-
         ctx.notify();
-    }
-
-    /// Kick off async environment initialization for a docker sandbox terminal.
-    #[cfg(not(target_family = "wasm"))]
-    pub(crate) fn initialize_docker_sandbox_environment<V: View>(
-        terminal_view: &ViewHandle<TerminalView>,
-        ctx: &mut ViewContext<V>,
-    ) {
-        let terminal_driver = TerminalDriver::create_from_existing_view(terminal_view.clone(), ctx);
-        // Local Docker sandbox tabs are not backed by an Oz run ID, so setup event reporting is
-        // intentionally disabled for this environment preparation path.
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client().clone();
-        let background = ctx.background_executor();
-        let setup_events = SetupClientEventReporter::noop(ai_client.clone(), background.clone());
-        let environment_snapshot_reporter =
-            EnvironmentSnapshotReporter::noop(ai_client, background.clone());
-
-        let spawner = terminal_driver.update(ctx, |_, ctx| ctx.spawner());
-        let sync_future = UpdateManager::as_ref(ctx).initial_load_complete();
-        ctx.spawn(
-            async move {
-                // Wait for Warp Drive initial sync so environment lookup succeeds.
-
-                if sync_future
-                    .with_timeout(WARP_DRIVE_SYNC_TIMEOUT)
-                    .await
-                    .is_err()
-                {
-                    return Err("Timed out waiting for Drive to sync for docker sandbox");
-                }
-
-                // Wait for the terminal session to bootstrap.
-                let bootstrap_future = spawner
-                    .spawn(move |driver, _| driver.wait_for_session_bootstrapped())
-                    .await
-                    .map_err(|_| "view dropped")?;
-
-                if let Err(e) = bootstrap_future.await {
-                    report_error!(anyhow::Error::new(e).context("Docker sandbox bootstrap failed"));
-                    return Err("terminal bootstrap failed");
-                }
-
-                // Look up the environment by hardcoded ID.
-                let environment = spawner
-                    .spawn(|_, ctx| {
-                        use crate::cloud_object::CloudObjectLookup as _;
-
-                        let server_id = ServerId::try_from("SVhg783GBFQHk1OfdPfFU9").ok()?;
-                        let sync_id = SyncId::ServerId(server_id);
-                        CloudAmbientAgentEnvironment::get_by_id(&sync_id, ctx)
-                            .map(|env| env.model().string_model.clone())
-                    })
-                    .await
-                    .map_err(|_| "view dropped")?
-                    .ok_or("environment not found")?;
-
-                // Prepare the environment (clone repos, run setup commands, index codebases).
-                let workspace = WorkspaceConfiguration::from_legacy(
-                    Some(&environment),
-                    Vec::new(),
-                    Vec::new(),
-                    false,
-                )
-                .map_err(|e| {
-                    report_error!(
-                        anyhow::Error::new(e)
-                            .context("Docker sandbox environment preparation failed")
-                    );
-                    "invalid environment repositories"
-                })?;
-                let prepare_future = spawner
-                    .spawn(|_, ctx| {
-                        prepare_environment(
-                            DOCKER_SANDBOX_HOME_DIR.into(),
-                            true, /* is_sandbox */
-                            Harness::Oz,
-                            workspace,
-                            setup_events,
-                            environment_snapshot_reporter,
-                            ctx,
-                        )
-                    })
-                    .await
-                    .map_err(|_| "view dropped")?;
-
-                prepare_future.await.map_err(|e| {
-                    report_error!(
-                        anyhow::Error::new(e)
-                            .context("Docker sandbox environment preparation failed")
-                    );
-                    "environment preparation failed"
-                })?;
-
-                // Keep the TerminalDriver model alive for the entire duration of
-                // this async block. The spawner only holds a weak reference to the
-                // model; if the ModelHandle is dropped the model is released and
-                // all subsequent spawner calls fail with ModelDropped.
-                drop(terminal_driver);
-
-                Ok(())
-            },
-            |_, result, _| match result {
-                Ok(()) => {
-                    log::info!("Prepared Docker Sandbox environment");
-                }
-                Err(err) => {
-                    log::warn!("Docker Sandbox environment setup failed: {err}");
-                }
-            },
-        );
     }
 }

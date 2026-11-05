@@ -27,14 +27,10 @@ use crate::ai::AIRequestUsageModel;
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 use crate::ai::agent_conversations_model::AgentConversationsModel;
 use crate::ai::agent_tips::AITipModel;
-use crate::ai::ambient_agents::github_auth_notifier::GitHubAuthNotifier;
-use crate::ai::blocklist::agent_view::orchestration_pill_bar_model::OrchestrationPillBarModel;
 use crate::ai::blocklist::{BlocklistAIHistoryModel, BlocklistAIPermissions};
-use crate::ai::cloud_environments::CloudEnvironmentCatalog;
 use crate::ai::document::ai_document_model::AIDocumentModel;
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use crate::ai::facts::manager::AIFactManager;
-use crate::ai::harness_availability::HarnessAvailabilityModel;
 use crate::ai::llms::LLMPreferences;
 use crate::ai::mcp::gallery::MCPGalleryManager;
 use crate::ai::mcp::templatable_manager::TemplatableMCPServerManager;
@@ -113,7 +109,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     app.add_singleton_model(|_| crate::tab::TabShortcutModifierState::new());
     app.add_singleton_model(SyncQueue::mock);
     app.add_singleton_model(CloudModel::mock);
-    app.add_singleton_model(CloudEnvironmentCatalog::new);
     app.add_singleton_model(|ctx| {
         UserWorkspaces::mock(
             team_client,
@@ -134,7 +129,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     app.add_singleton_model(|_| DisplayCount::mock());
     app.add_singleton_model(PrivacySettings::mock);
     app.add_singleton_model(|_| KeybindingChangedNotifier::new());
-    app.add_singleton_model(|_| GitHubAuthNotifier::new());
     app.add_singleton_model(|_ctx| SyncedInputState::mock());
     app.add_singleton_model(|_| ResizableData::default());
     app.add_singleton_model(LocalWorkflows::new);
@@ -158,23 +152,12 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     // QueuedQueryModel subscribes to history events; register after the
     // history model is in place.
     app.add_singleton_model(crate::ai::blocklist::QueuedQueryModel::new);
-    app.add_singleton_model(|ctx| OrchestrationPillBarModel::new(Default::default(), ctx));
     app.add_singleton_model(|_| CLIAgentSessionsModel::new());
-    // The blocklist controller created during terminal bootstrap subscribes to
-    // OrchestrationEventService and OrchestrationEventStreamer unconditionally,
-    // so both singletons must be registered before bootstrap.
-    app.add_singleton_model(
-        crate::ai::blocklist::orchestration_events::OrchestrationEventService::new,
-    );
-    app.add_singleton_model(
-        crate::ai::blocklist::orchestration_event_streamer::OrchestrationEventStreamer::new,
-    );
     app.add_singleton_model(|_| ActiveAgentViewsModel::new());
     app.add_singleton_model(AgentNotificationsModel::new);
     app.add_singleton_model(AgentConversationsModel::new);
     app.add_singleton_model(SessionPermissionsManager::new);
     app.add_singleton_model(LLMPreferences::new);
-    app.add_singleton_model(HarnessAvailabilityModel::new);
     app.add_singleton_model(|ctx| AITipModel::new_for_agent_tips(ctx));
     app.add_singleton_model(|_| SettingsPaneManager::new());
     app.add_singleton_model(|_| AIFactManager::new());
@@ -205,7 +188,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
         warp_server_client::iap::IapManager::new(
             None,
             Box::new(|_| futures::FutureExt::boxed(futures::future::ready(None::<String>))),
-            None,
             ctx,
         )
     });
@@ -612,7 +594,7 @@ fn test_tools_panel_does_not_suppress_vertical_tab_bar_traffic_light_padding() {
         assert_vertical_tabs_tools_panel_preserves_padding(config);
     }
 }
-/// Regression test for the handoff model carry-over: the copy must preserve
+/// Regression test for the model carry-over: the copy must preserve
 /// the source pane's explicit selection M even when M equals the destination
 /// pane's current profile default — the case where re-normalizing the resolved
 /// id against the destination's default (instead of copying the raw override)
@@ -4345,51 +4327,6 @@ fn test_standard_tab_context_menu_shows_hover_only_tab_bar() {
 }
 
 #[test]
-fn test_open_cloud_agent_setup_guide_action_opens_management_view_and_is_idempotent() {
-    let _agent_management_guard = FeatureFlag::AgentManagementView.override_enabled(true);
-
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let workspace = mock_workspace(&mut app);
-
-        workspace.update(&mut app, |workspace, ctx| {
-            assert!(
-                !workspace
-                    .current_workspace_state
-                    .is_agent_management_view_open
-            );
-
-            workspace.handle_action(&WorkspaceAction::OpenCloudAgentSetupGuide, ctx);
-            assert!(
-                workspace
-                    .current_workspace_state
-                    .is_agent_management_view_open
-            );
-            assert!(
-                workspace
-                    .agent_management_view
-                    .as_ref(ctx)
-                    .is_showing_setup_guide()
-            );
-
-            workspace.handle_action(&WorkspaceAction::OpenCloudAgentSetupGuide, ctx);
-            assert!(
-                workspace
-                    .current_workspace_state
-                    .is_agent_management_view_open
-            );
-            assert!(
-                workspace
-                    .agent_management_view
-                    .as_ref(ctx)
-                    .is_showing_setup_guide()
-            );
-        });
-    });
-}
-
-#[test]
 fn test_tab_mru_order() {
     App::test((), |mut app| async move {
         initialize_app(&mut app);
@@ -5273,18 +5210,6 @@ mod simplified_wasm_tab_bar {
 
     use super::*;
     use crate::ai::agent::api::ServerConversationToken;
-    use crate::ai::agent::conversation::{
-        AIAgentHarness, AIConversation, ServerAIConversationMetadata,
-    };
-    use crate::ai::ambient_agents::task::TaskPrincipalInfo;
-    use crate::ai::ambient_agents::{
-        AgentSource, AmbientAgentTask, AmbientAgentTaskId, AmbientAgentTaskState,
-    };
-    use crate::ai::blocklist::history_model::CloudConversationData;
-    use crate::auth::user::TEST_USER_UID;
-    use crate::cloud_object::{Owner, Revision, ServerMetadata, ServerPermissions};
-    use crate::persistence::model::ConversationUsageMetadata;
-    use crate::server::ids::ServerId;
 
     fn mock_workspace_from_cloud_conversation(app: &mut App) -> ViewHandle<Workspace> {
         let global_resource_handles = GlobalResourceHandles::mock(app);
@@ -5298,137 +5223,6 @@ mod simplified_wasm_tab_bar {
             )
         });
         workspace
-    }
-
-    fn new_ambient_agent_task_id() -> AmbientAgentTaskId {
-        Uuid::new_v4().to_string().parse().unwrap()
-    }
-
-    fn ambient_agent_task_for_current_user(task_id: AmbientAgentTaskId) -> AmbientAgentTask {
-        let now = Utc::now();
-        AmbientAgentTask {
-            task_id,
-            parent_run_id: None,
-            title: "Owned task".to_string(),
-            state: AmbientAgentTaskState::Succeeded,
-            prompt: "test".to_string(),
-            created_at: now,
-            started_at: Some(now),
-            updated_at: now,
-            run_time: Some("PT1S".parse().unwrap()),
-            status_message: None,
-            source: Some(AgentSource::CloudMode),
-            execution_location: None,
-            session_id: None,
-            session_link: None,
-            executor: None,
-            creator: Some(TaskPrincipalInfo {
-                creator_type: "USER".to_string(),
-                uid: TEST_USER_UID.to_string(),
-                display_name: None,
-            }),
-            conversation_id: None,
-            request_usage: None,
-            is_sandbox_running: false,
-            agent_config_snapshot: None,
-            artifacts: vec![],
-            last_event_sequence: None,
-            children: vec![],
-            debug_agent_available: false,
-            scope: None,
-        }
-    }
-
-    fn mock_server_metadata() -> ServerMetadata {
-        ServerMetadata {
-            uid: ServerId::default(),
-            revision: Revision::now(),
-            metadata_last_updated_ts: Utc::now().into(),
-            trashed_ts: None,
-            folder_id: None,
-            is_welcome_object: false,
-            creator_uid: None,
-            last_editor_uid: None,
-            current_editor_uid: None,
-        }
-    }
-
-    fn mock_server_permissions() -> ServerPermissions {
-        ServerPermissions {
-            space: Owner::mock_current_user(),
-            guests: Vec::new(),
-            anyone_link_sharing: None,
-            permissions_last_updated_ts: Utc::now().into(),
-        }
-    }
-
-    fn test_server_conversation_metadata(
-        task_id: Option<AmbientAgentTaskId>,
-    ) -> ServerAIConversationMetadata {
-        ServerAIConversationMetadata {
-            title: "Restored cloud conversation".to_string(),
-            working_directory: None,
-            harness: AIAgentHarness::Oz,
-            usage: ConversationUsageMetadata {
-                was_summarized: false,
-                context_window_usage: 0.0,
-                credits_spent: 0.0,
-                platform_credits_spent: 0.0,
-                credits_spent_for_last_block: None,
-                charged_usage_for_last_block: None,
-                total_charged_usage: None,
-                token_usage: vec![],
-                tool_usage_metadata: Default::default(),
-                context_window_segments: Vec::new(),
-            },
-            metadata: mock_server_metadata(),
-            creator: None,
-            permissions: mock_server_permissions(),
-            ambient_agent_task_id: task_id,
-            server_conversation_token: ServerConversationToken::new(
-                "test-server-token".to_string(),
-            ),
-            artifacts: Vec::new(),
-        }
-    }
-
-    fn cloud_conversation_with_ambient_task(task_id: AmbientAgentTaskId) -> CloudConversationData {
-        let mut conversation = AIConversation::new(false, false);
-        conversation.set_task_id(task_id);
-        conversation.set_server_metadata(test_server_conversation_metadata(Some(task_id)));
-        CloudConversationData::Oz(Box::new(conversation))
-    }
-
-    fn restore_owned_handoff_cloud_cloud_pane(
-        workspace: &mut Workspace,
-        ctx: &mut ViewContext<Workspace>,
-    ) -> AmbientAgentTaskId {
-        let task_id = new_ambient_agent_task_id();
-        AgentConversationsModel::handle(ctx).update(ctx, |model, _| {
-            model.insert_task_for_test(ambient_agent_task_for_current_user(task_id));
-        });
-        workspace.active_tab_pane_group().update(ctx, |panes, ctx| {
-            panes.load_data_into_conversation_transcript_viewer(
-                cloud_conversation_with_ambient_task(task_id),
-                Some(task_id),
-                ctx,
-            );
-        });
-        task_id
-    }
-
-    fn assert_owned_handoff_restore_is_chrome_hostile(workspace: &Workspace, ctx: &AppContext) {
-        let terminal_view = workspace
-            .active_tab_pane_group()
-            .as_ref(ctx)
-            .focused_session_view(ctx)
-            .expect("restored pane should have an active terminal view");
-        let model = terminal_view.as_ref(ctx).model.lock();
-        assert!(!model.is_conversation_transcript_viewer());
-        assert!(matches!(
-            model.shared_session_status(),
-            SharedSessionStatus::NotShared
-        ));
     }
 
     #[test]
@@ -5452,7 +5246,7 @@ mod simplified_wasm_tab_bar {
                 assert!(workspace.opened_from_content_deep_link);
                 assert!(matches!(
                     workspace.get_simplified_wasm_tab_bar_content(ctx),
-                    Some(SimplifiedWasmTabBarContent::SharedSession { .. })
+                    Some(SimplifiedWasmTabBarContent::SharedSession)
                 ));
             });
         });
@@ -5485,62 +5279,6 @@ mod simplified_wasm_tab_bar {
                     Some(SimplifiedWasmTabBarContent::WarpDriveObject)
                 );
             });
-        });
-    }
-
-    #[test]
-    fn simplified_wasm_tab_bar_is_none_after_owned_handoff_restore_without_deep_link() {
-        let _agent_view = FeatureFlag::AgentView.override_enabled(true);
-        let _cloud_mode = FeatureFlag::CloudMode.override_enabled(true);
-        let _setup_v2 = FeatureFlag::CloudModeSetupV2.override_enabled(true);
-        let _handoff = FeatureFlag::HandoffCloudCloud.override_enabled(true);
-
-        App::test((), |mut app| async move {
-            initialize_app(&mut app);
-            let workspace = mock_workspace(&mut app);
-            workspace.update(&mut app, |workspace, ctx| {
-                restore_owned_handoff_cloud_cloud_pane(workspace, ctx);
-                assert!(!workspace.opened_from_content_deep_link);
-                assert_owned_handoff_restore_is_chrome_hostile(workspace, ctx);
-                assert_eq!(workspace.get_simplified_wasm_tab_bar_content(ctx), None);
-                assert!(
-                    !workspace
-                        .keymap_context(ctx)
-                        .set
-                        .contains("Workspace_CloudConversationWebViewer")
-                );
-            });
-        });
-    }
-
-    #[test]
-    fn simplified_wasm_tab_bar_stays_some_after_owned_handoff_cloud_cloud_restore() {
-        let _agent_view = FeatureFlag::AgentView.override_enabled(true);
-        let _cloud_mode = FeatureFlag::CloudMode.override_enabled(true);
-        let _setup_v2 = FeatureFlag::CloudModeSetupV2.override_enabled(true);
-        let _handoff = FeatureFlag::HandoffCloudCloud.override_enabled(true);
-
-        App::test((), |mut app| async move {
-            initialize_app(&mut app);
-            let workspace = mock_workspace_from_cloud_conversation(&mut app);
-            workspace.update(&mut app, |workspace, ctx| {
-            let task_id = restore_owned_handoff_cloud_cloud_pane(workspace, ctx);
-            assert!(workspace.opened_from_content_deep_link);
-            assert_owned_handoff_restore_is_chrome_hostile(workspace, ctx);
-            assert_eq!(
-                workspace.get_simplified_wasm_tab_bar_content(ctx),
-                Some(SimplifiedWasmTabBarContent::ConversationTranscript {
-                    task_id: Some(task_id),
-                })
-            );
-            assert!(
-                workspace
-                    .keymap_context(ctx)
-                    .set
-                    .contains("Workspace_CloudConversationWebViewer"),
-                "deep-linked conversation viewers must keep the web-viewer context so the command palette stays disabled"
-            );
-        });
         });
     }
 }

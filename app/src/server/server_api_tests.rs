@@ -2,7 +2,6 @@ use futures::executor::block_on;
 use mockito::Server;
 
 use super::*;
-use crate::server::retry_strategies::is_transient_http_error;
 use crate::workspaces::user_workspaces::{TeamContextForOperation, TeamlessScopeForTest};
 
 /// Sends a GET request to a mock endpoint returning `status`/`headers`/`body`, then feeds the
@@ -45,7 +44,6 @@ fn permanent_4xx_client_error_carries_status_and_fails_fast() {
     );
 
     assert_eq!(status_in_chain(&err), Some(403));
-    assert!(!is_transient_http_error(&err));
     assert_eq!(err.to_string(), "checkpoint generation is incomplete");
     assert_eq!(
         err.downcast_ref::<ClientError>().unwrap().error,
@@ -58,7 +56,6 @@ fn permanent_4xx_without_parseable_body_still_carries_status() {
     let err = error_from_mock_response(404, &[], "not found");
 
     assert_eq!(status_in_chain(&err), Some(404));
-    assert!(!is_transient_http_error(&err));
     assert_eq!(
         err.to_string(),
         "API request failed with status 404 Not Found"
@@ -70,7 +67,6 @@ fn transient_5xx_still_retries() {
     let err = error_from_mock_response(503, &[], "unavailable");
 
     assert_eq!(status_in_chain(&err), Some(503));
-    assert!(is_transient_http_error(&err));
 }
 
 #[test]
@@ -82,7 +78,6 @@ fn at_capacity_header_wraps_capacity_error_and_still_carries_status() {
     );
 
     assert_eq!(status_in_chain(&err), Some(403));
-    assert!(!is_transient_http_error(&err));
     assert_eq!(
         err.downcast_ref::<CloudAgentCapacityError>()
             .unwrap()
@@ -101,7 +96,6 @@ fn out_of_credits_429_wraps_quota_limit_and_stays_transient() {
 
     // 429 always retries regardless of error code, matching every other public-API caller.
     assert_eq!(status_in_chain(&err), Some(429));
-    assert!(is_transient_http_error(&err));
     assert!(matches!(
         err.downcast_ref::<AIApiError>().unwrap(),
         AIApiError::QuotaLimit {

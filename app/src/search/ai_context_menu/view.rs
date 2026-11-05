@@ -208,8 +208,6 @@ struct AIContextMenuState {
     is_ai_or_autodetect_mode: bool,
     /// Whether this terminal is viewing a shared session
     is_shared_session_viewer: bool,
-    /// Whether this terminal is in an ambient agent session
-    is_in_ambient_agent: bool,
     /// Whether this is a CLI agent rich input (restricts categories to files/folders + code)
     is_cli_agent_input: bool,
 }
@@ -241,13 +239,6 @@ impl AIContextMenu {
     pub fn set_is_shared_session_viewer(&mut self, is_viewer: bool, ctx: &mut ViewContext<Self>) {
         if self.state.is_shared_session_viewer != is_viewer {
             self.state.is_shared_session_viewer = is_viewer;
-            self.refresh_categories_state(ctx);
-        }
-    }
-
-    pub fn set_is_in_ambient_agent(&mut self, is_ambient: bool, ctx: &mut ViewContext<Self>) {
-        if self.state.is_in_ambient_agent != is_ambient {
-            self.state.is_in_ambient_agent = is_ambient;
             self.refresh_categories_state(ctx);
         }
     }
@@ -369,7 +360,6 @@ impl AIContextMenu {
     pub(crate) fn get_categories_for_mode(
         is_ai_or_autodetect_mode: bool,
         is_shared_session_viewer: bool,
-        is_in_ambient_agent: bool,
         is_cli_agent_input: bool,
         app: &AppContext,
     ) -> Vec<AIContextMenuCategory> {
@@ -415,20 +405,6 @@ impl AIContextMenu {
                 && !is_shared_session_viewer
             {
                 categories.push(AIContextMenuCategory::Code);
-            }
-            return categories;
-        }
-
-        // For ambient agent sessions, only show limited categories
-        if is_in_ambient_agent {
-            let mut categories = vec![];
-            if show_warp_drive {
-                if FeatureFlag::DriveObjectsAsContext.is_enabled() {
-                    categories.push(AIContextMenuCategory::Workflows);
-                    categories.push(AIContextMenuCategory::Notebooks);
-                    categories.push(AIContextMenuCategory::Plans);
-                }
-                categories.push(AIContextMenuCategory::Rules);
             }
             return categories;
         }
@@ -515,7 +491,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -607,7 +582,7 @@ impl AIContextMenu {
         );
 
         // Get initial categories for proper initialization
-        let initial_categories = Self::get_categories_for_mode(true, false, false, false, ctx); // Default to AI mode, not a viewer, not ambient agent, not CLI agent input
+        let initial_categories = Self::get_categories_for_mode(true, false, false, ctx); // Default to AI mode, not a viewer, not CLI agent input
 
         #[cfg(not(target_family = "wasm"))]
         let code_symbol_cache = ctx.add_model(CodeSymbolCache::new);
@@ -652,8 +627,7 @@ impl AIContextMenu {
                 main_menu_query: String::new(),
                 is_ai_or_autodetect_mode: true,  // Default to AI mode
                 is_shared_session_viewer: false, // Will be updated by set_is_shared_session_viewer if needed
-                is_in_ambient_agent: false, // Will be updated by set_is_in_ambient_agent if needed
-                is_cli_agent_input: false,  // Will be updated by set_is_cli_agent_input if needed
+                is_cli_agent_input: false, // Will be updated by set_is_cli_agent_input if needed
             },
             handle: ctx.handle(),
             search_debounce_tx,
@@ -725,7 +699,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -744,7 +717,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -1064,7 +1036,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -1182,7 +1153,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -1211,7 +1181,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             app,
         );
@@ -1317,7 +1286,6 @@ impl AIContextMenu {
             let categories = Self::get_categories_for_mode(
                 self.state.is_ai_or_autodetect_mode,
                 self.state.is_shared_session_viewer,
-                self.state.is_in_ambient_agent,
                 self.state.is_cli_agent_input,
                 app,
             );
@@ -1492,7 +1460,6 @@ impl AIContextMenu {
         !Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             app,
         )
@@ -1571,7 +1538,6 @@ impl AIContextMenu {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
             self.state.is_shared_session_viewer,
-            self.state.is_in_ambient_agent,
             self.state.is_cli_agent_input,
             app,
         );

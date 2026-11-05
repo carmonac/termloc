@@ -14,13 +14,14 @@ use warpui_core::keymap::FixedBinding;
 use warpui_core::keymap::macros::*;
 use warpui_core::platform::TerminationMode;
 use warpui_core::{
-    AppContext, Entity, EntityId, FocusContext, TuiView, TypedActionView, ViewContext, WindowId,
-    keymap,
+    AppContext, Entity, EntityId, FocusContext, TuiView, TypedActionView, ViewContext, ViewHandle,
+    WindowId, keymap,
 };
 
 use crate::clipboard::copy_to_clipboard;
 use crate::keybindings::TUI_BINDING_GROUP;
-use crate::session_registry::{TuiSessionView, TuiSessions};
+use crate::session_registry::TuiSessions;
+use crate::terminal_session_view::TuiTerminalSessionView;
 use crate::transient_hint::TransientHint;
 use crate::ui::{
     LoginBrowserOpenFailedParams, LoginFailedParams, LoginWaitingParams, login_browser_open_failed,
@@ -148,7 +149,7 @@ impl RootTuiView {
         ctx.notify();
     }
 
-    fn focused_session_view(&self, ctx: &AppContext) -> Option<TuiSessionView> {
+    fn focused_session_view(&self, ctx: &AppContext) -> Option<ViewHandle<TuiTerminalSessionView>> {
         if !ctx.has_singleton_model::<TuiSessions>() {
             return None;
         }
@@ -260,7 +261,7 @@ impl TuiView for RootTuiView {
             && matches!(self.state, RootTuiState::Terminal)
             && let Some(view) = self.focused_session_view(ctx)
         {
-            view.activate(ctx);
+            view.update(ctx, |view, ctx| view.activate(ctx));
         }
     }
     fn render(&self, ctx: &AppContext) -> Box<dyn TuiElement> {
@@ -354,10 +355,7 @@ impl TuiView for RootTuiView {
             },
             RootTuiState::Terminal => self
                 .focused_session_view(ctx)
-                .map(|view| match view {
-                    TuiSessionView::Terminal(view) => TuiChildView::new(&view).finish(),
-                    TuiSessionView::Cloud(view) => TuiChildView::new(&view).finish(),
-                })
+                .map(|view| TuiChildView::new(&view).finish())
                 .unwrap_or_else(terminal_starting),
         }
     }

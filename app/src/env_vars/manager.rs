@@ -29,6 +29,11 @@ pub enum EnvVarCollectionSource {
 
 /// Manages EnvVarCollection panes
 impl EnvVarCollectionManager {
+    #[cfg(feature = "tui")]
+    pub fn reset(&mut self) {
+        self.panes_by_hashed_id.clear();
+    }
+
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
         ctx.subscribe_to_model(
             &UpdateManager::handle(ctx),
@@ -203,10 +208,6 @@ impl EnvVarCollectionManager {
                     .insert(server_id.uid().clone(), pane);
             }
         }
-    }
-
-    pub fn reset(&mut self) {
-        self.panes_by_hashed_id.clear();
     }
 }
 

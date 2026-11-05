@@ -417,18 +417,6 @@ define_settings_group!(SessionSettings, settings: [
         surface: settings::SettingSurfaces::GUI,
         private: true,
     },
-    // One-time flag: whether we've already migrated the handoff-to-cloud chip
-    // into a user's custom agent toolbar layout. When `Default`, the chip is
-    // already present via `AgentToolbarItemKind::default_right()`, so this
-    // only matters for `Custom` layouts that were saved before the chip existed.
-    did_add_handoff_chip_to_toolbar: DidAddHandoffChipToToolbar {
-        type: bool,
-        default: false,
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::No),
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    },
 ]);
 
 settings::macros::implement_setting_for_enum!(

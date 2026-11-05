@@ -227,7 +227,7 @@ if the expected text isn't in the capture, the change isn't rendering.
   tmux as above.
 - **If it exits (code 101) right after the first frame instead of staying up:**
   don't assume it's a terminal/stdin problem — **check the TUI log first**:
-  `tail -40 ~/.local/state/warp-terminal-tui/oz/warp-tui.log`. One cause seen in
+  `tail -40 ~/.local/state/warp-terminal-tui/warp-cli/warp-tui.log`. One cause seen in
   the headless OSS/logged-out sandbox build is a debug-only binding-validation
   panic: `crates/warpui_core/src/keymap/matcher.rs` (`validate_bindings`, gated on
   `#[cfg(debug_assertions)]`) panics with `Bindings failed validation` when a
@@ -341,7 +341,7 @@ ffmpeg -y -ss 1.5 -i /tmp/tui.mp4 -frames:v 1 /tmp/tui.png
 **Attach the capture as conversation artifacts (required, not an afterthought).**
 Once you have the still and/or the recording, attach *each* to the run as a
 **conversation artifact** so the proof persists beyond `/tmp`, travels with the
-task, and can surface into the PR description in the native Oz flow — don't leave
+task, and can surface into the PR description — don't leave
 it sitting in a temp file. Call the `upload_artifact` tool once per file, passing
 the local `file_path` and a short `description` (e.g. `file_path=/tmp/tui.png`,
 `description="TUI <surface> after <change> — verification screenshot"`, and

@@ -985,7 +985,6 @@ fn ctrl_r_dispatches_selected_mcp_credential_removal() {
                         input_mode,
                         suggestions_mode,
                         vec![menu],
-                        |_| false,
                         ctx,
                     )
                 },
@@ -1097,7 +1096,6 @@ fn build_view_with_history_items(
                 input_mode,
                 suggestions_mode,
                 vec![inline_menu],
-                |_| false,
                 ctx,
             )
         },
@@ -1167,7 +1165,6 @@ fn enter_and_escape_stop_listening_while_escape_cancels_transcribing() {
                 | TuiInputViewEvent::AcceptedModel(_)
                 | TuiInputViewEvent::AcceptedMcp(_)
                 | TuiInputViewEvent::AcceptedMcpInstall(_)
-                | TuiInputViewEvent::MoveFocusUp
                 | TuiInputViewEvent::AcceptedPromptAndCommandHistory { .. }
                 | TuiInputViewEvent::RequestShellCompletion
                 | TuiInputViewEvent::ClipboardCopySucceeded
@@ -1245,37 +1242,6 @@ fn agent_mode_placeholder_hint_renders_only_while_empty() {
             let line = &buffer.to_lines()[0];
             assert!(line.starts_with('x'), "unexpected line: {line:?}");
             assert!(!line.contains("for conversations"));
-        });
-    });
-}
-
-#[test]
-fn orchestration_hint_is_ghosted_only_while_tabs_are_available_and_input_is_empty() {
-    App::test((), |mut app| async move {
-        let orchestration_tabs_available = Rc::new(Cell::new(false));
-        let view = app.update(|ctx| {
-            build_view_with_orchestration_tabs(ctx, orchestration_tabs_available.clone())
-        });
-
-        app.read(|ctx| {
-            let line = &render_input_buffer(&view, ctx).to_lines()[0];
-            assert!(!line.contains("Shift + ↑ for other agents"));
-        });
-
-        orchestration_tabs_available.set(true);
-        app.read(|ctx| {
-            let line = &render_input_buffer(&view, ctx).to_lines()[0];
-            assert!(
-                line.starts_with(" ? for shortcuts"),
-                "unexpected line: {line:?}"
-            );
-            assert!(line.contains("Shift + ↑ for other agents"));
-        });
-
-        app.update(|ctx| type_str(&view, ctx, "x"));
-        app.read(|ctx| {
-            let line = &render_input_buffer(&view, ctx).to_lines()[0];
-            assert!(!line.contains("Shift + ↑ for other agents"));
         });
     });
 }
@@ -1531,10 +1497,6 @@ fn recognized_slash_command_prefix_matches_menu_color_after_menu_closes() {
     });
 }
 
-fn build_view(ctx: &mut AppContext) -> ViewHandle<TuiInputView> {
-    build_view_with_orchestration_tabs(ctx, Rc::new(Cell::new(false)))
-}
-
 fn build_view_with_completion_menu(
     ctx: &mut AppContext,
 ) -> (
@@ -1583,7 +1545,6 @@ fn build_view_with_completion_menu(
                 input_mode,
                 suggestions_mode,
                 vec![TuiInlineMenu::new(completion_menu)],
-                |_| false,
                 ctx,
             )
         },
@@ -1591,10 +1552,7 @@ fn build_view_with_completion_menu(
     (view, menu_for_return)
 }
 
-fn build_view_with_orchestration_tabs(
-    ctx: &mut AppContext,
-    orchestration_tabs_available: Rc<Cell<bool>>,
-) -> ViewHandle<TuiInputView> {
+fn build_view(ctx: &mut AppContext) -> ViewHandle<TuiInputView> {
     // `CodeEditorModel::new_tui` reads syntax colors from the `Appearance`
     // singleton, so register a mock one before constructing the editor.
     if !ctx.has_singleton_model::<Appearance>() {
@@ -1606,7 +1564,6 @@ fn build_view_with_orchestration_tabs(
     let suggestions_mode = add_suggestions_mode(ctx, TuiInputSuggestionsMode::Closed);
     let prompt_and_command_history_menu =
         add_prompt_and_command_history_menu(ctx, &input_model, &input_mode, &suggestions_mode);
-    let orchestration_tabs_available_for_view = orchestration_tabs_available.clone();
     let (_window_id, view) = ctx.add_tui_window(
         AddWindowOptions {
             window_style: WindowStyle::NotStealFocus,
@@ -1618,7 +1575,6 @@ fn build_view_with_orchestration_tabs(
                 input_mode,
                 suggestions_mode,
                 vec![TuiInlineMenu::new(prompt_and_command_history_menu)],
-                move |_| orchestration_tabs_available_for_view.get(),
                 ctx,
             )
         },
@@ -1657,14 +1613,7 @@ fn build_view_with_voice(
         },
         move |ctx| {
             let model = ctx.add_model(|ctx| CodeEditorModel::new_tui(W, ctx));
-            TuiInputView::new_for_test(
-                model,
-                input_mode,
-                suggestions_mode,
-                Vec::new(),
-                |_| false,
-                ctx,
-            )
+            TuiInputView::new_for_test(model, input_mode, suggestions_mode, Vec::new(), ctx)
         },
     );
     let voice_input = view.as_ref(ctx).voice_input.clone();
@@ -1729,7 +1678,6 @@ fn build_view_with_conversation_menu(
                 input_mode,
                 suggestions_mode,
                 vec![inline_menu_for_view, prompt_and_command_history_inline_menu],
-                |_| false,
                 ctx,
             )
         },
@@ -1798,7 +1746,6 @@ fn build_view_with_inline_menu_gate(
                 input_mode,
                 suggestions_mode,
                 vec![inline_menu, prompt_and_command_history_inline_menu],
-                |_| false,
                 ctx,
             )
             .with_inline_menu_actions_allowed(move |_| allowed_at_prompt.get())
@@ -1845,7 +1792,6 @@ fn build_view_with_model_menu(
                 input_mode,
                 suggestions_mode,
                 vec![inline_menu, prompt_and_command_history_inline_menu],
-                |_| false,
                 ctx,
             )
         },
@@ -2053,7 +1999,6 @@ fn multiline_paste_emits_once_and_fallback_inserts_without_submitting() {
                 | TuiInputViewEvent::RequestShellCompletion
                 | TuiInputViewEvent::BackspaceAtEmptyInput
                 | TuiInputViewEvent::FocusRequested
-                | TuiInputViewEvent::MoveFocusUp
                 | TuiInputViewEvent::ClipboardCopySucceeded
                 | TuiInputViewEvent::ClipboardCopyFailed
                 | TuiInputViewEvent::VimModeChanged => {}
@@ -2129,87 +2074,6 @@ fn dispatch(view: &ViewHandle<TuiInputView>, ctx: &mut AppContext, actions: &[Tu
         for action in actions {
             v.handle_action(action, vctx);
         }
-    });
-}
-
-#[test]
-fn shift_up_requests_focus_above_only_on_first_row_without_selection() {
-    App::test((), |mut app| async move {
-        let (view, requests, orchestration_tabs_available) = app.update(|ctx| {
-            let orchestration_tabs_available = Rc::new(Cell::new(false));
-            let view =
-                build_view_with_orchestration_tabs(ctx, orchestration_tabs_available.clone());
-            let requests = Rc::new(RefCell::new(0usize));
-            let captured = requests.clone();
-            ctx.subscribe_to_view(&view, move |_, event, _| {
-                if let TuiInputViewEvent::MoveFocusUp = event {
-                    *captured.borrow_mut() += 1;
-                }
-            });
-            (view, requests, orchestration_tabs_available)
-        });
-
-        app.update(|ctx| {
-            dispatch(
-                &view,
-                ctx,
-                &[TuiInputAction::EditorCommand(TuiEditorCommand::SelectUp)],
-            );
-        });
-        assert_eq!(*requests.borrow(), 0);
-
-        orchestration_tabs_available.set(true);
-        app.update(|ctx| {
-            type_str(&view, ctx, "?");
-            assert_eq!(
-                view.as_ref(ctx).suggestions_mode.as_ref(ctx).mode(),
-                TuiInputSuggestionsMode::ReadOnlyMenu(TuiReadOnlyMenuKind::Shortcuts)
-            );
-            dispatch(
-                &view,
-                ctx,
-                &[TuiInputAction::EditorCommand(TuiEditorCommand::SelectUp)],
-            );
-        });
-        assert_eq!(*requests.borrow(), 1);
-        app.read(|ctx| {
-            assert_eq!(
-                view.as_ref(ctx).suggestions_mode.as_ref(ctx).mode(),
-                TuiInputSuggestionsMode::Closed
-            );
-        });
-
-        app.update(|ctx| {
-            view.update(ctx, |view, ctx| {
-                view.insert_pasted_text("first\nsecond", ctx);
-            });
-            dispatch(
-                &view,
-                ctx,
-                &[TuiInputAction::EditorCommand(TuiEditorCommand::SelectUp)],
-            );
-        });
-        assert_eq!(
-            *requests.borrow(),
-            1,
-            "second visual row stays in the input"
-        );
-
-        app.update(|ctx| {
-            view.update(ctx, |view, ctx| view.clear(ctx));
-            type_str(&view, ctx, "abc");
-            dispatch(
-                &view,
-                ctx,
-                &[TuiInputAction::EditorCommand(TuiEditorCommand::SelectLeft)],
-            );
-            dispatch(
-                &view,
-                ctx,
-                &[TuiInputAction::EditorCommand(TuiEditorCommand::SelectUp)],
-            );
-        });
-        assert_eq!(*requests.borrow(), 1, "active selection stays in the input");
     });
 }
 

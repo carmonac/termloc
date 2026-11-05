@@ -338,7 +338,7 @@ impl InlineHistoryMenuView {
                 | AgentViewControllerEvent::ExitedAgentView { .. } => {
                     // Only auto-rebuild tabs from `is_agent_view` when the
                     // caller did not supply tabs explicitly. Callers that
-                    // pinned tabs (e.g. the cloud-mode V2 wrapper) want their
+                    // pinned tabs want their
                     // tab set preserved across agent-view enter/exit.
                     if !me.caller_supplied_tabs {
                         let is_agent_view = controller.as_ref(ctx).is_active();

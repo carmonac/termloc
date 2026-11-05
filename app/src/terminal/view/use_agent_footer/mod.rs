@@ -252,9 +252,7 @@ impl TerminalView {
             UseAgentToolbarEvent::StartRemoteControl { scrollback_type } => {
                 self.auto_stop_sharing_on_cli_end =
                     *scrollback_type == SharedSessionScrollbackType::None;
-                let source = SharedSessionSource::user(
-                    self.active_conversation_task_id(ctx).map(|t| t.to_string()),
-                );
+                let source = SharedSessionSource::user(None);
                 self.attempt_to_share_session(
                     *scrollback_type,
                     Some(SharedSessionActionSource::FooterChip),
@@ -348,11 +346,8 @@ impl TerminalView {
             }
         }
 
-        // Don't show the use agent footer during LRCs in setup phase of ambient agent sessions.
-        let is_shared_ambient_session = model.is_shared_ambient_agent_session();
-
         !self.is_input_box_visible(model, app)
-            && ((active_block.is_eligible_to_tag_in_agent() && !is_shared_ambient_session)
+            && (active_block.is_eligible_to_tag_in_agent()
                 || active_block.is_eligible_for_agent_handoff())
     }
 
@@ -760,25 +755,6 @@ impl TerminalView {
 
         let strategy = rich_input_submit_strategy(agent);
         self.write_cli_agent_text_then_submit(text_bytes, strategy, ctx);
-    }
-
-    /// Sends a raw Enter (`\r`) directly to the active CLI agent's PTY,
-    /// bypassing the rich-input submission pipeline used by
-    /// [`Self::submit_text_to_cli_agent_pty`] (which no-ops on empty text).
-    ///
-    /// Used by harness exit escalation to retry a bare Enter without
-    /// composing input text — e.g. to dismiss a confirmation dialog, or in
-    /// case a prior write to the pty was silently dropped. Returns without
-    /// writing if there is no active CLI agent session.
-    #[cfg(feature = "local_tty")]
-    pub(crate) fn submit_bare_enter_to_cli_agent_pty(&mut self, ctx: &mut ViewContext<Self>) {
-        if CLIAgentSessionsModel::as_ref(ctx)
-            .session(self.view_id)
-            .is_none()
-        {
-            return;
-        }
-        self.write_user_bytes_to_pty(b"\r".to_vec(), ctx);
     }
 
     /// Inserts `text` into the active CLI agent's input without submitting it.

@@ -239,12 +239,10 @@ begin
 
     { Determine the channel-specific script name.  These values must match
       `Channel::cli_command_name` in the Rust source. }
-#if ReleaseChannel == "stable"
-    CmdScriptName := 'oz.cmd'
-#elif ReleaseChannel == "oss"
+#if ReleaseChannel == "stable" || ReleaseChannel == "oss"
     CmdScriptName := 'termloc.cmd';
 #else
-    CmdScriptName := 'oz-{#ReleaseChannel}.cmd';
+    CmdScriptName := 'termloc-{#ReleaseChannel}.cmd';
 #endif
 
     { Create the helper CMD script }

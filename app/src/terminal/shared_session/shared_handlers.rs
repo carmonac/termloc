@@ -146,44 +146,6 @@ pub(crate) fn apply_selected_conversation_update(
         return;
     };
 
-    // In shared ambient agent sessions, we can temporarily receive "none/new" selected_conversation
-    // updates (e.g. before a server conversation token exists).
-    //
-    // If we already have an active local conversation selected (typically created/selected by the
-    // incoming shared-session init event), treating these updates as authoritative can create an
-    // extra empty conversation on the viewer.
-    //
-    // To avoid that, ignore "none/new" updates once there is already an active *empty* conversation.
-    if view.as_ref(ctx).is_shared_ambient_agent_session()
-        && matches!(
-            selected_conversation,
-            SelectedConversation::NewConversation | SelectedConversation::NoConversation
-        )
-    {
-        let active_conversation_id = if FeatureFlag::AgentView.is_enabled() {
-            view.as_ref(ctx)
-                .agent_view_controller()
-                .as_ref(ctx)
-                .agent_view_state()
-                .active_conversation_id()
-        } else {
-            view.as_ref(ctx)
-                .ai_context_model()
-                .as_ref(ctx)
-                .selected_conversation_id(ctx)
-        };
-
-        let history_model = BlocklistAIHistoryModel::handle(ctx);
-        let has_empty_active_conversation = active_conversation_id
-            .as_ref()
-            .and_then(|conversation_id| history_model.as_ref(ctx).conversation(conversation_id))
-            .is_some_and(|c| c.exchange_count() == 0);
-
-        if has_empty_active_conversation {
-            return;
-        }
-    }
-
     match selected_conversation {
         SelectedConversation::ExistingConversation(server_conversation_token) => {
             // Convert server token to local conversation ID using the AI controller
@@ -416,21 +378,11 @@ pub(crate) fn apply_cli_agent_state_update(
                 });
             }
 
-            // For cloud agent sessions with non-Oz harnesses, auto-open rich
-            // input when creating a new CLI agent session so the viewer gets the
-            // composer immediately (byte-sharing has roundtrip lag without it).
-            let effective_rich_input_open =
-                if !already_exists && view.as_ref(ctx).is_shared_ambient_agent_session() {
-                    true
-                } else {
-                    *is_rich_input_open
-                };
-
             // Update the rich input state.
             let currently_open = CLIAgentSessionsModel::as_ref(ctx).is_input_open(view_id);
-            if currently_open != effective_rich_input_open {
+            if currently_open != *is_rich_input_open {
                 view.update(ctx, |view, ctx| {
-                    if effective_rich_input_open {
+                    if *is_rich_input_open {
                         view.open_cli_agent_rich_input(
                             CLIAgentInputEntrypoint::SharedSessionSync,
                             ctx,
@@ -440,10 +392,6 @@ pub(crate) fn apply_cli_agent_state_update(
                     }
                 });
             }
-
-            view.update(ctx, |view, ctx| {
-                view.sync_agent_view_for_shared_third_party_viewer(ctx);
-            });
         }
         CLIAgentSessionState::Inactive => {
             // Session cleanup is handled by BlockCompleted events on the

@@ -14,9 +14,7 @@ use crate::ai::llms::LLMPreferences;
 use crate::auth::AuthStateProvider;
 use crate::auth::auth_manager::AuthManager;
 use crate::network::NetworkStatus;
-use crate::persistence::model::{
-    AgentConversationData, ChargedUsageTotals, ConversationUsageMetadata,
-};
+use crate::persistence::model::{AgentConversationData, ChargedUsageTotals};
 use crate::server::server_api::ServerApiProvider;
 use crate::test_util::settings::initialize_settings_for_tests;
 use crate::workspaces::user_workspaces::UserWorkspaces;
@@ -35,37 +33,6 @@ fn restored_conversation(conversation_data: Option<AgentConversationData>) -> AI
         conversation_data,
     )
     .unwrap()
-}
-
-fn conversation_data_with_usage_metadata(
-    conversation_usage_metadata: ConversationUsageMetadata,
-) -> AgentConversationData {
-    AgentConversationData {
-        server_conversation_token: None,
-        conversation_usage_metadata: Some(conversation_usage_metadata),
-        reverted_action_ids: None,
-        forked_from_server_conversation_token: None,
-        artifacts_json: None,
-        parent_agent_id: None,
-        agent_name: None,
-        orchestration_harness_type: None,
-        parent_conversation_id: None,
-        is_remote_child: false,
-        root_task_is_optimistic: None,
-        run_id: None,
-        autoexecute_override: None,
-        last_event_sequence: None,
-        pinned: false,
-    }
-}
-
-fn conversation_data_with_billed_cost(
-    total_billed_cost_in_cents: Option<f32>,
-) -> AgentConversationData {
-    conversation_data_with_usage_metadata(ConversationUsageMetadata {
-        total_billed_cost_in_cents,
-        ..Default::default()
-    })
 }
 
 fn restored_conversation_with_root_description(description: &str) -> AIConversation {
@@ -570,29 +537,6 @@ fn restored_conversation_defaults_autoexecute_override_when_not_persisted() {
 }
 
 #[test]
-fn restored_conversation_uses_persisted_last_event_sequence() {
-    let conversation_data: AgentConversationData =
-        serde_json::from_str(r#"{"server_conversation_token":null,"last_event_sequence":42}"#)
-            .unwrap();
-
-    let conversation = restored_conversation(Some(conversation_data));
-
-    assert_eq!(conversation.last_event_sequence(), Some(42));
-}
-
-#[test]
-fn restored_conversation_uses_persisted_remote_child_marker() {
-    let conversation_data: AgentConversationData =
-        serde_json::from_str(r#"{"server_conversation_token":null,"is_remote_child":true}"#)
-            .unwrap();
-
-    let conversation = restored_conversation(Some(conversation_data));
-
-    assert!(conversation.is_remote_child());
-    assert_eq!(conversation.driver(), ConversationDriver::RemoteChild);
-}
-
-#[test]
 fn new_conversation_maps_constructor_flags_to_a_driver() {
     assert_eq!(
         AIConversation::new(false, false).driver(),
@@ -606,43 +550,6 @@ fn new_conversation_maps_constructor_flags_to_a_driver() {
         AIConversation::new(false, true).driver(),
         ConversationDriver::CliAgentTranscript
     );
-}
-
-#[test]
-fn legacy_flag_accessors_reflect_the_driver() {
-    let mut conversation = AIConversation::new(false, false);
-    assert!(!conversation.is_viewing_shared_session());
-    assert!(!conversation.is_cli_agent_transcript());
-    assert!(!conversation.is_remote_child());
-
-    conversation.set_is_viewing_shared_session(true);
-    assert!(conversation.is_viewing_shared_session());
-    assert_eq!(
-        conversation.driver(),
-        ConversationDriver::SharedSessionViewer
-    );
-
-    conversation.set_is_viewing_shared_session(false);
-    assert_eq!(conversation.driver(), ConversationDriver::Native);
-
-    conversation.mark_as_remote_child();
-    assert!(conversation.is_remote_child());
-    // Clearing the viewer flag on a non-viewer is a no-op, as it was with independent booleans.
-    conversation.set_is_viewing_shared_session(false);
-    assert_eq!(conversation.driver(), ConversationDriver::RemoteChild);
-}
-
-#[test]
-fn child_conversation_detection_uses_parent_agent_id() {
-    let conversation_data: AgentConversationData = serde_json::from_str(
-        r#"{"server_conversation_token":null,"parent_agent_id":"parent-run-id"}"#,
-    )
-    .unwrap();
-
-    let conversation = restored_conversation(Some(conversation_data));
-
-    assert!(conversation.is_child_agent_conversation());
-    assert_eq!(conversation.parent_conversation_id(), None);
 }
 
 /// When the persisted task list is empty (e.g. a child conversation persisted
@@ -669,93 +576,6 @@ fn restored_conversation_with_empty_task_list_creates_in_progress_optimistic_roo
     );
     assert_eq!(conversation.status(), &ConversationStatus::InProgress);
     assert!(conversation.status_error_message().is_none());
-}
-#[test]
-fn restored_conversation_seeds_known_billed_cost_baseline() {
-    let conversation = restored_conversation(Some(conversation_data_with_billed_cost(Some(3.2))));
-    let totals = conversation.usage_totals();
-
-    assert_eq!(totals.billed_cost_in_cents, Some(3.2));
-    assert_eq!(totals.total_cost_in_cents(), Some(3.2));
-    assert!(totals.has_usage);
-}
-
-#[test]
-fn empty_task_restore_seeds_known_billed_cost_baseline() {
-    let conversation = AIConversation::new_restored_synthesizing_on_empty(
-        AIConversationId::new(),
-        vec![],
-        Some(conversation_data_with_billed_cost(Some(3.2))),
-    )
-    .expect("empty-task restore should synthesize a root");
-
-    assert_eq!(conversation.usage_totals().total_cost_in_cents(), Some(3.2));
-    assert!(conversation.usage_totals().has_usage);
-}
-
-/// A restored conversation whose persisted metadata shows no usage evidence
-/// must keep the footer's usage entry hidden — local persistence always
-/// writes a metadata blob, so presence alone is not usage.
-#[test]
-fn restored_zero_usage_metadata_keeps_footer_usage_hidden() {
-    let conversation = restored_conversation(Some(conversation_data_with_billed_cost(None)));
-
-    let totals = conversation.usage_totals();
-    assert!(!totals.has_usage);
-    assert_eq!(totals.total_cost_in_cents(), None);
-}
-
-/// A present billed cost is affirmative evidence even at 0.0: the server only records a cost
-/// once a turn completed accounting, so a restored known-zero baseline must surface the footer
-/// (and read as $0.00) rather than staying hidden.
-#[test]
-fn restored_known_zero_billed_cost_marks_usage() {
-    let conversation = restored_conversation(Some(conversation_data_with_billed_cost(Some(0.0))));
-
-    let totals = conversation.usage_totals();
-    assert!(totals.has_usage);
-    assert_eq!(totals.total_cost_in_cents(), Some(0.0));
-}
-
-#[test]
-fn restored_metadata_with_credits_marks_usage_even_without_billed_cost() {
-    let conversation = restored_conversation(Some(AgentConversationData {
-        conversation_usage_metadata: Some(ConversationUsageMetadata {
-            credits_spent: 2.5,
-            ..Default::default()
-        }),
-        ..conversation_data_with_billed_cost(None)
-    }));
-
-    let totals = conversation.usage_totals();
-    assert!(totals.has_usage);
-    assert_eq!(totals.total_cost_in_cents(), None);
-}
-
-#[test]
-fn restored_legacy_conversation_keeps_cost_unavailable_after_follow_up() {
-    App::test((), |mut app| async move {
-        initialize_custom_endpoint_usage_test_app(&mut app);
-        app.add_singleton_model(LLMPreferences::new);
-
-        let mut conversation =
-            restored_conversation(Some(conversation_data_with_billed_cost(None)));
-        app.read(|_ctx| {
-            conversation
-                .update_cost_and_usage_for_request(
-                    None,
-                    None,
-                    vec![stream_token_usage("legacy-model", 10, 2, 1.5)],
-                    Some(credits_usage_metadata(1.0, 0.0)),
-                    false,
-                )
-                .expect("follow-up usage should update");
-        });
-
-        let totals = conversation.usage_totals();
-        assert_eq!(totals.total_cost_in_cents(), None);
-        assert!(totals.has_usage);
-    });
 }
 
 #[test]
@@ -913,23 +733,6 @@ fn usage_totals_dollar_total_matches_last_block_when_billed_baseline_diverges() 
          last-response figure, not the divergent snapshot baseline"
     );
     assert_eq!(totals.total_cost_in_cents(), Some(4.0));
-}
-
-/// A known-zero baseline is a real value, not an absence, so it must fall
-/// back too rather than reading as unknown.
-#[test]
-fn total_cost_in_cents_falls_back_to_billed_baseline_without_charged_usage() {
-    let known_positive = restored_conversation(Some(conversation_data_with_billed_cost(Some(3.2))));
-    assert_eq!(
-        known_positive.usage_totals().total_cost_in_cents(),
-        Some(3.2)
-    );
-
-    let known_zero = restored_conversation(Some(conversation_data_with_billed_cost(Some(0.0))));
-    assert_eq!(known_zero.usage_totals().total_cost_in_cents(), Some(0.0));
-
-    let unknown = restored_conversation(Some(conversation_data_with_billed_cost(None)));
-    assert_eq!(unknown.usage_totals().total_cost_in_cents(), None);
 }
 
 #[test]

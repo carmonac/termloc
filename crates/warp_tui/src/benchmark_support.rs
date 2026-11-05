@@ -29,7 +29,7 @@ use crate::agent_block::TuiAIBlock;
 use crate::terminal_block::{TerminalBlockElement, block_content_rows};
 use crate::test_fixtures::add_test_action_model_and_events;
 use crate::tui_block_list_viewport_source::{
-    AgentBlockRegistry, CLISubagentBlockRegistry, HandoffBlockRegistry, TranscriptNoticeRegistry,
+    AgentBlockRegistry, CLISubagentBlockRegistry, TranscriptNoticeRegistry,
     TuiBlockListViewportSource,
 };
 use crate::tui_builder::TuiUiBuilder;
@@ -288,12 +288,10 @@ impl TranscriptBenchmark {
 
             let agent_blocks = AgentBlockRegistry::new(RefCell::new(HashMap::new()));
             let cli_subagent_blocks = CLISubagentBlockRegistry::new(RefCell::new(HashMap::new()));
-            let handoff_blocks = HandoffBlockRegistry::new(RefCell::new(HashMap::new()));
             let notices = TranscriptNoticeRegistry::new(RefCell::new(HashMap::new()));
             let model_for_root = terminal_model.clone();
             let agent_blocks_for_root = agent_blocks.clone();
             let cli_subagent_blocks_for_root = cli_subagent_blocks.clone();
-            let handoff_blocks_for_root = handoff_blocks.clone();
             let notices_for_root = notices.clone();
             let (window_id, root) = app.update(|ctx| {
                 ctx.add_tui_window(
@@ -305,7 +303,6 @@ impl TranscriptBenchmark {
                         model: model_for_root,
                         agent_blocks: agent_blocks_for_root,
                         cli_subagent_blocks: cli_subagent_blocks_for_root,
-                        handoff_blocks: handoff_blocks_for_root,
                         notices: notices_for_root,
                         viewport: TuiViewportedListState::new_at_end(),
                     },
@@ -423,7 +420,6 @@ struct BenchmarkTranscriptView {
     model: Arc<FairMutex<TerminalModel>>,
     agent_blocks: AgentBlockRegistry,
     cli_subagent_blocks: CLISubagentBlockRegistry,
-    handoff_blocks: HandoffBlockRegistry,
     notices: TranscriptNoticeRegistry,
     viewport: TuiViewportedListState,
 }
@@ -450,7 +446,6 @@ impl TuiView for BenchmarkTranscriptView {
             self.model.clone(),
             self.agent_blocks.clone(),
             self.cli_subagent_blocks.clone(),
-            self.handoff_blocks.clone(),
             self.notices.clone(),
         );
         TuiViewportedList::new(

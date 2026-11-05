@@ -24,7 +24,6 @@ pub fn model_leading_icon(llm: &LLMInfo) -> Icon {
 /// Note: this key used to store a single [`AvailableLLMs`]
 /// but was migrated to store a full [`ModelsByFeature`].
 pub const MODELS_BY_FEATURE_CACHE_KEY: &str = "AvailableLLMs";
-const CLOUD_FALLBACK_OZ_MODEL_ID: &str = "auto";
 /// Label for usage rows of custom endpoints recorded in existing conversations.
 pub const CUSTOM_ENDPOINT_USAGE_LABEL: &str = "Custom endpoint";
 
@@ -572,6 +571,12 @@ pub struct LLMPreferences {
 }
 
 impl LLMPreferences {
+    #[cfg(feature = "tui")]
+    pub(crate) fn reset_session_overrides(&mut self) {
+        self.base_llm_for_terminal_view.clear();
+        self.computer_use_llm_for_terminal_view.clear();
+    }
+
     pub fn new(
         #[cfg_attr(not(feature = "agent_mode_evals"), allow(unused_variables))]
         ctx: &mut ModelContext<Self>,
@@ -871,22 +876,6 @@ impl LLMPreferences {
             .unwrap_or_else(|| available.default_llm_info())
     }
 
-    #[cfg(not(target_family = "wasm"))]
-    pub(crate) fn set_computer_use_llm_override(
-        &mut self,
-        terminal_view_id: EntityId,
-        model_id: Option<LLMId>,
-    ) {
-        self.computer_use_llm_for_terminal_view
-            .insert(terminal_view_id, model_id);
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    pub(crate) fn clear_computer_use_llm_override(&mut self, terminal_view_id: EntityId) {
-        self.computer_use_llm_for_terminal_view
-            .remove(&terminal_view_id);
-    }
-
     /// Helper to get the AvailableLLMs for computer_use.
     /// Falls back to a computer-use-specific default if None.
     fn get_computer_use_available<'a>(
@@ -916,44 +905,6 @@ impl LLMPreferences {
                     .feature_model_choice_for_team_uid(None)
                     .info_for_id(id)
             })
-    }
-
-    /// Returns `true` when `id` can run in a Warp cloud (Oz) agent, and is therefore safe to
-    /// forward as a cloud `config.model_id`. Ollama models live on this machine, so a cloud
-    /// worker cannot reach them.
-    pub fn is_cloud_runnable_oz_model_id(&self, id: &LLMId, app: &AppContext) -> bool {
-        self.get_llm_info(id, app)
-            .is_none_or(|info| info.provider != LLMProvider::Ollama)
-    }
-
-    /// Returns a cloud-runnable Oz model id, falling back to server-side
-    /// automatic model selection when the requested model is local-only.
-    pub(crate) fn cloud_runnable_oz_model_id_or_fallback(
-        &self,
-        id: &LLMId,
-        app: &AppContext,
-    ) -> String {
-        if self.is_cloud_runnable_oz_model_id(id, app) {
-            id.to_string()
-        } else {
-            CLOUD_FALLBACK_OZ_MODEL_ID.to_owned()
-        }
-    }
-
-    /// True when the pane's active Agent Mode model can run in a Warp cloud
-    /// (Oz) agent (see [`Self::is_cloud_runnable_oz_model_id`]).
-    pub(crate) fn is_active_base_model_cloud_runnable(
-        &self,
-        scope: &(impl TeamScope + ?Sized),
-        terminal_view_id: EntityId,
-        app: &AppContext,
-    ) -> bool {
-        self.is_cloud_runnable_oz_model_id(
-            &self
-                .get_active_base_model(scope, app, Some(terminal_view_id))
-                .id,
-            app,
-        )
     }
 
     /// Updates the active execution profile's default Agent Mode model.
@@ -1050,13 +1001,10 @@ impl LLMPreferences {
 
     /// Returns `true` when the most recent authed agent-mode model-list fetch
     /// failed, so the server-provided model list is currently unavailable.
+    #[cfg(feature = "integration_tests")]
     pub fn agent_mode_models_unavailable(&self, scope: &(impl TeamScope + ?Sized)) -> bool {
-        self.agent_mode_models_unavailable_for_team_uid(scope.team_uid())
-    }
-
-    pub fn agent_mode_models_unavailable_for_team_uid(&self, team_uid: Option<ServerId>) -> bool {
         self.agent_mode_models_unavailable
-            .get(&team_uid)
+            .get(&scope.team_uid())
             .copied()
             .unwrap_or(false)
     }
@@ -1131,37 +1079,6 @@ impl LLMPreferences {
         if changed {
             self.trigger_snapshot_save(ctx);
             ctx.emit(LLMPreferencesEvent::UpdatedActiveAgentModeLLM);
-        }
-    }
-
-    /// Pins an explicit child-run model independently of profile or TUI
-    /// defaults. Persist the pin whenever it changes, but notify active-model
-    /// subscribers only when the surface's effective selection changes.
-    #[cfg(not(target_family = "wasm"))]
-    pub(crate) fn set_agent_mode_llm_override(
-        &mut self,
-        scope: &(impl TeamScope + ?Sized),
-        terminal_view_id: EntityId,
-        model_id: LLMId,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        let previous_effective_model_id = self
-            .get_active_base_model(scope, ctx, Some(terminal_view_id))
-            .id
-            .clone();
-        let stored_selection_changed = self
-            .base_llm_for_terminal_view
-            .insert(terminal_view_id, model_id.clone())
-            != Some(model_id);
-        if stored_selection_changed {
-            self.trigger_snapshot_save(ctx);
-            if self
-                .get_active_base_model(scope, ctx, Some(terminal_view_id))
-                .id
-                != previous_effective_model_id
-            {
-                ctx.emit(LLMPreferencesEvent::UpdatedActiveAgentModeLLM);
-            }
         }
     }
 
@@ -1481,11 +1398,6 @@ impl LLMPreferences {
     ) -> bool {
         self.get_active_base_model_for_team_uid(team_uid, app, terminal_view_id)
             .vision_supported
-    }
-
-    pub(crate) fn reset_session_overrides(&mut self) {
-        self.base_llm_for_terminal_view.clear();
-        self.computer_use_llm_for_terminal_view.clear();
     }
 
     pub fn get_base_llm_override(&self, terminal_view_id: EntityId) -> Option<String> {

@@ -43,8 +43,6 @@ pub enum ServerExperiment {
     PromptSuggestionsViaMaaControl,
     PromptSuggestionsViaMaaExperiment,
     PromptSuggestionsViaMaaOutOfBandExperiment,
-    OzMultiHarnessControl,
-    OzMultiHarnessExperiment,
     MacosRunnersControl,
     MacosRunnersExperiment,
     /// A test-only experiment.
@@ -130,12 +128,6 @@ impl ServerExperiment {
             }
             // The normal experiment arm is no longer used.
             Self::PromptSuggestionsViaMaaExperiment => {}
-            Self::OzMultiHarnessControl => {
-                FeatureFlag::AgentHarness.set_enabled(false);
-            }
-            Self::OzMultiHarnessExperiment => {
-                FeatureFlag::AgentHarness.set_enabled(true);
-            }
             Self::MacosRunnersControl | Self::MacosRunnersExperiment => {
                 // Runner availability is gated directly by the experiment arm.
             }

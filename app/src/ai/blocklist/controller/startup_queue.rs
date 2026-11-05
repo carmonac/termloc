@@ -10,15 +10,11 @@ use super::external_harness::ExternalHarnessPrompt;
 use super::shared_session::SharedSessionPromptTarget;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::agent::{AIAgentAttachment, BaseUserQuery};
-use crate::ai::attachment_utils::{
-    build_file_attachment_map, download_task_file_attachments, resolve_agent_attachments,
-};
+use crate::ai::attachment_utils::resolve_agent_attachments;
 use crate::ai::blocklist::agent_view::AgentViewEntryOrigin;
-use crate::ai::blocklist::orchestration_events::OrchestrationEventService;
 use crate::ai::blocklist::{
     BlocklistAIHistoryModel, QueuedPromptDeliveryMode, QueuedQuery, QueuedQueryId, QueuedQueryModel,
 };
-use crate::server::server_api::ServerApiProvider;
 
 impl BlocklistAIController {
     /// Binds this controller to a native conversation before session sharing can begin
@@ -41,8 +37,7 @@ impl BlocklistAIController {
         });
         self.native_prompt_conversation_id = Some(id);
         log::info!(
-            "event=native_queue_initialized task_id={:?} terminal_id={:?} conversation_id={id} resumed={}",
-            self.ambient_agent_task_id,
+            "event=native_queue_initialized terminal_id={:?} conversation_id={id} resumed={}",
             self.terminal_surface_id,
             restored_conversation_id.is_some(),
         );
@@ -56,42 +51,6 @@ impl BlocklistAIController {
     #[cfg_attr(target_family = "wasm", allow(dead_code))]
     pub(crate) fn native_prompt_conversation_id(&self) -> Option<AIConversationId> {
         self.native_prompt_conversation_id
-    }
-
-    /// Unbinds this controller from its native conversation, dropping any prompts still queued
-    /// for it (e.g. the run ended before setup finished, or before a dispatch that was deferred
-    /// behind an active CLI subagent could go out) and releasing the native setup barrier if it
-    /// was still held -- otherwise this conversation would stay permanently dispatch-blocked for
-    /// any future local queueing against it, since nothing else would ever release that barrier.
-    ///
-    /// For a conversation whose turns an external harness authored, any orchestration events
-    /// still held behind that barrier are dropped first: releasing the barrier re-checks them,
-    /// and injecting them would open a native request the server cannot serve.
-    #[cfg_attr(target_family = "wasm", allow(dead_code))]
-    pub(crate) fn unbind_native_prompt_conversation(&mut self, ctx: &mut ModelContext<Self>) {
-        let Some(id) = self.native_prompt_conversation_id.take() else {
-            return;
-        };
-        self.external_harness_prompt_sink = None;
-        self.external_harness_cancel_sink = None;
-        let unsent_count = QueuedQueryModel::as_ref(ctx).queue(id).len();
-        log::info!(
-            "event=native_queue_stopped task_id={:?} terminal_id={:?} conversation_id={id} unsent_count={unsent_count}",
-            self.ambient_agent_task_id,
-            self.terminal_surface_id,
-        );
-        let owns_turn_lifecycle = BlocklistAIHistoryModel::as_ref(ctx)
-            .conversation(&id)
-            .is_none_or(|conversation| conversation.driver().owns_turn_lifecycle());
-        if !owns_turn_lifecycle {
-            OrchestrationEventService::handle(ctx).update(ctx, |service, _| {
-                service.drop_pending_events_for_external_harness_conversation(id);
-            });
-        }
-        QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
-            queue.clear_queue(id, ctx);
-            queue.finish_native_setup(id, ctx);
-        });
     }
 
     /// Routes a shared-session-injected prompt while this controller is bound to a native
@@ -124,8 +83,7 @@ impl BlocklistAIController {
     ) -> bool {
         let Some(bound_id) = self.native_prompt_conversation_id else {
             log::info!(
-                "event=injection_bypassed_queue task_id={:?} terminal_id={:?} participant_id={participant_id} reason=no_native_binding has_target_token={}",
-                self.ambient_agent_task_id,
+                "event=injection_bypassed_queue terminal_id={:?} participant_id={participant_id} reason=no_native_binding has_target_token={}",
                 self.terminal_surface_id,
                 token.is_some(),
             );
@@ -133,8 +91,7 @@ impl BlocklistAIController {
         };
         if let Some(sink) = &self.external_harness_prompt_sink {
             log::info!(
-                "event=injection_routed_to_external_harness task_id={:?} terminal_id={:?} conversation_id={bound_id} participant_id={participant_id} attachment_count={}",
-                self.ambient_agent_task_id,
+                "event=injection_routed_to_external_harness terminal_id={:?} conversation_id={bound_id} participant_id={participant_id} attachment_count={}",
                 self.terminal_surface_id,
                 attachments.len(),
             );
@@ -186,7 +143,9 @@ impl BlocklistAIController {
             queue.append(id, row, ctx);
         });
         if needs_preparation {
-            self.prepare_queued_attachments(id, query_id, attachments.to_vec(), ctx);
+            QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
+                queue.complete_preparation(id, query_id, HashMap::new(), ctx);
+            });
         }
         if self.can_dispatch_queued_warp_agent_prompt(id, ctx) {
             self.dispatch_queued_warp_agent_prompt(id, None, ctx);
@@ -222,8 +181,7 @@ impl BlocklistAIController {
         };
         let row_id = row.id();
         log::info!(
-            "event=native_queue_row_dispatched task_id={:?} terminal_id={:?} conversation_id={conversation_id} query_id={row_id:?}",
-            self.ambient_agent_task_id,
+            "event=native_queue_row_dispatched terminal_id={:?} conversation_id={conversation_id} query_id={row_id:?}",
             self.terminal_surface_id,
         );
         if row.shared_session_prompt().is_some() {
@@ -286,54 +244,6 @@ impl BlocklistAIController {
             file_attachments,
             base,
             ctx,
-        );
-    }
-
-    fn prepare_queued_attachments(
-        &mut self,
-        conversation_id: AIConversationId,
-        query_id: QueuedQueryId,
-        attachments: Vec<AgentAttachment>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        let (_, _, file_downloads) = resolve_agent_attachments(attachments);
-        log::info!(
-            "event=queued_attachment_download_started conversation_id={conversation_id} query_id={query_id:?} file_count={}",
-            file_downloads.len(),
-        );
-        let Some((task_id, directory)) = self
-            .ambient_agent_task_id
-            .zip(self.attachments_download_dir.clone())
-        else {
-            report_error!(
-                "Missing native attachment download configuration for a queued startup injection",
-                extra: { "conversation_id" => %conversation_id, "query_id" => ?query_id }
-            );
-            QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
-                queue.complete_preparation(conversation_id, query_id, HashMap::new(), ctx);
-            });
-            return;
-        };
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-        let http_client = ServerApiProvider::as_ref(ctx).get_http_client();
-        ctx.spawn(
-            download_task_file_attachments(
-                ai_client,
-                http_client,
-                task_id,
-                directory,
-                file_downloads,
-            ),
-            move |_, downloaded, ctx| {
-                QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
-                    queue.complete_preparation(
-                        conversation_id,
-                        query_id,
-                        build_file_attachment_map(&downloaded),
-                        ctx,
-                    );
-                });
-            },
         );
     }
 

@@ -3,9 +3,9 @@ use std::sync::Arc;
 use parking_lot::FairMutex;
 use warp::tui_export::{
     AIConversationAutoexecuteMode, AIConversationId, AgentConversationListEntryState,
-    AgentRunDisplayStatus, AgentViewEntryOrigin, BlocklistAIHistoryEvent, BlocklistAIHistoryModel,
-    ConversationSelection, ConversationSelectionEvent, ConversationSelectionHandle, Harness,
-    TerminalModel, TranscriptScope, register_tui_session_view_test_singletons,
+    AgentViewEntryOrigin, BlocklistAIHistoryEvent, BlocklistAIHistoryModel, ConversationSelection,
+    ConversationSelectionEvent, ConversationSelectionHandle, Harness, TerminalModel,
+    TranscriptScope, register_tui_session_view_test_singletons,
 };
 use warp_core::execution_mode::{AppExecutionMode, ExecutionMode};
 use warpui::{App, EntityId, ModelHandle, SingletonEntity};
@@ -22,9 +22,7 @@ fn tui_list_policy_classifies_selected_terminal_and_unavailable_entries() {
             selected_id: Some(selected_id),
             local_conversation_id: Some(selected_id),
             has_server_token: true,
-            is_cloud_agent_run: false,
-            harness: Some(Harness::Oz),
-            status: &AgentRunDisplayStatus::ConversationSucceeded,
+            harness: Some(Harness::Local),
         },),
         AgentConversationListEntryState::Selected
     );
@@ -33,9 +31,7 @@ fn tui_list_policy_classifies_selected_terminal_and_unavailable_entries() {
             selected_id: None,
             local_conversation_id: Some(AIConversationId::new()),
             has_server_token: false,
-            is_cloud_agent_run: false,
-            harness: Some(Harness::Oz),
-            status: &AgentRunDisplayStatus::ConversationCancelled,
+            harness: Some(Harness::Local),
         },),
         AgentConversationListEntryState::Available
     );
@@ -44,20 +40,16 @@ fn tui_list_policy_classifies_selected_terminal_and_unavailable_entries() {
             selected_id: None,
             local_conversation_id: None,
             has_server_token: true,
-            is_cloud_agent_run: true,
-            harness: Some(Harness::Oz),
-            status: &AgentRunDisplayStatus::TaskInProgress,
+            harness: Some(Harness::Local),
         },),
-        AgentConversationListEntryState::Unavailable
+        AgentConversationListEntryState::Available
     );
     assert_eq!(
         classify_conversation_list_entry(ConversationListEntryContext {
             selected_id: None,
             local_conversation_id: None,
             has_server_token: true,
-            is_cloud_agent_run: true,
             harness: Some(Harness::Claude),
-            status: &AgentRunDisplayStatus::TaskSucceeded,
         },),
         AgentConversationListEntryState::Unavailable
     );
@@ -66,57 +58,9 @@ fn tui_list_policy_classifies_selected_terminal_and_unavailable_entries() {
             selected_id: None,
             local_conversation_id: None,
             has_server_token: false,
-            is_cloud_agent_run: true,
-            harness: Some(Harness::Oz),
-            status: &AgentRunDisplayStatus::TaskSucceeded,
+            harness: Some(Harness::Local),
         },),
         AgentConversationListEntryState::Unavailable
-    );
-}
-
-#[test]
-fn tui_list_policy_ignores_status_for_local_task_backed_conversations() {
-    for status in [
-        AgentRunDisplayStatus::ConversationInProgress,
-        AgentRunDisplayStatus::TaskInProgress,
-    ] {
-        assert_eq!(
-            classify_conversation_list_entry(ConversationListEntryContext {
-                selected_id: None,
-                local_conversation_id: Some(AIConversationId::new()),
-                has_server_token: false,
-                is_cloud_agent_run: false,
-                harness: Some(Harness::Oz),
-                status: &status,
-            },),
-            AgentConversationListEntryState::Available
-        );
-    }
-}
-
-#[test]
-fn tui_list_policy_requires_terminal_status_for_remote_agent_runs() {
-    assert_eq!(
-        classify_conversation_list_entry(ConversationListEntryContext {
-            selected_id: None,
-            local_conversation_id: Some(AIConversationId::new()),
-            has_server_token: true,
-            is_cloud_agent_run: true,
-            harness: Some(Harness::Oz),
-            status: &AgentRunDisplayStatus::TaskInProgress,
-        },),
-        AgentConversationListEntryState::Unavailable
-    );
-    assert_eq!(
-        classify_conversation_list_entry(ConversationListEntryContext {
-            selected_id: None,
-            local_conversation_id: Some(AIConversationId::new()),
-            has_server_token: true,
-            is_cloud_agent_run: true,
-            harness: Some(Harness::Oz),
-            status: &AgentRunDisplayStatus::TaskSucceeded,
-        },),
-        AgentConversationListEntryState::Available
     );
 }
 
@@ -500,7 +444,6 @@ fn tui_selection_reconciles_split_and_removed_selection() {
             ctx.emit(BlocklistAIHistoryEvent::RemoveConversation {
                 terminal_surface_id,
                 conversation_id: new_conversation_id,
-                run_id: None,
             });
         });
         selection.read(&app, |selection, ctx| {

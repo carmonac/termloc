@@ -14,17 +14,11 @@ use warpui::{AppContext, ModelContext, SingletonEntity};
 
 use super::response_stream::ResponseStreamId;
 use super::{BlocklistAIController, RequestInput, SessionContext};
-use crate::ai::agent::conversation::{AIConversationId, ConversationStatus, TaskSyncMode};
+use crate::ai::agent::conversation::{AIConversationId, ConversationStatus};
 use crate::ai::agent::{AIAgentActionId, AIAgentAttachment, BaseUserQuery, EntrypointType};
-use crate::ai::agent_conversations_model::AgentConversationsModel;
-use crate::ai::ambient_agents::AmbientAgentTaskId;
-use crate::ai::attachment_utils::{
-    build_file_attachment_map, download_task_file_attachments, resolve_agent_attachments,
-};
+use crate::ai::attachment_utils::resolve_agent_attachments;
 use crate::ai::blocklist::agent_view::AgentViewEntryOrigin;
 use crate::ai::blocklist::history_model::BlocklistAIHistoryModel;
-use crate::ai::blocklist::local_agent_task_sync_model::LocalAgentTaskSyncModel;
-use crate::server::server_api::ServerApiProvider;
 use crate::workspaces::user_workspaces::ResolvedTeamScope;
 
 /// Resolution of the local conversation a shared-session-injected prompt should target. See
@@ -303,7 +297,7 @@ impl BlocklistAIController {
         }
 
         // Only skip the replayed response when our local task already has the given request_id.
-        // New exchanges (e.g. the user's first post-handoff prompt) carry unseen request_ids and must flow through normally.
+        // New exchanges carry unseen request_ids and must flow through normally.
         let history = BlocklistAIHistoryModel::as_ref(ctx);
         let found = history.conversation(&conversation_id).is_some_and(|conv| {
             conv.all_tasks()
@@ -720,7 +714,7 @@ impl BlocklistAIController {
         }
     }
 
-    /// Execute an agent prompt on behalf of the viewer, against Warp's native Oz harness.
+    /// Execute an agent prompt on behalf of the viewer, against the local agent.
     ///
     /// Callers must have already routed away third-party-harness-backed tasks: this method (and
     /// `send_warp_agent_prompt_from_shared_session_injection`, which it feeds into) can only
@@ -785,8 +779,7 @@ impl BlocklistAIController {
         };
 
         // Process attachments and set them in the context model
-        let (block_ids, selected_text_parts, file_downloads) =
-            resolve_agent_attachments(attachments);
+        let (block_ids, selected_text_parts, _) = resolve_agent_attachments(attachments);
 
         // Set block and text attachments in the context model.
         self.context_model.update(ctx, |context_model, ctx| {
@@ -802,126 +795,17 @@ impl BlocklistAIController {
             }
         });
 
-        // If there are no file downloads (or the feature is disabled), send the query immediately.
-        if file_downloads.is_empty() || !FeatureFlag::CloudModeImageContext.is_enabled() {
-            self.send_warp_agent_prompt_from_shared_session_injection(
-                prompt,
-                conversation_id,
-                participant_id,
-                HashMap::new(),
-                base,
-                ctx,
-            );
-            return;
-        }
-
-        // We have file downloads — ensure both the download dir and task ID are available.
-        let Some(attachment_dir) = self.attachments_download_dir.clone() else {
-            report_error!(
-                "No attachments_download_dir set on controller, cannot process file attachments"
-            );
-            self.send_warp_agent_prompt_from_shared_session_injection(
-                prompt,
-                conversation_id,
-                participant_id,
-                HashMap::new(),
-                base,
-                ctx,
-            );
-            return;
-        };
-        let Some(task_id) = self.ambient_agent_task_id else {
-            report_error!("No task_id available to download attachments");
-            self.send_warp_agent_prompt_from_shared_session_injection(
-                prompt,
-                conversation_id,
-                participant_id,
-                HashMap::new(),
-                base,
-                ctx,
-            );
-            return;
-        };
-
-        let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-        let http_client = ServerApiProvider::as_ref(ctx).get_http_client();
-
-        ctx.spawn(
-            download_task_file_attachments(
-                ai_client,
-                http_client,
-                task_id,
-                attachment_dir,
-                file_downloads,
-            ),
-            move |controller, downloaded, ctx| {
-                let file_attachments = build_file_attachment_map(&downloaded);
-                controller.send_warp_agent_prompt_from_shared_session_injection(
-                    prompt,
-                    conversation_id,
-                    participant_id,
-                    file_attachments,
-                    base,
-                    ctx,
-                );
-            },
+        self.send_warp_agent_prompt_from_shared_session_injection(
+            prompt,
+            conversation_id,
+            participant_id,
+            HashMap::new(),
+            base,
+            ctx,
         );
     }
 
-    /// Whether a no-token shared-session prompt landing right now would bootstrap a debug
-    /// conversation into a retained environment-setup-failure session (REMOTE-2661). Getting
-    /// this wrong only costs a misleading lifecycle update; the server guards against reopening.
-    fn is_open_for_setup_failure_debug_bootstrap(&self, ctx: &AppContext) -> bool {
-        self.ambient_agent_task_id.is_some_and(|task_id| {
-            AgentConversationsModel::as_ref(ctx)
-                .get_task_data(&task_id)
-                .is_some_and(|task| task.is_open_for_setup_failure_debug_bootstrap())
-        })
-    }
-
-    /// The task ID a no-token prompt landing right now must not spawn a native `AIConversation`
-    /// for, because it is (or is configured to be) backed by a third-party CLI-harness session.
-    /// Two independent signals are checked, since either can be true without the other:
-    /// - `LocalAgentTaskSyncModel::cli_harness_task_id_for_terminal_view`: the harness session has been
-    ///   registered for this pane (true from harness setup time, before its process launches).
-    /// - `AmbientAgentTask::is_third_party_harness`: the task's stored config says it runs on a
-    ///   third-party harness, independent of whether a session has registered for this pane yet
-    ///   (e.g. very early in setup, or if registration is ever skipped by a bug).
-    fn cli_harness_backed_task_id(&self, ctx: &AppContext) -> Option<AmbientAgentTaskId> {
-        LocalAgentTaskSyncModel::as_ref(ctx)
-            .cli_harness_task_id_for_terminal_view(self.terminal_surface_id)
-            .or_else(|| {
-                self.ambient_agent_task_id.filter(|task_id| {
-                    AgentConversationsModel::as_ref(ctx)
-                        .get_task_data(task_id)
-                        .is_some_and(|task| task.is_third_party_harness())
-                })
-            })
-    }
-
-    /// Tags `conversation_id` as a setup-failure debug bootstrap so `LocalAgentTaskSyncModel`
-    /// stops deriving task lifecycle updates from it. Must run before the first exchange can
-    /// report a server token, which would otherwise trigger an erroneous `IN_PROGRESS` report.
-    fn tag_conversation_as_setup_failure_debug_bootstrap(
-        &self,
-        conversation_id: AIConversationId,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, _ctx| {
-            let Some(conversation) = history.conversation_mut(&conversation_id) else {
-                report_error!(
-                    "Tried to tag non-existent conversation as a setup-failure debug bootstrap",
-                    extra: { "conversation_id" => ?conversation_id }
-                );
-                return;
-            };
-            conversation.set_task_sync_mode(TaskSyncMode::PreserveTerminalSetupFailure);
-        });
-    }
-
-    /// Helper to send a prompt against Warp's native Oz harness, used both for immediate sends
-    /// (no file attachments) and deferred sends (after file downloads complete). Only ever
-    /// resolves or creates a native `AIConversation` — see the doc comment on
+    /// Helper to send a prompt against Warp's native agent. Only ever resolves or creates a native `AIConversation` — see the doc comment on
     /// `execute_warp_agent_prompt_from_shared_session_injection`, this method's sole caller.
     fn send_warp_agent_prompt_from_shared_session_injection(
         &mut self,
@@ -953,31 +837,6 @@ impl BlocklistAIController {
                 ctx,
             );
         } else {
-            // Check before any conversation exists, so the tag lands before the first status
-            // update can fire (REMOTE-2661).
-            let bootstraps_setup_failure_debug =
-                self.is_open_for_setup_failure_debug_bootstrap(ctx);
-
-            // Defense-in-depth (REMOTE-2661): a task backed by a registered CLI-harness session
-            // must never get a native `AIConversation` from a no-token prompt — its canonical
-            // representation lives in `LocalAgentTaskSyncModel`/`CLIAgentSessionsModel`, never
-            // in `BlocklistAIHistoryModel`, so a conversation created here would silently become
-            // the run's wrong canonical conversation ID once it reports a server token.
-            // `accept_agent_prompt` (`terminal_view_adaptor.rs`) is the primary gate that routes
-            // these prompts to `PendingCliHarnessPromptQueue` before they ever reach this
-            // method; reaching here for such a task means that gate was bypassed by a bug.
-            if !bootstraps_setup_failure_debug
-                && let Some(task_id) = self.cli_harness_backed_task_id(ctx)
-            {
-                report_error!(
-                    "Refused to create a native conversation for a task backed by a registered \
-                     CLI-harness session; this prompt should have been routed to \
-                     PendingCliHarnessPromptQueue by accept_agent_prompt",
-                    extra: { "task_id" => %task_id }
-                );
-                return;
-            }
-
             if FeatureFlag::AgentView.is_enabled() {
                 // If we're already in an empty agent view conversation, reuse it
                 // (so that any command blocks remain visible). Otherwise create a new one for the given prompt.
@@ -1007,10 +866,6 @@ impl BlocklistAIController {
                     return;
                 };
 
-                if bootstraps_setup_failure_debug {
-                    self.tag_conversation_as_setup_failure_debug_bootstrap(conversation_id, ctx);
-                }
-
                 self.send_user_query_in_conversation_with_attachments(
                     prompt,
                     conversation_id,
@@ -1033,20 +888,6 @@ impl BlocklistAIController {
                 file_attachments,
                 ctx,
             );
-
-            if bootstraps_setup_failure_debug {
-                // The legacy (non-AgentView) path doesn't hand back the new conversation ID
-                // directly; it becomes this surface's active conversation synchronously above.
-                if let Some(conversation_id) = BlocklistAIHistoryModel::as_ref(ctx)
-                    .active_conversation_id(self.terminal_surface_id)
-                {
-                    self.tag_conversation_as_setup_failure_debug_bootstrap(conversation_id, ctx);
-                } else {
-                    report_error!(
-                        "Could not resolve the bootstrapped debug conversation to tag it"
-                    );
-                }
-            }
         }
     }
 }

@@ -158,7 +158,6 @@ pub(crate) fn append_welcome_capability_section(
         "State of the art coding agents",
         "Frontier and open-weight models",
         "Fully customizable model routers",
-        "Orchestration for fleets of agents",
         "Better shell command support",
     ] {
         column = column.child(capability_row(

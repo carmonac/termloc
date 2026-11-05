@@ -466,7 +466,7 @@ fn orphan_with_missing_parent_is_its_own_tree() {
 }
 
 /// The freshest tree is retained even when it alone exceeds the cap, so we
-/// never split an active orchestration session.
+/// never split an active session.
 #[test]
 fn single_tree_larger_than_limit_is_kept_in_full() {
     let mut rows = vec![make_row(1, "big_root", None, 10_000)];

@@ -1,29 +1,24 @@
-use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use ai::agent::action_result::{RecordingStopped, StopRecordingResult};
 use futures::channel::oneshot;
 use warpui::r#async::Timer;
-use warpui::{AppContext, Entity, ModelContext, SingletonEntity};
+use warpui::{Entity, ModelContext, SingletonEntity};
 
 pub(crate) use super::recording_controller::FinalizeReason;
 use super::recording_controller::{
     ActiveRecording, FinalizationClaim, FinalizedRecording, RecordingController,
     StopRecordingControllerError,
 };
-use crate::ai::agent::api::ServerConversationToken;
 use crate::ai::agent::conversation::AIConversationId;
-use crate::ai::agent_sdk::artifact_upload::{FileArtifactUploadRequest, FileArtifactUploader};
-use crate::ai::blocklist::BlocklistAIHistoryModel;
-use crate::server::server_api::ServerApiProvider;
 
 const EXIT_POLL_INTERVAL: Duration = Duration::from_millis(250);
 
 /// A handle to the canonical result owned by `RecordingController`.
 ///
 /// `Pending` subscribes to work already owned by the controller; dropping the
-/// receiver does not cancel stop or upload. `Ready` exposes the retained result
+/// receiver does not cancel stop. `Ready` exposes the retained result
 /// after that work has completed. Both variants carry the *actual*
 /// [`FinalizeReason`] that drove the work — callers that only joined an
 /// in-progress finalization still learn why it ran, rather than the reason
@@ -51,53 +46,7 @@ impl RecordingFinalization {
     }
 }
 
-fn format_upload_error(err: &anyhow::Error) -> String {
-    let error_chain = format!("{err:#}");
-    if error_chain != err.to_string() {
-        format!("Recording upload failed: {error_chain}")
-    } else {
-        error_chain
-    }
-}
-
-/// Best-effort PR video thumbnail upload.
-///
-/// Generates a thumbnail PNG from the finalized `video_path` (a representative,
-/// downscaled frame with a play-button glyph burned in), then uploads it as a
-/// separate `FILE` artifact. The server links the thumbnail to its video by the
-/// `{video_artifact_uid}-thumb.png` filename convention rather than a schema
-/// back-reference. The local thumbnail file is removed whether the upload
-/// succeeds or fails.
-///
-/// Any error is returned to the caller, which logs and discards it so the video
-/// upload and PR creation are never blocked by a missing or failed thumbnail.
-async fn upload_recording_thumbnail(
-    video_path: &Path,
-    video_artifact_uid: &str,
-    uploader: &FileArtifactUploader,
-    conversation_id: Option<ServerConversationToken>,
-) -> anyhow::Result<()> {
-    let thumbnail_path =
-        computer_use::generate_video_thumbnail(video_path, video_artifact_uid).await?;
-    let upload_result = async {
-        let request = FileArtifactUploadRequest {
-            path: thumbnail_path.clone(),
-            run_id: None,
-            conversation_id,
-            title: None,
-            description: None,
-        };
-        let association = uploader.resolve_upload_association(&request).await?;
-        uploader.upload_with_association(request, association).await
-    }
-    .await;
-    // The thumbnail file is ephemeral regardless of upload outcome.
-    let _ = std::fs::remove_file(&thumbnail_path);
-    upload_result?;
-    Ok(())
-}
-
-async fn validated_recording_for_upload(
+async fn validated_recording(
     raw_path: &Path,
     processed_path: Option<PathBuf>,
 ) -> Result<(PathBuf, Duration, Option<PathBuf>), computer_use::RecordingError> {
@@ -108,7 +57,7 @@ async fn validated_recording_for_upload(
             }
             Err(error) => {
                 log::warn!(
-                    "Recording cut/overlay output validation failed; uploading original: {error}"
+                    "Recording cut/overlay output validation failed; keeping original: {error}"
                 );
                 let _ = std::fs::remove_file(processed_path);
             }
@@ -119,22 +68,19 @@ async fn validated_recording_for_upload(
     Ok((raw_path.to_path_buf(), duration, None))
 }
 
-/// Stops capture, uploads the finalized file, and produces the result retained
-/// by the controller for all current and future callers.
+/// Stops capture, keeps the finalized file on disk, and produces the result retained by the
+/// controller for all current and future callers.
 async fn finalize_recording(
     recording: ActiveRecording,
     reason: FinalizeReason,
-    should_upload: bool,
-    uploader: FileArtifactUploader,
-    server_conversation_token: Option<crate::ai::agent::api::ServerConversationToken>,
+    should_persist: bool,
 ) -> StopRecordingResult {
-    // A no-upload finalization discards the recording without publishing: it
-    // drops the whole `ActiveRecording` (kill-on-drops ffmpeg, removes the
-    // partial capture). The reason distinguishes an agent-requested discard
-    // (`Discarded`) from a conversation cancellation (`Cancelled`), which the
-    // agent turn treats differently. This check comes first so it holds even
-    // when no action group was committed.
-    if !should_upload {
+    // A no-persist finalization discards the recording: it drops the whole `ActiveRecording`
+    // (kill-on-drops ffmpeg, removes the partial capture). The reason distinguishes an
+    // agent-requested discard (`Discarded`) from a conversation cancellation (`Cancelled`),
+    // which the agent turn treats differently. This check comes first so it holds even when no
+    // action group was committed.
+    if !should_persist {
         drop(recording);
         return match reason {
             FinalizeReason::StoppedByAgent => StopRecordingResult::Discarded,
@@ -144,8 +90,7 @@ async fn finalize_recording(
     if recording.actions.is_empty() {
         drop(recording);
         return StopRecordingResult::Error(
-            "Recording contained no committed actions; no video artifact was published."
-                .to_string(),
+            "Recording contained no committed actions; no video was saved.".to_string(),
         );
     }
     let ActiveRecording {
@@ -162,10 +107,9 @@ async fn finalize_recording(
 
     let local_path = output.path.clone();
 
-    // Apply the post-stop smart cut (keep real action windows at 1x, drop
-    // blocked/thinking gaps) and burn the remapped overlay pills into the video
-    // before upload. Best-effort: on any failure the original 1x capture is
-    // uploaded unannotated (a no-cut video beats no video). The cut/overlay
+    // Apply the post-stop smart cut (keep real action windows at 1x, drop blocked/thinking gaps)
+    // and burn the remapped overlay pills into the video. Best-effort: on any failure the
+    // original 1x capture is kept unannotated (a no-cut video beats no video). The cut/overlay
     // file, when produced, is a sibling of the mp4.
     let processed_path = match computer_use::post_process_recording(
         &local_path,
@@ -179,12 +123,12 @@ async fn finalize_recording(
         Ok(path) if path != local_path => Some(path),
         Ok(_) => None,
         Err(error) => {
-            log::warn!("Recording cut/overlay burn-in failed; uploading original: {error}");
+            log::warn!("Recording cut/overlay burn-in failed; keeping original: {error}");
             None
         }
     };
-    let (upload_path, duration, overlay_path) =
-        match validated_recording_for_upload(&local_path, processed_path).await {
+    let (video_path, duration, overlay_path) =
+        match validated_recording(&local_path, processed_path).await {
             Ok(validated) => validated,
             Err(error) => {
                 let _ = std::fs::remove_file(&local_path);
@@ -193,92 +137,24 @@ async fn finalize_recording(
             }
         };
 
-    // Keep a handle on the finalized video path for thumbnail extraction before
-    // it is moved into the upload request; the thumbnail reads this file with
-    // ffmpeg after the video upload resolves.
-    let thumbnail_source_path = upload_path.clone();
-    let request = FileArtifactUploadRequest {
-        path: upload_path,
-        run_id: None,
-        conversation_id: server_conversation_token.clone(),
-        title: recording.summary.clone(),
-        description: recording.description.clone(),
-    };
-    let upload_result = async {
-        let association = uploader.resolve_upload_association(&request).await?;
-        uploader.upload_with_association(request, association).await
-    }
-    .await;
-    // Best-effort PR video thumbnail: after a successful non-discard video
-    // upload, extract a representative frame, composite a play-button glyph, and
-    // upload it as a separate PNG file artifact linked to the video by the
-    // `{video_uuid}-thumb.png` filename convention. Capture is unconditional; the
-    // team setting and feature flag are consulted only at server render time. A
-    // missing/failed thumbnail must never block the video upload or PR creation,
-    // so any error is logged and dropped.
-    if let Ok(upload) = &upload_result
-        && let Err(error) = upload_recording_thumbnail(
-            &thumbnail_source_path,
-            &upload.artifact.artifact_uid,
-            &uploader,
-            server_conversation_token.clone(),
-        )
-        .await
-    {
-        log::warn!("PR video thumbnail capture failed; video upload unaffected: {error}");
-    }
-    // Local files are ephemeral regardless of upload outcome. Retrying failed
-    // uploads or retaining their files requires a separate persistence policy.
-    let _ = std::fs::remove_file(&local_path);
     let _ = std::fs::remove_file(local_path.with_extension("log"));
-    if let Some(overlay_path) = overlay_path.as_ref() {
-        let _ = std::fs::remove_file(overlay_path);
+    if overlay_path.is_some() {
+        let _ = std::fs::remove_file(&local_path);
     }
 
-    match upload_result {
-        Ok(upload) => StopRecordingResult::Success(RecordingStopped {
-            artifact_uid: upload.artifact.artifact_uid,
-            duration,
-            width_px: output.width as i32,
-            height_px: output.height as i32,
-            size_bytes: upload.size_bytes,
-            completion_status: output.completion_status,
-            termination_reason: reason.termination_reason(output.completion_status),
-        }),
-        Err(error) => StopRecordingResult::Error(format_upload_error(&error)),
-    }
-}
-
-/// Captures the upload association and clients while the app models are still
-/// available, before stop/upload work moves onto the controller-owned task.
-fn build_finalize_future(
-    recording: ActiveRecording,
-    reason: FinalizeReason,
-    should_upload: bool,
-    ctx: &AppContext,
-) -> (
-    String,
-    impl Future<Output = StopRecordingResult> + Send + 'static + use<>,
-) {
-    let server_conversation_token = BlocklistAIHistoryModel::as_ref(ctx)
-        .conversation(&recording.conversation_id)
-        .and_then(|conversation| conversation.server_conversation_token())
-        .cloned();
-    let uploader = FileArtifactUploader::new(
-        ServerApiProvider::as_ref(ctx).get_ai_client(),
-        ServerApiProvider::as_ref(ctx).get(),
-    );
-    let id = recording.id.clone();
-    (
-        id,
-        finalize_recording(
-            recording,
-            reason,
-            should_upload,
-            uploader,
-            server_conversation_token,
-        ),
-    )
+    let size_bytes = match std::fs::metadata(&video_path) {
+        Ok(metadata) => metadata.len() as i64,
+        Err(error) => return StopRecordingResult::Error(error.to_string()),
+    };
+    StopRecordingResult::Success(RecordingStopped {
+        artifact_uid: video_path.display().to_string(),
+        duration,
+        width_px: output.width as i32,
+        height_px: output.height as i32,
+        size_bytes,
+        completion_status: output.completion_status,
+        termination_reason: reason.termination_reason(output.completion_status),
+    })
 }
 
 /// Runs finalization independently of any action future and stores its result
@@ -288,13 +164,16 @@ fn build_finalize_future(
 fn spawn_finalize(
     recording: ActiveRecording,
     reason: FinalizeReason,
-    should_upload: bool,
+    should_persist: bool,
     ctx: &mut ModelContext<RecordingController>,
 ) {
-    let (recording_id, future) = build_finalize_future(recording, reason, should_upload, ctx);
-    ctx.spawn(future, move |controller, result, _ctx| {
-        controller.complete_finalization(&recording_id, result, reason);
-    });
+    let recording_id = recording.id.clone();
+    ctx.spawn(
+        finalize_recording(recording, reason, should_persist),
+        move |controller, result, _ctx| {
+            controller.complete_finalization(&recording_id, result, reason);
+        },
+    );
 }
 
 /// Converts an atomic controller claim into a result handle. Only the caller
@@ -303,7 +182,7 @@ fn spawn_finalize(
 fn start_or_join_finalization<T: Entity>(
     claim: FinalizationClaim,
     reason: FinalizeReason,
-    should_upload: bool,
+    should_persist: bool,
     ctx: &mut ModelContext<T>,
 ) -> Option<RecordingFinalization> {
     match claim {
@@ -312,7 +191,7 @@ fn start_or_join_finalization<T: Entity>(
             result_receiver,
         } => {
             RecordingController::handle(ctx).update(ctx, |_controller, ctx| {
-                spawn_finalize(*recording, reason, should_upload, ctx);
+                spawn_finalize(*recording, reason, should_persist, ctx);
             });
             Some(RecordingFinalization::Pending(result_receiver))
         }
@@ -344,13 +223,13 @@ pub(crate) fn finalize_recording_by_id<T: Entity>(
 /// Starts or joins finalization for this conversation.
 ///
 /// Finalization itself is spawned on the recording controller, so dropping the
-/// returned handle does not cancel stop/upload work. The driver awaits the
+/// returned handle does not cancel stop work. The driver awaits the
 /// handle before teardown; conversation cancellation only observes it for
 /// logging because cancellation must remain synchronous.
 pub(crate) fn finalize_recording_for_conversation<T: Entity>(
     conversation_id: AIConversationId,
     reason: FinalizeReason,
-    should_upload: bool,
+    should_persist: bool,
     ctx: &mut ModelContext<T>,
 ) -> Option<RecordingFinalization> {
     // The recording controller is always registered in production
@@ -363,7 +242,7 @@ pub(crate) fn finalize_recording_for_conversation<T: Entity>(
     let claim = RecordingController::handle(ctx).update(ctx, |controller, _| {
         controller.claim_finalization_for_conversation(conversation_id)
     })?;
-    start_or_join_finalization(claim, reason, should_upload, ctx)
+    start_or_join_finalization(claim, reason, should_persist, ctx)
 }
 
 /// Polls the active ffmpeg process until it exits or another path claims it.

@@ -20,24 +20,16 @@ use session_sharing_protocol::sharer::{
     QuotaType, RemoveGuestResponse, SessionEndedReason, SessionSourceType,
     TeamAccessLevelUpdateResponse, UpdatePendingUserRoleResponse,
 };
-use warp_core::execution_mode::AppExecutionMode;
 use warp_core::send_telemetry_from_ctx;
 use warp_errors::report_error;
-use warpui::{
-    AppContext, ModelContext, ModelHandle, SingletonEntity, ViewContext, ViewHandle, WindowId,
-};
+use warpui::{AppContext, ModelContext, ModelHandle, SingletonEntity, ViewHandle, WindowId};
 
 use super::terminal_manager::{TerminalManager, TerminalSurfaceInit, TerminalSurfaceResult};
 use crate::NetworkStatus;
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 use crate::ai::agent::BaseUserQuery;
 use crate::ai::agent::conversation::AIConversation;
-use crate::ai::agent_conversations_model::AgentConversationsModel;
 use crate::ai::blocklist::agent_view::{AgentViewController, AgentViewControllerEvent};
-use crate::ai::blocklist::local_agent_task_sync_model::LocalAgentTaskSyncModel;
-use crate::ai::blocklist::pending_cli_harness_prompt_queue::{
-    PendingCliHarnessPromptQueue, QueuedCliHarnessPrompt,
-};
 use crate::ai::blocklist::{
     BlocklistAIContextEvent, BlocklistAIContextModel, BlocklistAIControllerEvent,
     BlocklistAIHistoryEvent, BlocklistAIHistoryModel, InputConfig, SerializedBlockListItem,
@@ -51,7 +43,6 @@ use crate::features::FeatureFlag;
 use crate::network::{NetworkStatusEvent, NetworkStatusKind};
 use crate::pane_group::TerminalViewResources;
 use crate::persistence::ModelEvent;
-use crate::server::server_api::ServerApiProvider;
 use crate::server::telemetry::{TelemetryAgentViewEntryOrigin, TelemetryEvent};
 use crate::terminal::cli_agent_sessions::{
     CLIAgentInputState, CLIAgentSessionsModel, CLIAgentSessionsModelEvent,
@@ -86,50 +77,9 @@ use crate::workspaces::user_workspaces::{ResolvedTeamScope, UserWorkspaces};
 
 const ACL_UPDATE_FAILURE_RESPONSE: &str = "Something went wrong. Please try again.";
 
-/// Whether the given CRDT operation should be dropped when broadcasting
-/// sharer input to viewers. In ambient agent sessions the sharer is a
-/// headless worker — forwarding its selection ops would produce a phantom
-/// cursor on the viewer side. Content ops (Edit / Undo) are kept so the
-/// buffer stays in sync.
-fn should_skip_sharer_op(is_ambient_session: bool, op: &CrdtOperation) -> bool {
-    is_ambient_session && matches!(op, CrdtOperation::UpdateSelections(_))
-}
-
-/// Decides whether a no-token agent prompt should be honored against a retained
-/// environment-setup-failure debug session, via the REMOTE-2661
-/// `setupFailureDebugAuthorization` server callback. The sharer cannot authenticate the
-/// participant itself, so anything short of an explicit `Ok(true)` rejects the prompt —
-/// deliberately no local fallback.
-async fn is_setup_failure_debug_prompt_authorized(
-    ai_client: &Arc<dyn crate::server::server_api::ai::AIClient>,
-    task_id: crate::ai::ambient_agents::AmbientAgentTaskId,
-    participant_firebase_uid: Option<crate::auth::UserUid>,
-    workload_token: Option<String>,
-) -> bool {
-    let (Some(participant_firebase_uid), Some(workload_token)) =
-        (participant_firebase_uid, workload_token)
-    else {
-        return false;
-    };
-    ai_client
-        .setup_failure_debug_authorization(
-            task_id,
-            workload_token,
-            participant_firebase_uid.as_string(),
-        )
-        .await
-        .unwrap_or(false)
-}
-
 /// Honors an already-authorized agent prompt. Callers must have already checked that
-/// `participant_id` may submit this prompt. Routes to exactly one of three destinations:
-/// - A live CLI-harness PTY, when one is already running for this pane.
-/// - `PendingCliHarnessPromptQueue`, when this pane's task is configured for (registered
-///   against) a third-party CLI harness whose session hasn't started a live PTY yet. This must
-///   never fall through to the Oz path below: a 3rd-party-harness task has no local
-///   `AIConversation` representation, so doing so would spawn a wrong, native "canonical"
-///   conversation for the run (see `PendingCliHarnessPromptQueue`'s doc comment).
-/// - The Oz harness, via `BlocklistAIController`, for every other (genuinely native) case.
+/// `participant_id` may submit this prompt. Routes to a live CLI-harness PTY when one is running
+/// for this pane, otherwise to `BlocklistAIController`.
 fn accept_agent_prompt(
     terminal_view: &ViewHandle<TerminalView>,
     request: AgentPromptRequest,
@@ -153,36 +103,6 @@ fn accept_agent_prompt(
         return;
     }
 
-    // `register_cli_session` runs at harness setup time, before the harness process is
-    // launched (see its call site in `AgentDriver::subscribe_to_cli_agent_session_events`), so
-    // this is true independent of whether the CLI-harness session above has actually started a
-    // live PTY yet.
-    if let Some(task_id) =
-        LocalAgentTaskSyncModel::as_ref(ctx).cli_harness_task_id_for_terminal_view(terminal_view_id)
-    {
-        log::info!(
-            "event=prompt_routed terminal_id={terminal_view_id:?} participant_id={participant_id} task_id={task_id} destination=pending_cli",
-        );
-        if !request.attachments.is_empty() {
-            log::warn!(
-                "accept_agent_prompt: dropping {} file attachment(s) from a shared-session \
-                 prompt queued for task {task_id}'s not-yet-started CLI-harness session; \
-                 attachment delivery to a CLI harness PTY is not supported",
-                request.attachments.len()
-            );
-        }
-        PendingCliHarnessPromptQueue::handle(ctx).update(ctx, |queue, _ctx| {
-            queue.queue(
-                task_id,
-                QueuedCliHarnessPrompt {
-                    prompt: request.prompt.clone(),
-                    participant_id: participant_id.clone(),
-                },
-            );
-        });
-        return;
-    }
-
     // warp-server-injected follow-ups carry the query itself. Viewer-typed prompts and older
     // relays leave it unset; those are attributed to the viewer from presence so the server
     // never records them as the sharer's own input. A payload that does not decode is sent
@@ -201,7 +121,6 @@ fn accept_agent_prompt(
         }
     };
 
-    // Execute the agent prompt in the Oz-harness case.
     terminal_view.update(ctx, |view, ctx| {
         // Restore the sharer's frozen visual state. The buffer is cleared by
         // system_clear_buffer when SentRequest fires from
@@ -317,7 +236,6 @@ pub(crate) fn create_terminal_view_surface(
             initial_input_config,
             conversation_restoration,
             Some(inactive_pty_reads_rx),
-            false,
             ctx,
         )
     });
@@ -483,22 +401,12 @@ fn wire_up_terminal_view_session_sharing(
 
     // Send input mode updates during session sharing.
     // When AgentView is enabled, we only send updates when in an active agent view.
-    // For ambient agent sessions, input mode is controlled locally, so we skip sending updates.
     let session_sharer_for_input_mode = session_sharer.clone();
     let ai_input_model = view.as_ref(ctx).ai_input_model().clone();
     let agent_view_controller_for_input_mode = view.as_ref(ctx).agent_view_controller().clone();
-    let model_for_input_mode = model.clone();
     let input_mode_remote_update_guard = sharer_remote_update_guard.clone();
     ctx.subscribe_to_model(&ai_input_model, move |_, event, ctx| {
         if !input_mode_remote_update_guard.should_broadcast() {
-            return;
-        }
-
-        // In ambient agent sessions, input mode is controlled locally.
-        if model_for_input_mode
-            .lock()
-            .is_shared_ambient_agent_session()
-        {
             return;
         }
 
@@ -702,48 +610,6 @@ fn wire_up_terminal_view_session_sharing(
                         });
                     }
                 }
-                // Upgrade a manual `User` share's sidecar `source_task_id`
-                // from `None` to `Some(_)` once the active conversation
-                // gets its `task_id`, so inherited child shares can
-                // discover the orchestrator task. Existing viewers stay
-                // on the old value (the protocol has no
-                // `UpdateSourceType` upstream message) until they
-                // reconnect.
-                BlocklistAIHistoryEvent::ConversationServerTokenAssigned {
-                    terminal_surface_id,
-                    conversation_id,
-                } => {
-                    if *terminal_surface_id != view_id_for_stream_init {
-                        return;
-                    }
-
-                    let Some(view) = weak_view_for_stream_init.upgrade(ctx) else {
-                        return;
-                    };
-
-                    let model = view.as_ref(ctx).model.clone();
-                    let needs_upgrade = {
-                        let model_lock = model.lock();
-                        model_lock.shared_session_source().is_some_and(|s| {
-                            matches!(s.source_type, SessionSourceType::User)
-                                && s.source_task_id.is_none()
-                        })
-                    };
-                    if !needs_upgrade {
-                        return;
-                    }
-
-                    let task_id = BlocklistAIHistoryModel::as_ref(ctx)
-                        .conversation(conversation_id)
-                        .and_then(|c| c.task_id());
-                    let Some(task_id) = task_id else {
-                        return;
-                    };
-
-                    model
-                        .lock()
-                        .set_shared_session_source_task_id(Some(task_id.to_string()));
-                }
                 _ => {}
             }
         },
@@ -854,10 +720,6 @@ impl TerminalManager<TerminalView> {
         }
         log::info!("Starting shared session");
 
-        // Record the source on the model so we can distinguish ambient agent
-        // sessions from user-initiated shared sessions in the UI logic, and so
-        // the orchestrator task id is discoverable regardless of which variant
-        // the share is.
         model.lock().set_shared_session_source(source.clone());
         Self::log_shared_session_lifecycle(
             &terminal_view,
@@ -866,13 +728,6 @@ impl TerminalManager<TerminalView> {
             "trigger=terminal_view_start_sharing",
             ctx,
         );
-        if matches!(source.source_type, SessionSourceType::AmbientAgent { .. }) {
-            let terminal_view_id = terminal_view.id();
-            BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, _ctx| {
-                history.mark_terminal_surface_as_ambient_agent_session_view(terminal_view_id);
-            });
-        }
-
         // Snapshot the conversation the user has selected at click time so the
         // share is linked to that run, even if selection drifts before the
         // server confirms session creation.
@@ -1050,7 +905,6 @@ impl TerminalManager<TerminalView> {
                         *sharer_firebase_uid,
                         scrollback_type,
                         *session_id,
-                        source.source_type.clone(),
                         ctx,
                     );
 
@@ -1084,13 +938,11 @@ impl TerminalManager<TerminalView> {
 
                 // Flush the initial input operations that the sharer performed
                 // in the latest buffer before the share was started.
-                let is_ambient = model.lock().is_shared_ambient_agent_session();
                 let init_input_ops: Vec<CrdtOperation> = terminal_view
                     .as_ref(ctx)
                     .input()
                     .as_ref(ctx)
                     .latest_buffer_operations()
-                    .filter(|op| !should_skip_sharer_op(is_ambient, op))
                     .cloned()
                     .collect();
                 if !init_input_ops.is_empty() {
@@ -1106,9 +958,6 @@ impl TerminalManager<TerminalView> {
                 if FeatureFlag::AgentSharedSessions.is_enabled() {
                     Self::stream_historical_agent_conversations(&terminal_view, &model, ctx);
                 }
-
-                // `LocalAgentTaskSyncModel` fires the (task_id,
-                // session_id) link in response to the event emitted above.
             }
             NetworkEvent::FailedToCreateSharedSession {
                 reason,
@@ -1291,25 +1140,16 @@ impl TerminalManager<TerminalView> {
                 // Check eligibility from the incoming participant list directly,
                 // since the presence manager processes new viewers asynchronously.
                 if was_viewer_driven_sizing_eligible {
-                    let is_ambient_agent = terminal_view
-                        .as_ref(ctx)
-                        .is_shared_session_for_ambient_agent();
-                    // We never want to reset back to the sharer size if we are a cloud agent,
-                    // since it was a default. Prefer to keep the viewer-set size for transcript
-                    // persistence.
-                    if !is_ambient_agent {
-                        let sharer_uid =
-                            participant_list.sharer.info.profile_data.firebase_uid.as_str();
-                        let still_eligible =
-                            PresenceManager::single_distinct_present_viewer_uid_from_viewers(
-                                participant_list.viewers.iter(),
-                            )
-                            .is_some_and(|viewer_uid| viewer_uid == sharer_uid);
-                        if !still_eligible {
-                            terminal_view.update(ctx, |view, ctx| {
-                                view.restore_pty_to_sharer_size(ctx);
-                            });
-                        }
+                    let sharer_uid = participant_list.sharer.info.profile_data.firebase_uid.as_str();
+                    let still_eligible =
+                        PresenceManager::single_distinct_present_viewer_uid_from_viewers(
+                            participant_list.viewers.iter(),
+                        )
+                        .is_some_and(|viewer_uid| viewer_uid == sharer_uid);
+                    if !still_eligible {
+                        terminal_view.update(ctx, |view, ctx| {
+                            view.restore_pty_to_sharer_size(ctx);
+                        });
                     }
                 }
 
@@ -1381,7 +1221,6 @@ impl TerminalManager<TerminalView> {
                     view.input().update(ctx, |input, ctx| {
                         input.process_remote_edits(block_id, operations.clone(), ctx);
                     });
-                    emit_shared_session_viewer_input(view, ctx);
                 });
             }
             NetworkEvent::CommandExecutionRequested {
@@ -1441,7 +1280,6 @@ impl TerminalManager<TerminalView> {
                             ctx,
                         );
                     });
-                    emit_shared_session_viewer_input(view, ctx);
                 });
             }
             NetworkEvent::WriteToPtyRequested { id, bytes } => {
@@ -1487,7 +1325,6 @@ impl TerminalManager<TerminalView> {
 
                 terminal_view.update(ctx, |view, ctx| {
                     view.write_viewer_bytes_to_pty(bytes.clone(), ctx);
-                    emit_shared_session_viewer_input(view, ctx);
                 });
             }
             NetworkEvent::AgentPromptRequested {
@@ -1497,7 +1334,7 @@ impl TerminalManager<TerminalView> {
             } => {
                 // Unconditional receipt log: recorded regardless of how this prompt is
                 // eventually routed or rejected below (feature-flag gate, permission checks,
-                // live PTY / PendingCliHarnessPromptQueue / Oz routing), so every received
+                // live PTY or agent routing), so every received
                 // shared-session prompt is observable for diagnosing lost or misrouted prompts.
                 log::info!(
                     "Received shared-session agent prompt request id={id:?} \
@@ -1567,86 +1404,6 @@ impl TerminalManager<TerminalView> {
                             );
                         });
                         return;
-                    }
-
-                    // REMOTE-2661: a no-token prompt is how a debug conversation bootstraps
-                    // into a retained setup-failure session. The sharer only knows the
-                    // participant's firebase_uid from presence, not a credential, so this must
-                    // be authorized by the server before being honored.
-                    if request.server_conversation_token.is_none() {
-                        let task_id = model.lock().ambient_agent_task_id().filter(|task_id| {
-                            AgentConversationsModel::as_ref(ctx)
-                                .get_task_data(task_id)
-                                .is_some_and(|task| task.is_setup_failure_debug_session_open())
-                        });
-                        if let Some(task_id) = task_id {
-                            let participant_firebase_uid = terminal_view
-                                .as_ref(ctx)
-                                .shared_session_presence_manager()
-                                .and_then(|manager| {
-                                    manager.as_ref(ctx).viewer_firebase_uid(participant_id)
-                                });
-                            let Some(participant_firebase_uid) = participant_firebase_uid else {
-                                log::warn!(
-                                    "Rejecting a no-token agent prompt (REMOTE-2661): participant_id={participant_id} has no resolvable firebase_uid to authorize"
-                                );
-                                network.update(ctx, |network, _ctx| {
-                                    network.send_agent_prompt_rejection(
-                                        id.clone(),
-                                        participant_id.clone(),
-                                        AgentPromptFailureReason::InsufficientPermissions,
-                                    );
-                                });
-                                return;
-                            };
-
-                            let ai_client = ServerApiProvider::as_ref(ctx).get_ai_client();
-                            let id = id.clone();
-                            let participant_id = participant_id.clone();
-                            let request = request.clone();
-                            let terminal_view = terminal_view.clone();
-
-                            network.update(ctx, move |_network, ctx| {
-                                ctx.spawn(
-                                    async move {
-                                        let workload_token =
-                                            warp_isolation_platform::issue_workload_token(Some(
-                                                std::time::Duration::from_secs(60),
-                                            ))
-                                            .await
-                                            .map(|issued| issued.token)
-                                            .ok();
-                                        is_setup_failure_debug_prompt_authorized(
-                                            &ai_client,
-                                            task_id,
-                                            Some(participant_firebase_uid),
-                                            workload_token,
-                                        )
-                                        .await
-                                    },
-                                    move |network, authorized, ctx| {
-                                        if authorized {
-                                            accept_agent_prompt(
-                                                &terminal_view,
-                                                request,
-                                                participant_id,
-                                                ctx,
-                                            );
-                                        } else {
-                                            log::warn!(
-                                                "Rejecting a no-token agent prompt while retaining a setup-failed run (REMOTE-2661): server denied authorization or the call failed"
-                                            );
-                                            network.send_agent_prompt_rejection(
-                                                id,
-                                                participant_id,
-                                                AgentPromptFailureReason::InsufficientPermissions,
-                                            );
-                                        }
-                                    },
-                                );
-                            });
-                            return;
-                        }
                     }
                 }
 
@@ -1939,15 +1696,6 @@ impl TerminalManager<TerminalView> {
         let session_sharer = shared_session_model.clone();
         let model = model.clone();
 
-        let is_ambient_agent = FeatureFlag::AgentSharedSessions.is_enabled()
-            && AppExecutionMode::as_ref(ctx).is_autonomous();
-        // TODO(ben): This is a very suboptimal way of exposing this; lifetime should be a user-visible option.
-        let session_lifetime = if is_ambient_agent {
-            Lifetime::Lingering
-        } else {
-            Lifetime::Ephemeral
-        };
-
         // Clone before the subscribe_to_view closure moves the original.
         let sharer_remote_update_guard_for_cli = sharer_remote_update_guard.clone();
         ctx.subscribe_to_view(terminal_view, move |view, event, ctx| match event {
@@ -1960,7 +1708,7 @@ impl TerminalManager<TerminalView> {
                     prompt_type.clone(),
                     session_sharer.clone(),
                     *scrollback_type,
-                    session_lifetime,
+                    Lifetime::Ephemeral,
                     source.clone(),
                     model.clone(),
                     window_id,
@@ -2071,17 +1819,12 @@ impl TerminalManager<TerminalView> {
                     return;
                 }
 
-                let is_ambient = model.lock().is_shared_ambient_agent_session();
-                let filtered: Vec<_> = operations
-                    .iter()
-                    .filter(|op| !should_skip_sharer_op(is_ambient, op))
-                    .collect();
-                if filtered.is_empty() {
+                if operations.is_empty() {
                     return;
                 }
                 if let Some(network) = session_sharer.borrow().as_ref() {
                     network.update(ctx, |network, _| {
-                        network.send_input_update(block_id, filtered.into_iter());
+                        network.send_input_update(block_id, operations.iter());
                     });
                 }
             }
@@ -2228,13 +1971,6 @@ impl TerminalManagerTrait for TerminalManager<TerminalView> {
     fn model(&self) -> Arc<FairMutex<TerminalModel>> {
         self.model.clone()
     }
-    fn recover_cloud_shell(
-        &mut self,
-        request: crate::terminal::shell_recovery::CloudShellRecoveryRequest,
-        ctx: &mut ModelContext<Box<dyn TerminalManagerTrait>>,
-    ) -> bool {
-        TerminalManager::recover_cloud_shell(self, request, ctx)
-    }
     fn replace_shell(
         &mut self,
         request: crate::terminal::shell_recovery::ShellReplacementRequest,
@@ -2300,19 +2036,6 @@ impl TerminalManagerTrait for TerminalManager<TerminalView> {
     }
 }
 
-/// Reports viewer input on a cloud agent's shared session so the agent driver can treat someone
-/// debugging in the session as activity.
-///
-/// Scoped to those sessions because a cloud agent's sharer is a process that can hold the session
-/// open on the strength of this signal. Ordinary shared sessions have no consumer for it, and
-/// these fire at keystroke frequency.
-fn emit_shared_session_viewer_input(view: &TerminalView, ctx: &mut ViewContext<TerminalView>) {
-    if !view.model.lock().is_shared_ambient_agent_session() {
-        return;
-    }
-    ctx.emit(TerminalViewEvent::SharedSessionViewerInput);
-}
-
 /// Send a Shutdown event to each PTY's event loop and waits for the
 /// event loop to terminate.
 /// This is needed on Windows to ensure all OpenConsole processes are
@@ -2331,7 +2054,3 @@ pub fn shutdown_all_pty_event_loops(ctx: &mut AppContext) {
         })
     })
 }
-
-#[cfg(test)]
-#[path = "terminal_view_adaptor_tests.rs"]
-mod tests;

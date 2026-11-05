@@ -3,12 +3,11 @@
 
 use std::path::Path;
 
-use ai::agent::action_result::RunAgentsAgentOutcome;
 use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentActionResultType, AIAgentActionType,
     AskUserQuestionResult, FileGlobV2Result, GrepResult, RequestCommandOutputResult,
-    RunAgentsAgentOutcomeKind, RunAgentsResult, SearchCodebaseFailureReason, SearchCodebaseResult,
-    StopRecordingResult, SuggestNewConversationResult, mcp_server_name_for_id,
+    SearchCodebaseFailureReason, SearchCodebaseResult, StopRecordingResult,
+    SuggestNewConversationResult, mcp_server_name_for_id,
 };
 use warp_core::command::ExitCode;
 use warpui_core::AppContext;
@@ -293,17 +292,6 @@ fn label_for_action(
                 State::Cancelled => format!("Cancelled reading {files}"),
             }
         }
-        AIAgentActionType::UploadArtifact(request) => {
-            let file = single_line(&request.file_path);
-            match state {
-                State::Constructing => "Preparing upload…".to_owned(),
-                State::Pending | State::Blocked => format!("Upload {file}"),
-                State::Running => format!("Uploading {file}"),
-                State::Succeeded => format!("Uploaded {file}"),
-                State::Failed => format!("Upload of {file} failed"),
-                State::Cancelled => format!("Upload of {file} cancelled"),
-            }
-        }
         AIAgentActionType::SearchCodebase(request) => {
             let query = single_line(&request.query);
             let scope = request
@@ -537,22 +525,6 @@ fn label_for_action(
             State::Failed => "Fetch conversation failed".to_owned(),
             State::Cancelled => "Fetch conversation cancelled".to_owned(),
         },
-        AIAgentActionType::SendMessageToAgent {
-            addresses, subject, ..
-        } => {
-            let subject = single_line(subject);
-            match state {
-                State::Constructing => "Composing message…".to_owned(),
-                State::Pending | State::Blocked => format!("Send message: {subject}"),
-                State::Running => format!(
-                    "Sending message to {}: {subject}",
-                    count_label(addresses.len(), "agent", "agents")
-                ),
-                State::Succeeded => format!("Sent message: {subject}"),
-                State::Failed => format!("Failed to send message: {subject}"),
-                State::Cancelled => "Send message cancelled".to_owned(),
-            }
-        }
         AIAgentActionType::TransferShellCommandControlToUser { reason } => match state {
             State::Constructing => "Handing control to you…".to_owned(),
             State::Pending | State::Blocked | State::Running => {
@@ -592,65 +564,9 @@ fn label_for_action(
             State::Failed => "Questions failed".to_owned(),
             State::Cancelled => "Questions cancelled".to_owned(),
         },
-        AIAgentActionType::RunAgents(request) => {
-            let total = request.agent_run_configs.len();
-            match state {
-                State::Constructing | State::Pending | State::Blocked => {
-                    "Configuring agents…".to_owned()
-                }
-                State::Running => {
-                    format!("Spawning {}…", count_label(total, "agent", "agents"))
-                }
-                State::Succeeded => match result {
-                    Some(AIAgentActionResultType::RunAgents(RunAgentsResult::Launched {
-                        agents,
-                        ..
-                    })) => launched_agents_label(agents),
-                    _ => format!("Spawned {}", count_label(total, "agent", "agents")),
-                },
-                State::Failed => match result {
-                    Some(AIAgentActionResultType::RunAgents(RunAgentsResult::Launched {
-                        agents,
-                        ..
-                    })) => launched_agents_label(agents),
-                    Some(AIAgentActionResultType::RunAgents(RunAgentsResult::Denied {
-                        ..
-                    })) => "Orchestration disabled — agents not launched".to_owned(),
-                    Some(AIAgentActionResultType::RunAgents(RunAgentsResult::Failure {
-                        error,
-                    })) if !error.is_empty() => {
-                        format!("Failed to start orchestration: {}", single_line(error))
-                    }
-                    _ => "Failed to start orchestration".to_owned(),
-                },
-                State::Cancelled => "Spawn agents cancelled".to_owned(),
-            }
-        }
-        AIAgentActionType::WaitForEvents { .. } => match state {
-            State::Constructing | State::Pending | State::Blocked | State::Running => {
-                "Waiting for agent events…".to_owned()
-            }
-            State::Succeeded => "Done waiting for agent events".to_owned(),
-            State::Failed => "Waiting for agent events failed".to_owned(),
-            State::Cancelled => "Wait for events cancelled".to_owned(),
-        },
     }
 }
 
-fn launched_agents_label(agents: &[RunAgentsAgentOutcome]) -> String {
-    let launched = agents
-        .iter()
-        .filter(|agent| matches!(agent.kind, RunAgentsAgentOutcomeKind::Launched { .. }))
-        .count();
-    let total = agents.len();
-    if launched == total {
-        format!("Spawned {}", count_label(total, "agent", "agents"))
-    } else if launched == 0 {
-        format!("Failed to spawn {}", count_label(total, "agent", "agents"))
-    } else {
-        format!("Spawned {launched} of {total} agents")
-    }
-}
 /// Shared label body for both file-glob action versions; only V2 results
 /// carry a match count.
 fn file_glob_label(

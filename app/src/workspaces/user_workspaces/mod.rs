@@ -45,14 +45,11 @@ use crate::workspaces::workspace::{
 use crate::workspaces::workspace::{AiOverages, UsageBasedPricingSettings, UserTier};
 pub(crate) mod billing_workspace_settings;
 pub(crate) mod team_workspace_settings;
-#[cfg(not(target_family = "wasm"))]
-pub(crate) use team_workspace_settings::HeadlessTeamScope;
-pub(crate) use team_workspace_settings::TeamContextForOperationResolver;
+#[cfg(any(test, feature = "tui"))]
+pub use team_workspace_settings::TeamContextForOperation;
 #[cfg(test)]
 pub(crate) use team_workspace_settings::TeamlessScopeForTest;
-pub use team_workspace_settings::{
-    ResolvedTeamScope, TeamContext, TeamContextForOperation, TeamContextResolver, TeamScope,
-};
+pub use team_workspace_settings::{ResolvedTeamScope, TeamContext, TeamContextResolver, TeamScope};
 
 const STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX: &str = "/upgrade";
 

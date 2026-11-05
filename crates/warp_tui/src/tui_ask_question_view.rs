@@ -7,8 +7,7 @@ use warp::tui_export::{
     AIActionStatus, AIAgentActionId, AIAgentActionResultType, AIConversationId,
     AskUserQuestionAction, AskUserQuestionAnswerItem, AskUserQuestionEffect, AskUserQuestionItem,
     AskUserQuestionPhase, AskUserQuestionResult, AskUserQuestionSession, BlocklistAIActionEvent,
-    BlocklistAIActionModel, BlocklistAIHistoryModel, OptionBadge, OptionFooter, OptionRow,
-    OptionSnapshot, OptionSourceStatus,
+    BlocklistAIActionModel, BlocklistAIHistoryModel,
 };
 use warpui::SingletonEntity;
 use warpui_core::r#async::{SpawnedFutureHandle, Timer};
@@ -23,7 +22,10 @@ use warpui_core::{
 };
 
 use crate::keybindings::{TUI_BINDING_GROUP, is_tui_owned_binding};
-use crate::option_selector::{OptionSelectorPage, TuiOptionSelector, TuiOptionSelectorEvent};
+use crate::option_selector::{
+    OptionBadge, OptionFooter, OptionRow, OptionSelectorPage, OptionSnapshot, TuiOptionSelector,
+    TuiOptionSelectorEvent,
+};
 use crate::tui_builder::TuiUiBuilder;
 
 const ASK_QUESTION_ACTIVE: &str = "TuiAskQuestionActive";
@@ -197,7 +199,6 @@ impl TuiAskQuestionView {
             .map(|(index, option)| OptionRow {
                 id: index.to_string(),
                 label: option.label.clone(),
-                harness: None,
                 badge: option.recommended.then_some(OptionBadge::Recommended),
                 disabled_reason: None,
             })
@@ -220,7 +221,6 @@ impl TuiAskQuestionView {
         let snapshot = OptionSnapshot {
             rows,
             selected_id,
-            status: OptionSourceStatus::Ready,
             footer,
         };
         let selected_ids = current
@@ -237,7 +237,6 @@ impl TuiAskQuestionView {
         self.selector.update(ctx, |selector, ctx| {
             selector.set_page(
                 OptionSelectorPage {
-                    header: None,
                     snapshot,
                     searchable: false,
                     row_shortcuts: Default::default(),
@@ -329,9 +328,7 @@ impl TuiAskQuestionView {
                 self.handle_effect(effect, ctx);
             }
             TuiOptionSelectorEvent::LayoutInvalidated => self.invalidate_layout(ctx),
-            TuiOptionSelectorEvent::RetryRequested
-            | TuiOptionSelectorEvent::Dismissed
-            | TuiOptionSelectorEvent::RowsReordered { .. } => {}
+            TuiOptionSelectorEvent::Dismissed | TuiOptionSelectorEvent::RowsReordered { .. } => {}
         }
     }
 

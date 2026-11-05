@@ -34,7 +34,6 @@ The entries below will be used when constructing a soft-copy of the stable relea
 - IMPROVEMENT: for new functionality of existing features.
 - BUG-FIX: for fixes related to known bugs or regressions.
 - IMAGE: the image specified by the URL (hosted on GCP) will be added to Dev & Preview releases. For Stable releases, see the pinned doc in the #release Slack channel.
-- OZ: Oz-related updates. Use `CHANGELOG-OZ`. At most 4 Oz updates are shown in-app per release.
 - TUI: updates that impact Warp Agent CLI users, including shared Agent capabilities. Use `CHANGELOG-TUI` for text that should appear in the TUI zero state. It may be used alongside another changelog entry when a change affects multiple surfaces.
 - NONE: Explicitly opt out of changelog inclusion. Use `CHANGELOG-NONE` for PRs that should never appear in the changelog (e.g. refactors, internal tooling, CI changes). This prevents the changelog agent from inferring an entry.
 
@@ -43,7 +42,6 @@ CHANGELOG-IMPROVEMENT: {{text goes here...}}
 CHANGELOG-BUG-FIX: {{text goes here...}}
 CHANGELOG-BUG-FIX: {{more text goes here...}}
 CHANGELOG-IMAGE: {{GCP-hosted URL goes here...}}
-CHANGELOG-OZ: {{text goes here...}}
 CHANGELOG-TUI: {{text goes here...}}
 CHANGELOG-NONE
 -->

@@ -10,23 +10,19 @@ use std::collections::HashMap;
 
 use pathfinder_color::ColorU;
 use pathfinder_geometry::rect::RectF;
-use pathfinder_geometry::vector::vec2f;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::theme::color::internal_colors;
-use warpui::clipboard::ClipboardContent;
 use warpui::elements::new_scrollable::{NewScrollable, ScrollableAppearance, SingleAxisConfig};
 use warpui::elements::{
-    Border, ChildAnchor, ChildView, Clipped, ClippedScrollStateHandle, ConstrainedBox, Container,
-    CornerRadius, CrossAxisAlignment, DEFAULT_UI_LINE_HEIGHT_RATIO, DragAxis, Draggable,
-    DraggableState, Empty, Expanded, Fill, Flex, Hoverable, MinSize, MouseStateHandle,
-    OffsetPositioning, ParentAnchor, ParentElement, ParentOffsetBounds, Radius, SavePosition,
-    ScrollbarWidth, Shrinkable, Stack, Text,
+    Border, ChildView, Clipped, ClippedScrollStateHandle, ConstrainedBox, Container, CornerRadius,
+    CrossAxisAlignment, DEFAULT_UI_LINE_HEIGHT_RATIO, DragAxis, Draggable, DraggableState, Empty,
+    Expanded, Fill, Flex, Hoverable, MinSize, MouseStateHandle, ParentElement, Radius,
+    SavePosition, ScrollbarWidth, Shrinkable, Text,
 };
 use warpui::fonts::{Properties, Style, Weight};
 use warpui::keymap::Keystroke;
 use warpui::platform::Cursor;
 use warpui::text_layout::ClipConfig;
-use warpui::ui_components::components::UiComponent;
 use warpui::{
     AppContext, BlurContext, Element, Entity, EntityId, FocusContext, ModelHandle, SingletonEntity,
     TypedActionView, View, ViewContext, ViewHandle,
@@ -55,9 +51,7 @@ use crate::view_components::action_button::{ActionButton, ButtonSize, NakedTheme
 const MAX_PROMPT_LINES: f32 = 5.;
 /// Max characters shown in a row's single-line preview before truncation.
 const PROMPT_PREVIEW_MAX_CHARS: usize = 500;
-const INITIAL_CLOUD_MODE_PROMPT_TOOLTIP: &str = "The first cloud-mode prompt cannot be changed.";
-const SEND_NOW_DURING_CLOUD_SETUP_TOOLTIP: &str =
-    "Prompts cannot be sent until environment setup is complete.";
+const SEND_NOW_DURING_SETUP_TOOLTIP: &str = "Prompts cannot be sent until setup is complete.";
 const SEND_NOW_PENDING_LRC_TOOLTIP: &str =
     "Prompts cannot be sent until the full terminal use agent is initialized.";
 const SEND_NOW_TO_FULL_TERMINAL_USE_AGENT_TOOLTIP: &str = "Send to full terminal use agent";
@@ -81,14 +75,8 @@ fn build_row_state(
     text: &str,
     ctx: &mut ViewContext<QueuedPromptsPanelView>,
 ) -> QueuedPromptRowState {
-    let is_initial_cloud_mode_prompt = origin == QueuedQueryOrigin::InitialCloudMode;
     // The send-now tooltip is owned by `update_send_now_availability`, which swaps in a
-    // "wait for the cloud agent" message while send-now is disabled; "Send now" is the default.
-    let edit_tooltip = if is_initial_cloud_mode_prompt {
-        INITIAL_CLOUD_MODE_PROMPT_TOOLTIP
-    } else {
-        "Edit"
-    };
+    // "wait" message while send-now is disabled; "Send now" is the default.
 
     let send_now_button = ctx.add_typed_action_view(move |_| {
         ActionButton::new("", NakedTheme)
@@ -103,7 +91,7 @@ fn build_row_state(
     let edit_button = ctx.add_typed_action_view(move |_| {
         ActionButton::new("", NakedTheme)
             .with_icon(TerminalIcon::Pencil)
-            .with_tooltip(edit_tooltip)
+            .with_tooltip("Edit")
             .with_size(ButtonSize::XSmall)
             .with_disabled_theme(NakedTheme)
             .on_click(move |ctx| {
@@ -120,20 +108,8 @@ fn build_row_state(
                 ctx.dispatch_typed_action(QueuedPromptsPanelAction::DeleteRow(query_id));
             })
     });
-    let copy_button = is_initial_cloud_mode_prompt.then(|| {
-        ctx.add_typed_action_view(move |_| {
-            ActionButton::new("", NakedTheme)
-                .with_icon(TerminalIcon::Copy)
-                .with_tooltip("Copy")
-                .with_size(ButtonSize::XSmall)
-                .with_disabled_theme(NakedTheme)
-                .on_click(move |ctx| {
-                    ctx.dispatch_typed_action(QueuedPromptsPanelAction::CopyRow(query_id));
-                })
-        })
-    });
 
-    if is_initial_cloud_mode_prompt || origin == QueuedQueryOrigin::SharedSessionInjection {
+    if origin == QueuedQueryOrigin::SharedSessionInjection {
         edit_button.update(ctx, |button, ctx| button.set_disabled(true, ctx));
     }
 
@@ -143,11 +119,9 @@ fn build_row_state(
             PROMPT_PREVIEW_MAX_CHARS,
         ),
         mouse_state: MouseStateHandle::default(),
-        drag_handle_tooltip_state: MouseStateHandle::default(),
         send_now_button,
         edit_button,
         delete_button,
-        copy_button,
         draggable_state: DraggableState::default(),
     }
 }
@@ -157,11 +131,9 @@ struct QueuedPromptRowState {
     /// Cached single-line preview; refreshed only when the row's text changes.
     preview_text: String,
     mouse_state: MouseStateHandle,
-    drag_handle_tooltip_state: MouseStateHandle,
     send_now_button: ViewHandle<ActionButton>,
     edit_button: ViewHandle<ActionButton>,
     delete_button: ViewHandle<ActionButton>,
-    copy_button: Option<ViewHandle<ActionButton>>,
     draggable_state: DraggableState,
 }
 
@@ -209,7 +181,6 @@ pub enum QueuedPromptsPanelAction {
     SendNow(QueuedQueryId),
     StartEditingRow(QueuedQueryId),
     DeleteRow(QueuedQueryId),
-    CopyRow(QueuedQueryId),
     StartDrag(QueuedQueryId),
     DragMoved { rect: RectF },
     DropEnd,
@@ -337,7 +308,7 @@ impl QueuedPromptsPanelView {
     }
 
     /// Whether the header shows the "⏎ to send" hint: Enter would send, no row is in inline
-    /// edit mode, and the head row is sendable (not the locked initial cloud-mode prompt).
+    /// edit mode, and the head row is sendable.
     fn should_show_enter_hint(&self, ctx: &AppContext) -> bool {
         let Some(conv_id) = self.active_conversation_id else {
             return false;
@@ -407,12 +378,10 @@ impl QueuedPromptsPanelView {
         self.update_send_now_availability(ctx);
     }
 
-    /// Updates each row's "send now" button: disabled, with a tooltip explaining the wait, for the
-    /// locked initial cloud-mode prompt and for every row while that locked row sits at the head of
-    /// the queue — i.e. while the cloud environment is still setting up, with no live agent yet to
-    /// receive an immediate submission. When a long-running-command subagent (the "full terminal
-    /// use agent") is in control, the enabled tooltip explains that send-now targets that subagent.
-    /// Otherwise it is enabled with the default "Send now" tooltip.
+    /// Updates each row's "send now" button: disabled, with a tooltip explaining the wait, while
+    /// dispatch is blocked. When a long-running-command subagent (the "full terminal use agent") is
+    /// in control, the enabled tooltip explains that send-now targets that subagent. Otherwise it
+    /// is enabled with the default "Send now" tooltip.
     fn update_send_now_availability(&mut self, ctx: &mut ViewContext<Self>) {
         let Some(conv_id) = self.active_conversation_id else {
             return;
@@ -423,10 +392,7 @@ impl QueuedPromptsPanelView {
             .iter()
             .map(|query| (query.id(), query.origin(), query.is_ready()))
             .collect();
-        let cloud_setup_in_progress = QueuedQueryModel::as_ref(ctx).is_dispatch_blocked(conv_id)
-            || rows
-                .first()
-                .is_some_and(|(_, origin, _)| *origin == QueuedQueryOrigin::InitialCloudMode);
+        let dispatch_blocked = QueuedQueryModel::as_ref(ctx).is_dispatch_blocked(conv_id);
         let lrc_subagent_in_progress = self
             .cli_subagent_controller
             .as_ref(ctx)
@@ -440,16 +406,12 @@ impl QueuedPromptsPanelView {
                 continue;
             };
             let disabled_for_pending_lrc = *origin == QueuedQueryOrigin::PendingLrcAutoQueue;
-            let disabled_for_cloud_setup =
-                *origin == QueuedQueryOrigin::InitialCloudMode || cloud_setup_in_progress;
-            let disabled = disabled_for_pending_lrc
-                || disabled_for_cloud_setup
-                || !self.can_send_prompt
-                || !ready;
+            let disabled =
+                disabled_for_pending_lrc || dispatch_blocked || !self.can_send_prompt || !ready;
             let tooltip = if disabled_for_pending_lrc {
                 SEND_NOW_PENDING_LRC_TOOLTIP
-            } else if disabled_for_cloud_setup {
-                SEND_NOW_DURING_CLOUD_SETUP_TOOLTIP
+            } else if dispatch_blocked {
+                SEND_NOW_DURING_SETUP_TOOLTIP
             } else if !self.can_send_prompt {
                 SEND_NOW_AS_READ_ONLY_VIEWER_TOOLTIP
             } else if !ready {
@@ -554,7 +516,6 @@ impl QueuedPromptsPanelView {
                 if !QueuedQueryModel::as_ref(ctx).has_queue(active_conv_id) {
                     self.collapsed = false;
                 }
-                // Removing the locked initial cloud-mode row re-enables the remaining rows.
                 self.update_send_now_availability(ctx);
             }
             QueuedQueryEvent::EditEntered { query_id, .. } => {
@@ -773,8 +734,8 @@ impl TypedActionView for QueuedPromptsPanelView {
                 }
 
                 // Leave the row in the queue so the host can read its attachments by id when it
-                // fires; the host removes the fired row afterward. Locked rows (the initial
-                // cloud-mode prompt) are not send-now-able.
+                // fires; the host removes the fired row afterward. Locked rows are not
+                // send-now-able.
                 let row = QueuedQueryModel::as_ref(ctx)
                     .queue(conv_id)
                     .iter()
@@ -794,17 +755,6 @@ impl TypedActionView for QueuedPromptsPanelView {
                 QueuedQueryModel::handle(ctx).update(ctx, |model, ctx| {
                     model.enter_edit_mode(conv_id, query_id, ctx);
                 });
-            }
-            QueuedPromptsPanelAction::CopyRow(query_id) => {
-                let query_id = *query_id;
-                let text = QueuedQueryModel::as_ref(ctx)
-                    .queue(conv_id)
-                    .iter()
-                    .find(|row| row.id() == query_id)
-                    .map(|row| row.text().to_owned());
-                if let Some(text) = text {
-                    ctx.clipboard().write(ClipboardContent::plain_text(text));
-                }
             }
             QueuedPromptsPanelAction::DeleteRow(query_id) => {
                 let query_id = *query_id;
@@ -1165,11 +1115,9 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
     let QueuedPromptRowState {
         preview_text,
         mouse_state,
-        drag_handle_tooltip_state,
         send_now_button,
         edit_button,
         delete_button,
-        copy_button,
         draggable_state,
     } = row_state;
 
@@ -1241,8 +1189,7 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
                 Some(LRC_AUTO_QUEUE_ROW_SUFFIX)
             }
             QueuedQueryOrigin::LocalSteering => Some(LOCAL_STEERING_ROW_SUFFIX),
-            QueuedQueryOrigin::InitialCloudMode
-            | QueuedQueryOrigin::SharedSessionInjection
+            QueuedQueryOrigin::SharedSessionInjection
             | QueuedQueryOrigin::QueueSlashCommand
             | QueuedQueryOrigin::AutoQueueToggle
             | QueuedQueryOrigin::CompactAndSlashCommand
@@ -1275,36 +1222,6 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
                 .with_height(20.)
                 .with_width(20.)
                 .finish()
-        } else if origin == QueuedQueryOrigin::InitialCloudMode {
-            let ui_builder = appearance.ui_builder().clone();
-            let disabled_color = internal_colors::text_disabled(theme, theme.surface_1());
-            Hoverable::new(drag_handle_tooltip_state.clone(), move |drag_state| {
-                let icon = ConstrainedBox::new(
-                    TerminalIcon::DragIndicatorVertical
-                        .to_warpui_icon(disabled_color.into())
-                        .finish(),
-                )
-                .with_height(20.)
-                .with_width(20.)
-                .finish();
-                let mut stack = Stack::new().with_child(icon);
-                if drag_state.is_hovered() {
-                    stack.add_positioned_overlay_child(
-                        ui_builder
-                            .tool_tip(INITIAL_CLOUD_MODE_PROMPT_TOOLTIP.to_owned())
-                            .build()
-                            .finish(),
-                        OffsetPositioning::offset_from_parent(
-                            vec2f(0., -4.),
-                            ParentOffsetBounds::WindowByPosition,
-                            ParentAnchor::TopLeft,
-                            ChildAnchor::BottomLeft,
-                        ),
-                    );
-                }
-                stack.finish()
-            })
-            .finish()
         } else {
             ConstrainedBox::new(
                 TerminalIcon::DragIndicatorVertical
@@ -1334,11 +1251,7 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
             if !is_in_edit_mode {
                 buttons.add_child(ChildView::new(&edit_button).finish());
             }
-            if let Some(copy_button) = &copy_button {
-                buttons.add_child(ChildView::new(copy_button).finish());
-            } else {
-                buttons.add_child(ChildView::new(&delete_button).finish());
-            }
+            buttons.add_child(ChildView::new(&delete_button).finish());
             buttons.finish()
         } else {
             let count = if is_in_edit_mode { 2. } else { 3. };
@@ -1364,7 +1277,7 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
 
     let position_id = queue_row_position_id(panel_view_id, index);
 
-    if is_in_edit_mode || origin == QueuedQueryOrigin::InitialCloudMode || !show_drag_handle {
+    if is_in_edit_mode || !show_drag_handle {
         return SavePosition::new(row_inner, &position_id).finish();
     }
 

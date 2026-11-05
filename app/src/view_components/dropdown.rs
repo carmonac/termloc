@@ -310,30 +310,6 @@ where
         }
     }
 
-    /// Controls whether the open menu is rendered in an `Overlay`
-    /// layer (default) or attached as a positioned child in the
-    /// dropdown stack's Normal layer. See the field-level docs on
-    /// `use_overlay_layer` for when each is appropriate.
-    pub fn set_use_overlay_layer(&mut self, use_overlay_layer: bool, ctx: &mut ViewContext<Self>) {
-        self.use_overlay_layer = use_overlay_layer;
-        ctx.notify();
-    }
-
-    pub fn set_background(&mut self, background: Fill, ctx: &mut ViewContext<Self>) {
-        self.background = Some(background);
-        ctx.notify();
-    }
-
-    pub fn set_border_width(&mut self, border_width: f32, ctx: &mut ViewContext<Self>) {
-        self.border_width = Some(border_width);
-        ctx.notify();
-    }
-
-    pub fn set_border_radius(&mut self, border_radius: CornerRadius, ctx: &mut ViewContext<Self>) {
-        self.border_radius = Some(border_radius);
-        ctx.notify();
-    }
-
     pub fn set_font_color(&mut self, color: ColorU, ctx: &mut ViewContext<Self>) {
         self.font_color = Some(color);
         ctx.notify();
@@ -393,22 +369,6 @@ where
     ) {
         self.element_anchor = element_anchor;
         self.child_anchor = child_anchor;
-        ctx.notify();
-    }
-
-    /// When enabled, the open menu sizes itself to the last rendered width of
-    /// the dropdown's top bar. This is useful for flexible dropdowns whose
-    /// trigger width is determined by parent layout rather than a fixed max.
-    pub fn set_match_menu_width_to_top_bar(
-        &mut self,
-        match_width: bool,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        self.match_menu_width_to_top_bar = match_width;
-        let top_bar_label = self.top_bar_label();
-        self.dropdown.update(ctx, |menu, _ctx| {
-            menu.set_width_match_position_id(match_width.then_some(top_bar_label));
-        });
         ctx.notify();
     }
 

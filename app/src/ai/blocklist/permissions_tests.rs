@@ -15,8 +15,6 @@ use crate::ai::blocklist::permissions::{
     FileReadPermissionAllowedReason, FileReadPermissionDeniedReason, FileWritePermission,
     FileWritePermissionAllowedReason, FileWritePermissionDeniedReason,
 };
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::execution_profiles::ComputerUsePermission;
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use crate::ai::execution_profiles::{ActionPermission, WriteToPtyPermission};
 use crate::ai::mcp::templatable_manager::TemplatableMCPServerManager;
@@ -52,15 +50,6 @@ struct PermissionsTestState {
 
 fn initialize_permissions_test(app: &mut App) -> PermissionsTestState {
     initialize_permissions_test_with_mode(app, ExecutionMode::App, false)
-}
-
-fn initialize_permissions_test_sandboxed(app: &mut App) -> PermissionsTestState {
-    let state = initialize_permissions_test_with_mode(app, ExecutionMode::Sdk, true);
-    state.profile_model.update(app, |model, ctx| {
-        let profile_id = model.default_profile(ctx).id().clone();
-        model.apply_cli_profile_defaults_for_test(&profile_id, true, ctx);
-    });
-    state
 }
 
 fn initialize_permissions_test_with_mode(
@@ -102,100 +91,6 @@ fn initialize_permissions_test_with_mode(
         user_workspaces,
         profile_model,
     }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[test]
-fn execution_computer_use_is_scoped_to_the_terminal() {
-    App::test((), |mut app| async move {
-        let state = initialize_permissions_test(&mut app);
-        let other_terminal = EntityId::new();
-        let initial_profile = state.profile_model.read(&app, |profiles, ctx| {
-            profiles
-                .active_profile(Some(state.terminal_view_id), ctx)
-                .data()
-                .clone()
-        });
-        state.profile_model.update(&mut app, |profiles, ctx| {
-            profiles.set_session_computer_use(state.terminal_view_id, true, ctx);
-        });
-        state.permissions.read(&app, |permissions, ctx| {
-            assert_eq!(
-                permissions.get_computer_use_setting(
-                    Some(state.terminal_view_id),
-                    &test_scope(),
-                    ctx
-                ),
-                ComputerUsePermission::AlwaysAllow
-            );
-            assert_ne!(
-                permissions.get_computer_use_setting(Some(other_terminal), &test_scope(), ctx),
-                ComputerUsePermission::AlwaysAllow
-            );
-        });
-        state.profile_model.read(&app, |profiles, ctx| {
-            assert_eq!(
-                profiles
-                    .active_profile(Some(state.terminal_view_id), ctx)
-                    .data()
-                    .computer_use_model,
-                initial_profile.computer_use_model
-            );
-            assert_eq!(
-                profiles
-                    .active_profile(Some(state.terminal_view_id), ctx)
-                    .data()
-                    .computer_use,
-                initial_profile.computer_use
-            );
-        });
-        state.profile_model.update(&mut app, |profiles, ctx| {
-            profiles.clear_session_computer_use(state.terminal_view_id, ctx);
-        });
-        state.permissions.read(&app, |permissions, ctx| {
-            assert_eq!(
-                permissions.get_computer_use_setting(
-                    Some(state.terminal_view_id),
-                    &test_scope(),
-                    ctx
-                ),
-                initial_profile.computer_use
-            );
-            assert_eq!(
-                permissions
-                    .active_permissions_profile(Some(state.terminal_view_id), &test_scope(), ctx)
-                    .computer_use_model,
-                initial_profile.computer_use_model
-            );
-        });
-    })
-}
-#[cfg(not(target_family = "wasm"))]
-#[test]
-fn workspace_computer_use_policy_overrides_session_selection() {
-    App::test((), |mut app| async move {
-        let state = initialize_permissions_test(&mut app);
-        state.profile_model.update(&mut app, |profiles, ctx| {
-            profiles.set_session_computer_use(state.terminal_view_id, true, ctx);
-        });
-        state.user_workspaces.update(&mut app, |workspaces, ctx| {
-            workspaces.setup_test_workspace(ctx);
-            workspaces.update_ai_autonomy_settings(
-                |settings| settings.computer_use_setting = Some(ComputerUsePermission::Never),
-                ctx,
-            );
-        });
-        state.permissions.read(&app, |permissions, ctx| {
-            assert_eq!(
-                permissions.get_computer_use_setting(
-                    Some(state.terminal_view_id),
-                    &test_scope(),
-                    ctx
-                ),
-                ComputerUsePermission::Never
-            );
-        });
-    })
 }
 
 #[test]
@@ -616,68 +511,6 @@ fn test_can_write_files_mcp_config_always_denied() {
                 );
             });
         }
-    })
-}
-
-#[test]
-fn cloud_mcp_config_writes_follow_profile_permissions() {
-    App::test((), |mut app| async move {
-        let state = initialize_permissions_test_sandboxed(&mut app);
-
-        state.permissions.read(&app, |permissions, ctx| {
-            let result = permissions.can_write_files(
-                &state.convo_id,
-                &[PathBuf::from("/project/.termloc/.mcp.json")],
-                Some(state.terminal_view_id),
-                &test_scope(),
-                ctx,
-            );
-            assert!(
-                matches!(
-                    result,
-                    FileWritePermission::Allowed(
-                        FileWritePermissionAllowedReason::AutowriteSettingEnabled
-                    )
-                ),
-                "expected cloud profile auto-write, got {result:?}"
-            );
-        });
-    })
-}
-
-#[test]
-fn cloud_auto_approve_allows_mcp_config_writes() {
-    App::test((), |mut app| async move {
-        let state = initialize_permissions_test_sandboxed(&mut app);
-        state.profile_model.update(&mut app, |profiles, ctx| {
-            profiles.set_apply_code_diffs(
-                profiles
-                    .active_profile(Some(state.terminal_view_id), ctx)
-                    .id(),
-                &ActionPermission::AlwaysAsk,
-                ctx,
-            );
-        });
-        state.history.update(&mut app, |history, ctx| {
-            history.toggle_autoexecute_override(&state.convo_id, state.terminal_view_id, ctx);
-        });
-
-        state.permissions.read(&app, |permissions, ctx| {
-            let result = permissions.can_write_files(
-                &state.convo_id,
-                &[PathBuf::from("/project/.termloc/.mcp.json")],
-                Some(state.terminal_view_id),
-                &test_scope(),
-                ctx,
-            );
-            assert!(
-                matches!(
-                    result,
-                    FileWritePermission::Allowed(FileWritePermissionAllowedReason::RunToCompletion)
-                ),
-                "expected cloud auto-approval, got {result:?}"
-            );
-        });
     })
 }
 
@@ -1595,154 +1428,6 @@ fn test_can_use_mcp_server_agent_decides_denylist_overrides_allowlist() {
                 Some(terminal_view_id),
                 ctx
             ));
-        });
-    })
-}
-
-#[test]
-fn test_sandboxed_mode_allows_read_write_files() {
-    App::test((), |mut app| async move {
-        let PermissionsTestState {
-            convo_id,
-            permissions,
-            user_workspaces,
-            terminal_view_id,
-            ..
-        } = initialize_permissions_test_sandboxed(&mut app);
-
-        // Set workspace to AlwaysAsk
-        user_workspaces.update(&mut app, |model, ctx| {
-            model.setup_test_workspace(ctx);
-            model.update_ai_autonomy_settings(
-                |settings| {
-                    settings.apply_code_diffs_setting = Some(ActionPermission::AlwaysAsk);
-                    settings.read_files_setting = Some(ActionPermission::AlwaysAsk);
-                },
-                ctx,
-            );
-        });
-
-        // In sandboxed mode the workspace read/write restrictions are bypassed,
-        // so the profile's AlwaysAllow setting takes effect.
-        permissions.read(&app, |model, ctx| {
-            let result =
-                model.can_write_files(&convo_id, &[], Some(terminal_view_id), &test_scope(), ctx);
-            assert!(
-                result.is_allowed(),
-                "write files should be allowed in sandboxed mode (workspace restriction bypassed)"
-            );
-            assert!(matches!(
-                result,
-                FileWritePermission::Allowed(
-                    FileWritePermissionAllowedReason::AutowriteSettingEnabled
-                )
-            ));
-
-            let result = model.can_read_files_with_conversation(
-                &convo_id,
-                vec![PathBuf::from("/test/file.txt")],
-                Some(terminal_view_id),
-                &test_scope(),
-                ctx,
-            );
-            assert!(
-                result.is_allowed(),
-                "read files should be allowed in sandboxed mode (workspace restriction bypassed)"
-            );
-            assert!(matches!(
-                result,
-                FileReadPermission::Allowed(
-                    FileReadPermissionAllowedReason::AutoreadSettingEnabled
-                )
-            ));
-        });
-    })
-}
-
-#[test]
-fn test_sandboxed_denylist_used_in_sandboxed_mode() {
-    App::test((), |mut app| async move {
-        let PermissionsTestState {
-            convo_id,
-            history,
-            permissions,
-            user_workspaces,
-            terminal_view_id,
-            ..
-        } = initialize_permissions_test_sandboxed(&mut app);
-
-        user_workspaces.update(&mut app, |model, ctx| {
-            model.setup_test_workspace(ctx);
-            // Regular workspace denylist blocks "git .*".
-            model.update_ai_autonomy_settings(
-                |settings| {
-                    settings.execute_commands_denylist = Some(vec![
-                        AgentModeCommandExecutionPredicate::new_regex("git .*").unwrap(),
-                    ]);
-                },
-                ctx,
-            );
-            // The team's sandboxed denylist blocks "rm .*" instead.
-            model.update_team_sandboxed_agent_denylist(
-                |denylist| {
-                    denylist.values = vec!["rm .*".to_string()];
-                },
-                ctx,
-            );
-        });
-
-        history.update(&mut app, |history, ctx| {
-            history.toggle_autoexecute_override(&convo_id, terminal_view_id, ctx);
-        });
-        app.update(|ctx| {
-            AISettings::handle(ctx).update(ctx, |settings, ctx| {
-                settings
-                    .auto_approve_bypasses_command_denylist
-                    .set_value(false, ctx)
-                    .expect("setting should update");
-            });
-        });
-        permissions.read(&app, |model, ctx| {
-            // "git status" should be allowed: the regular denylist is not consulted in
-            // sandboxed mode, so only the sandboxed denylist ("rm .*") applies.
-            let result = model.can_autoexecute_command(
-                &convo_id,
-                "git status",
-                EscapeChar::Backslash,
-                false,
-                None,
-                Some(terminal_view_id),
-                &test_scope(),
-                ctx,
-            );
-            assert!(matches!(
-                result,
-                CommandExecutionPermission::Allowed(
-                    CommandExecutionPermissionAllowedReason::RunToCompletion
-                )
-            ));
-
-            // "rm file.txt" should be denied by the sandboxed denylist.
-            let result = model.can_autoexecute_command(
-                &convo_id,
-                "rm file.txt",
-                EscapeChar::Backslash,
-                false,
-                None,
-                Some(terminal_view_id),
-                &test_scope(),
-                ctx,
-            );
-            assert!(!result.is_allowed());
-            assert!(
-                matches!(
-                    result,
-                    CommandExecutionPermission::Denied(
-                        CommandExecutionPermissionDeniedReason::ExplicitlyDenylisted
-                    )
-                ),
-                "rm file.txt should be denied by the sandboxed denylist"
-            );
         });
     })
 }

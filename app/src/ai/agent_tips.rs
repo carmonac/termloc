@@ -77,8 +77,6 @@ pub enum AgentTipKind {
     Context,
     /// Tips about code editors, file trees, and code review panes
     Code,
-    /// Tips about local-to-cloud handoff
-    Handoff,
 }
 
 static DEFAULT_TIPS: LazyLock<Vec<AgentTip>> = LazyLock::new(|| {
@@ -238,12 +236,6 @@ static DEFAULT_TIPS: LazyLock<Vec<AgentTip>> = LazyLock::new(|| {
             kind: AgentTipKind::General,
         },
         AgentTip {
-            description: "Use the `oz` command to run the Local Agent in headless mode, useful for remote machines.".to_string(),
-            binding_name: None,
-            action: None,
-            kind: AgentTipKind::General,
-        },
-        AgentTip {
             description: "Right-click selected text to attach it as agent context.".to_string(),
             binding_name: None,
             action: None,
@@ -284,12 +276,6 @@ static DEFAULT_TIPS: LazyLock<Vec<AgentTip>> = LazyLock::new(|| {
             binding_name: Some(TOGGLE_AUTOEXECUTE_MODE_KEYBINDING),
             action: None,
             kind: AgentTipKind::General,
-        },
-        AgentTip {
-            description: "Type `&` or use the handoff chip to move a local conversation to the cloud.".to_string(),
-            binding_name: None,
-            action: None,
-            kind: AgentTipKind::Handoff,
         },
         AgentTip {
             description: "Enable desktop notifications to get an alert when an agent needs your attention.".to_string(),
@@ -377,10 +363,6 @@ impl AITip for AgentTip {
                 .get_codebase_index_status_for_path(root, app)
                 .is_none();
         }
-        // Handoff tips only apply when the feature is available and enabled.
-        if matches!(self.kind, AgentTipKind::Handoff) {
-            return AISettings::as_ref(app).is_cloud_handoff_enabled(app);
-        }
         // Tips whose description references a keybinding placeholder should only be shown
         // when the keybinding is actually configured, so we never display the raw
         // "<keybinding>" string to users.
@@ -431,25 +413,6 @@ pub struct AITipModel<T: AITip> {
 }
 
 impl<T: AITip + 'static> AITipModel<T> {
-    /// Creates a new AITipModel with the given tips.
-    /// Selects a random initial tip from the provided tips.
-    ///
-    /// # Panics
-    /// Panics if the tips vector is empty.
-    pub fn new(tips: Vec<T>) -> Self {
-        use rand::seq::SliceRandom;
-        debug_assert!(!tips.is_empty(), "AITipModel must have at least one tip");
-
-        let mut rng = rand::thread_rng();
-        let current_tip = tips.choose(&mut rng).cloned();
-
-        Self {
-            tips,
-            current_tip,
-            cooldown_handle: None,
-        }
-    }
-
     /// Returns the current tip, if one has been selected.
     pub fn current_tip(&self) -> Option<&T> {
         self.current_tip.as_ref()
@@ -573,53 +536,3 @@ impl AITipModel<AgentTip> {
 }
 
 impl SingletonEntity for AITipModel<AgentTip> {}
-
-// Specific implementation for CloudModeTip
-impl AITipModel<crate::terminal::view::ambient_agent::CloudModeTip> {
-    /// Refreshes the current tip with a new random selection.
-    /// Only updates if not in cooldown period (60 seconds).
-    pub fn maybe_refresh_tip(&mut self, ctx: &mut ModelContext<Self>) {
-        // Don't update if cooldown is active
-        if self.cooldown_handle.is_some() {
-            return;
-        }
-
-        use rand::seq::SliceRandom;
-
-        // Select a random tip
-        let mut rng = rand::thread_rng();
-        self.current_tip = self.tips.choose(&mut rng).cloned();
-
-        // Start 60-second cooldown
-        let handle = ctx.spawn(
-            async {
-                Timer::after(Duration::from_secs(60)).await;
-            },
-            |me, _, _| {
-                me.cooldown_handle = None;
-            },
-        );
-        self.cooldown_handle = Some(handle);
-        ctx.notify();
-    }
-
-    /// Resets the cooldown timer without changing the current tip.
-    /// This ensures the current tip will be shown for the full cooldown period.
-    pub fn reset_cooldown(&mut self, ctx: &mut ModelContext<Self>) {
-        // Cancel any existing cooldown
-        if let Some(handle) = self.cooldown_handle.take() {
-            handle.abort();
-        }
-
-        // Start a new 60-second cooldown
-        let handle = ctx.spawn(
-            async {
-                Timer::after(Duration::from_secs(60)).await;
-            },
-            |me, _, _| {
-                me.cooldown_handle = None;
-            },
-        );
-        self.cooldown_handle = Some(handle);
-    }
-}

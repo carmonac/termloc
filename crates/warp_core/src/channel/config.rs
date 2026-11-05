@@ -16,8 +16,6 @@ pub struct ChannelConfig {
 
     /// Configuration for talking to Warp's servers.
     pub server_config: WarpServerConfig,
-    /// Configuration for Oz/ambient agents.
-    pub oz_config: OzConfig,
     /// Configuration for autoupdate functionality.
     /// Configuration for statically-bundled MCP OAuth credentials.
     pub mcp_static_config: Option<McpStaticConfig>,
@@ -38,7 +36,6 @@ pub struct WarpServerConfig {
     pub server_root_url: Cow<'static, str>,
     /// The pre-warmed sandbox control origin, defaulting to the server root URL.
     #[serde(default)]
-    pub prewarmed_sandbox_control_url: Option<Cow<'static, str>>,
     /// The URL for the RTC server, which serves real-time updates for Warp Drive objects.
     pub rtc_server_url: Cow<'static, str>,
     /// The URL for the session sharing server, or [`None`] if session sharing is not
@@ -57,32 +54,10 @@ impl WarpServerConfig {
     pub fn disabled() -> Self {
         Self {
             server_root_url: DISABLED_SERVER_URL.into(),
-            prewarmed_sandbox_control_url: None,
             rtc_server_url: "ws://127.0.0.1:9/graphql/v2".into(),
             session_sharing_server_url: None,
             firebase_auth_api_key: "".into(),
             iap_config: None,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct OzConfig {
-    /// Root URL for the Oz (ambient agent management) dashboard.
-    pub oz_root_url: Cow<'static, str>,
-
-    /// URL to use as the audience when issuing workload identity tokens. If [`None`], falls back
-    /// to [`WarpServerConfig::server_root_url`]. This exists so the audience is not overridden
-    /// when a custom server root URL is provided (e.g. an ngrok URL for local development).
-    pub workload_audience_url: Option<Cow<'static, str>>,
-}
-
-impl OzConfig {
-    /// See [`WarpServerConfig::disabled`].
-    pub fn disabled() -> Self {
-        Self {
-            oz_root_url: DISABLED_SERVER_URL.into(),
-            workload_audience_url: None,
         }
     }
 }

@@ -172,49 +172,6 @@ fn workspace_member_usage_conversion_preserves_billed_cents() {
 }
 
 #[test]
-fn tier_conversion_maps_the_charge_unit() {
-    let gql_tier = |charge_unit: GqlChargeUnit| GqlTier {
-        name: "Build".to_string(),
-        description: "Build tier".to_string(),
-        charge_unit,
-        warp_ai_policy: None,
-        team_size_policy: None,
-        shared_notebooks_policy: None,
-        shared_workflows_policy: None,
-        session_sharing_policy: None,
-        ai_autonomy_policy: None,
-        telemetry_data_collection_policy: None,
-        ugc_data_collection_policy: None,
-        usage_based_pricing_policy: None,
-        codebase_context_policy: None,
-        byo_api_key_policy: None,
-        byo_endpoint_policy: None,
-        managed_byok_byoe_policy: None,
-        purchase_add_on_credits_policy: None,
-        enterprise_pay_as_you_go_policy: None,
-        enterprise_credits_auto_reload_policy: None,
-        multi_admin_policy: None,
-        native_workspaces_policy: None,
-        ambient_agents_policy: None,
-        usage_visibility_policy: None,
-    };
-
-    assert_eq!(
-        Tier::from(gql_tier(GqlChargeUnit::Cents)).charge_unit,
-        ChargeUnit::Cents
-    );
-    assert_eq!(
-        Tier::from(gql_tier(GqlChargeUnit::Credits)).charge_unit,
-        ChargeUnit::Credits
-    );
-    // A unit from a newer server fails closed to credits.
-    assert_eq!(
-        Tier::from(gql_tier(GqlChargeUnit::Other("TOKENS".to_string()))).charge_unit,
-        ChargeUnit::Credits
-    );
-}
-
-#[test]
 fn addon_credits_settings_conversion_preserves_auto_reload_usage_cents() {
     let settings = AddonCreditsSettings::from(GqlAddonCreditsSettings {
         auto_reload_enabled: true,
@@ -541,7 +498,6 @@ mod team_settings_conversion {
             settings.enable_warp_attribution,
             AdminEnablementSetting::Enable
         );
-        assert_eq!(settings.default_host_slug.as_deref(), Some("my-host"));
 
         // Sandboxed agent denylist is populated from the effective list.
         assert_eq!(
@@ -632,4 +588,47 @@ mod team_visibility_conversion {
         assert!(!TeamVisibility::Private.supports_invite_link());
         assert!(!TeamVisibility::Hidden.supports_invite_link());
     }
+}
+
+#[test]
+fn tier_conversion_maps_the_charge_unit() {
+    let gql_tier = |charge_unit: GqlChargeUnit| GqlTier {
+        name: "Build".to_string(),
+        description: "Build tier".to_string(),
+        charge_unit,
+        warp_ai_policy: None,
+        team_size_policy: None,
+        shared_notebooks_policy: None,
+        shared_workflows_policy: None,
+        session_sharing_policy: None,
+        ai_autonomy_policy: None,
+        telemetry_data_collection_policy: None,
+        ugc_data_collection_policy: None,
+        usage_based_pricing_policy: None,
+        codebase_context_policy: None,
+        byo_api_key_policy: None,
+        byo_endpoint_policy: None,
+        managed_byok_byoe_policy: None,
+        purchase_add_on_credits_policy: None,
+        enterprise_pay_as_you_go_policy: None,
+        enterprise_credits_auto_reload_policy: None,
+        multi_admin_policy: None,
+        native_workspaces_policy: None,
+        ambient_agents_policy: None,
+        usage_visibility_policy: None,
+    };
+
+    assert_eq!(
+        Tier::from(gql_tier(GqlChargeUnit::Cents)).charge_unit,
+        ChargeUnit::Cents
+    );
+    assert_eq!(
+        Tier::from(gql_tier(GqlChargeUnit::Credits)).charge_unit,
+        ChargeUnit::Credits
+    );
+    // A unit from a newer server fails closed to credits.
+    assert_eq!(
+        Tier::from(gql_tier(GqlChargeUnit::Other("TOKENS".to_string()))).charge_unit,
+        ChargeUnit::Credits
+    );
 }

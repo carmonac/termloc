@@ -31,8 +31,6 @@ pub enum QueuedQueryOrigin {
     /// Filed by the local input in `Steer` mode while the agent was mid-turn. Fires on the next
     /// request boundary of the current turn rather than waiting for the turn to finish.
     LocalSteering,
-    /// Filed while the initial Cloud Mode prompt waits to be handed off.
-    InitialCloudMode,
     /// Received through session sharing while a native run was starting.
     SharedSessionInjection,
     /// Filed via the `/queue <prompt>` slash command.
@@ -161,12 +159,12 @@ impl QueuedQuery {
     }
 
     /// Whether this is a shared-session injection addressed to the conversation's primary
-    /// task, as opposed to an agent wake or a prompt intended for the CLI subagent.
+    /// task, as opposed to a prompt intended for the CLI subagent.
     pub(crate) fn is_primary_injected_followup(&self) -> bool {
         self.shared_session_prompt().is_some()
-            && !self.base_user_query().is_some_and(|base| {
-                base.is_agent_message_wake() || base.intended_agent() == Some(AgentType::Cli)
-            })
+            && self
+                .base_user_query()
+                .is_none_or(|base| base.intended_agent() != Some(AgentType::Cli))
     }
 
     /// Whether all asynchronous preparation for this row has settled.
@@ -206,13 +204,10 @@ impl QueuedQuery {
 
     /// Returns true if this row is locked from user mutation, reorder, and auto-fire.
     /// Locked rows cannot be edited, deleted, reordered, pushed manually, or auto-fired by
-    /// the drain mechanism. The initial Cloud Mode row is locked permanently; PendingLrcAutoQueue
-    /// rows are locked only until the action snapshot fires.
+    /// the drain mechanism. PendingLrcAutoQueue rows are locked only until the action snapshot
+    /// fires.
     pub fn is_locked(&self) -> bool {
-        matches!(
-            self.origin,
-            QueuedQueryOrigin::InitialCloudMode | QueuedQueryOrigin::PendingLrcAutoQueue
-        )
+        matches!(self.origin, QueuedQueryOrigin::PendingLrcAutoQueue)
     }
 }
 
@@ -277,11 +272,11 @@ pub(crate) enum QueuedPromptDeliveryMode {
     #[default]
     Queueing,
     /// A queued row is sent on the next request made for the conversation -- a natural
-    /// continuation (e.g. a tool-result follow-up or an orchestration-event injection) if one
+    /// continuation (e.g. a tool-result follow-up) if one
     /// occurs first, otherwise the conversation going fully idle -- rather than always waiting
     /// for the whole turn to finish. Each row is still sent as its own individual
     /// request/exchange, never combined with another queued row. Set automatically for
-    /// conversations bound to an ambient/Oz-driven native run
+    /// conversations bound to an externally driven native run
     /// (`BlocklistAIController::bind_native_prompt_conversation`).
     Steering,
 }
@@ -461,14 +456,6 @@ impl QueuedQueryModel {
         self.delivery_mode(conversation_id) == QueuedPromptDeliveryMode::Steering
     }
 
-    /// Whether setup or queued injections still need to finish, including attachment preparation.
-    #[cfg_attr(target_family = "wasm", allow(dead_code))]
-    pub(crate) fn has_pending_native_injections(&self, conversation_id: AIConversationId) -> bool {
-        self.queues
-            .get(&conversation_id)
-            .is_some_and(|state| state.native_setup_pending || !state.queue.is_empty())
-    }
-
     /// Returns a prepared, unlocked row without removing it.
     pub(crate) fn ready_query(
         &self,
@@ -576,31 +563,6 @@ impl QueuedQueryModel {
             conversation_id,
             query_id,
         });
-    }
-
-    /// Removes and returns every row queued for `conversation_id`, in FIFO order, emitting a
-    /// `Removed` event for each. Used by
-    /// `BlocklistAIController::unbind_native_prompt_conversation` to drop any prompts that never
-    /// made it out when the run ends, regardless of whether they were queued locally or via a
-    /// shared-session injection.
-    #[cfg_attr(target_family = "wasm", allow(dead_code))]
-    pub(crate) fn clear_queue(
-        &mut self,
-        conversation_id: AIConversationId,
-        ctx: &mut ModelContext<Self>,
-    ) -> Vec<QueuedQuery> {
-        let Some(state) = self.queues.get_mut(&conversation_id) else {
-            return Vec::new();
-        };
-        let cleared = std::mem::take(&mut state.queue);
-        state.editing = None;
-        for row in &cleared {
-            ctx.emit(QueuedQueryEvent::Removed {
-                conversation_id,
-                query_id: row.id,
-            });
-        }
-        cleared
     }
 
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
@@ -1049,31 +1011,6 @@ impl QueuedQueryModel {
         });
     }
 
-    /// Restores a fired row when submission fails after the row was removed.
-    pub(crate) fn restore_fired_row(
-        &mut self,
-        conversation_id: AIConversationId,
-        insert_index: usize,
-        query: QueuedQuery,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        let state = self.queues.entry(conversation_id).or_default();
-        let query_id = query.id;
-        if state.queue.iter().any(|queued| queued.id == query_id) {
-            return;
-        }
-        let insert_index = insert_index.min(state.queue.len());
-        log::warn!(
-            "event=restored_after_failed_send conversation_id={conversation_id} query_id={query_id:?} index={insert_index} queue_len_after={}",
-            state.queue.len() + 1,
-        );
-        state.queue.insert(insert_index, query);
-        ctx.emit(QueuedQueryEvent::Appended {
-            conversation_id,
-            query_id,
-        });
-    }
-
     /// Returns the attachments captured on the queued row `query_id` within `conversation_id`'s
     /// queue, or an empty slice if no such row exists. Used by the send path to attach a fired
     /// queued prompt's images/files without removing the row first.
@@ -1090,9 +1027,7 @@ impl QueuedQueryModel {
     }
 
     /// Removes a specific row by id within `conversation_id`'s queue, if present. Returns the
-    /// removed row. No-ops when the target row is locked ([`QueuedQuery::is_locked`]); the
-    /// locked initial Cloud Mode row is only removable via
-    /// [`Self::remove_initial_cloud_mode_row`].
+    /// removed row. No-ops when the target row is locked ([`QueuedQuery::is_locked`]).
     pub fn remove_by_id(
         &mut self,
         conversation_id: AIConversationId,
@@ -1115,32 +1050,6 @@ impl QueuedQueryModel {
         ctx.emit(QueuedQueryEvent::Removed {
             conversation_id,
             query_id,
-        });
-        Some(removed)
-    }
-
-    /// Removes the locked initial Cloud Mode row from `conversation_id`'s queue, if it is still
-    /// at the queue head.
-    pub fn remove_initial_cloud_mode_row(
-        &mut self,
-        conversation_id: AIConversationId,
-        ctx: &mut ModelContext<Self>,
-    ) -> Option<QueuedQuery> {
-        let state = self.queues.get_mut(&conversation_id)?;
-        if !state
-            .queue
-            .first()
-            .is_some_and(|row| row.origin == QueuedQueryOrigin::InitialCloudMode)
-        {
-            return None;
-        }
-        let removed = state.queue.remove(0);
-        if state.editing == Some(removed.id) {
-            state.editing = None;
-        }
-        ctx.emit(QueuedQueryEvent::Removed {
-            conversation_id,
-            query_id: removed.id,
         });
         Some(removed)
     }

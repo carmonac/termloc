@@ -9,11 +9,10 @@ use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
     AgentConversationEntryId, AgentConversationListEntryState, AgentConversationsModel,
     AgentConversationsModelEvent, AgentManagementFilters, ConversationSelectionHandle, Harness,
-    HarnessFilter, TeamContextResolver, agent_conversations_cloud_metadata_load_failed,
-    query_conversation_entries,
+    HarnessFilter, query_conversation_entries,
 };
 use warp_editor::model::CoreEditorModel;
-use warpui_core::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity, WindowId};
+use warpui_core::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity};
 
 use crate::inline_menu::{
     MAX_INLINE_MENU_ROWS, TuiInlineMenuHeader, TuiInlineMenuListState, TuiInlineMenuRow,
@@ -43,7 +42,6 @@ enum TuiConversationMenuState {
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum TuiConversationMenuEvent {
     Updated,
-    CloudMetadataUnavailable,
 }
 
 /// Query, selection, and model-subscription state for `/conversations`.
@@ -51,10 +49,7 @@ pub(crate) struct TuiConversationMenuModel {
     input_editor: ModelHandle<CodeEditorModel>,
     suggestions_mode: ModelHandle<TuiInputSuggestionsModeModel>,
     conversation_selection: ConversationSelectionHandle,
-    team_context_resolver: TeamContextResolver,
-    window_id: WindowId,
     state: TuiConversationMenuState,
-    cloud_warning_shown: bool,
 }
 
 impl TuiConversationMenuModel {
@@ -63,8 +58,6 @@ impl TuiConversationMenuModel {
         input_editor: ModelHandle<CodeEditorModel>,
         suggestions_mode: ModelHandle<TuiInputSuggestionsModeModel>,
         conversation_selection: ConversationSelectionHandle,
-        team_context_resolver: TeamContextResolver,
-        window_id: WindowId,
         ctx: &mut ModelContext<Self>,
     ) -> Self {
         ctx.subscribe_to_model(&input_editor, |model, _, event, ctx| {
@@ -84,10 +77,7 @@ impl TuiConversationMenuModel {
             input_editor,
             suggestions_mode,
             conversation_selection,
-            team_context_resolver,
-            window_id,
             state: TuiConversationMenuState::Closed,
-            cloud_warning_shown: false,
         }
     }
 
@@ -118,13 +108,6 @@ impl TuiConversationMenuModel {
         list.set_loading(true);
         self.state = TuiConversationMenuState::Open { list };
         warp::send_telemetry_from_ctx!(TuiConversationMenuTelemetryEvent::Opened, ctx);
-        self.cloud_warning_shown = false;
-        let window_id = self.window_id;
-        let model_id = ctx.model_id();
-        let team_context_resolver = self.team_context_resolver.clone();
-        AgentConversationsModel::handle(ctx).update(ctx, move |model, ctx| {
-            model.register_view_open(window_id, model_id, team_context_resolver, ctx);
-        });
         self.refresh_rows(ctx);
     }
 
@@ -243,11 +226,6 @@ impl TuiConversationMenuModel {
     fn close(&mut self, ctx: &mut ModelContext<Self>) {
         if self.has_open_state() {
             self.state = TuiConversationMenuState::Closed;
-            let window_id = self.window_id;
-            let model_id = ctx.model_id();
-            AgentConversationsModel::handle(ctx).update(ctx, |model, ctx| {
-                model.register_view_closed(window_id, model_id, ctx);
-            });
             ctx.emit(TuiConversationMenuEvent::Updated);
         }
         self.suggestions_mode.update(ctx, |mode, ctx| {
@@ -265,18 +243,16 @@ impl TuiConversationMenuModel {
         };
         let conversations_model = AgentConversationsModel::as_ref(ctx);
         let is_loading = conversations_model.is_loading();
-        let cloud_metadata_load_failed = agent_conversations_cloud_metadata_load_failed(ctx);
         let rows = if is_loading {
             Vec::new()
         } else {
             let filters = AgentManagementFilters {
-                harness: HarnessFilter::Specific(Harness::Oz),
+                harness: HarnessFilter::Specific(Harness::Local),
                 ..Default::default()
             };
-            let scope = (self.team_context_resolver)(ctx);
             let policy = self.conversation_selection.as_ref(ctx);
             let entries = conversations_model
-                .get_entries(&filters, &scope, ctx)
+                .get_entries(&filters, ctx)
                 .into_iter()
                 .filter(|entry| {
                     policy.classify_entry(entry, ctx) == AgentConversationListEntryState::Available
@@ -298,10 +274,6 @@ impl TuiConversationMenuModel {
         list.replace_rows(rows, is_loading, preferred_index, MAX_VISIBLE_ROWS, |_| {
             true
         });
-        if cloud_metadata_load_failed && !self.cloud_warning_shown {
-            self.cloud_warning_shown = true;
-            ctx.emit(TuiConversationMenuEvent::CloudMetadataUnavailable);
-        }
         ctx.emit(TuiConversationMenuEvent::Updated);
     }
 }

@@ -6,7 +6,7 @@ use super::*;
 #[test]
 fn harness_config_name_round_trips_for_known_variants() {
     for harness in [
-        Harness::Oz,
+        Harness::Local,
         Harness::Claude,
         Harness::OpenCode,
         Harness::Gemini,
@@ -32,5 +32,14 @@ fn harness_from_config_name_round_trips_unknown() {
     assert_eq!(
         Harness::from_config_name(Harness::Unknown.config_name()),
         Some(Harness::Unknown),
+    );
+}
+
+#[test]
+fn harness_reads_the_name_older_builds_saved() {
+    assert_eq!(Harness::from_config_name("oz"), Some(Harness::Local));
+    assert_eq!(
+        serde_json::from_str::<Harness>("\"oz\"").unwrap(),
+        Harness::Local
     );
 }

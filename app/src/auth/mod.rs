@@ -2,7 +2,9 @@ pub mod auth_manager;
 mod user_properties;
 pub use warp_server_auth::{auth_state, credentials, user, user_uid};
 
+#[cfg(feature = "tui")]
 use ::settings::{Setting, SettingsManager};
+#[cfg(feature = "tui")]
 use ai::index::full_source_code_embedding::manager::CodebaseIndexManager;
 pub use auth_manager::AuthManager;
 pub use auth_state::AuthStateProvider;
@@ -11,32 +13,49 @@ use url::Url;
 pub use user_uid::UserUid;
 #[cfg(feature = "tui")]
 use warp_core::channel::ChannelState;
+#[cfg(feature = "tui")]
 use warp_core::user_preferences::GetUserPreferences as _;
+#[cfg(feature = "tui")]
 use warp_errors::report_error;
+#[cfg(feature = "tui")]
 use warpui::{AppContext, SingletonEntity};
 
+#[cfg(feature = "tui")]
 use crate::ai::agent_conversations_model::AgentConversationsModel;
+#[cfg(feature = "tui")]
 use crate::ai::blocklist::BlocklistAIHistoryModel;
-use crate::ai::blocklist::agent_view::orchestration_pill_bar_model::OrchestrationPillBarModel;
+#[cfg(feature = "tui")]
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
+#[cfg(feature = "tui")]
 use crate::ai::llms::LLMPreferences;
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::mcp::TemplatableMCPServerManager;
+#[cfg(feature = "tui")]
 use crate::ai::request_usage_model::AIRequestUsageModel;
+#[cfg(feature = "tui")]
 use crate::ai_assistant::requests::REQUEST_LIMIT_INFO_CACHE_KEY;
+#[cfg(feature = "tui")]
 use crate::cloud_object::model::persistence::CloudModel;
+#[cfg(feature = "tui")]
 use crate::env_vars::manager::EnvVarCollectionManager;
+#[cfg(feature = "tui")]
 use crate::notebooks::manager::NotebookManager;
+#[cfg(feature = "tui")]
 use crate::server::cloud_objects::update_manager::UpdateManager;
+#[cfg(feature = "tui")]
 use crate::server::sync_queue::SyncQueue;
+#[cfg(feature = "tui")]
 use crate::server::telemetry::TelemetryEvent;
+#[cfg(feature = "tui")]
 use crate::settings::{
     AISettings, CRASH_REPORTING_ENABLED_DEFAULTS_KEY, CloudPreferencesSettings, PrivacySettings,
     TELEMETRY_ENABLED_DEFAULTS_KEY,
 };
+#[cfg(feature = "tui")]
 use crate::terminal::shared_session::manager::Manager as SharedSessionManager;
+#[cfg(feature = "tui")]
 use crate::workflows::manager::WorkflowManager;
+#[cfg(feature = "tui")]
 use crate::workspaces::update_manager::TeamUpdateManager;
+#[cfg(feature = "tui")]
 use crate::{GlobalResourceHandlesProvider, persistence, send_telemetry_sync_from_app_ctx};
 
 /// Returns the configured Warp web logout URL.
@@ -82,7 +101,12 @@ pub fn web_logout_url_with_continue(continue_url: &str) -> Option<String> {
     Some(logout_url.into())
 }
 
+#[cfg(all(test, feature = "tui"))]
+#[path = "mod_tests.rs"]
+mod tests;
+
 // Log out the user, clears workspace state, stops running processes, and deletes database.
+#[cfg(feature = "tui")]
 pub fn log_out(app: &mut AppContext) {
     send_telemetry_sync_from_app_ctx!(TelemetryEvent::LogOut, app);
 
@@ -99,20 +123,11 @@ pub fn log_out(app: &mut AppContext) {
     AuthManager::handle(app).update(app, |auth_manager, ctx| {
         auth_manager.log_out(ctx);
     });
-    // Detach built-in Warp-hosted MCP servers; they authenticate with the
-    // credentials that were just cleared.
-    #[cfg(not(target_family = "wasm"))]
-    TemplatableMCPServerManager::handle(app).update(app, |manager, ctx| {
-        manager.sync_builtin_servers(false, ctx);
-    });
     AIRequestUsageModel::handle(app).update(app, |usage_model, ctx| {
         usage_model.reset_server_availability(ctx);
     });
     BlocklistAIHistoryModel::handle(app).update(app, |history_model, _| {
         history_model.reset();
-    });
-    OrchestrationPillBarModel::handle(app).update(app, |pill_bar_model, _| {
-        pill_bar_model.reset();
     });
     AgentConversationsModel::handle(app).update(app, |agent_conversations_model, _| {
         agent_conversations_model.reset();
@@ -159,6 +174,7 @@ pub fn log_out(app: &mut AppContext) {
 // When a user signs out, we remove cloud persisted settings of their account.
 // This is so they do not experience the old settings when they log in with a different account.
 // Partial deletion of user defaults is a stopgap for Logout v0. The correct solution is:
+#[cfg(feature = "tui")]
 fn remove_cloud_persisted_settings(app: &mut AppContext) {
     let is_settings_sync_enabled = *CloudPreferencesSettings::as_ref(app).settings_sync_enabled;
     if is_settings_sync_enabled {
@@ -208,7 +224,3 @@ fn remove_cloud_persisted_settings(app: &mut AppContext) {
         privacy_settings.refresh_to_default();
     });
 }
-
-#[cfg(all(test, feature = "tui"))]
-#[path = "mod_tests.rs"]
-mod tests;

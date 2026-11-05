@@ -40,12 +40,12 @@ fn frontend_resolves_directory_and_rotation_policy() {
     assert_eq!(gui.max_rotation, MAX_FILES_IN_GUI_ROTATION);
     assert_eq!(tui.log_directory, PathBuf::from("/tmp/warp-logs/warp-cli"));
     assert_eq!(tui.max_rotation, MAX_FILES_IN_CLI_ROTATION);
-    assert_eq!(cli.log_directory, PathBuf::from("/tmp/warp-logs/oz"));
+    assert_eq!(cli.log_directory, PathBuf::from("/tmp/warp-logs/cli"));
     assert_eq!(cli.max_rotation, MAX_FILES_IN_CLI_ROTATION);
 }
 
 #[test]
-fn tui_bundle_uses_resolved_state_and_ignores_legacy_oz_logs() {
+fn tui_bundle_uses_resolved_state_and_ignores_legacy_cli_logs() {
     let tmp = tempfile::tempdir().unwrap();
     let state = log_state(tmp.path(), LogFrontend::Tui, "warp_preview.log");
     fs::create_dir(&state.log_directory).unwrap();
@@ -61,7 +61,7 @@ fn tui_bundle_uses_resolved_state_and_ignores_legacy_oz_logs() {
         &state.log_directory.join("warp_preview.log.in_session.0"),
         b"mid-session tui chunk",
     );
-    let legacy = tmp.path().join("oz");
+    let legacy = tmp.path().join("cli");
     fs::create_dir(&legacy).unwrap();
     touch(&legacy, "warp_preview.log");
     let zip_path = state.create_log_bundle_zip().unwrap();
@@ -308,7 +308,7 @@ fn resolved_active_paths_use_frontend_directory_and_channel_name() {
     );
     assert_eq!(
         cli.log_file_path(),
-        base.join("oz").join("warp_preview.log")
+        base.join("cli").join("warp_preview.log")
     );
 }
 

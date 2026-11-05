@@ -237,26 +237,6 @@ pub(super) fn convert_input(
                     )),
                 });
             }
-            AIAgentInput::StartFromAmbientRunPrompt {
-                ambient_run_id,
-                context,
-                runtime_skill,
-                attachments_dir,
-            } => {
-                return Ok(api::request::Input {
-                    context: Some(convert_context(context.as_ref())),
-                    r#type: Some(api::request::input::Type::StartFromAmbientRunPrompt(
-                        api::request::input::StartFromAmbientRunPrompt {
-                            ambient_run_id,
-                            // Deprecated, we always resolve base_prompt from the stored task config.
-                            runtime_base_prompt: String::new(),
-
-                            runtime_skill: runtime_skill.map(|skill| skill.into()),
-                            attachments_dir: attachments_dir.unwrap_or_default(),
-                        },
-                    )),
-                });
-            }
             other_input => match convert_input_to_user_input(other_input) {
                 Ok(api_input) => api_inputs.push(api_input),
                 Err(ConvertToAPITypeError::Ignore) => (),
@@ -401,31 +381,6 @@ fn convert_input_to_user_input(
             ))
         }
         AIAgentInput::ActionResult { result, .. } => result.try_into(),
-        AIAgentInput::MessagesReceivedFromAgents { messages } => Ok(
-            api::request::input::user_inputs::user_input::Input::MessagesReceivedFromAgents(
-                api::request::input::user_inputs::MessagesReceivedFromAgents {
-                    messages: messages
-                        .into_iter()
-                        .map(
-                            |msg| api::request::input::user_inputs::messages_received_from_agents::ReceivedMessage {
-                                message_id: msg.message_id,
-                                sender_agent_id: msg.sender_agent_id,
-                                addresses: msg.addresses,
-                                subject: msg.subject,
-                                message_body: msg.message_body,
-                            },
-                        )
-                        .collect(),
-                },
-            ),
-        ),
-        AIAgentInput::EventsFromAgents { events } => Ok(
-            api::request::input::user_inputs::user_input::Input::EventsFromAgents(
-                api::request::input::user_inputs::EventsFromAgents {
-                    agent_events: events,
-                },
-            ),
-        ),
         AIAgentInput::PassiveSuggestionResult {
             trigger,
             suggestion,
@@ -482,24 +437,6 @@ fn convert_input_to_user_input(
                 ),
             )
         }
-        AIAgentInput::OrchestrationConfigUpdate {
-            plan_id,
-            config,
-            status,
-        } => Ok(
-            api::request::input::user_inputs::user_input::Input::OrchestrationConfigUpdate(
-                api::OrchestrationConfigUpdate {
-                    plan_id,
-                    config: Some(config.to_proto()),
-                    status: status.to_proto(),
-                },
-            ),
-        ),
-        AIAgentInput::AgentWake => Ok(
-            api::request::input::user_inputs::user_input::Input::AgentWake(
-                api::request::input::user_inputs::AgentWake {},
-            ),
-        ),
         AIAgentInput::ResumeConversation { .. } => Err(ConvertToAPITypeError::Ignore),
         AIAgentInput::InitProjectRules { .. } => Err(ConvertToAPITypeError::Ignore),
         AIAgentInput::CodeReview { .. } => Err(ConvertToAPITypeError::Ignore),
@@ -549,9 +486,6 @@ impl From<UserQueryMode> for warp_multi_agent_api::UserQueryMode {
             UserQueryMode::Normal => warp_multi_agent_api::UserQueryMode { r#type: None },
             UserQueryMode::Plan => warp_multi_agent_api::UserQueryMode {
                 r#type: Some(warp_multi_agent_api::user_query_mode::Type::Plan(())),
-            },
-            UserQueryMode::Orchestrate => warp_multi_agent_api::UserQueryMode {
-                r#type: Some(warp_multi_agent_api::user_query_mode::Type::Orchestrate(())),
             },
         }
     }
@@ -679,9 +613,6 @@ impl TryFrom<AIAgentActionResult> for api::request::input::user_inputs::user_inp
             AIAgentActionResultType::ReadFiles(read_files_result) => {
                 Some(read_files_result.try_into()?)
             }
-            AIAgentActionResultType::UploadArtifact(upload_artifact_result) => {
-                Some(upload_artifact_result.try_into()?)
-            }
             AIAgentActionResultType::SearchCodebase(search_codebase_result) => {
                 Some(search_codebase_result.try_into()?)
             }
@@ -750,20 +681,11 @@ impl TryFrom<AIAgentActionResult> for api::request::input::user_inputs::user_inp
             AIAgentActionResultType::FetchConversation(fetch_conversation_result) => {
                 Some(fetch_conversation_result.try_into()?)
             }
-            AIAgentActionResultType::SendMessageToAgent(send_message_result) => {
-                Some(send_message_result.into())
-            }
             AIAgentActionResultType::TransferShellCommandControlToUser(transfer_control_result) => {
                 Some(transfer_control_result.try_into()?)
             }
             AIAgentActionResultType::AskUserQuestion(ask_user_question_result) => {
                 Some(ask_user_question_result.into())
-            }
-            AIAgentActionResultType::RunAgents(orchestrate_result) => {
-                Some(orchestrate_result.try_into()?)
-            }
-            AIAgentActionResultType::WaitForEvents(wait_for_events_result) => {
-                Some(wait_for_events_result.try_into()?)
             }
         };
         Ok(

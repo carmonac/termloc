@@ -8,7 +8,7 @@
 use anyhow::Result;
 use egress::Policy;
 use warp_core::AppId;
-use warp_core::channel::{Channel, ChannelConfig, ChannelState, OzConfig, WarpServerConfig};
+use warp_core::channel::{Channel, ChannelConfig, ChannelState, WarpServerConfig};
 
 fn main() -> Result<()> {
     egress::enforce(Policy::default());
@@ -19,7 +19,6 @@ fn main() -> Result<()> {
             app_id: AppId::new("dev", "termloc", "Termloc"),
             logfile_name: "termloc-tui.log".into(),
             server_config: WarpServerConfig::disabled(),
-            oz_config: OzConfig::disabled(),
             mcp_static_config: None,
         },
     );

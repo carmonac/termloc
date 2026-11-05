@@ -3,7 +3,6 @@ use std::sync::Arc;
 use parking_lot::FairMutex;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::appearance::Appearance;
-use warp_core::ui::theme::Fill;
 use warpui::assets::asset_cache::AssetSource;
 use warpui::elements::{Element, Empty, MouseStateHandle};
 use warpui::keymap::Keystroke;
@@ -26,7 +25,7 @@ use crate::ai::blocklist::agent_view::{
 use crate::ai::blocklist::view_util::usage_display_unit;
 use crate::ai::blocklist::{
     BlocklistAIContextEvent, BlocklistAIContextModel, BlocklistAIHistoryEvent,
-    BlocklistAIInputEvent, BlocklistAIInputModel, ai_brand_color,
+    BlocklistAIInputEvent, BlocklistAIInputModel,
 };
 use crate::ai::document::ai_document_model::{AIDocumentModel, AIDocumentModelEvent};
 use crate::ai::mcp::TemplatableMCPServerManager;
@@ -50,10 +49,9 @@ use crate::terminal::input::slash_command_model::{SlashCommandEntryState, SlashC
 use crate::terminal::input::suggestions_mode_model::{
     InputSuggestionsModeEvent, InputSuggestionsModeModel,
 };
-use crate::terminal::input::{HandoffComposeState, InputAction, SET_INPUT_MODE_AGENT_ACTION_NAME};
+use crate::terminal::input::{InputAction, SET_INPUT_MODE_AGENT_ACTION_NAME};
 use crate::terminal::model::TerminalModel;
 use crate::terminal::view::TerminalAction;
-use crate::ui_components::blended_colors;
 use crate::util::bindings::keybinding_name_to_keystroke;
 #[cfg(not(target_family = "wasm"))]
 use crate::workspace::WorkspaceAction;
@@ -70,7 +68,6 @@ pub struct AgentMessageBarMouseStates {
     pub toggle_plan: MouseStateHandle,
     pub toggle_conversation_menu: MouseStateHandle,
     pub toggle_code_review: MouseStateHandle,
-    pub handoff_to_cloud: MouseStateHandle,
     pub clear_attached_context: MouseStateHandle,
     /// Mouse state handle for the "Get Figma MCP" contextual button.
     pub figma_install_button: MouseStateHandle,
@@ -90,7 +87,6 @@ pub struct AgentMessageBar {
     input_suggestions_model: ModelHandle<InputSuggestionsModeModel>,
     slash_command_model: ModelHandle<SlashCommandModel>,
     context_model: ModelHandle<BlocklistAIContextModel>,
-    handoff_compose_state: ModelHandle<HandoffComposeState>,
     terminal_model: Arc<FairMutex<TerminalModel>>,
     mouse_states: AgentMessageBarMouseStates,
     /// Whether the word "figma" has been detected in the current input buffer or attached images.
@@ -117,7 +113,6 @@ impl AgentMessageBar {
         input_suggestions_model: ModelHandle<InputSuggestionsModeModel>,
         slash_command_model: ModelHandle<SlashCommandModel>,
         context_model: ModelHandle<BlocklistAIContextModel>,
-        handoff_compose_state: ModelHandle<HandoffComposeState>,
         terminal_model: Arc<FairMutex<TerminalModel>>,
         ctx: &mut ViewContext<Self>,
     ) -> Self {
@@ -177,9 +172,6 @@ impl AgentMessageBar {
             }
         });
         ctx.subscribe_to_model(&slash_command_model, |_, _, _, ctx| {
-            ctx.notify();
-        });
-        ctx.subscribe_to_model(&handoff_compose_state, |_, _, _, ctx| {
             ctx.notify();
         });
 
@@ -252,7 +244,6 @@ impl AgentMessageBar {
             input_suggestions_model,
             slash_command_model,
             context_model,
-            handoff_compose_state,
             terminal_model,
             mouse_states: AgentMessageBarMouseStates::default(),
             figma_detected: false,
@@ -317,7 +308,6 @@ impl View for AgentMessageBar {
         let agent_view_controller = self.agent_view_controller.as_ref(app);
         let context_model = self.context_model.as_ref(app);
         let slash_command_model = self.slash_command_model.as_ref(app);
-        let handoff_compose_state = self.handoff_compose_state.as_ref(app);
         let terminal_model = self.terminal_model.lock();
 
         let appearance = Appearance::as_ref(app);
@@ -342,7 +332,6 @@ impl View for AgentMessageBar {
             input_model,
             slash_command_model,
             context_model,
-            handoff_compose_state,
             terminal_model: &terminal_model,
             appearance,
             app,
@@ -357,7 +346,6 @@ impl View for AgentMessageBar {
             .or_else(|| AttachedBlocksMessageProducer.produce_message(args))
             .or_else(|| AttachedTextSelectionMessageProducer.produce_message(args))
             .or_else(|| AutodetectedBashModeMessageProducer.produce_message(args))
-            .or_else(|| ExitCloudHandoffModeMessageProducer.produce_message(args))
             .or_else(|| ExitBashModeMessageProducer.produce_message(args))
             .or_else(|| HideShortcutsMessageProducer.produce_message(args))
             .or_else(|| ZeroStateMessageProducer.produce_message(args))
@@ -450,7 +438,6 @@ pub struct AgentMessageArgs<'a> {
     pub input_model: &'a BlocklistAIInputModel,
     pub slash_command_model: &'a SlashCommandModel,
     pub context_model: &'a BlocklistAIContextModel,
-    pub handoff_compose_state: &'a HandoffComposeState,
     pub terminal_model: &'a TerminalModel,
     pub appearance: &'a Appearance,
     pub app: &'a AppContext,
@@ -488,10 +475,7 @@ struct BootstrappingMessageProducer;
 
 impl MessageProvider<AgentMessageArgs<'_>> for BootstrappingMessageProducer {
     fn produce_message(&self, args: AgentMessageArgs<'_>) -> Option<Message> {
-        if args.terminal_model.block_list().is_bootstrapped()
-            || args.terminal_model.is_dummy_cloud_mode_session()
-            || args.terminal_model.is_shared_ambient_agent_session()
-        {
+        if args.terminal_model.block_list().is_bootstrapped() {
             None
         } else {
             Some(Message::from_text("Starting shell..."))
@@ -611,35 +595,6 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
         );
 
         let is_cloud_agent = is_in_cloud_context(terminal_model);
-        let ai_settings = AISettings::as_ref(app);
-
-        // Handoff to cloud only available for local agents.
-        if !is_cloud_agent && ai_settings.is_ampersand_handoff_enabled(app) {
-            items.push(
-                MessageItem::clickable(
-                    vec![
-                        MessageItem::Keystroke {
-                            keystroke: Keystroke {
-                                key: "&".to_owned(),
-                                ..Default::default()
-                            },
-                            color: color_override_for_shortcuts_and_commands,
-                            background_color: bg_color_override_for_shortcuts_and_commands,
-                        },
-                        MessageItem::Text {
-                            content: "send task to the cloud".into(),
-                            color: color_override_for_shortcuts_and_commands,
-                        },
-                    ],
-                    |ctx| {
-                        ctx.dispatch_typed_action(InputAction::ActivateCloudHandoff);
-                    },
-                    mouse_states.handoff_to_cloud.clone(),
-                )
-                .with_is_disabled(!is_buffer_empty),
-            );
-        }
-
         let plan_count = AIDocumentModel::as_ref(app)
             .get_all_documents_for_conversation(active_conversation.id())
             .len();
@@ -666,10 +621,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
 
         // Code review only works locally.
         #[cfg(not(target_family = "wasm"))]
-        if !is_cloud_agent
-            && !ai_settings.is_cloud_handoff_enabled(app)
-            && *TabSettings::as_ref(app).show_code_review_button
-        {
+        if !is_cloud_agent && *TabSettings::as_ref(app).show_code_review_button {
             let code_review_keystroke = if OperatingSystem::get().is_mac() {
                 Keystroke::parse("cmd-shift-+").expect("keystroke should parse")
             } else {
@@ -800,9 +752,6 @@ fn should_fork_from_last_known_good_state(
             will_attempt_resume,
             ..
         } => !will_attempt_resume,
-        // Cloud startup failures mean the agent never started; there is no prior
-        // successful state to fork from.
-        RenderableAIError::CloudStartupFailed(_) => false,
     }
 }
 
@@ -819,11 +768,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ForkSlashCommandMessageProducer {
         let is_fork_family = command_name == commands::FORK.name
             || command_name == commands::FORK_FROM.name
             || command_name == commands::FORK_AND_COMPACT.name;
-        #[cfg(not(target_family = "wasm"))]
-        let is_continue_locally = command_name == commands::CONTINUE_LOCALLY.name;
-        #[cfg(target_family = "wasm")]
-        let is_continue_locally = false;
-        if !is_fork_family && !is_continue_locally {
+        if !is_fork_family {
             return None;
         }
         let modifier_keystroke = if cfg!(target_os = "macos") {
@@ -909,66 +854,6 @@ impl MessageProvider<AgentMessageArgs<'_>> for AutodetectedBashModeMessageProduc
         };
 
         Some(message)
-    }
-}
-
-struct ExitCloudHandoffModeMessageProducer;
-
-impl MessageProvider<AgentMessageArgs<'_>> for ExitCloudHandoffModeMessageProducer {
-    fn produce_message(&self, args: AgentMessageArgs<'_>) -> Option<Message> {
-        let AgentMessageArgs {
-            input_buffer_model,
-            handoff_compose_state,
-            appearance,
-            ..
-        } = args;
-        if !handoff_compose_state.is_active() {
-            return None;
-        }
-
-        let active_color = ai_brand_color(appearance.theme());
-        let is_buffer_empty = input_buffer_model.current_value().is_empty();
-        let (dismiss_text_color, dismiss_key_color, dismiss_key_bg) = if is_buffer_empty {
-            (active_color, None, None)
-        } else {
-            (
-                Fill::from(active_color).with_opacity(60).into_solid(),
-                Some(
-                    appearance
-                        .theme()
-                        .sub_text_color(appearance.theme().background())
-                        .into_solid(),
-                ),
-                Some(blended_colors::neutral_1(appearance.theme())),
-            )
-        };
-
-        Some(Message::new(vec![
-            MessageItem::Keystroke {
-                keystroke: Keystroke {
-                    key: "enter".to_owned(),
-                    ..Default::default()
-                },
-                color: None,
-                background_color: None,
-            },
-            MessageItem::Text {
-                content: "to hand off to cloud".into(),
-                color: Some(active_color),
-            },
-            MessageItem::Keystroke {
-                keystroke: Keystroke {
-                    key: "backspace".to_owned(),
-                    ..Default::default()
-                },
-                color: dismiss_key_color,
-                background_color: dismiss_key_bg,
-            },
-            MessageItem::Text {
-                content: "to dismiss".into(),
-                color: Some(dismiss_text_color),
-            },
-        ]))
     }
 }
 

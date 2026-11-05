@@ -9,9 +9,7 @@ use std::path::{Component, Path};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use ai::agent::action::{
-    RequestComputerUseRequest, SuggestPromptRequest, UploadArtifactRequest, UseComputerRequest,
-};
+use ai::agent::action::{RequestComputerUseRequest, SuggestPromptRequest, UseComputerRequest};
 use ai::agent::document_action_presentation::DocumentActionPresentation;
 use ai::agent::file_locations::group_file_contexts_for_display;
 use ai::skills::{ParsedSkill, SkillReference};
@@ -50,7 +48,7 @@ use super::imported_comments::render_imported_comments;
 use super::todos::{render_completed_todo_items, render_todos};
 use super::{
     CONTENT_HORIZONTAL_PADDING, CONTENT_ITEM_VERTICAL_MARGIN, WithContentItemSpacing,
-    add_highlights_to_rich_text, orchestration, render_autonomy_checkbox_setting_speedbump_footer,
+    add_highlights_to_rich_text, render_autonomy_checkbox_setting_speedbump_footer,
     render_citation_chips,
 };
 use crate::ai::agent::api::ServerConversationToken;
@@ -66,10 +64,7 @@ use crate::ai::agent::{
     ReadFilesFailedFile, ReadFilesRequest, ReadFilesResult, RequestCommandOutputResult,
     SearchCodebaseFailureReason, SearchCodebaseResult, StartRecordingResult, StopRecordingResult,
     SubagentCall, SubagentType, SuggestNewConversationResult, SummarizationType, TodoOperation,
-    UploadArtifactResult,
 };
-use crate::ai::agent_conversations_model::AgentConversationsModel;
-use crate::ai::ambient_agents::AmbientAgentTaskId;
 use crate::ai::blocklist::action_model::AIActionStatus;
 use crate::ai::blocklist::block::model::{AIBlockModel, AIBlockModelHelper, AIBlockOutputStatus};
 use crate::ai::blocklist::block::view_impl::common::{
@@ -94,7 +89,6 @@ use crate::ai::blocklist::inline_action::requested_action::{
     render_requested_action_row, render_requested_action_row_for_text,
 };
 use crate::ai::blocklist::inline_action::requested_command::RequestedCommand;
-use crate::ai::blocklist::inline_action::run_agents_card_view::RunAgentsCardView;
 use crate::ai::blocklist::inline_action::search_codebase::SearchCodebaseView;
 use crate::ai::blocklist::inline_action::suggested_unit_tests::SuggestedUnitTestsView;
 use crate::ai::blocklist::inline_action::web_fetch::WebFetchView;
@@ -104,7 +98,6 @@ use crate::ai::blocklist::secret_redaction::SecretRedactionState;
 use crate::ai::blocklist::usage::request_metadata_turn_view::{
     RequestMetadataTurnView, turn_panel_tooltip_text_for_data, turn_panel_usage_display_unit,
 };
-use crate::ai::blocklist::usage::rollup::compute_orchestration_rollup;
 use crate::ai::blocklist::view_util::{
     FAILED_OUTPUT_USAGE_NOTICE_TEXT, effective_usage_unit, format_usage,
     should_show_failed_output_usage_notice,
@@ -121,7 +114,6 @@ use crate::code::editor_management::CodeSource;
 use crate::settings_view::SettingsSection;
 use crate::terminal::ShellLaunchData;
 #[cfg(not(target_family = "wasm"))]
-use crate::terminal::input::slash_commands::fork_button_action;
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::terminal::shared_session::SharedSessionStatus;
 use crate::ui_components::blended_colors;
@@ -138,8 +130,6 @@ use crate::workspace::WorkspaceAction;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::ChargeUnit;
 use crate::{AIAgentTodoList, FeatureFlag};
-
-const BLOCKED_ACTION_MESSAGE_FOR_UPLOADING_ARTIFACT: &str = "Grant access to upload this artifact?";
 
 /// Data required to render the AI block output component.
 #[derive(Copy, Clone)]
@@ -193,15 +183,7 @@ pub(crate) struct Props<'a> {
     pub(super) shared_session_status: &'a SharedSessionStatus,
     pub(super) terminal_view_id: EntityId,
     pub(super) is_conversation_transcript_viewer: bool,
-    #[cfg(not(target_family = "wasm"))]
-    pub(super) is_cloud_agent_context: bool,
     pub(super) imported_comments: &'a HashMap<AIAgentActionId, ImportedCommentGroup>,
-    /// Per-orchestrate-action card view. Each `RunAgentsCardView` owns
-    /// its own edit state, button + picker handles, and in-flight
-    /// spawning snapshot; AIBlock just lazily creates the view per
-    /// `AIAgentActionId` and embeds it via `ChildView` when the action
-    /// is rendered. Multi-card lifecycle = AIBlock lifecycle.
-    pub(crate) run_agents_card_views: &'a HashMap<AIAgentActionId, ViewHandle<RunAgentsCardView>>,
     #[cfg(feature = "local_fs")]
     pub(crate) resolved_code_block_paths:
         &'a HashMap<std::path::PathBuf, Option<std::path::PathBuf>>,
@@ -211,9 +193,6 @@ pub(crate) struct Props<'a> {
     pub(super) thinking_display_mode: crate::settings::ThinkingDisplayMode,
     pub(super) conversation_has_imported_comments: bool,
     pub(super) ask_user_question_view: Option<&'a ViewHandle<AskUserQuestionView>>,
-    /// `true` when this block belongs to a cloud agent pane that is still in its setup phase
-    /// (running environment startup commands before the first agent turn).
-    pub(super) is_cloud_agent_pre_first_exchange: bool,
 }
 
 /// A `UseComputer` call whose actions are all no-ops (typically a single
@@ -298,8 +277,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                         && !has_expanded_last_requested_command
                         && !is_output_for_static_prompt_suggestions
                         && !is_conversation_in_progress
-                        && request_type.is_active()
-                        && !props.is_cloud_agent_pre_first_exchange;
+                        && request_type.is_active();
 
                 let mut has_rendered_first_text_section = false;
 
@@ -815,14 +793,6 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                             ));
                         }
                         AIAgentOutputMessageType::Action(AIAgentAction {
-                            action: AIAgentActionType::UploadArtifact(request),
-                            id,
-                            ..
-                        }) => {
-                            should_render_footer = false;
-                            output_items.add_child(render_upload_artifact(props, id, request, app));
-                        }
-                        AIAgentOutputMessageType::Action(AIAgentAction {
                             action: AIAgentActionType::RequestComputerUse(request),
                             id,
                             ..
@@ -830,44 +800,6 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                             should_render_footer = false;
                             output_items
                                 .add_child(render_request_computer_use(props, id, request, app));
-                        }
-                        AIAgentOutputMessageType::Action(AIAgentAction {
-                            action: AIAgentActionType::RunAgents(_req),
-                            id,
-                            ..
-                        }) => {
-                            // Embed the per-action `RunAgentsCardView`
-                            // via `ChildView`. The view renders a
-                            // "Configuring agents..." placeholder while
-                            // streaming, then transitions to the full
-                            // confirmation card once complete.
-                            should_render_footer = false;
-                            should_render_suggestions = false;
-                            if let Some(card_view) = props.run_agents_card_views.get(id) {
-                                output_items.add_child(ChildView::new(card_view).finish());
-                            }
-                        }
-                        AIAgentOutputMessageType::Action(AIAgentAction {
-                            action:
-                                AIAgentActionType::SendMessageToAgent {
-                                    addresses,
-                                    subject,
-                                    message,
-                                },
-                            id,
-                            ..
-                        }) => {
-                            should_render_footer = false;
-                            should_render_suggestions = false;
-                            output_items.add_child(orchestration::render_send_message(
-                                props,
-                                id,
-                                addresses,
-                                subject,
-                                message,
-                                &output_message.id,
-                                app,
-                            ));
                         }
                         AIAgentOutputMessageType::Action(AIAgentAction {
                             action: AIAgentActionType::InsertCodeReviewComments { repo_path, .. },
@@ -942,13 +874,6 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                     output_message.id
                                 );
                             }
-                        }
-                        AIAgentOutputMessageType::MessagesReceivedFromAgents { messages } => {
-                            output_items.add_child(
-                                orchestration::render_messages_received_from_agents(
-                                    messages, props, app,
-                                ),
-                            );
                         }
                         AIAgentOutputMessageType::DebugOutput { text } => {
                             if ChannelState::enable_debug_features()
@@ -1026,18 +951,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                 })
                                 .or_else(|| {
                                     let target_id = agent_run_id.as_ref()?;
-                                    let title = target_id
-                                        .parse::<AmbientAgentTaskId>()
-                                        .ok()
-                                        .and_then(|task_id| {
-                                            AgentConversationsModel::as_ref(app)
-                                                .get_task_data(&task_id)
-                                        })
-                                        .map(|task| truncate_from_end(&task.title, 40));
-                                    Some((
-                                        "agent run",
-                                        title.unwrap_or_else(|| truncate_from_end(target_id, 40)),
-                                    ))
+                                    Some(("agent run", truncate_from_end(target_id, 40)))
                                 });
 
                             let done = is_finished || is_cancelled;
@@ -2878,92 +2792,6 @@ fn render_read_mcp_resource(
     renderable_action.render(app).finish()
 }
 
-fn format_upload_artifact_text(
-    request: &UploadArtifactRequest,
-    result: Option<&UploadArtifactResult>,
-) -> String {
-    let mut lines = vec![format!("Upload artifact: {}", request.file_path)];
-
-    if let Some(description) = request.description.as_deref() {
-        lines.push(format!("Description: {description}"));
-    }
-
-    match result {
-        Some(UploadArtifactResult::Success {
-            artifact_uid,
-            filepath,
-            ..
-        }) => {
-            lines.push(format!("Status: uploaded artifact {artifact_uid}"));
-            if let Some(filepath) = filepath.as_deref() {
-                lines.push(format!("Uploaded file: {filepath}"));
-            }
-        }
-        Some(UploadArtifactResult::Error(error)) => {
-            lines.push(format!("Status: upload failed: {error}"));
-        }
-        Some(UploadArtifactResult::Cancelled) => {}
-        None => {}
-    }
-
-    lines.join("\n")
-}
-
-fn render_upload_artifact(
-    props: Props,
-    action_id: &AIAgentActionId,
-    request: &UploadArtifactRequest,
-    app: &AppContext,
-) -> Box<dyn Element> {
-    let appearance = Appearance::as_ref(app);
-    let status = props.action_model.as_ref(app).get_action_status(action_id);
-    let result = props
-        .action_model
-        .as_ref(app)
-        .get_action_result(action_id)
-        .and_then(|result| match &result.result {
-            AIAgentActionResultType::UploadArtifact(upload_result) => Some(upload_result),
-            _ => None,
-        });
-
-    let text = format_upload_artifact_text(request, result);
-    let mut renderable_action = RenderableAction::new(&text, app);
-
-    if status.as_ref().is_some_and(|status| status.is_blocked()) {
-        let buttons = props
-            .action_buttons
-            .get(action_id)
-            .expect("Button states must exist for each requested action.");
-
-        renderable_action = renderable_action
-            .with_header(blocked_action_header(
-                action_id.clone(),
-                BLOCKED_ACTION_MESSAGE_FOR_UPLOADING_ARTIFACT,
-                buttons.run_button.clone(),
-                buttons.cancel_button.clone(),
-                props.action_model,
-                props.model,
-                app,
-            ))
-            .with_highlighted_border()
-            .with_background_color(appearance.theme().background().into_solid());
-    } else {
-        if (props.model.status(app).is_streaming()
-            && !props.model.is_first_action_in_output(action_id, app))
-            || status.as_ref().is_some_and(|s| s.is_queued())
-        {
-            renderable_action = renderable_action.with_font_color(blended_colors::text_disabled(
-                appearance.theme(),
-                appearance.theme().surface_2(),
-            ));
-        }
-        renderable_action = renderable_action
-            .with_icon(action_icon(action_id, props.action_model, props.model, app).finish());
-    }
-
-    renderable_action.render(app).finish()
-}
-
 fn recording_summary(props: Props, agent_summary: Option<&str>, app: &AppContext) -> String {
     let title = props
         .model
@@ -3607,13 +3435,6 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
 
     #[cfg(not(target_family = "wasm"))]
     if !props.is_conversation_transcript_viewer {
-        let fork_button_tooltip = fork_button_action(
-            props.model.conversation_id(app),
-            props.is_cloud_agent_context,
-            app,
-        )
-        .tooltip;
-
         let ui_builder = appearance.ui_builder().clone();
         let fork_button = icon_button(
             appearance,
@@ -3623,7 +3444,7 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         )
         .with_tooltip(move || {
             ui_builder
-                .tool_tip(fork_button_tooltip.to_string())
+                .tool_tip("Fork conversation".to_string())
                 .build()
                 .finish()
         })
@@ -3728,31 +3549,11 @@ fn render_usage_button(props: Props, app: &AppContext) -> Box<dyn Element> {
         return Empty::new().finish();
     };
 
-    // Optional orchestration credit rollup. When the conversation has at
-    // least one locally-loaded descendant with credits spent, the pill's
-    // headline number and "has any usage" suppression check both switch
-    // over to the orchestration total (PRODUCT invariants 11, 11b). The
-    // `(+N)` last-block annotation below stays bound to the
-    // orchestrator's own credits. The rollup helper returns `None` for
-    // conversations with no descendants, so callers that aren't
-    // orchestrators pay only the cost of one descendant-index probe.
-    let rollup =
-        compute_orchestration_rollup(conversation.id(), BlocklistAIHistoryModel::as_ref(app));
-
     // If this conversation has no usage metadata (e.g. a forked conversation from
     // mid-way through a prior conversation where the server did not send
     // ConversationUsageMetadata), avoid rendering the usage button entirely.
-    let headline_credits = rollup
-        .as_ref()
-        .map(|r| r.total_credits)
-        .unwrap_or_else(|| conversation.credits_spent());
-    // Only the rollup path (summed across sub-agents) has a matching
-    // aggregated cost figure; a non-orchestrator conversation's own dollar
-    // cost comes from its usage totals directly.
-    let headline_cost_in_cents = rollup
-        .as_ref()
-        .map(|r| r.total_cost_in_cents)
-        .unwrap_or_else(|| conversation.usage_totals().total_cost_in_cents());
+    let headline_credits = conversation.credits_spent();
+    let headline_cost_in_cents = conversation.usage_totals().total_cost_in_cents();
     let has_any_usage = headline_credits > 0.0
         || conversation.credits_spent_for_last_block().is_some()
         || !conversation.token_usage().is_empty()
@@ -3781,9 +3582,6 @@ fn render_usage_button(props: Props, app: &AppContext) -> Box<dyn Element> {
             && total_credits_spent != credits_spent_for_last_block
             && props.model.status(app).error().is_none()
         {
-            // The last-block figure has no rollup equivalent: it stays
-            // bound to the orchestrator's own last block, same as
-            // `credits_spent_for_last_block` above.
             let last_block_text = usage_pill_text(
                 credits_spent_for_last_block,
                 conversation

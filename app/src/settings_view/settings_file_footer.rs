@@ -33,11 +33,11 @@ const FOOTER_FONT_SIZE: f32 = 12.;
 const OPEN_BUTTON_HEIGHT: f32 = 32.;
 /// Height of action buttons inside the error alert.
 const ALERT_ACTION_BUTTON_HEIGHT: f32 = 24.;
-/// Size of the leading icons (search-sm, code-02, alert-circle, oz).
+/// Size of the leading icons (search-sm, code-02, alert-circle, agent).
 const FOOTER_ICON_SIZE: f32 = 16.;
 /// Size of the Warp Agent brand mark inside the "Fix with Warp Agent" button. Matches the
 /// Figma spec and the workspace banner's secondary-button icon sizing.
-const ALERT_OZ_ICON_SIZE: f32 = 14.;
+const ALERT_AGENT_ICON_SIZE: f32 = 14.;
 /// Horizontal padding inside the "Open file" / "Fix with Warp Agent" action buttons.
 /// Matches the workspace banner's secondary button pad.
 const ALERT_BUTTON_HORIZONTAL_PADDING: f32 = 8.;
@@ -87,7 +87,7 @@ impl SettingsFooterKind {
 pub struct SettingsFooterMouseStates {
     pub open_settings_file_button: MouseStateHandle,
     pub alert_open_file_button: MouseStateHandle,
-    pub alert_fix_with_oz_button: MouseStateHandle,
+    pub alert_fix_with_agent_button: MouseStateHandle,
     /// Scroll state for the error alert's text region (heading +
     /// description), so scroll position survives renders.
     pub alert_text_scroll_state: ClippedScrollStateHandle,
@@ -246,16 +246,16 @@ pub fn render_settings_error_alert(
 
     if ai_enabled {
         let error_description = error.to_string();
-        let fix_with_oz_button = render_alert_action_button(
+        let fix_with_agent_button = render_alert_action_button(
             ui_font_family,
             text_color,
-            mouse_states.alert_fix_with_oz_button.clone(),
+            mouse_states.alert_fix_with_agent_button.clone(),
             "Fix with Local Agent",
             Some(Icon::Agent),
             /*bordered=*/ false,
             WorkspaceAction::FixSettingsWithOz { error_description },
         );
-        buttons_row.add_child(fix_with_oz_button);
+        buttons_row.add_child(fix_with_agent_button);
     }
 
     // ── Assemble ─────────────────────────────────────────────────────────
@@ -334,8 +334,8 @@ fn render_alert_action_button(
             row.add_child(
                 Container::new(
                     ConstrainedBox::new(icon.to_warpui_icon(Fill::Solid(text_color)).finish())
-                        .with_width(ALERT_OZ_ICON_SIZE)
-                        .with_height(ALERT_OZ_ICON_SIZE)
+                        .with_width(ALERT_AGENT_ICON_SIZE)
+                        .with_height(ALERT_AGENT_ICON_SIZE)
                         .finish(),
                 )
                 .with_margin_right(4.)

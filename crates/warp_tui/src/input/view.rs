@@ -170,8 +170,6 @@ pub enum TuiInputViewEvent {
     AcceptedMcp(TuiMcpAction),
     /// The user advanced the explicit MCP installation flow.
     AcceptedMcpInstall(TuiMcpInstallFlowAction),
-    /// Shift+Up should move focus from the first visual row to the region above.
-    MoveFocusUp,
     /// The user accepted an item from the up-arrow prompt-and-command history menu.
     AcceptedPromptAndCommandHistory {
         text: String,
@@ -312,15 +310,10 @@ impl TuiInputView {
         input_mode: ModelHandle<BlocklistAIInputModel>,
         suggestions_mode: ModelHandle<TuiInputSuggestionsModeModel>,
         inline_menus: Vec<TuiInlineMenu>,
-        orchestration_tabs_available: impl Fn(&AppContext) -> bool + 'static,
         ctx: &mut ViewContext<Self>,
     ) -> Self {
         let session_state = ctx.add_model(|_| {
-            TuiTerminalSessionStateModel::new_for_input(
-                &input_mode,
-                &suggestions_mode,
-                orchestration_tabs_available,
-            )
+            TuiTerminalSessionStateModel::new_for_input(&input_mode, &suggestions_mode)
         });
         Self::new_internal(
             model,
@@ -699,8 +692,8 @@ impl TuiView for TuiInputView {
         // - Non-Normal modes (Insert→Normal, Visual→Normal, Replace→Normal)
         // - Normal mode with pending input (clear the partial command)
         // In Normal mode with no pending input, escape is a no-op for vim;
-        // passing it through allows session-level bindings (e.g.
-        // orchestration focus-main, cancel-restore) to fire instead.
+        // passing it through allows session-level bindings (e.g. cancel-restore)
+        // to fire instead.
         let vim_mode_enabled = self.vim_mode_enabled(ctx);
         let vim_state = self.vim_model.as_ref(ctx).state();
         input_keymap_context(InputKeymapContextConfig {
@@ -887,10 +880,6 @@ impl TypedActionView for TuiInputView {
             }
             TuiInputAction::EditorCommand(command) => {
                 self.close_read_only_menu(ctx);
-                if matches!(*command, TuiEditorCommand::SelectUp) && self.can_focus_above(ctx) {
-                    ctx.emit(TuiInputViewEvent::MoveFocusUp);
-                    return;
-                }
                 let vim_keystroke = match command {
                     TuiEditorCommand::Backspace
                         if !self.is_cursor_at_start(ctx)
@@ -1139,15 +1128,6 @@ impl TuiInputView {
     /// selection (the position where `!` toggles shell mode).
     fn is_cursor_at_start(&self, ctx: &AppContext) -> bool {
         self.cursor_offset(ctx).as_usize() <= 1 && self.selection_range(ctx).is_none()
-    }
-
-    /// Whether Shift+Up should leave the input instead of extending selection.
-    fn can_focus_above(&self, ctx: &AppContext) -> bool {
-        self.session_state
-            .as_ref(ctx)
-            .resolve(ctx)
-            .is_ok_and(|state| state.orchestration_available())
-            && self.single_cursor_on_first_row(ctx)
     }
 
     /// Whether the single caret sits on the first visual row of the input with

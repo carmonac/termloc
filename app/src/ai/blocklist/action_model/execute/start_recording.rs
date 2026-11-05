@@ -49,10 +49,9 @@ impl StartRecordingExecutor {
             frame_rate,
             max_duration,
             max_size_bytes,
-            summary,
-            description,
             playback_speed_multiplier,
             window,
+            ..
         } = action.action.clone()
         else {
             return ActionExecution::InvalidAction;
@@ -130,8 +129,6 @@ impl StartRecordingExecutor {
                             conversation_id,
                             handle,
                             frame_rate,
-                            summary,
-                            description,
                             target,
                         );
                     });

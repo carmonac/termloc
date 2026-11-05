@@ -1,9 +1,13 @@
+#[cfg(feature = "tui")]
 use std::future::Future;
 use std::result::Result as StdResult;
 use std::sync::Arc;
+#[cfg(feature = "tui")]
 use std::time::Duration;
 
+#[cfg(feature = "tui")]
 use anyhow::Result;
+#[cfg(feature = "tui")]
 use futures::future::Either;
 use settings::Setting as _;
 #[cfg(target_family = "wasm")]
@@ -11,6 +15,7 @@ use url::Url;
 use warp_errors::{report_error, report_if_error};
 use warp_server_auth::API_KEY_PREFIX;
 use warp_server_auth::user::persistence::PersistedUser;
+#[cfg(feature = "tui")]
 use warpui::r#async::Timer;
 use warpui::{Entity, ModelContext, SingletonEntity, UpdateModel};
 
@@ -47,6 +52,7 @@ pub enum AuthManagerEvent {
     /// refresh the entire user, only their token, which is when this event might be emitted.
     NeedsReauth,
     /// Received a device authorization code as part of the device auth flow.
+    #[cfg(feature = "tui")]
     ReceivedDeviceAuthorizationCode {
         #[cfg_attr(target_family = "wasm", allow(unused))]
         verification_url: String,
@@ -57,9 +63,14 @@ pub enum AuthManagerEvent {
     },
 }
 
+/// AuthManager is a singleton model which manages the currently logged-in user's state.
+/// If you need to access the state, use `AuthStateProvider`.
+#[cfg(feature = "tui")]
 const DEVICE_CODE_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+#[cfg(feature = "tui")]
 const DEVICE_CODE_REQUEST_ATTEMPTS: usize = 2;
 
+#[cfg(feature = "tui")]
 async fn request_device_code_with_timeout<F, Fut>(
     mut request: F,
     timeout: Duration,
@@ -98,8 +109,6 @@ where
     unreachable!("attempt count is asserted to be nonzero")
 }
 
-/// AuthManager is a singleton model which manages the currently logged-in user's state.
-/// If you need to access the state, use `AuthStateProvider`.
 pub struct AuthManager {
     auth_state: Arc<AuthState>,
     server_api: Arc<ServerApi>,
@@ -107,6 +116,75 @@ pub struct AuthManager {
 }
 
 impl AuthManager {
+    /// Helper function for logging out the user.
+    /// NOTE: You probably want to call auth::log_out instead; this only manages the auth state,
+    /// it doesn't shut down any other user-dependent parts of the app.
+    /// TODO(jeff): Can we move those pieces in here?
+    #[cfg(feature = "tui")]
+    pub(super) fn log_out(&mut self, ctx: &mut ModelContext<Self>) {
+        self.set_and_persist(None, None, ctx);
+    }
+
+    #[cfg(feature = "tui")]
+    fn on_device_code_received(
+        &mut self,
+        result: Result<oauth2::StandardDeviceAuthorizationResponse, UserAuthenticationError>,
+        ctx: &mut ModelContext<Self>,
+    ) {
+        match result {
+            Ok(details) => {
+                // Emit the device authorization details so that they can be shown to the user.
+                ctx.emit(AuthManagerEvent::ReceivedDeviceAuthorizationCode {
+                    verification_url: details.verification_uri().to_string(),
+                    verification_url_complete: details
+                        .verification_uri_complete()
+                        .map(|complete| complete.secret().to_string()),
+                    user_code: details.user_code().secret().to_string(),
+                });
+
+                let auth_client = self.auth_client.clone();
+                ctx.spawn(
+                    async move {
+                        // Wait for the user to approve the device authorization request.
+                        let token = auth_client
+                            .exchange_device_access_token(&details, Duration::from_secs(600))
+                            .await?;
+
+                        // Exchange the custom access token for Firebase auth tokens and fetch the user.
+                        auth_client
+                            .fetch_user(LoginToken::Firebase(token), false)
+                            .await
+                    },
+                    Self::on_user_fetched,
+                );
+            }
+            Err(err) => ctx.emit(AuthManagerEvent::AuthFailed(err)),
+        }
+    }
+
+    /// Authenticate asynchronously using the OAuth2 device authorization flow.
+    ///
+    #[cfg(feature = "tui")]
+    pub fn authorize_device(&self, ctx: &mut ModelContext<Self>) {
+        // Clear any stale user state so old credentials don't interfere
+        // with the fresh device auth flow.
+        self.auth_state.set_credentials(None);
+
+        let auth_client = self.auth_client.clone();
+        // Request a device code the user can enter in their browser.
+        ctx.spawn(
+            async move {
+                request_device_code_with_timeout(
+                    || auth_client.request_device_code(),
+                    DEVICE_CODE_REQUEST_TIMEOUT,
+                    DEVICE_CODE_REQUEST_ATTEMPTS,
+                )
+                .await
+            },
+            Self::on_device_code_received,
+        );
+    }
+
     /// Creates a new instance of the AuthManager. The auth state must already be initialized through
     /// [`AuthStateProvider`].
     pub fn new(
@@ -185,67 +263,6 @@ impl AuthManager {
             },
             Self::on_user_fetched,
         );
-    }
-
-    /// Authenticate asynchronously using the OAuth2 device authorization flow.
-    ///
-    /// This is only used by the Warp CLI if running on a device that does not have the Warp app installed.
-    #[cfg_attr(target_family = "wasm", allow(dead_code))]
-    pub fn authorize_device(&self, ctx: &mut ModelContext<Self>) {
-        // Clear any stale user state so old credentials don't interfere
-        // with the fresh device auth flow.
-        self.auth_state.set_credentials(None);
-
-        let auth_client = self.auth_client.clone();
-        // Request a device code the user can enter in their browser.
-        ctx.spawn(
-            async move {
-                request_device_code_with_timeout(
-                    || auth_client.request_device_code(),
-                    DEVICE_CODE_REQUEST_TIMEOUT,
-                    DEVICE_CODE_REQUEST_ATTEMPTS,
-                )
-                .await
-            },
-            Self::on_device_code_received,
-        );
-    }
-
-    #[cfg_attr(target_family = "wasm", allow(dead_code))]
-    fn on_device_code_received(
-        &mut self,
-        result: Result<oauth2::StandardDeviceAuthorizationResponse, UserAuthenticationError>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        match result {
-            Ok(details) => {
-                // Emit the device authorization details so that they can be shown to the user.
-                ctx.emit(AuthManagerEvent::ReceivedDeviceAuthorizationCode {
-                    verification_url: details.verification_uri().to_string(),
-                    verification_url_complete: details
-                        .verification_uri_complete()
-                        .map(|complete| complete.secret().to_string()),
-                    user_code: details.user_code().secret().to_string(),
-                });
-
-                let auth_client = self.auth_client.clone();
-                ctx.spawn(
-                    async move {
-                        // Wait for the user to approve the device authorization request.
-                        let token = auth_client
-                            .exchange_device_access_token(&details, Duration::from_secs(600))
-                            .await?;
-
-                        // Exchange the custom access token for Firebase auth tokens and fetch the user.
-                        auth_client
-                            .fetch_user(LoginToken::Firebase(token), false)
-                            .await
-                    },
-                    Self::on_user_fetched,
-                );
-            }
-            Err(err) => ctx.emit(AuthManagerEvent::AuthFailed(err)),
-        }
     }
 
     /// Callback for handling a successful fetch of a user from warp-server and Firebase.
@@ -367,19 +384,6 @@ impl AuthManager {
                     |_, _, _| {},
                 );
 
-                // Once the user is authenticated, attempt to report the sandbox that Warp is running in, if any.
-                ctx.spawn(
-                    async { warp_isolation_platform::detect() },
-                    |_, platform, ctx| {
-                        if let Some(platform) = platform {
-                            send_telemetry_from_ctx!(
-                                TelemetryEvent::DetectedIsolationPlatform { platform },
-                                ctx
-                            );
-                        }
-                    },
-                );
-
                 ctx.emit(AuthManagerEvent::AuthComplete);
             }
             Err(error) => {
@@ -441,14 +445,6 @@ impl AuthManager {
             }
             PersistAction::DoNothing => {}
         }
-    }
-
-    /// Helper function for logging out the user.
-    /// NOTE: You probably want to call auth::log_out instead; this only manages the auth state,
-    /// it doesn't shut down any other user-dependent parts of the app.
-    /// TODO(jeff): Can we move those pieces in here?
-    pub(super) fn log_out(&mut self, ctx: &mut ModelContext<Self>) {
-        self.set_and_persist(None, None, ctx);
     }
 
     /// Sets whether or not this user's Firebase credentials are invalid and thus needs to reauth.

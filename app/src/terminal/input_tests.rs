@@ -21,7 +21,6 @@ use warp_completer::completer::{
     SuggestionResults, SuggestionType,
 };
 use warp_completer::meta::Span;
-use warp_util::standardized_path::StandardizedPath;
 use warp_util::user_input::UserInput;
 use warpui::platform::WindowStyle;
 use warpui::text::SelectionType;
@@ -32,17 +31,16 @@ use workflows::workflow::{Argument, ArgumentType, Workflow};
 use super::*;
 use crate::ai::AIRequestUsageModel;
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
+use crate::ai::agent::ImageContext;
 use crate::ai::agent::conversation::ConversationStatus;
 use crate::ai::agent::task::TaskId;
 use crate::ai::agent::{
     AIAgentActionId, AIAgentExchange, AIAgentInput, AIAgentOutputStatus, UserQueryMode,
 };
 use crate::ai::agent_conversations_model::AgentConversationsModel;
+use crate::ai::blocklist::PendingAttachment;
 use crate::ai::blocklist::{AIQueryHistory, BlocklistAIPermissions, ResponseStreamId};
-use crate::ai::cloud_agent_settings::{AuthSecretPreference, CloudAgentSettings};
-use crate::ai::connected_self_hosted_workers::ConnectedSelfHostedWorkersModel;
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
-use crate::ai::harness_availability::HarnessAvailabilityModel;
 use crate::ai::llms::{LLMId, LLMPreferences};
 use crate::ai::mcp::gallery::MCPGalleryManager;
 use crate::ai::mcp::templatable_manager::TemplatableMCPServerManager;
@@ -114,11 +112,9 @@ use crate::test_util::settings::initialize_settings_for_tests;
 use crate::themes::theme::AnsiColorIdentifier;
 use crate::warp_managed_paths_watcher::WarpManagedPathsWatcher;
 use crate::workspace::{ActiveSession, OneTimeModalModel, ToastStack, WorkspaceRegistry};
-use crate::workspaces::team::Team;
 use crate::workspaces::team_tester::TeamTesterStatus;
 use crate::workspaces::update_manager::TeamUpdateManager;
-use crate::workspaces::user_workspaces::{TeamContextForOperation, UserWorkspaces};
-use crate::workspaces::workspace::Workspace;
+use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::{
     AgentNotificationsModel, GlobalResourceHandles, GlobalResourceHandlesProvider,
     ReferralThemeStatus, experiments,
@@ -250,35 +246,6 @@ fn share_pending_creator_executes_setup_command_locally() {
         assert_eventually!(
             600 => events.borrow().len() == 1,
             "a pending sharer's setup command should reach the terminal surface"
-        );
-        let events = events.borrow();
-        assert_eq!(events[0].0, "echo setup");
-        assert!(matches!(&events[0].1, CommandExecutionSource::User));
-    });
-}
-
-#[test]
-fn prebootstrap_share_status_uses_local_path_when_shell_is_ready() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        terminal.update(&mut app, |view, _| {
-            view.model.lock().set_shared_session_status(
-                SharedSessionStatus::SharePendingPreBootstrap {
-                    source: SharedSessionSource::ambient_agent(None),
-                },
-            );
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let events = subscribe_to_execute_command_events(&mut app, &terminal);
-
-        assert!(input.update(&mut app, |input, ctx| {
-            input.try_execute_command("echo setup", ctx)
-        }));
-        assert_eventually!(
-            600 => events.borrow().len() == 1,
-            "a pre-bootstrap share status should use the local path after shell bootstrap"
         );
         let events = events.borrow();
         assert_eq!(events[0].0, "echo setup");
@@ -549,7 +516,6 @@ pub fn initialize_app(app: &mut App) {
     app.add_singleton_model(|_| Prompt::mock());
     app.add_singleton_model(SyncQueue::mock);
     app.add_singleton_model(CloudModel::mock);
-    app.add_singleton_model(crate::ai::cloud_environments::CloudEnvironmentCatalog::new);
     app.add_singleton_model(ImportedConfigModel::new);
     app.add_singleton_model(UserWorkspaces::default_mock);
     app.add_singleton_model(TeamTesterStatus::mock);
@@ -573,24 +539,7 @@ pub fn initialize_app(app: &mut App) {
     // QueuedQueryModel subscribes to history events; register after the
     // history model is in place.
     app.add_singleton_model(crate::ai::blocklist::QueuedQueryModel::new);
-    // Pill bar model subscribes to history events; register after the
-    // history model is in place.
-    app.add_singleton_model(|ctx| {
-        crate::ai::blocklist::agent_view::orchestration_pill_bar_model::OrchestrationPillBarModel::new(
-            Default::default(),
-            ctx,
-        )
-    });
     app.add_singleton_model(|_| CLIAgentSessionsModel::new());
-    // The blocklist controller created during terminal bootstrap subscribes to
-    // OrchestrationEventService and OrchestrationEventStreamer unconditionally,
-    // so both singletons must be registered before bootstrap.
-    app.add_singleton_model(
-        crate::ai::blocklist::orchestration_events::OrchestrationEventService::new,
-    );
-    app.add_singleton_model(
-        crate::ai::blocklist::orchestration_event_streamer::OrchestrationEventStreamer::new,
-    );
     app.add_singleton_model(|_| ActiveAgentViewsModel::new());
     app.add_singleton_model(AgentNotificationsModel::new);
     app.add_singleton_model(BlocklistAIPermissions::new);
@@ -598,8 +547,6 @@ pub fn initialize_app(app: &mut App) {
     app.add_singleton_model(AppTelemetryContextProvider::new_context_provider);
     app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(LLMPreferences::new);
-    app.add_singleton_model(HarnessAvailabilityModel::new);
-    app.add_singleton_model(ConnectedSelfHostedWorkersModel::new);
     app.add_singleton_model(SessionPermissionsManager::new);
     app.add_singleton_model(DirectoryWatcher::new);
     app.add_singleton_model(|_| DetectedRepositories::default());
@@ -652,9 +599,6 @@ pub fn initialize_app(app: &mut App) {
     app.add_singleton_model(|_| WorkspaceRegistry::new());
     app.add_singleton_model(|_| ToastStack);
     app.add_singleton_model(|_| PricingInfoModel::new());
-    app.add_singleton_model(|_| {
-        crate::ai::ambient_agents::github_auth_notifier::GitHubAuthNotifier::new()
-    });
     app.add_singleton_model(AgentConversationsModel::new);
     app.add_singleton_model(PersistedWorkspace::new_for_test);
     app.add_singleton_model(|ctx| crate::ai::agent_tips::AITipModel::new_for_agent_tips(ctx));
@@ -1051,87 +995,6 @@ fn test_input_tab() {
         input.read(&app, |input, ctx| {
             assert_eq!(input.buffer_text(ctx), "    cd so");
         });
-    });
-}
-
-#[test]
-fn zero_state_hint_text_only_registers_active_slash_command_placeholders() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let session_info = SessionInfo::new_for_test();
-        let session_id = session_info.session_id;
-        let terminal = add_window_with_bootstrapped_terminal(
-            &mut app,
-            None, /* history_file_commands */
-            Some(session_info),
-        )
-        .await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-
-        input.update(&mut app, |input, ctx| {
-            input.set_zero_state_hint_text(ctx);
-        });
-
-        let editor = input.read(&app, |input, _| input.editor().clone());
-        let rename_tab_prefix = format!("{} ", commands::RENAME_TAB.name);
-        let continue_locally_prefix = format!("{} ", commands::CONTINUE_LOCALLY.name);
-
-        editor.update(&mut app, |editor, ctx| {
-            editor.set_placeholder_text_with_prefix(
-                continue_locally_prefix.clone(),
-                "stale hint",
-                ctx,
-            );
-        });
-        input.update(&mut app, |input, ctx| {
-            input.set_zero_state_hint_text(ctx);
-        });
-
-        assert!(
-            editor.read(&app, |editor, _| editor
-                .placeholder_text(&rename_tab_prefix)
-                .is_some()),
-            "always-active slash command placeholders should still be registered"
-        );
-        assert!(
-            editor.read(&app, |editor, _| editor
-                .placeholder_text(&continue_locally_prefix)
-                .is_none()),
-            "/continue-locally should not be registered outside cloud conversation context"
-        );
-
-        editor.update(&mut app, |editor, ctx| {
-            editor.set_placeholder_text_with_prefix(
-                continue_locally_prefix.clone(),
-                "stale hint",
-                ctx,
-            );
-        });
-
-        let repo_dir = tempfile::TempDir::new().expect("repo temp dir");
-        let repo_path = repo_dir.path().to_path_buf();
-        simulate_directory_for_completion(
-            session_id,
-            &terminal,
-            &mut app,
-            repo_path.to_string_lossy().into_owned(),
-        );
-        DetectedRepositories::handle(&app).update(&mut app, |repos, _| {
-            let root = StandardizedPath::from_local_canonicalized(&repo_path)
-                .expect("canonicalized repo root");
-            repos.insert_test_repo_root(root);
-        });
-        input.update(&mut app, |input, ctx| {
-            input.update_repo_path(Some(repo_path), ctx);
-        });
-
-        assert!(
-            editor.read(&app, |editor, _| editor
-                .placeholder_text(&continue_locally_prefix)
-                .is_none()),
-            "active slash-command data source updates should refresh stale placeholders"
-        );
     });
 }
 
@@ -1646,41 +1509,6 @@ fn test_history_up_for_shared_session_executor() {
 }
 
 #[test]
-fn maybe_route_ai_query_to_remote_target_proceeds_for_local_pane() {
-    // An ordinary local pane (not a viewer, not a cloud/ambient pane) must not be intercepted:
-    // the helper returns false so the caller proceeds with normal local submission.
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model
-                .block_list_mut()
-                .active_block_for_test()
-                .set_session_id(SessionId::from(0));
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("run something", ctx);
-        });
-
-        let handled = input.update(&mut app, |input, ctx| {
-            input.maybe_route_ai_query_to_remote_target(ctx)
-        });
-        assert!(
-            !handled,
-            "a local pane must not be intercepted by cloud follow-up routing"
-        );
-    });
-}
-
-#[test]
 fn maybe_route_ai_query_to_remote_target_proceeds_for_empty_buffer() {
     // Even on a viewer pane, an empty buffer is a no-op the caller handles normally, so the
     // helper returns false and does not forward anything.
@@ -1770,32 +1598,6 @@ fn maybe_route_ai_query_to_remote_target_blocks_read_only_viewer() {
 }
 
 #[test]
-fn unresolved_ambient_task_blocks_submission() {
-    // REMOTE-2661: eligibility that is merely unresolved (the ambient task is not in
-    // `AgentConversationsModel` yet) must fail closed for every submission path, rather than
-    // fall back to the direct viewer path or a new local conversation.
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let task_id: crate::ai::ambient_agents::AmbientAgentTaskId =
-            "550e8400-e29b-41d4-a716-000000000099".parse().unwrap();
-
-        let blocked = input.update(&mut app, |input, ctx| {
-            input.block_submission_while_ambient_task_unresolved(Some(task_id), ctx)
-        });
-        assert!(
-            blocked,
-            "an uncached ambient task must block the submission instead of resolving eligibility"
-        );
-    });
-}
-
-#[test]
 fn maybe_route_ai_query_to_remote_target_forwards_executor_viewer_prompt() {
     // An executor viewer forwards the prompt to the sharer (SendAgentPrompt) instead of running
     // it on the viewer's local machine.
@@ -1841,321 +1643,6 @@ fn maybe_route_ai_query_to_remote_target_forwards_executor_viewer_prompt() {
             ["continue please"],
             "an executor viewer must forward the prompt to the sharer"
         );
-    });
-}
-
-#[test]
-fn attach_ambient_view_model_builds_composer_selectors_for_fresh_cloud_pane_in_view_pending() {
-    // Regression: a fresh cloud-mode composer pane is created in `ViewPending` (see
-    // `TerminalModel::new_for_cloud_mode_shared_session_viewer`), which
-    // `SharedSessionStatus::is_viewer()` reports as a viewer. Such a pane is a dummy cloud-mode
-    // session composing a new run, not an actual shared-session viewer, so the composer-only
-    // host / auth-secret / FTUX selectors must still be built for it.
-    App::test((), |mut app| async move {
-        let _cloud_mode_input_v2 = FeatureFlag::CloudModeInputV2.override_enabled(true);
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        let terminal_view_id = terminal.read(&app, |view, _| view.id());
-
-        // Simulate the initial cloud composer state: a dummy cloud-mode session in `ViewPending`.
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.set_shared_session_status(SharedSessionStatus::ViewPending);
-            model.set_is_dummy_cloud_mode_session(true);
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let weak_terminal = terminal.downgrade();
-        input.update(&mut app, |input, ctx| {
-            let view_model = ctx
-                .add_model(|ctx| AmbientAgentViewModel::new(terminal_view_id, weak_terminal, ctx));
-            input.attach_ambient_agent_view_model(view_model, ctx);
-
-            assert!(
-                input.host_selector().is_some(),
-                "the initial cloud composer state must build the host selector"
-            );
-            assert!(
-                input.auth_secret_selector().is_some(),
-                "the initial cloud composer state must build the auth-secret selector"
-            );
-            assert!(
-                input.auth_secret_ftux_view().is_some(),
-                "the initial cloud composer state must build the auth-secret FTUX view"
-            );
-        });
-    });
-}
-
-#[test]
-fn attach_ambient_view_model_skips_composer_selectors_for_actual_shared_session_viewer() {
-    // An actual shared-session viewer (NOT a dummy cloud-mode session) that lazily discovers it is
-    // viewing an ambient run must not build the composer-only selectors, even though its ambient VM
-    // is still `Composing` and the model is in a viewer status when the model is attached.
-    App::test((), |mut app| async move {
-        let _cloud_mode_input_v2 = FeatureFlag::CloudModeInputV2.override_enabled(true);
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        let terminal_view_id = terminal.read(&app, |view, _| view.id());
-
-        // An actual shared-session viewer is in a viewer status but is not a dummy cloud-mode
-        // session (its model is created via `new_for_shared_session_viewer`).
-        terminal.update(&mut app, |view, _| {
-            view.model
-                .lock()
-                .set_shared_session_status(SharedSessionStatus::ViewPending);
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let weak_terminal = terminal.downgrade();
-        input.update(&mut app, |input, ctx| {
-            let view_model = ctx
-                .add_model(|ctx| AmbientAgentViewModel::new(terminal_view_id, weak_terminal, ctx));
-            input.attach_ambient_agent_view_model(view_model, ctx);
-
-            assert!(
-                input.host_selector().is_none(),
-                "an actual shared-session viewer must not build the host selector"
-            );
-            assert!(
-                input.auth_secret_selector().is_none(),
-                "an actual shared-session viewer must not build the auth-secret selector"
-            );
-            assert!(
-                input.auth_secret_ftux_view().is_none(),
-                "an actual shared-session viewer must not build the auth-secret FTUX view"
-            );
-        });
-    });
-}
-
-#[test]
-fn auth_secret_selectors_follow_their_own_window_team() {
-    App::test((), |mut app| async move {
-        let _cloud_mode_input_v2 = FeatureFlag::CloudModeInputV2.override_enabled(true);
-        initialize_app(&mut app);
-
-        let team_a = Team::from_local_cache(1.into(), "Team A".to_string(), None, None, None, None);
-        let team_b = Team::from_local_cache(2.into(), "Team B".to_string(), None, None, None, None);
-        let workspace = Workspace::from_local_cache(
-            "workspace_uid123456789".to_string().into(),
-            "Workspace".to_string(),
-            Some(vec![team_a.clone(), team_b.clone()]),
-            None,
-        );
-        let workspace_uid = workspace.uid;
-        app.update(|ctx| {
-            UserWorkspaces::handle(ctx).update(ctx, |workspaces, ctx| {
-                workspaces.update_workspaces(vec![workspace], ctx);
-                workspaces.set_current_workspace_uid(workspace_uid, ctx);
-            });
-            CloudAgentSettings::handle(ctx).update(ctx, |settings, ctx| {
-                settings.persist_auth_secret_preference(
-                    &TeamContextForOperation::new_for_test(team_a.uid),
-                    Harness::Claude,
-                    Some(AuthSecretPreference::Named("team-a-key".to_string())),
-                    ctx,
-                );
-                settings.persist_auth_secret_preference(
-                    &TeamContextForOperation::new_for_test(team_b.uid),
-                    Harness::Claude,
-                    Some(AuthSecretPreference::Named("team-b-key".to_string())),
-                    ctx,
-                );
-            });
-        });
-
-        let tips_a = app.add_model(|_| TipsCompleted::default());
-        let (window_a, terminal_a) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_a, None, ctx)
-        });
-        let tips_b = app.add_model(|_| TipsCompleted::default());
-        let (window_b, terminal_b) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_b, None, ctx)
-        });
-        terminal_a.update(&mut app, |view, _| {
-            view.model.lock().set_is_dummy_cloud_mode_session(true);
-        });
-        terminal_b.update(&mut app, |view, _| {
-            view.model.lock().set_is_dummy_cloud_mode_session(true);
-        });
-        UserWorkspaces::handle(&app).update(&mut app, |workspaces, ctx| {
-            workspaces.switch_window_to_team(window_a, team_a.uid, ctx);
-            workspaces.switch_window_to_team(window_b, team_a.uid, ctx);
-        });
-
-        let input_a = terminal_a.read(&app, |view, _| view.input().clone());
-        let terminal_a_id = terminal_a.read(&app, |view, _| view.id());
-        let weak_terminal_a = terminal_a.downgrade();
-        let view_model_a = input_a.update(&mut app, |input, ctx| {
-            let view_model = ctx
-                .add_model(|ctx| AmbientAgentViewModel::new(terminal_a_id, weak_terminal_a, ctx));
-            view_model.update(ctx, |model, ctx| model.set_harness(Harness::Claude, ctx));
-            input.attach_ambient_agent_view_model(view_model.clone(), ctx);
-            view_model
-        });
-
-        let input_b = terminal_b.read(&app, |view, _| view.input().clone());
-        let terminal_b_id = terminal_b.read(&app, |view, _| view.id());
-        let weak_terminal_b = terminal_b.downgrade();
-        let view_model_b = input_b.update(&mut app, |input, ctx| {
-            let view_model = ctx
-                .add_model(|ctx| AmbientAgentViewModel::new(terminal_b_id, weak_terminal_b, ctx));
-            view_model.update(ctx, |model, ctx| model.set_harness(Harness::Claude, ctx));
-            input.attach_ambient_agent_view_model(view_model.clone(), ctx);
-            view_model
-        });
-
-        assert_eq!(
-            view_model_a.read(&app, |model, _| {
-                model.selected_harness_auth_secret_name().map(str::to_owned)
-            }),
-            Some("team-a-key".to_string())
-        );
-        assert_eq!(
-            view_model_b.read(&app, |model, _| {
-                model.selected_harness_auth_secret_name().map(str::to_owned)
-            }),
-            Some("team-a-key".to_string())
-        );
-        let ftux_a = input_a.read(&app, |input, _| {
-            input
-                .auth_secret_ftux_view()
-                .cloned()
-                .expect("cloud composer should have an auth-secret FTUX view")
-        });
-        ftux_a.update(&mut app, |_, ctx| {
-            ctx.emit(AuthSecretFtuxViewEvent::SecretSelected {
-                harness: Harness::Claude,
-                name: "team-a-ftux-key".to_string(),
-            });
-        });
-        assert_eq!(
-            view_model_a.read(&app, |model, _| {
-                model.selected_harness_auth_secret_name().map(str::to_owned)
-            }),
-            Some("team-a-ftux-key".to_string())
-        );
-        app.read(|ctx| {
-            let settings = CloudAgentSettings::as_ref(ctx);
-            assert_eq!(
-                settings.auth_secret_preference(
-                    &TeamContextForOperation::new_for_test(team_a.uid),
-                    Harness::Claude,
-                ),
-                Some(AuthSecretPreference::Named("team-a-ftux-key".to_string()))
-            );
-            assert_eq!(
-                settings.auth_secret_preference(
-                    &TeamContextForOperation::new_for_test(team_b.uid),
-                    Harness::Claude,
-                ),
-                Some(AuthSecretPreference::Named("team-b-key".to_string()))
-            );
-        });
-
-        UserWorkspaces::handle(&app).update(&mut app, |workspaces, ctx| {
-            workspaces.switch_window_to_team(window_a, team_b.uid, ctx);
-        });
-
-        assert_eq!(
-            view_model_a.read(&app, |model, _| {
-                model.selected_harness_auth_secret_name().map(str::to_owned)
-            }),
-            Some("team-b-key".to_string())
-        );
-        assert_eq!(
-            view_model_b.read(&app, |model, _| {
-                model.selected_harness_auth_secret_name().map(str::to_owned)
-            }),
-            Some("team-a-key".to_string())
-        );
-
-        ftux_a.update(&mut app, |_, ctx| {
-            ctx.emit(AuthSecretFtuxViewEvent::Skipped {
-                harness: Harness::Claude,
-            });
-        });
-        app.read(|ctx| {
-            let settings = CloudAgentSettings::as_ref(ctx);
-            assert_eq!(
-                settings.auth_secret_preference(
-                    &TeamContextForOperation::new_for_test(team_a.uid),
-                    Harness::Claude,
-                ),
-                Some(AuthSecretPreference::Named("team-a-ftux-key".to_string()))
-            );
-            assert_eq!(
-                settings.auth_secret_preference(
-                    &TeamContextForOperation::new_for_test(team_b.uid),
-                    Harness::Claude,
-                ),
-                Some(AuthSecretPreference::Inherit)
-            );
-        });
-    });
-}
-
-#[test]
-fn teamless_cloud_mode_host_selector_ignores_team_worker_cache() {
-    // A personal/teamless window must not surface connected workers cached for a team.
-    App::test((), |mut app| async move {
-        let _cloud_mode_input_v2 = FeatureFlag::CloudModeInputV2.override_enabled(true);
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        let terminal_view_id = terminal.read(&app, |view, _| view.id());
-
-        // Fresh cloud-mode composer: a dummy cloud-mode session in `ViewPending`.
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.set_shared_session_status(SharedSessionStatus::ViewPending);
-            model.set_is_dummy_cloud_mode_session(true);
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let weak_terminal = terminal.downgrade();
-        input.update(&mut app, |input, ctx| {
-            let view_model = ctx
-                .add_model(|ctx| AmbientAgentViewModel::new(terminal_view_id, weak_terminal, ctx));
-            input.attach_ambient_agent_view_model(view_model, ctx);
-        });
-
-        // No workspace default host and no connected workers -> the dropdown stays hidden.
-        input.read(&app, |input, ctx| {
-            assert!(
-                input.host_selector().is_some(),
-                "the cloud composer must build the host selector"
-            );
-            assert!(
-                input.visible_host_selector(ctx).is_none(),
-                "host selector must be hidden with no default host and no connected workers"
-            );
-        });
-
-        // A worker connected under an unrelated team must not leak into this teamless window.
-        let team_scope = TeamContextForOperation::new_for_test(123_i64.into());
-        ConnectedSelfHostedWorkersModel::handle(&app).update(&mut app, |model, ctx| {
-            model.set_workers_for_test(&team_scope, &["oz-k8s-worker"], ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert!(
-                input.visible_host_selector(ctx).is_none(),
-                "a teamless window must not show another team's connected worker"
-            );
-        });
     });
 }
 
@@ -2829,40 +2316,6 @@ fn enter_with_nonempty_buffer_does_not_send_queued_row() {
     });
 }
 
-/// The locked initial cloud-mode head row never fires on Enter, and the locked head blocks the
-/// rows behind it (only the head row is Enter-sendable).
-#[test]
-fn empty_buffer_enter_skips_locked_initial_cloud_mode_head() {
-    App::test((), |mut app| async move {
-        let _queue_flag = FeatureFlag::QueueSlashCommand.override_enabled(true);
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let terminal_view_id = terminal.read(&app, |view, _| view.id());
-        let conversation_id = seed_active_conversation(&mut app, terminal_view_id);
-        let input = terminal.read(&app, |view, _| view.input().clone());
-
-        QueuedQueryModel::handle(&app).update(&mut app, |model, ctx| {
-            model.append(
-                conversation_id,
-                QueuedQuery::new("initial".to_owned(), QueuedQueryOrigin::InitialCloudMode),
-                ctx,
-            );
-            model.append(
-                conversation_id,
-                QueuedQuery::new("follow up".to_owned(), QueuedQueryOrigin::QueueSlashCommand),
-                ctx,
-            );
-        });
-
-        input.update(&mut app, |input, ctx| input.input_enter(ctx));
-
-        QueuedQueryModel::handle(&app).read(&app, |model, _| {
-            assert_eq!(model.queue(conversation_id).len(), 2);
-        });
-    });
-}
-
 /// Seeds an in-progress conversation for `terminal`.
 fn seed_in_progress_conversation(
     app: &mut App,
@@ -2910,80 +2363,6 @@ fn seed_in_progress_conversation(
         );
     });
     conversation_id
-}
-
-#[test]
-fn local_steering_captures_attachments_without_changing_full_response_queueing() {
-    App::test((), |mut app| async move {
-        let _agent_view = FeatureFlag::AgentView.override_enabled(false);
-        let _queue = FeatureFlag::QueueSlashCommand.override_enabled(true);
-        let _steering = FeatureFlag::AgentPromptSteering.override_enabled(true);
-        initialize_app(&mut app);
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let id = seed_in_progress_conversation(&mut app, &terminal);
-        select_conversation(&mut app, &terminal, id);
-        AISettings::handle(&app).update(&mut app, |settings, ctx| {
-            settings
-                .default_prompt_submission_mode
-                .set_value(PromptSubmissionMode::Steer, ctx)
-                .unwrap();
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        input.update(&mut app, |input, ctx| {
-            input.set_input_mode_agent(false, ctx);
-            input.execute_slash_command(
-                &commands::QUEUE,
-                Some(&"write tests".to_owned()),
-                SlashCommandTrigger::input(),
-                false,
-                None,
-                None,
-                ctx,
-            );
-            input.ai_context_model.update(ctx, |context, ctx| {
-                context.append_pending_attachments(
-                    vec![PendingAttachment::Image(ImageContext {
-                        data: "image".into(),
-                        mime_type: "image/png".into(),
-                        file_name: "diagram.png".into(),
-                        is_figma: false,
-                    })],
-                    ctx,
-                );
-            });
-            input.replace_buffer_content("do not modify X", ctx);
-            input.input_enter(ctx);
-            assert!(input.buffer_text(ctx).is_empty());
-            assert!(
-                input
-                    .ai_context_model
-                    .as_ref(ctx)
-                    .pending_attachments()
-                    .is_empty()
-            );
-            let queue = QueuedQueryModel::as_ref(ctx).queue(id);
-            assert_eq!(queue.len(), 2);
-            assert_eq!(queue[0].origin(), QueuedQueryOrigin::QueueSlashCommand);
-            assert_eq!(queue[1].origin(), QueuedQueryOrigin::LocalSteering);
-            assert_eq!(queue[1].attachments().len(), 1);
-            assert_eq!(
-                BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&id)
-                    .unwrap()
-                    .status(),
-                &ConversationStatus::InProgress
-            );
-            // The auto-queue chip overrides Steer for this conversation.
-            QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
-                queue.toggle_queue_next_prompt(id, ctx);
-            });
-            input.replace_buffer_content("queued instead", ctx);
-            input.input_enter(ctx);
-            let queue = QueuedQueryModel::as_ref(ctx).queue(id);
-            assert_eq!(queue.len(), 3);
-            assert_eq!(queue[2].origin(), QueuedQueryOrigin::AutoQueueToggle);
-        });
-    });
 }
 
 #[test]
@@ -3532,6 +2911,100 @@ fn shell_submission_queues_as_command_row_when_gated_under_v2() {
         input.read(&app, |input, ctx| {
             assert!(input.buffer_text(ctx).is_empty())
         });
+    });
+}
+
+#[test]
+fn zero_state_hint_text_registers_active_slash_command_placeholders() {
+    App::test((), |mut app| async move {
+        initialize_app(&mut app);
+
+        let session_info = SessionInfo::new_for_test();
+        let terminal = add_window_with_bootstrapped_terminal(
+            &mut app,
+            None, /* history_file_commands */
+            Some(session_info),
+        )
+        .await;
+        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
+
+        input.update(&mut app, |input, ctx| {
+            input.set_zero_state_hint_text(ctx);
+        });
+
+        let editor = input.read(&app, |input, _| input.editor().clone());
+        let rename_tab_prefix = format!("{} ", commands::RENAME_TAB.name);
+
+        assert!(
+            editor.read(&app, |editor, _| editor
+                .placeholder_text(&rename_tab_prefix)
+                .is_some()),
+            "always-active slash command placeholders should be registered"
+        );
+    });
+}
+
+#[test]
+fn maybe_route_ai_query_to_remote_target_proceeds_for_local_pane() {
+    // An ordinary local pane (not a viewer) must not be intercepted: the helper returns false so
+    // the caller proceeds with normal local submission.
+    App::test((), |mut app| async move {
+        initialize_app(&mut app);
+
+        let tips_model = app.add_model(|_| TipsCompleted::default());
+        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
+            TerminalView::new_for_test(tips_model, None, ctx)
+        });
+        terminal.update(&mut app, |view, _| {
+            let mut model = view.model.lock();
+            model.block_list_mut().set_bootstrapped();
+            model
+                .block_list_mut()
+                .active_block_for_test()
+                .set_session_id(SessionId::from(0));
+        });
+
+        let input = terminal.read(&app, |view, _| view.input().clone());
+        input.update(&mut app, |input, ctx| {
+            input.replace_buffer_content("run something", ctx);
+        });
+
+        let handled = input.update(&mut app, |input, ctx| {
+            input.maybe_route_ai_query_to_remote_target(ctx)
+        });
+        assert!(
+            !handled,
+            "a local pane must not be intercepted by viewer routing"
+        );
+    });
+}
+
+#[test]
+fn prebootstrap_share_status_uses_local_path_when_shell_is_ready() {
+    App::test((), |mut app| async move {
+        initialize_app(&mut app);
+
+        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
+        terminal.update(&mut app, |view, _| {
+            view.model.lock().set_shared_session_status(
+                SharedSessionStatus::SharePendingPreBootstrap {
+                    source: SharedSessionSource::user(None),
+                },
+            );
+        });
+        let input = terminal.read(&app, |view, _| view.input().clone());
+        let events = subscribe_to_execute_command_events(&mut app, &terminal);
+
+        assert!(input.update(&mut app, |input, ctx| {
+            input.try_execute_command("echo setup", ctx)
+        }));
+        assert_eventually!(
+            600 => events.borrow().len() == 1,
+            "a pre-bootstrap share status should use the local path after shell bootstrap"
+        );
+        let events = events.borrow();
+        assert_eq!(events[0].0, "echo setup");
+        assert!(matches!(&events[0].1, CommandExecutionSource::User));
     });
 }
 
@@ -9153,399 +8626,6 @@ fn enter_fullscreen_agent_view_for_test(terminal: &ViewHandle<TerminalView>, app
 }
 
 #[test]
-fn test_cloud_handoff_prefix_remains_text_when_handoff_flag_disabled() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(false);
-
-        initialize_app(&mut app);
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), CLOUD_HANDOFF_INPUT_PREFIX);
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::None);
-            assert!(!input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_activates_when_handoff_flags_enabled() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert!(input.buffer_text(ctx).is_empty());
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-            assert!(input.handoff_compose_state.as_ref(ctx).is_active());
-            app.read_model(input.ai_input_model(), |input_model, _| {
-                assert_eq!(input_model.input_type(), InputType::AI);
-                assert!(input_model.is_input_type_locked());
-                assert!(input_model.was_lock_set_with_empty_buffer());
-            });
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_normal_deletion_does_not_exit() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(" ", ctx);
-        });
-
-        // Normal backspace that deletes the space (cursor at end) should NOT exit.
-        input.update(&mut app, |input, ctx| {
-            input
-                .editor
-                .update(ctx, |editor, ctx| editor.backspace(ctx));
-        });
-
-        input.read(&app, |input, ctx| {
-            assert!(input.buffer_text(ctx).is_empty());
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-            assert!(input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-
-        // Backspace on the now-empty buffer exits & mode.
-        input.update(&mut app, |input, ctx| {
-            input
-                .editor
-                .update(ctx, |editor, ctx| editor.backspace(ctx));
-        });
-
-        input.read(&app, |input, ctx| {
-            assert!(input.buffer_text(ctx).is_empty());
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::None);
-            assert!(!input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_exits_on_backspace_at_beginning_of_buffer() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-        input.update(&mut app, |input, ctx| {
-            input.user_insert("fix tests", ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-        });
-
-        // Move cursor to the beginning, then backspace.
-        input.update(&mut app, |input, ctx| {
-            input.editor.update(ctx, |editor, ctx| {
-                editor.handle_action(&EditorAction::MoveToLineStart, ctx);
-                editor.backspace(ctx);
-            });
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::None);
-            assert!(!input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_keeps_shell_prefix_as_query_text() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(super::TERMINAL_INPUT_PREFIX, ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), super::TERMINAL_INPUT_PREFIX);
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-            assert!(input.handoff_compose_state.as_ref(ctx).is_active());
-            app.read_model(input.ai_input_model(), |input_model, _| {
-                assert_eq!(input_model.input_type(), InputType::AI);
-                assert!(input_model.is_input_type_locked());
-            });
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_escape_exits_mode_preserving_prompt_text() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-        input.update(&mut app, |input, ctx| {
-            input.user_insert("fix tests", ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-        });
-
-        input.update(&mut app, |input, ctx| {
-            input.editor_escape(ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::None);
-            assert!(!input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_remains_text_in_powershell_with_nld_enabled() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(true, ctx);
-        });
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-        input.update(&mut app, |input, ctx| {
-            input.editor.update(ctx, |editor, _| {
-                editor.set_shell_family(ShellFamily::PowerShell);
-            });
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), CLOUD_HANDOFF_INPUT_PREFIX);
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::None);
-            assert!(!input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-
-#[test]
-fn test_cloud_handoff_prefix_activates_in_powershell_when_nld_disabled() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-        input.update(&mut app, |input, ctx| {
-            input.editor.update(ctx, |editor, _| {
-                editor.set_shell_family(ShellFamily::PowerShell);
-            });
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert!(input.buffer_text(ctx).is_empty());
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-            assert!(input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-#[test]
-fn test_cloud_handoff_prefix_vim_escape_exits_insert_before_handoff_mode() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        enable_vim_mode(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let (input, editor) = terminal.read(&app, |terminal, ctx| {
-            let input = terminal.input().clone();
-            let editor = input.as_ref(ctx).editor().clone();
-            (input, editor)
-        });
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.activate_cloud_handoff_compose(HandoffEntryPoint::Ampersand, ctx);
-            input.user_insert("fix tests", ctx);
-        });
-
-        editor.read(&app, |editor, ctx| {
-            assert_eq!(editor.vim_mode(ctx), Some(VimMode::Insert));
-        });
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-        });
-
-        editor.update(&mut app, |editor, ctx| {
-            editor.escape(ctx);
-        });
-
-        editor.read(&app, |editor, ctx| {
-            assert_eq!(editor.vim_mode(ctx), Some(VimMode::Normal));
-        });
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-        });
-
-        editor.update(&mut app, |editor, ctx| {
-            editor.escape(ctx);
-        });
-
-        editor.read(&app, |editor, ctx| {
-            assert_eq!(editor.vim_mode(ctx), Some(VimMode::Normal));
-        });
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "fix tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::None);
-            assert!(!input.handoff_compose_state.as_ref(ctx).is_active());
-        });
-    });
-}
-#[test]
-fn test_cloud_handoff_prefix_ignores_terminal_input_mode_toggle() {
-    App::test((), |mut app| async move {
-        let _agent_view_flag = FeatureFlag::AgentView.override_enabled(true);
-        let _oz_handoff_flag = FeatureFlag::OzHandoff.override_enabled(true);
-        let _handoff_local_cloud_flag = FeatureFlag::HandoffLocalCloud.override_enabled(true);
-
-        initialize_app(&mut app);
-        AISettings::handle(&app).update(&mut app, |ai_settings, ctx| {
-            let _ = ai_settings
-                .ai_autodetection_enabled_internal
-                .set_value(false, ctx);
-        });
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let input = terminal.read(&app, |terminal, _| terminal.input().clone());
-        enter_fullscreen_agent_view_for_test(&terminal, &mut app);
-
-        input.update(&mut app, |input, ctx| {
-            input.user_insert(CLOUD_HANDOFF_INPUT_PREFIX, ctx);
-        });
-        input.update(&mut app, |input, ctx| {
-            input.user_insert("run tests", ctx);
-            input.set_input_mode_terminal(true, ctx);
-        });
-
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "run tests");
-            assert_eq!(input.prefix_mode(ctx), InputPrefixMode::CloudHandoff);
-            assert!(input.handoff_compose_state.as_ref(ctx).is_active());
-            app.read_model(input.ai_input_model(), |input_model, _| {
-                assert_eq!(input_model.input_type(), InputType::AI);
-                assert!(input_model.is_input_type_locked());
-            });
-        });
-    });
-}
-
-#[test]
 fn test_terminal_prefix_sets_shell_prefix_decision_source() {
     App::test((), |mut app| async move {
         let _am_flag = FeatureFlag::AgentMode.override_enabled(true);
@@ -11042,145 +10122,6 @@ fn ctrl_enter_inserts_newline_in_normal_input_after_rich_input_closes() {
     });
 }
 
-/// Directly exercises `restore_cloud_followup_input_after_upload_failure`:
-/// after the editor is frozen into the loading state, calling the restore
-/// function must put the exact original prompt text back and leave the
-/// editor editable.
-#[test]
-fn restore_cloud_followup_input_after_upload_failure_restores_prompt() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            view.model.lock().block_list_mut().set_bootstrapped();
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-
-        // Write a prompt that should survive a failed upload.
-        input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("cloud follow-up prompt", ctx);
-        });
-
-        // Freeze the editor (simulates the upload-in-progress loading state).
-        input.update(&mut app, |input, ctx| {
-            input.freeze_input_in_loading_state(ctx);
-        });
-        let frozen_text = input.read(&app, |i, ctx| i.buffer_text(ctx));
-        assert!(
-            frozen_text.contains("cloud follow-up prompt"),
-            "frozen text must contain the original prompt; got: {frozen_text:?}"
-        );
-        assert!(
-            frozen_text.contains('◌'),
-            "frozen text must contain the loading indicator '◌'; got: {frozen_text:?}"
-        );
-
-        // Simulate an upload failure restoring the input.
-        input.update(&mut app, |input, ctx| {
-            input.restore_cloud_followup_input_after_upload_failure("cloud follow-up prompt", ctx);
-        });
-
-        // The buffer must be restored to the original prompt without the loading marker.
-        assert_eq!(
-            input.read(&app, |i, ctx| i.buffer_text(ctx)),
-            "cloud follow-up prompt",
-            "restore must set the buffer back to the original prompt after upload failure"
-        );
-    });
-}
-
-#[test]
-fn should_upload_cloud_followup_attachments_matches_cloud_mode_image_context_flag() {
-    use base64::Engine as _;
-
-    let attachment = PendingAttachment::Image(ImageContext {
-        data: base64::engine::general_purpose::STANDARD.encode(b"fake image"),
-        mime_type: "image/png".to_string(),
-        file_name: "test.png".to_string(),
-        is_figma: false,
-    });
-
-    assert!(
-        !Input::should_upload_cloud_followup_attachments(&[]),
-        "no pending attachments should submit the text-only follow-up immediately"
-    );
-
-    let flag_guard = FeatureFlag::CloudModeImageContext.override_enabled(false);
-    assert!(
-        !Input::should_upload_cloud_followup_attachments(std::slice::from_ref(&attachment)),
-        "follow-up attachments should not upload while CloudModeImageContext is disabled"
-    );
-    drop(flag_guard);
-    let _flag_guard = FeatureFlag::CloudModeImageContext.override_enabled(true);
-    assert!(
-        Input::should_upload_cloud_followup_attachments(&[attachment]),
-        "follow-up attachments should upload when CloudModeImageContext is enabled"
-    );
-}
-
-/// Exercises the async failure path of `upload_files_then_submit_cloud_followup`:
-/// when the server API rejects the attachment upload (the test HTTP client never
-/// connects to a real server), the callback must restore the prompt text so the
-/// user can retry.
-#[test]
-fn upload_files_then_submit_cloud_followup_restores_input_on_upload_error() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            view.model.lock().block_list_mut().set_bootstrapped();
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-
-        let prompt = "attach and follow up".to_string();
-        input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content(&prompt, ctx);
-        });
-
-        // A tiny base64-encoded image used as the test attachment.  The decode
-        // succeeds in the async task, but `prepare_attachments_for_upload` then
-        // fails because the test HTTP client has no real server to contact.
-        use base64::Engine as _;
-        let attachment = PendingAttachment::Image(ImageContext {
-            data: base64::engine::general_purpose::STANDARD.encode(b"fake image"),
-            mime_type: "image/png".to_string(),
-            file_name: "test.png".to_string(),
-            is_figma: false,
-        });
-        let task_id: crate::ai::ambient_agents::AmbientAgentTaskId =
-            "11111111-1111-1111-1111-111111111111".parse().unwrap();
-
-        // Spawn the upload and await the completion of its foreground callback
-        // (which runs after the background tokio task finishes — immediately
-        // with an error in this test environment).
-        let await_future = input.update(&mut app, |input, ctx| {
-            let handle = input.upload_files_then_submit_cloud_followup(
-                task_id,
-                prompt.clone(),
-                vec![attachment],
-                ctx,
-            );
-            ctx.await_spawned_future(handle.future_id())
-        });
-        await_future.await;
-
-        // After the upload error, the callback must have restored the prompt.
-        assert_eq!(
-            input.read(&app, |i, ctx| i.buffer_text(ctx)),
-            prompt,
-            "input must be restored to the original prompt after a failed attachment upload"
-        );
-    });
-}
-
 /// With the '#' AI Command Search trigger disabled (APP-5557), typing '#' at the start of the
 /// buffer must leave it (and any text typed after it) as literal input, and must not open AI
 /// Command Search — this is what lets the text be finished and submitted as a shell comment
@@ -11393,4 +10334,78 @@ mod completion_sources_resolution_tests {
             CompletionSources::WarpOnly
         );
     }
+}
+
+#[test]
+fn local_steering_captures_attachments_without_changing_full_response_queueing() {
+    App::test((), |mut app| async move {
+        let _agent_view = FeatureFlag::AgentView.override_enabled(false);
+        let _queue = FeatureFlag::QueueSlashCommand.override_enabled(true);
+        let _steering = FeatureFlag::AgentPromptSteering.override_enabled(true);
+        initialize_app(&mut app);
+        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
+        let id = seed_in_progress_conversation(&mut app, &terminal);
+        select_conversation(&mut app, &terminal, id);
+        AISettings::handle(&app).update(&mut app, |settings, ctx| {
+            settings
+                .default_prompt_submission_mode
+                .set_value(PromptSubmissionMode::Steer, ctx)
+                .unwrap();
+        });
+        let input = terminal.read(&app, |view, _| view.input().clone());
+        input.update(&mut app, |input, ctx| {
+            input.set_input_mode_agent(false, ctx);
+            input.execute_slash_command(
+                &commands::QUEUE,
+                Some(&"write tests".to_owned()),
+                SlashCommandTrigger::input(),
+                false,
+                None,
+                None,
+                ctx,
+            );
+            input.ai_context_model.update(ctx, |context, ctx| {
+                context.append_pending_attachments(
+                    vec![PendingAttachment::Image(ImageContext {
+                        data: "image".into(),
+                        mime_type: "image/png".into(),
+                        file_name: "diagram.png".into(),
+                        is_figma: false,
+                    })],
+                    ctx,
+                );
+            });
+            input.replace_buffer_content("do not modify X", ctx);
+            input.input_enter(ctx);
+            assert!(input.buffer_text(ctx).is_empty());
+            assert!(
+                input
+                    .ai_context_model
+                    .as_ref(ctx)
+                    .pending_attachments()
+                    .is_empty()
+            );
+            let queue = QueuedQueryModel::as_ref(ctx).queue(id);
+            assert_eq!(queue.len(), 2);
+            assert_eq!(queue[0].origin(), QueuedQueryOrigin::QueueSlashCommand);
+            assert_eq!(queue[1].origin(), QueuedQueryOrigin::LocalSteering);
+            assert_eq!(queue[1].attachments().len(), 1);
+            assert_eq!(
+                BlocklistAIHistoryModel::as_ref(ctx)
+                    .conversation(&id)
+                    .unwrap()
+                    .status(),
+                &ConversationStatus::InProgress
+            );
+            // The auto-queue chip overrides Steer for this conversation.
+            QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
+                queue.toggle_queue_next_prompt(id, ctx);
+            });
+            input.replace_buffer_content("queued instead", ctx);
+            input.input_enter(ctx);
+            let queue = QueuedQueryModel::as_ref(ctx).queue(id);
+            assert_eq!(queue.len(), 3);
+            assert_eq!(queue[2].origin(), QueuedQueryOrigin::AutoQueueToggle);
+        });
+    });
 }

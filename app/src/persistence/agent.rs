@@ -39,8 +39,7 @@ pub(super) enum UpsertConversationError {
 }
 
 /// Maximum number of `agent_conversations` rows we retain on disk before
-/// `select_conversations_to_evict` starts dropping trees. 200 gives roughly
-/// 10–40 orchestration sessions of headroom; trees are kept atomically, so
+/// `select_conversations_to_evict` starts dropping trees. Trees are kept atomically, so
 /// an active session is never split even if it pushes past the cap.
 pub(super) const MAX_PERSISTED_CONVERSATION_COUNT: usize = 200;
 
@@ -141,7 +140,7 @@ pub(super) fn upsert_agent_conversation<'a>(
     Ok(())
 }
 
-/// Evicts whole orchestration trees so the remaining set fits within `limit`.
+/// Evicts whole conversation trees so the remaining set fits within `limit`.
 /// Trees are sorted freshest-first by `max(member.last_modified_at)` (ties
 /// broken by `root_id` ASC); the freshest tree is always retained, every
 /// older tree is kept only if cumulative kept rows + tree size ≤ `limit`,

@@ -18,23 +18,9 @@ fn rgb(value: u32) -> Color {
 
 #[test]
 fn design_palettes_match_figma_in_dark_and_light_themes() {
-    for (theme, brand_primary, brand_accent, agent_colors) in [
-        (
-            dark_theme(),
-            0xD2B5FFFF,
-            0xE2FFD4FF,
-            [
-                0xD0D1FEFF, 0xA5D5FEFF, 0xFF8FFDFF, 0xD2B5FFFF, 0xFF8AA6FF, 0xE2FFD4FF, 0xFBDC79FF,
-            ],
-        ),
-        (
-            light_theme(),
-            0x9C58F0FF,
-            0x33770BFF,
-            [
-                0x20A5BAFF, 0x008EC4FF, 0x523C79FF, 0x9C58F0FF, 0xFF8AA6FF, 0x33770BFF, 0xC79A18FF,
-            ],
-        ),
+    for (theme, brand_primary, brand_accent) in [
+        (dark_theme(), 0xD2B5FFFF, 0xE2FFD4FF),
+        (light_theme(), 0x9C58F0FF, 0x33770BFF),
     ] {
         let builder = TuiUiBuilder { warp_theme: theme };
 
@@ -43,18 +29,6 @@ fn design_palettes_match_figma_in_dark_and_light_themes() {
         assert_eq!(
             builder.warping_base_color(),
             ColorU::from_u32(brand_primary)
-        );
-        assert_eq!(
-            builder
-                .agent_identity_palette()
-                .into_iter()
-                .take(agent_colors.len())
-                .map(|identity| identity.style.fg)
-                .collect::<Vec<_>>(),
-            agent_colors
-                .into_iter()
-                .map(|color| Some(rgb(color)))
-                .collect::<Vec<_>>()
         );
     }
 }
