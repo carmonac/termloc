@@ -8,8 +8,6 @@ use warpui::{SingletonEntity, ViewContext};
 use super::arguments::ArgumentsState;
 use super::modal::{AiAssistState, WorkflowModal, WorkflowModalEvent};
 use crate::ai::AIRequestUsageModel;
-use crate::send_telemetry_from_ctx;
-use crate::server::telemetry::TelemetryEvent;
 use crate::workflows::workflow::{Argument, Workflow};
 
 /// Generated command metadata from server.
@@ -143,21 +141,12 @@ impl WorkflowModal {
                             environment_variables: None,
                         };
 
-                        send_telemetry_from_ctx!(TelemetryEvent::AutoGenerateMetadataSuccess, ctx);
-
                         modal.populate_missing_field_with_suggestion(workflow, ctx);
                         ctx.notify();
                     }
                     Err(err) => {
                         let message = err.user_facing_message();
                         ctx.emit(WorkflowModalEvent::AiAssistError(message.clone()));
-
-                        send_telemetry_from_ctx!(
-                            TelemetryEvent::AutoGenerateMetadataError {
-                                error_payload: serde_json::json!(err)
-                            },
-                            ctx
-                        );
 
                         modal.ai_metadata_assist_state = AiAssistState::PreRequest;
                         modal.enable_editors(ctx);

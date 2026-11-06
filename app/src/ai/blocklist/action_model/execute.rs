@@ -46,11 +46,8 @@ pub(super) use read_files::ReadFilesExecutor;
 use read_mcp_resource::ReadMCPResourceExecutor;
 use read_skill::ReadSkillExecutor;
 use request_computer_use::RequestComputerUseExecutor;
-pub use request_file_edits::{
-    EditAcceptAndContinueClickedEvent, EditAcceptClickedEvent, EditResolvedEvent, EditStats,
-    RequestFileEditsExecutor, RequestFileEditsFormatKind, RequestFileEditsTelemetryEvent,
-};
-pub(crate) use request_file_edits::{FileReadResult, MalformedFinalLineProxyEvent, apply_edits};
+pub use request_file_edits::RequestFileEditsExecutor;
+pub(crate) use request_file_edits::{FileReadResult, apply_edits};
 use serde::{Deserialize, Serialize};
 pub use shell_command::{ShellCommandExecutor, ShellCommandExecutorEvent};
 use start_recording::StartRecordingExecutor;
@@ -70,12 +67,11 @@ use warpui::r#async::{Spawnable, SpawnableOutput};
 use warpui::{AppContext, Entity, EntityId, ModelContext, ModelHandle, SingletonEntity};
 
 use self::search_codebase::SearchCodebaseExecutor;
-use crate::BlocklistAIHistoryModel;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::agent::{
     AIAgentAction, AIAgentActionId, AIAgentActionResult, AIAgentActionResultType,
     AIAgentActionType, AIAgentActionTypeDiscriminants, CancellationReason, FileContext,
-    FileLocations, ReadFilesFailedFile, ServerOutputId,
+    FileLocations, ReadFilesFailedFile,
 };
 use crate::ai::blocklist::action_model::recording_controller::RecordingController;
 use crate::ai::get_relevant_files::controller::GetRelevantFilesController;
@@ -122,7 +118,6 @@ struct ExecuteActionInput<'a> {
 #[derive(Debug, Clone, Copy)]
 struct PreprocessActionInput<'a> {
     action: &'a AIAgentAction,
-    conversation_id: AIConversationId,
 }
 
 type AsyncExecuteActionFn<T> = Pin<Box<dyn Spawnable<Output = T>>>;
@@ -404,13 +399,9 @@ impl BlocklistAIActionExecutor {
     pub fn preprocess_action(
         &self,
         action: &AIAgentAction,
-        conversation_id: AIConversationId,
         ctx: &mut ModelContext<Self>,
     ) -> BoxFuture<'static, ()> {
-        let input = PreprocessActionInput {
-            action,
-            conversation_id,
-        };
+        let input = PreprocessActionInput { action };
 
         match &action.action {
             AIAgentActionType::RequestCommandOutput { .. }
@@ -639,7 +630,7 @@ impl BlocklistAIActionExecutor {
                 .into(),
             AIAgentActionType::RequestComputerUse(_) => self
                 .request_computer_use_executor
-                .update(ctx, |executor, ctx| executor.execute(input, ctx))
+                .update(ctx, |executor, _| executor.execute(input))
                 .into(),
             AIAgentActionType::StartRecording { .. } => self
                 .start_recording_executor
@@ -1279,17 +1270,6 @@ async fn is_git_repository(absolute_path: &str, session: &Session) -> anyhow::Re
         )
         .await?;
     Ok(command_output.success())
-}
-
-fn get_server_output_id(
-    conversation_id: AIConversationId,
-    ctx: &mut AppContext,
-) -> Option<ServerOutputId> {
-    BlocklistAIHistoryModel::as_ref(ctx)
-        .conversation(&conversation_id)?
-        .latest_exchange()?
-        .output_status
-        .server_output_id()
 }
 
 #[cfg(feature = "local_fs")]

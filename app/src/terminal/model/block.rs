@@ -414,9 +414,6 @@ pub struct Block {
     /// track the count of discarded newlines here in order to correct the row number.
     leading_linefeeds_ignored: usize,
 
-    /// `true` if client-side telemetry for user-generated AI data is enabled.
-    pub(super) is_ai_ugc_telemetry_enabled: bool,
-
     /// Only set on restored blocks. Indicates whether the block was local or from a remote session.
     restored_block_was_local: Option<bool>,
 
@@ -928,7 +925,6 @@ impl Block {
         block_index: BlockIndex,
         honor_ps1: bool,
         should_scan_for_secrets: ObfuscateSecrets,
-        is_ai_ugc_telemetry_enabled: bool,
         conversation_id: Option<AIConversationId>,
     ) -> Self {
         let perform_reset_grid_checks = if cfg!(windows) && bootstrap_stage.is_done() {
@@ -1007,7 +1003,6 @@ impl Block {
             should_hide_output_grid: false,
             should_hide_command_grid: false,
             leading_linefeeds_ignored: 0,
-            is_ai_ugc_telemetry_enabled,
             restored_block_was_local: None,
             agent_view_visibility: match conversation_id {
                 Some(id) => AgentViewVisibility::new_from_conversation(id),
@@ -1772,28 +1767,16 @@ impl Block {
     }
 
     fn compute_output_truncated(&self) -> String {
-        if self.is_ai_ugc_telemetry_enabled {
-            // If telemetry is enabled, we collect the full output but are limiting it to
-            // the first and last 2500 lines in case the block is very large.
-            self.output_grid().content_summary(2500, 2500, false)
-        } else {
-            self.output_grid()
-                .contents_to_string(false, Some(MAX_SERIALIZED_OUTPUT_LINES))
-        }
+        self.output_grid()
+            .contents_to_string(false, Some(MAX_SERIALIZED_OUTPUT_LINES))
     }
 
     /// Computes [`UserBlockCompleted::output_truncated_with_obfuscated_secrets`] lazily from the live
     /// block.
     fn compute_output_truncated_with_obfuscated_secrets(&self) -> String {
-        let mut output = if self.is_ai_ugc_telemetry_enabled {
-            self.output_grid().content_summary(2500, 2500, true)
-        } else {
-            self.output_grid()
-                .contents_to_string_force_secrets_obfuscated(
-                    false,
-                    Some(MAX_SERIALIZED_OUTPUT_LINES),
-                )
-        };
+        let mut output = self
+            .output_grid()
+            .contents_to_string_force_secrets_obfuscated(false, Some(MAX_SERIALIZED_OUTPUT_LINES));
         // If secret redaction is disabled, we manually scan for secrets and redact them.
         if matches!(
             self.output_grid().should_scan_for_secrets,

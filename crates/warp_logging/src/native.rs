@@ -169,7 +169,7 @@ pub fn on_parent_process_crash() {
     );
 }
 
-/// Rotates the log and telemetry files, such that:
+/// Rotates the log files, such that:
 /// - Each file stores the logs of a single execution.
 /// - The .old files store the previous executions, with larger suffixes indicating older executions.
 pub async fn rotate_log_files() {

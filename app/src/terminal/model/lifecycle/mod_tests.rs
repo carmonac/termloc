@@ -1,15 +1,8 @@
-use std::collections::BTreeSet;
-
-use instant::Instant;
 use warp_core::features::FeatureFlag;
-use warp_core::telemetry::TelemetryEvent;
 
-use super::telemetry::{
-    LifecycleRecoveryRecord, LifecycleTelemetryEvent, LifecycleTelemetryLimiter,
-};
 use super::transition::{
-    IgnoreReason, LifecycleAction, LifecycleInput, LifecycleInputKind, LifecyclePhase,
-    LifecycleSnapshot, NextBlockIdDisposition, plan, reconcile_phase,
+    IgnoreReason, LifecycleAction, LifecycleInput, LifecyclePhase, LifecycleSnapshot,
+    NextBlockIdDisposition, plan, reconcile_phase,
 };
 use crate::terminal::model::block::BlockState;
 
@@ -384,7 +377,6 @@ fn lifecycle_coordinator_records_only_conservative_or_recovery_transitions() {
 
     let transition = coordinator.plan(&before_execution, InitShell);
     assert_eq!(transition.action, BeginEpoch);
-    assert!(transition.recovery_record.is_none());
     coordinator.commit(&transition);
 
     let submitted = LifecycleSnapshot {
@@ -393,7 +385,6 @@ fn lifecycle_coordinator_records_only_conservative_or_recovery_transitions() {
     };
     let transition = coordinator.plan(&submitted, Preexec(super::PreexecObservation::First));
     assert_eq!(transition.action, ApplyPreexec);
-    assert!(transition.recovery_record.is_none());
     coordinator.commit(&transition);
 
     let executing = LifecycleSnapshot {
@@ -403,7 +394,6 @@ fn lifecycle_coordinator_records_only_conservative_or_recovery_transitions() {
     };
     let transition = coordinator.plan(&executing, CommandFinished(NextBlockIdDisposition::Novel));
     assert_eq!(transition.action, AcceptCommandFinished);
-    assert!(transition.recovery_record.is_none());
     coordinator.commit(&transition);
 
     let transition = coordinator.plan(
@@ -411,7 +401,6 @@ fn lifecycle_coordinator_records_only_conservative_or_recovery_transitions() {
         PrecmdWithCompletionMetadata(NextBlockIdDisposition::ActiveDuplicate),
     );
     assert_eq!(transition.action, ApplyPrecmd);
-    assert!(transition.recovery_record.is_none());
     coordinator.commit(&transition);
 
     let at_prompt = LifecycleSnapshot {
@@ -423,7 +412,6 @@ fn lifecycle_coordinator_records_only_conservative_or_recovery_transitions() {
         PrecmdWithCompletionMetadata(NextBlockIdDisposition::ActiveDuplicate),
     );
     assert_eq!(transition.action, Ignore(IgnoreReason::RepeatedPrecmd));
-    assert!(transition.recovery_record.is_some());
 }
 
 #[test]
@@ -459,7 +447,6 @@ fn lifecycle_coordinator_gates_novel_completion_recovery() {
             LifecycleAction::Ignore(IgnoreReason::RecoveryDisabled)
         );
         assert_eq!(transition.next_phase, LifecyclePhase::AtPrompt);
-        assert!(transition.recovery_record.is_some());
     }
 }
 
@@ -495,7 +482,6 @@ fn lifecycle_coordinator_accepts_novel_completion_recovery_when_enabled() {
         LifecycleAction::AcceptCommandFinished
     );
     assert_eq!(command_finished.next_phase, LifecyclePhase::AwaitingPrecmd);
-    assert!(command_finished.recovery_record.is_some());
 
     let precmd_with_completion_metadata = coordinator.plan(
         &snapshot,
@@ -508,103 +494,5 @@ fn lifecycle_coordinator_accepts_novel_completion_recovery_when_enabled() {
     assert_eq!(
         precmd_with_completion_metadata.next_phase,
         LifecyclePhase::AtPrompt
-    );
-    assert!(precmd_with_completion_metadata.recovery_record.is_some());
-}
-
-#[test]
-fn lifecycle_telemetry_is_rate_limited_per_transition_key() {
-    let mut limiter = LifecycleTelemetryLimiter::default();
-    let now = Instant::now();
-    let record = LifecycleRecoveryRecord::new(
-        LifecyclePhase::Executing,
-        LifecyclePhase::Executing,
-        LifecycleInputKind::StartCommand,
-        LifecycleAction::Ignore(IgnoreReason::RejectedExecuting),
-        &LifecycleSnapshot {
-            active_block_id: "active".to_owned(),
-            active_session_id: Some(1),
-            supplied_next_block_id: None,
-            hook_session_id: None,
-            block_state: BlockState::Executing,
-            started: true,
-            finished: false,
-            received_precmd: true,
-            is_in_band: false,
-            is_bootstrapped: true,
-            is_bootstrap_done: true,
-            is_alt_screen_active: false,
-            completion_mismatch: false,
-        },
-    );
-
-    assert!(limiter.record_at(record.clone(), now).is_some());
-    assert!(
-        limiter
-            .record_at(record.clone(), now + std::time::Duration::from_secs(1))
-            .is_none()
-    );
-    let emitted = limiter
-        .record_at(record, now + std::time::Duration::from_secs(61))
-        .expect("The rate-limit interval should emit an aggregate.");
-    assert_eq!(emitted.suppressed_repeats, 1);
-}
-
-#[test]
-fn lifecycle_telemetry_payload_is_allowlisted_and_non_ugc() {
-    let record = LifecycleRecoveryRecord::new(
-        LifecyclePhase::Executing,
-        LifecyclePhase::Executing,
-        LifecycleInputKind::StartCommand,
-        LifecycleAction::Ignore(IgnoreReason::RejectedExecuting),
-        &LifecycleSnapshot {
-            active_block_id: "active".to_owned(),
-            active_session_id: Some(1),
-            supplied_next_block_id: Some("next".to_owned()),
-            hook_session_id: Some(2),
-            block_state: BlockState::Executing,
-            started: true,
-            finished: false,
-            received_precmd: true,
-            is_in_band: false,
-            is_bootstrapped: true,
-            is_bootstrap_done: true,
-            is_alt_screen_active: false,
-            completion_mismatch: false,
-        },
-    );
-    let event = LifecycleTelemetryEvent::Recovery(record);
-    assert!(!event.contains_ugc());
-    let payload = event
-        .payload()
-        .expect("Lifecycle telemetry should have a payload.");
-    let fields = payload
-        .as_object()
-        .expect("Lifecycle telemetry should be a JSON object.")
-        .keys()
-        .map(String::as_str)
-        .collect::<BTreeSet<_>>();
-    assert_eq!(
-        fields,
-        BTreeSet::from([
-            "action",
-            "active_block_id",
-            "active_session_id",
-            "block_state",
-            "completion_mismatch",
-            "finished",
-            "hook_session_id",
-            "input_kind",
-            "is_alt_screen_active",
-            "is_bootstrap_done",
-            "is_bootstrapped",
-            "is_in_band",
-            "next_phase",
-            "previous_phase",
-            "received_precmd",
-            "started",
-            "supplied_next_block_id",
-            "suppressed_repeats",
-        ])
     );
 }

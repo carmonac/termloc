@@ -1,31 +1,20 @@
-use std::collections::HashSet;
-
 use ai::agent::action_result::{AIAgentActionResultType, RequestComputerUseResult};
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use warpui::{Entity, EntityId, ModelContext, SingletonEntity};
 
 use super::{ActionExecution, AnyActionExecution, ExecuteActionInput, PreprocessActionInput};
-use crate::ai::agent::{AIAgentActionId, AIAgentActionType};
-use crate::ai::blocklist::BlocklistAIHistoryModel;
+use crate::ai::agent::AIAgentActionType;
 use crate::features::FeatureFlag;
-use crate::send_telemetry_from_ctx;
-use crate::server::telemetry::TelemetryEvent;
 use crate::workspaces::user_workspaces::TeamContext;
 
 pub struct RequestComputerUseExecutor {
     terminal_view_id: EntityId,
-    /// Actions that were determined to be auto-executed in should_autoexecute().
-    /// Used to determine is_autoexecuted when emitting telemetry in execute().
-    autoexecuted_actions: HashSet<AIAgentActionId>,
 }
 
 impl RequestComputerUseExecutor {
     pub fn new(terminal_view_id: EntityId) -> Self {
-        Self {
-            terminal_view_id,
-            autoexecuted_actions: HashSet::new(),
-        }
+        Self { terminal_view_id }
     }
 
     pub(super) fn should_autoexecute(
@@ -43,8 +32,6 @@ impl RequestComputerUseExecutor {
         let permission = crate::ai::blocklist::BlocklistAIPermissions::as_ref(ctx)
             .get_computer_use_setting(Some(self.terminal_view_id), scope, ctx);
         if permission.is_always_allow() {
-            // Track that this action was auto-executed for telemetry in execute()
-            self.autoexecuted_actions.insert(action.id.clone());
             return true;
         }
 
@@ -55,31 +42,14 @@ impl RequestComputerUseExecutor {
     pub(super) fn execute(
         &mut self,
         input: ExecuteActionInput,
-        ctx: &mut ModelContext<Self>,
     ) -> impl Into<AnyActionExecution> + use<> {
         let ExecuteActionInput {
             action,
-            conversation_id,
+            conversation_id: _,
         } = input;
         let AIAgentActionType::RequestComputerUse(request) = &action.action else {
             return ActionExecution::InvalidAction;
         };
-
-        // If we're executing, that implies that computer use has been approved.
-        let is_autoexecuted = self.autoexecuted_actions.remove(&action.id);
-        let server_conversation_id = BlocklistAIHistoryModel::as_ref(ctx)
-            .conversation(&conversation_id)
-            .and_then(|c| c.server_conversation_token())
-            .map(|t| t.as_str().to_string());
-        send_telemetry_from_ctx!(
-            TelemetryEvent::ComputerUseApproved {
-                client_conversation_id: conversation_id,
-                server_conversation_id,
-                is_autoexecuted,
-                ambient_agent_task_id: None,
-            },
-            ctx
-        );
 
         let screenshot_params = request.screenshot_params;
         // Build the actor here, in the synchronous (main-thread) body of `execute()`, before moving

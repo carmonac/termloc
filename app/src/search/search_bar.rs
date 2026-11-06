@@ -126,9 +126,9 @@ pub enum SearchBarEvent<T: Action + Clone> {
     /// The search view should be closed.
     Close,
     /// The search query buffer was explicitly cleared, via something like ctrl-c.
-    BufferCleared { buffer_len: usize },
+    BufferCleared,
     /// The user accepted a result by hitting enter.
-    ResultAccepted { index: usize, action: T },
+    ResultAccepted { action: T },
     /// The selected result was changed.
     ResultSelected { index: usize },
     /// The active query filter changed.
@@ -450,7 +450,7 @@ impl<T: Action + Clone> SearchBar<T> {
                     return;
                 }
 
-                if let (Some(selected_result), Some(result_index)) = (
+                if let (Some(selected_result), Some(_)) = (
                     self.state.as_ref(ctx).selected_result(),
                     self.state.as_ref(ctx).selected_index,
                 ) {
@@ -459,13 +459,11 @@ impl<T: Action + Clone> SearchBar<T> {
                     } else {
                         selected_result.accept_result()
                     };
-                    self.handle_result_accepted(result_index, result_action, ctx);
+                    self.handle_result_accepted(result_action, ctx);
                 }
             }
             EditorEvent::Escape => self.close(ctx),
-            EditorEvent::CtrlC {
-                cleared_buffer_len: buffer_len,
-            } => self.buffer_cleared(ctx, *buffer_len),
+            EditorEvent::CtrlC { .. } => self.buffer_cleared(ctx),
             EditorEvent::BackspaceOnEmptyBuffer => {
                 self.set_query_filter(None, ctx);
             }
@@ -480,8 +478,8 @@ impl<T: Action + Clone> SearchBar<T> {
         ctx.emit(SearchBarEvent::Close);
     }
 
-    fn buffer_cleared(&self, ctx: &mut ViewContext<Self>, buffer_len: usize) {
-        ctx.emit(SearchBarEvent::BufferCleared { buffer_len });
+    fn buffer_cleared(&self, ctx: &mut ViewContext<Self>) {
+        ctx.emit(SearchBarEvent::BufferCleared);
     }
 
     /// Returns the current search query in the editor.
@@ -575,14 +573,8 @@ impl<T: Action + Clone> SearchBar<T> {
     }
 
     /// Emits a `ResultAccepted` event with the passed `result_action` to parent views.
-    fn handle_result_accepted(
-        &self,
-        result_index: usize,
-        result_action: T,
-        ctx: &mut ViewContext<Self>,
-    ) {
+    fn handle_result_accepted(&self, result_action: T, ctx: &mut ViewContext<Self>) {
         ctx.emit(SearchBarEvent::ResultAccepted {
-            index: result_index,
             action: result_action,
         })
     }

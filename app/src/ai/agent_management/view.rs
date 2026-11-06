@@ -42,9 +42,6 @@ use crate::ai::agent_conversations_model::{
 use crate::ai::agent_management::details_action_buttons::{
     ActionButtonsConfig, AgentDetailsButtonEvent, ConversationActionButtonsRow,
 };
-use crate::ai::agent_management::telemetry::{
-    AgentManagementTelemetryEvent, ArtifactType, FilterType, OpenedFrom,
-};
 use crate::ai::artifacts::{Artifact, ArtifactButtonsRow, ArtifactButtonsRowEvent};
 use crate::ai::blocklist::view_util::{
     UsageLabelKind, effective_usage_unit, format_usage, usage_label,
@@ -80,7 +77,6 @@ use crate::view_components::dropdown::{
 use crate::workspace::{
     ForkedConversationDestination, RestoreConversationLayout, ToastStack, WorkspaceAction,
 };
-use crate::{AgentModeEntrypoint, send_telemetry_from_ctx};
 
 lazy_static! {
     static ref HASHER: SipHasher = SipHasher::new_with_keys(0, 0);
@@ -588,11 +584,8 @@ impl AgentManagementView {
                     } else {
                         None
                     };
-                    let action_buttons_view = self.create_action_buttons_view(
-                        card.item_id,
-                        card.action_buttons_config,
-                        ctx,
-                    );
+                    let action_buttons_view =
+                        self.create_action_buttons_view(card.action_buttons_config, ctx);
 
                     new_items.push(CardState {
                         hover_state: MouseStateHandle::default(),
@@ -624,13 +617,12 @@ impl AgentManagementView {
 
     fn create_action_buttons_view(
         &self,
-        item_id: ManagementCardItemId,
         config: ActionButtonsConfig,
         ctx: &mut ViewContext<Self>,
     ) -> ViewHandle<ConversationActionButtonsRow> {
         let view = ctx.add_typed_action_view(ConversationActionButtonsRow::new);
         ctx.subscribe_to_view(&view, move |me, _, event, ctx| {
-            me.handle_action_buttons_event(&item_id, event, ctx);
+            me.handle_action_buttons_event(event, ctx);
         });
         view.update(ctx, |row, ctx| row.set_config(config, ctx));
         view
@@ -654,7 +646,6 @@ impl AgentManagementView {
 
     fn handle_action_buttons_event(
         &mut self,
-        item_id: &ManagementCardItemId,
         event: &AgentDetailsButtonEvent,
         ctx: &mut ViewContext<Self>,
     ) {
@@ -664,13 +655,6 @@ impl AgentManagementView {
                 // We open the cards directly via clicking on them.
             }
             AgentDetailsButtonEvent::ForkConversation { conversation_id } => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::ConversationForked {
-                        conversation_id: conversation_id.to_string(),
-                    },
-                    ctx
-                );
-
                 ctx.dispatch_typed_action(&WorkspaceAction::ForkAIConversation {
                     conversation_id: *conversation_id,
                     fork_from_exchange: None,
@@ -682,31 +666,11 @@ impl AgentManagementView {
                 });
             }
             AgentDetailsButtonEvent::ViewDetails { item_id } => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::DetailsViewed {
-                        item_id: item_id.as_key(),
-                        viewed_from: OpenedFrom::ManagementView,
-                    },
-                    ctx
-                );
-
                 self.update_details_panel_for_item(item_id, ctx);
                 self.selected_item_id = Some(*item_id);
                 ctx.notify();
             }
             AgentDetailsButtonEvent::CopyLink { link } => {
-                match item_id {
-                    ManagementCardItemId::Conversation(conversation_id) => {
-                        send_telemetry_from_ctx!(
-                            AgentManagementTelemetryEvent::ConversationLinkCopied {
-                                conversation_id: conversation_id.to_string(),
-                                copied_from: OpenedFrom::ManagementView,
-                            },
-                            ctx
-                        );
-                    }
-                }
-
                 ctx.clipboard()
                     .write(ClipboardContent::plain_text(link.clone()));
             }
@@ -731,23 +695,11 @@ impl AgentManagementView {
     ) {
         match event {
             ArtifactButtonsRowEvent::OpenPlan { notebook_uid } => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::ArtifactClicked {
-                        artifact_type: ArtifactType::Plan
-                    },
-                    ctx
-                );
                 ctx.emit(AgentManagementViewEvent::OpenPlanNotebook {
                     notebook_uid: *notebook_uid,
                 });
             }
             ArtifactButtonsRowEvent::CopyBranch { branch } => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::ArtifactClicked {
-                        artifact_type: ArtifactType::Branch
-                    },
-                    ctx
-                );
                 ctx.clipboard()
                     .write(ClipboardContent::plain_text(branch.clone()));
 
@@ -758,12 +710,6 @@ impl AgentManagementView {
                 });
             }
             ArtifactButtonsRowEvent::OpenPullRequest { url } => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::ArtifactClicked {
-                        artifact_type: ArtifactType::PullRequest
-                    },
-                    ctx
-                );
                 ctx.open_url(url);
             }
         }
@@ -1559,22 +1505,10 @@ impl TypedActionView for AgentManagementView {
     fn handle_action(&mut self, action: &Self::Action, ctx: &mut ViewContext<Self>) {
         match action {
             AgentManagementViewAction::SetStatusFilter(filter) => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::FilterChanged {
-                        filter_type: FilterType::Status
-                    },
-                    ctx
-                );
                 self.filters.status = *filter;
                 self.on_filter_changed(ctx);
             }
             AgentManagementViewAction::SetCreatedOnFilter(filter) => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::FilterChanged {
-                        filter_type: FilterType::CreatedOn
-                    },
-                    ctx
-                );
                 self.filters.created_on = *filter;
                 self.on_filter_changed(ctx);
             }
@@ -1599,9 +1533,7 @@ impl TypedActionView for AgentManagementView {
                 self.on_filter_changed(ctx);
             }
             AgentManagementViewAction::NewAgent => {
-                send_telemetry_from_ctx!(AgentManagementTelemetryEvent::SpawnNewLocalAgent, ctx);
                 ctx.dispatch_typed_action(&WorkspaceAction::NewTabInAgentMode {
-                    entrypoint: AgentModeEntrypoint::AgentManagementView,
                     zero_state_prompt_suggestion_type: None,
                 });
             }
@@ -1614,17 +1546,6 @@ impl TypedActionView for AgentManagementView {
                     return;
                 };
 
-                match item_id {
-                    ManagementCardItemId::Conversation(conversation_id) => {
-                        send_telemetry_from_ctx!(
-                            AgentManagementTelemetryEvent::ConversationOpened {
-                                conversation_id: conversation_id.to_string(),
-                                opened_from: OpenedFrom::ManagementView,
-                            },
-                            ctx
-                        );
-                    }
-                }
                 ctx.dispatch_typed_action(&action);
             }
             AgentManagementViewAction::FocusSearch => {

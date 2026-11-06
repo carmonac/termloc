@@ -209,9 +209,7 @@ impl TuiMcpManager {
             &TemplatableMCPServerManager::handle(ctx),
             |me, _, event, ctx| {
                 match event {
-                    TemplatableMCPServerManagerEvent::StateChanged { uuid, state } => {
-                        let _ = (uuid, state);
-                    }
+                    TemplatableMCPServerManagerEvent::StateChanged { .. } => {}
                     TemplatableMCPServerManagerEvent::AuthenticationRequired { uuid }
                     | TemplatableMCPServerManagerEvent::CredentialsChanged { uuid } => {
                         let _ = uuid;

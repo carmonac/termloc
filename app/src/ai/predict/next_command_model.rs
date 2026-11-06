@@ -120,8 +120,7 @@ impl NextCommandSuggestionState {
     }
 }
 
-/// Struct storing the result of the zero-state next command suggestion,
-/// used for telemetry purposes.
+/// Struct storing the result of the zero-state next command suggestion.
 #[derive(Clone)]
 pub struct ZeroStateSuggestionInfo {
     pub request: Box<GenerateAIInputSuggestionsRequest>,

@@ -39,7 +39,6 @@ use crate::terminal::model::session::active_session::ActiveSession;
 use crate::terminal::model_events::{ModelEvent, ModelEventDispatcher};
 use crate::terminal::shell::ShellType;
 use crate::workspaces::user_workspaces::TeamContext;
-use crate::{TelemetryEvent, send_telemetry_from_ctx};
 
 pub struct ShellCommandExecutor {
     active_session: ModelHandle<ActiveSession>,
@@ -188,12 +187,7 @@ impl ShellCommandExecutor {
                     scope,
                     ctx,
                 );
-                if let CommandExecutionPermission::Allowed(reason) = autoexecution_permission {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::AutoexecutedAgentModeRequestedCommand { reason },
-                        ctx
-                    );
-                } else if let CommandExecutionPermission::Denied(reason) = autoexecution_permission
+                if let CommandExecutionPermission::Denied(reason) = autoexecution_permission
                     && AppExecutionMode::as_ref(ctx).is_autonomous()
                 {
                     log::warn!("Command denied during autonomous execution, reason: {reason:?}");
@@ -209,7 +203,7 @@ impl ShellCommandExecutor {
                     // will be returned.
                     true
                 } else {
-                    let should_autoexecute = match blocklist_permissions.can_write_to_pty(
+                    match blocklist_permissions.can_write_to_pty(
                         &input.conversation_id,
                         Some(self.terminal_view_id),
                         scope,
@@ -221,20 +215,7 @@ impl ShellCommandExecutor {
                             .active_block()
                             .has_agent_written_to_block(),
                         _ => false,
-                    };
-
-                    if should_autoexecute {
-                        send_telemetry_from_ctx!(
-                            TelemetryEvent::CLISubagentActionExecuted {
-                                conversation_id: input.conversation_id,
-                                block_id: block_id.clone(),
-                                is_autoexecuted: true,
-                            },
-                            ctx
-                        );
                     }
-
-                    should_autoexecute
                 }
             }
             AIAgentActionType::ReadShellCommandOutput { .. } => true,

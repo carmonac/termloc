@@ -11,7 +11,6 @@ pub use data_source::*;
 pub use mixer::{SlashCommandMixer, build_slash_command_mixer, slash_command_query};
 pub use view::{CloseReason, InlineSlashCommandView, SlashCommandsEvent};
 use warp_core::features::FeatureFlag;
-use warp_core::send_telemetry_from_ctx;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::theme::AnsiColorIdentifier;
 use warp_errors::report_error;
@@ -20,7 +19,6 @@ use warp_util::path::{CleanPathResult, LineAndColumnArg, expand_session_home};
 use warpui::clipboard::ClipboardContent;
 use warpui::{AppContext, SingletonEntity, ViewContext};
 
-use crate::TelemetryEvent;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::blocklist::agent_view::{
     AgentViewEntryOrigin, DismissalStrategy, ENTER_OR_EXIT_CONFIRMATION_WINDOW, EphemeralMessage,
@@ -31,12 +29,10 @@ use crate::ai::blocklist::{
 };
 use crate::ai::conversation_rename::rename_conversation;
 use crate::cloud_object::model::persistence::CloudModel;
-use crate::code_review::telemetry_event::CodeReviewPaneEntrypoint;
 use crate::search::slash_command_menu::static_commands::commands::COMMAND_REGISTRY;
 use crate::search::slash_command_menu::static_commands::{Availability, SlashCommandKind};
 use crate::search::slash_command_menu::{SlashCommandId, StaticCommand};
 use crate::server::ids::SyncId;
-use crate::server::telemetry::{AgentModeAutoDetectionSettingOrigin, SlashCommandAcceptedDetails};
 use crate::settings::AISettings;
 use crate::tab::SelectedTabColor;
 use crate::terminal::input::decorations::InputBackgroundJobOptions;
@@ -110,52 +106,6 @@ pub fn should_close_slash_command_menu_for_exact_match(
     argument_started: bool,
 ) -> bool {
     result_count < 2 || argument_started
-}
-
-/// Records a static slash command accepted from either the GUI or TUI surface.
-pub fn record_static_slash_command_accepted(
-    command_name: &str,
-    is_in_agent_view: bool,
-    ctx: &mut AppContext,
-) {
-    send_telemetry_from_ctx!(
-        TelemetryEvent::SlashCommandAccepted {
-            command_details: SlashCommandAcceptedDetails::StaticCommand {
-                command_name: command_name.to_owned(),
-            },
-            is_in_agent_view,
-        },
-        ctx
-    );
-}
-
-/// Records an input auto-detection setting toggle triggered from a TUI slash
-/// command (`/natural-language-detection`).
-///
-/// Mirrors the `SettingsPage` and `Banner` origins used by the GUI toggle paths,
-/// but reports the toggle as originating from a TUI slash command.
-pub fn record_autodetection_toggle_from_slash_command(
-    is_autodetection_enabled: bool,
-    ctx: &mut AppContext,
-) {
-    send_telemetry_from_ctx!(
-        TelemetryEvent::AgentModeToggleAutoDetectionSetting {
-            is_autodetection_enabled,
-            origin: AgentModeAutoDetectionSettingOrigin::SlashCommand,
-        },
-        ctx
-    );
-}
-
-/// Records a saved prompt accepted from either the GUI or TUI slash menu.
-pub fn record_saved_prompt_accepted(is_in_agent_view: bool, ctx: &mut AppContext) {
-    send_telemetry_from_ctx!(
-        TelemetryEvent::SlashCommandAccepted {
-            command_details: SlashCommandAcceptedDetails::SavedPrompt,
-            is_in_agent_view,
-        },
-        ctx
-    );
 }
 
 pub fn saved_prompt_text_for_id(id: &SyncId, ctx: &AppContext) -> Option<String> {
@@ -390,10 +340,6 @@ impl Input {
                     log::warn!("Tried to execute workflow for id {id:?} but it does not exist");
                     return;
                 };
-                let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-                    && self.agent_view_controller.as_ref(ctx).is_fullscreen();
-                record_saved_prompt_accepted(is_in_agent_view, ctx);
-
                 self.show_workflows_info_box_on_workflow_selection(
                     WorkflowType::Cloud(Box::new(workflow)),
                     WorkflowSource::WarpAI,
@@ -693,7 +639,7 @@ impl Input {
                         }
                     }
                     _ => {
-                        use crate::server::telemetry::PaletteSource;
+                        use crate::palette::PaletteSource;
 
                         ctx.emit(Event::OpenFilesPalette {
                             source: PaletteSource::Keybinding,
@@ -790,9 +736,7 @@ impl Input {
                 ctx.dispatch_typed_action(&TerminalAction::InitProject);
             }
             SlashCommandKind::OpenCodeReview => {
-                ctx.dispatch_typed_action(&TerminalAction::ToggleCodeReviewPane {
-                    entrypoint: CodeReviewPaneEntrypoint::SlashCommand,
-                });
+                ctx.dispatch_typed_action(&TerminalAction::ToggleCodeReviewPane);
             }
             SlashCommandKind::OpenMcpServers | SlashCommandKind::Mcp => {
                 ctx.dispatch_typed_action(&TerminalAction::OpenViewMCPPane);
@@ -1092,9 +1036,6 @@ impl Input {
             });
         }
 
-        let is_in_agent_view = FeatureFlag::AgentView.is_enabled()
-            && self.agent_view_controller.as_ref(ctx).is_active();
-        record_static_slash_command_accepted(command.name, is_in_agent_view, ctx);
         true
     }
 

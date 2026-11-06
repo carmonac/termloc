@@ -32,8 +32,8 @@ use crate::local_control::resolver::{
     target_pane_id, target_session_pane_id, target_window_id_for_target, target_workspace,
 };
 use crate::palette::PaletteMode;
+use crate::palette::PaletteSource;
 use crate::pane_group::{ActivationReason, Direction, PaneGroupAction};
-use crate::server::telemetry::PaletteSource;
 use crate::settings_view::SettingsSection;
 #[cfg(feature = "local_fs")]
 use crate::util::file::external_editor::EditorSettings;

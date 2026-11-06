@@ -11,7 +11,6 @@ use warpui::{AppContext, Element, Entity, SingletonEntity, View, ViewContext};
 
 use crate::cloud_object::model::persistence::{CloudModel, CloudModelEvent};
 use crate::drive::CloudObjectTypeAndId;
-use crate::terminal::view::telemetry::SharingDialogSource;
 use crate::ui_components::icons::Icon;
 use crate::workspace::WorkspaceAction;
 
@@ -121,10 +120,7 @@ impl View for OnboardingDriveSharingBlock {
             .build()
             .with_cursor(Cursor::PointingHand)
             .on_click(move |ctx, _, _| {
-                ctx.dispatch_typed_action(WorkspaceAction::OpenObjectSharingSettings {
-                    object_id,
-                    source: SharingDialogSource::OnboardingBlock,
-                });
+                ctx.dispatch_typed_action(WorkspaceAction::OpenObjectSharingSettings { object_id });
             })
             .finish();
         content.add_child(button);

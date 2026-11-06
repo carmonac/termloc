@@ -7,7 +7,6 @@ pub mod command;
 pub mod context_flag;
 pub mod execution_mode;
 pub mod features;
-pub mod interval_timer;
 #[cfg(target_os = "macos")]
 pub mod macos;
 pub mod operating_system_info;
@@ -22,7 +21,6 @@ pub use settings::{
 };
 pub mod session_id;
 pub mod sync_queue;
-pub mod telemetry;
 pub mod ui;
 pub mod user_preferences;
 
@@ -33,6 +31,5 @@ pub use session_id::SessionId;
 #[doc(hidden)]
 pub use warp_errors as __warp_errors;
 pub use warp_util::host_id::HostId;
-// Re-export warpui_core so that it can be referenced safely from the
-// telemetry macros.
+// Re-export warpui_core so that it can be referenced safely from macros.
 pub use warpui_core;

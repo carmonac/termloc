@@ -29,7 +29,6 @@ use crate::cloud_object::model::persistence::CloudModel;
 use crate::cloud_object::{GenericStringObjectFormat, JsonObjectType, ObjectType};
 use crate::drive::items::WarpDriveItemId;
 use crate::drive::{CloudObjectTypeAndId, OpenWarpDriveObjectArgs, OpenWarpDriveObjectSettings};
-use crate::interval_timer::IntervalTimer;
 use crate::launch_configs::launch_config;
 use crate::linear::LinearIssueWork;
 use crate::notebooks::manager::NotebookSource;
@@ -38,7 +37,6 @@ use crate::persistence::ModelEvent;
 use crate::server::cloud_objects::update_manager::UpdateManager;
 use crate::server::ids::{ServerId, SyncId};
 use crate::server::server_api::{ServerApi, ServerApiProvider};
-use crate::server::telemetry::{LaunchConfigUiLocation, TelemetryEvent};
 use crate::settings::QuakeModeSettings;
 use crate::settings_view::mcp_servers_page::MCPServersSettingsPage;
 use crate::settings_view::{SettingsSection, flags};
@@ -56,7 +54,6 @@ use crate::workspace::{PaneViewLocator, Workspace, WorkspaceAction, WorkspaceReg
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::{
     ChannelState, GlobalResourceHandles, GlobalResourceHandlesProvider, UpdateQuakeModeEventArg,
-    send_telemetry_from_app_ctx, send_telemetry_from_ctx,
 };
 
 const WINDOW_TITLE: &str = "Termloc";
@@ -141,7 +138,6 @@ pub struct OpenFromRestoredArg {
 
 pub struct OpenLaunchConfigArg {
     pub launch_config: launch_config::LaunchConfig,
-    pub ui_location: LaunchConfigUiLocation,
 
     /// Tries to open the launch config into the active window, if any.
     ///
@@ -407,14 +403,6 @@ fn open_launch_config(arg: &OpenLaunchConfigArg, ctx: &mut AppContext) {
             );
         }
     }
-
-    send_telemetry_from_app_ctx!(
-        TelemetryEvent::OpenLaunchConfig {
-            ui_location: crate::server::telemetry::LaunchConfigUiLocation::Uri,
-            open_in_active_window: arg.open_in_active_window,
-        },
-        ctx
-    );
 }
 
 /// Creates a new window with the transferred pane group.
@@ -499,9 +487,6 @@ fn on_gpu_driver_selected_callback() -> Option<Box<OnGPUDeviceSelected>> {
 
 fn open_from_restored(arg: &OpenFromRestoredArg, ctx: &mut AppContext) {
     let global_resource_handles = GlobalResourceHandlesProvider::as_ref(ctx).get().clone();
-    IntervalTimer::handle(ctx).update(ctx, |timer, _| {
-        timer.mark_interval_end("HANDLING_OPEN_ACTION");
-    });
 
     if let Some(app_state) = &arg.app_state {
         maybe_register_global_window_shortcuts(global_resource_handles.clone(), ctx);
@@ -1090,8 +1075,6 @@ fn toggle_quake_mode_window(global_resource_handles: &GlobalResourceHandles, ctx
     let state = get_quake_mode_state(ctx);
     match state {
         None => {
-            send_telemetry_from_app_ctx!(TelemetryEvent::OpenQuakeModeWindow, ctx);
-
             let config = quake_mode_config(
                 &KeysSettings::as_ref(ctx)
                     .quake_mode_settings
@@ -1140,8 +1123,6 @@ fn toggle_quake_mode_window(global_resource_handles: &GlobalResourceHandles, ctx
             });
         }
         Some(state) if matches!(state.window_state, WindowState::Hidden) => {
-            send_telemetry_from_app_ctx!(TelemetryEvent::OpenQuakeModeWindow, ctx);
-
             // If quake mode does not have a set pin screen -- move it to the current active screen.
             if KeysSettings::as_ref(ctx)
                 .quake_mode_settings
@@ -1457,7 +1438,6 @@ impl RootView {
     ) -> bool {
         // Focus the pane that the notification originated from.
         self.focus_pane(pane_view_locator, ctx);
-        send_telemetry_from_ctx!(TelemetryEvent::NotificationClicked, ctx);
         true
     }
 

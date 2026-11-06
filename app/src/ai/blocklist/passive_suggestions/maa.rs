@@ -12,17 +12,12 @@ use super::super::controller::{BlocklistAIController, BlocklistAIControllerEvent
 use crate::ai::agent::api::generate_multi_agent_output;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::agent::{
-    AIIdentifiers, FileContext, PassiveCodeDiffEntry, PassiveSuggestionTrigger,
-    ShellCommandCompletedTrigger,
+    FileContext, PassiveCodeDiffEntry, PassiveSuggestionTrigger, ShellCommandCompletedTrigger,
 };
 use crate::ai::block_context::BlockContext;
 use crate::ai::blocklist::diff_types::FileDiff;
-use crate::ai::blocklist::{
-    BlocklistAIHistoryModel, FileReadResult, RequestFileEditsFormatKind, SessionContext,
-    apply_edits,
-};
+use crate::ai::blocklist::{BlocklistAIHistoryModel, FileReadResult, SessionContext, apply_edits};
 use crate::ai::paths::host_native_absolute_path;
-use crate::auth::auth_state::AuthStateProvider;
 use crate::server::server_api::ServerApiProvider;
 use crate::server::team_scope::RequestTeamScope;
 use crate::settings::AISettings;
@@ -57,12 +52,11 @@ pub enum PassiveSuggestionsEvent {
         trigger: Option<PassiveSuggestionTrigger>,
         conversation_id: Option<AIConversationId>,
         /// The server-assigned request token from the passive suggestion
-        /// request. Used to join client-side telemetry with server-side logs.
+        /// request. Used to join client logs with server-side logs.
         server_request_token: Option<String>,
     },
     NewCodeDiffSuggestion {
         diffs: Vec<FileDiff>,
-        edit_format_kind: RequestFileEditsFormatKind,
         title: Option<String>,
         /// The original search/replace edits from the LLM response.
         original_edits: Vec<PassiveCodeDiffEntry>,
@@ -70,12 +64,7 @@ pub enum PassiveSuggestionsEvent {
         /// with agent" or "accept and continue". `None` for ephemeral triggers
         /// (shell command with no prior conversation).
         conversation_id: Option<AIConversationId>,
-        request_duration_ms: u64,
         trigger: PassiveSuggestionTrigger,
-        /// The server-assigned request token from the passive suggestion
-        /// request. Used to join client-side telemetry with server-side logs.
-        /// `None` on the legacy code path.
-        server_request_token: Option<String>,
     },
 }
 
@@ -246,28 +235,15 @@ impl PassiveSuggestionsModel {
                             unreachable!()
                         };
 
-                        let edit_format_kind = classify_edit_format(&file_edits);
                         let original_edits = file_edits_to_passive_diffs(&file_edits);
 
                         let session_context =
                             SessionContext::from_session(me.active_session.as_ref(ctx), ctx);
-                        let identifiers = AIIdentifiers::default();
-                        let background_executor = ctx.background_executor();
-                        let auth_state = AuthStateProvider::as_ref(ctx).get().clone();
-
                         ctx.spawn(
                             async move {
-                                apply_edits(
-                                    file_edits,
-                                    &session_context,
-                                    &identifiers,
-                                    background_executor,
-                                    auth_state,
-                                    true,
-                                    |path| async move {
-                                        FileReadResult::from(std::fs::read_to_string(path))
-                                    },
-                                )
+                                apply_edits(file_edits, &session_context, |path| async move {
+                                    FileReadResult::from(std::fs::read_to_string(path))
+                                })
                                 .await
                             },
                             move |me: &mut Self, applied_diffs: Result<Vec<ai::diff_validation::AIRequestedCodeDiff>, _>, ctx: &mut ModelContext<Self>| {
@@ -301,13 +277,10 @@ impl PassiveSuggestionsModel {
 
                                 ctx.emit(PassiveSuggestionsEvent::NewCodeDiffSuggestion {
                                     diffs,
-                                    edit_format_kind,
                                     title,
                                     original_edits: original_edits.clone(),
                                     conversation_id: continuable_conversation_id,
-                                    request_duration_ms,
                                     trigger,
-                                    server_request_token: server_request_token.clone(),
                                 });
                             },
                         );
@@ -580,7 +553,7 @@ impl Entity for PassiveSuggestionsModel {
 struct StreamExtractionResult {
     suggestion: ExtractedSuggestion,
     /// The server-assigned request token from the `StreamInit` event,
-    /// used to correlate client telemetry with server-side logs.
+    /// used to correlate client logs with server-side logs.
     server_request_token: Option<String>,
 }
 
@@ -812,21 +785,6 @@ fn file_edits_to_passive_diffs(file_edits: &[FileEdit]) -> Vec<PassiveCodeDiffEn
         }
     }
     entries
-}
-
-fn classify_edit_format(file_edits: &[FileEdit]) -> RequestFileEditsFormatKind {
-    let has_str_replace = file_edits
-        .iter()
-        .any(|e| matches!(e, FileEdit::Edit(ParsedDiff::StrReplaceEdit { .. })));
-    let has_v4a = file_edits
-        .iter()
-        .any(|e| matches!(e, FileEdit::Edit(ParsedDiff::V4AEdit { .. })));
-    match (has_str_replace, has_v4a) {
-        (true, false) => RequestFileEditsFormatKind::StrReplace,
-        (false, true) => RequestFileEditsFormatKind::V4A,
-        (true, true) => RequestFileEditsFormatKind::Mixed,
-        (false, false) => RequestFileEditsFormatKind::Unknown,
-    }
 }
 
 fn is_passive_code_diffs_enabled(ctx: &ModelContext<PassiveSuggestionsModel>) -> bool {

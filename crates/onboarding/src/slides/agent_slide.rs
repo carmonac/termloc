@@ -44,16 +44,6 @@ pub enum AgentAutonomy {
     None,
 }
 
-impl std::fmt::Display for AgentAutonomy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AgentAutonomy::Full => write!(f, "full"),
-            AgentAutonomy::Partial => write!(f, "partial"),
-            AgentAutonomy::None => write!(f, "none"),
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AgentDevelopmentSettings {
     /// The model the user explicitly picked. `None` leaves the profile following the default

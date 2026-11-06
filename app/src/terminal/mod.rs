@@ -62,6 +62,7 @@ pub mod remote_tty;
 pub mod resizable_data;
 pub mod rich_history;
 pub mod safe_mode_settings;
+mod secret_redaction;
 mod secret_regex_updater;
 pub mod session_settings;
 pub mod settings;

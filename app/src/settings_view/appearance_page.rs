@@ -54,8 +54,6 @@ use crate::editor::{
 };
 use crate::features::FeatureFlag;
 use crate::gpu_state::{GPUState, GPUStateEvent};
-use crate::prompt::editor_modal::OpenSource as PromptEditorOpenSource;
-use crate::server::telemetry::{InputUXChangeOrigin, TelemetryEvent};
 use crate::settings::app_icon::{AppIconSettings, ShowDockIconState};
 use crate::settings::{
     AIFontName, AISettings, AppEditorSettings, CodeSettings, CursorBlink, CursorBlinkEnabled,
@@ -77,6 +75,7 @@ use crate::terminal::settings::{
 use crate::terminal::{
     BlockListSettings, ShowBlockDividers, ShowJumpToBottomOfBlockButton, SizeInfo,
 };
+use crate::themes;
 use crate::themes::theme::{self, RespectSystemTheme, SelectedSystemThemes, ThemeKind, WarpTheme};
 use crate::themes::theme_chooser::ThemeChooserMode;
 use crate::ui_components::color_dot::{TAB_COLOR_OPTIONS, render_color_dot};
@@ -97,7 +96,6 @@ use crate::workspace::tab_settings::{
     TabSettings, TabSettingsChangedEvent, UseLatestUserPromptAsConversationTitleInTabNames,
     UseVerticalTabs, WorkspaceDecorationVisibility, canonical_directory_key,
 };
-use crate::{send_telemetry_from_ctx, themes};
 
 const FONT_SIZE_INPUT_BOX_WIDTH: f32 = 80.;
 const NOTEBOOK_FONT_SIZE_INPUT_BOX_WIDTH: f32 = 50.;
@@ -588,8 +586,8 @@ impl TypedActionView for AppearanceSettingsPageView {
             ToggleMatchAIToTerminalFontFamily => self.toggle_match_ai_font_to_terminal_font(ctx),
             SetNotebookFontSize => self.set_notebook_font_size(ctx),
             SetLineHeight => self.set_line_height_ratio(ctx),
-            SetOpacity(value) => self.set_opacity(*value, true, ctx),
-            SetBlur(value) => self.set_blur(*value, true, ctx),
+            SetOpacity(value) => self.set_opacity(*value, ctx),
+            SetBlur(value) => self.set_blur(*value, ctx),
             SetFontFamily(name) => self.set_font_family(name, ctx),
             SetAIFontFamily(name) => {
                 self.set_ai_font_family(name, ctx);
@@ -662,8 +660,8 @@ impl TypedActionView for AppearanceSettingsPageView {
             SetInputType(input_type) => self.set_input_type(*input_type, ctx),
             ToggleShowDockIcon => self.toggle_show_dock_icon(ctx),
             SetCursorType(cursor_display_type) => self.set_cursor_type(*cursor_display_type, ctx),
-            OpacitySliderDragged(val) => self.set_opacity(*val, false, ctx),
-            BlurSliderDragged(val) => self.set_blur(*val, false, ctx),
+            OpacitySliderDragged(val) => self.set_opacity(*val, ctx),
+            BlurSliderDragged(val) => self.set_blur(*val, ctx),
             ToggleTabIndicators => self.toggle_tab_indicators(ctx),
             ToggleShowCodeReviewButton => self.toggle_show_code_review_button(ctx),
             TogglePreserveActiveTabColor => self.toggle_preserve_active_tab_color(ctx),
@@ -684,12 +682,7 @@ impl TypedActionView for AppearanceSettingsPageView {
                         .focus_panes_on_hover
                         .toggle_and_save_value(ctx)
                     {
-                        Ok(new_val) => {
-                            send_telemetry_from_ctx!(
-                                TelemetryEvent::ToggleFocusPaneOnHover { enabled: new_val },
-                                ctx
-                            );
-                        }
+                        Ok(_) => {}
                         Err(e) => {
                             report_error!(e);
                         }
@@ -710,10 +703,6 @@ impl TypedActionView for AppearanceSettingsPageView {
                     );
                 });
                 self.set_alt_screen_padding_editor_text(ctx);
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::UpdateAltScreenPaddingMode { new_mode },
-                    ctx
-                );
             }
             UpdateAltScreenPaddingMode(new_mode) => {
                 TerminalSettings::handle(ctx).update(ctx, |terminal_settings, ctx| {
@@ -724,12 +713,6 @@ impl TypedActionView for AppearanceSettingsPageView {
                     );
                 });
                 self.set_alt_screen_padding_editor_text(ctx);
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::UpdateAltScreenPaddingMode {
-                        new_mode: *new_mode,
-                    },
-                    ctx
-                );
             }
             SetTabCloseButtonPosition(position) => {
                 self.update_tab_close_button_position(*position, ctx);
@@ -1244,7 +1227,7 @@ impl AppearanceSettingsPageView {
                     *TerminalSettings::as_ref(ctx).alt_screen_padding
                 {
                     let val = format!("{:.1}", uniform_padding.as_f32());
-                    // Do a system edit to avoid counting this update as part of telemetry.
+                    // Do a system edit so this update isn't treated as a user edit.
                     editor.system_reset_buffer_text(val.trim_end_matches(".0"), ctx);
                 }
                 editor
@@ -1668,10 +1651,6 @@ impl AppearanceSettingsPageView {
                                 .alt_screen_padding
                                 .set_value(new_mode, ctx)
                         );
-                        send_telemetry_from_ctx!(
-                            TelemetryEvent::UpdateAltScreenPaddingMode { new_mode },
-                            ctx
-                        );
                     });
                 }
 
@@ -1817,20 +1796,7 @@ impl AppearanceSettingsPageView {
         }
     }
 
-    fn set_opacity(
-        &mut self,
-        opacity_value: f32,
-        should_set_defaults: bool,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        if should_set_defaults {
-            send_telemetry_from_ctx!(
-                TelemetryEvent::SetOpacity {
-                    opacity: opacity_value as u8
-                },
-                ctx
-            );
-        }
+    fn set_opacity(&mut self, opacity_value: f32, ctx: &mut ViewContext<Self>) {
         WindowSettings::handle(ctx).update(ctx, |window_settings, ctx| {
             report_if_error!(
                 window_settings
@@ -1841,21 +1807,7 @@ impl AppearanceSettingsPageView {
         ctx.notify();
     }
 
-    fn set_blur(
-        &mut self,
-        blur_value: f32,
-        should_set_defaults: bool,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        if should_set_defaults {
-            send_telemetry_from_ctx!(
-                TelemetryEvent::SetBlurRadius {
-                    blur_radius: blur_value as u8
-                },
-                ctx
-            );
-        }
-
+    fn set_blur(&mut self, blur_value: f32, ctx: &mut ViewContext<Self>) {
         ctx.windows()
             .set_all_windows_background_blur_radius(blur_value as u8);
 
@@ -1873,13 +1825,6 @@ impl AppearanceSettingsPageView {
         self.line_height_editor.update(ctx, |editor, ctx| {
             editor.set_buffer_text(&format!("{DEFAULT_UI_LINE_HEIGHT_RATIO}"), ctx);
         });
-
-        send_telemetry_from_ctx!(
-            TelemetryEvent::SetLineHeight {
-                new_value: DEFAULT_UI_LINE_HEIGHT_RATIO
-            },
-            ctx
-        );
 
         FontSettings::handle(ctx).update(ctx, |font_settings, ctx| {
             report_if_error!(
@@ -1899,23 +1844,16 @@ impl AppearanceSettingsPageView {
         let appearance = Appearance::as_ref(ctx);
         let current_line_height = appearance.ui_builder().line_height_ratio();
 
-        if (current_line_height - new_line_height).abs() > f32::EPSILON {
-            send_telemetry_from_ctx!(
-                TelemetryEvent::SetLineHeight {
-                    new_value: new_line_height
-                },
-                ctx
-            );
-
-            if (MIN_LINE_SPACING..=MAX_LINE_SPACING).contains(&new_line_height) {
-                FontSettings::handle(ctx).update(ctx, |font_settings, ctx| {
-                    report_if_error!(
-                        font_settings
-                            .line_height_ratio
-                            .set_value(new_line_height, ctx)
-                    );
-                });
-            }
+        if (current_line_height - new_line_height).abs() > f32::EPSILON
+            && (MIN_LINE_SPACING..=MAX_LINE_SPACING).contains(&new_line_height)
+        {
+            FontSettings::handle(ctx).update(ctx, |font_settings, ctx| {
+                report_if_error!(
+                    font_settings
+                        .line_height_ratio
+                        .set_value(new_line_height, ctx)
+                );
+            });
         }
     }
 
@@ -1923,10 +1861,6 @@ impl AppearanceSettingsPageView {
         WindowSettings::handle(ctx).update(ctx, |window_settings, ctx| {
             let current_val = window_settings.open_windows_at_custom_size.value();
             let new_val: bool = !current_val;
-            send_telemetry_from_ctx!(
-                TelemetryEvent::ToggleNewWindowsAtCustomSize { enabled: new_val },
-                ctx
-            );
             report_if_error!(
                 window_settings
                     .open_windows_at_custom_size
@@ -1938,7 +1872,6 @@ impl AppearanceSettingsPageView {
 
     fn set_new_windows_num_columns(&mut self, columns: u16, ctx: &mut ViewContext<Self>) {
         WindowSettings::handle(ctx).update(ctx, |window_settings, ctx| {
-            send_telemetry_from_ctx!(TelemetryEvent::SetNewWindowsAtCustomSize, ctx);
             report_if_error!(
                 window_settings
                     .new_windows_num_columns
@@ -1949,7 +1882,6 @@ impl AppearanceSettingsPageView {
 
     fn set_new_windows_num_rows(&mut self, rows: u16, ctx: &mut ViewContext<Self>) {
         WindowSettings::handle(ctx).update(ctx, |window_settings, ctx| {
-            send_telemetry_from_ctx!(TelemetryEvent::SetNewWindowsAtCustomSize, ctx);
             report_if_error!(window_settings.new_windows_num_rows.set_value(rows, ctx));
         });
     }
@@ -2158,12 +2090,7 @@ impl AppearanceSettingsPageView {
     fn set_thin_strokes(&mut self, value: &ThinStrokes, ctx: &mut ViewContext<Self>) {
         FontSettings::handle(ctx).update(ctx, |font_settings, ctx| {
             match font_settings.use_thin_strokes.set_value(*value, ctx) {
-                Ok(_) => {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::ThinStrokesSettingChanged { new_value: *value },
-                        ctx
-                    );
-                }
+                Ok(_) => {}
                 Err(e) => {
                     report_error!(e);
                 }
@@ -2179,10 +2106,6 @@ impl AppearanceSettingsPageView {
                 .show_jump_to_bottom_of_block_button
                 .value()
         };
-        send_telemetry_from_ctx!(
-            TelemetryEvent::ToggleJumpToBottomofBlockButton { enabled: new_value },
-            ctx
-        );
         ctx.update_model(&block_list_settings, move |block_list_settings, ctx| {
             report_if_error!(
                 block_list_settings
@@ -2195,10 +2118,6 @@ impl AppearanceSettingsPageView {
     pub fn toggle_show_block_dividers(&mut self, ctx: &mut ViewContext<Self>) {
         let block_list_settings = BlockListSettings::handle(ctx);
         let new_value = { !*block_list_settings.as_ref(ctx).show_block_dividers.value() };
-        send_telemetry_from_ctx!(
-            TelemetryEvent::ToggleShowBlockDividers { enabled: new_value },
-            ctx
-        );
         ctx.update_model(&block_list_settings, move |block_list_settings, ctx| {
             report_if_error!(
                 block_list_settings
@@ -2238,12 +2157,7 @@ impl AppearanceSettingsPageView {
                 .should_dim_inactive_panes
                 .toggle_and_save_value(ctx)
             {
-                Ok(new_value) => {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::ToggleDimInactivePanes { enabled: new_value },
-                        ctx
-                    );
-                }
+                Ok(_) => {}
                 Err(e) => {
                     report_error!(e);
                 }
@@ -2275,8 +2189,6 @@ impl AppearanceSettingsPageView {
         from_binding: bool,
         ctx: &mut ViewContext<Self>,
     ) {
-        let old_mode = *InputModeSettings::as_ref(ctx).input_mode.value();
-        send_telemetry_from_ctx!(TelemetryEvent::InputModeChanged { old_mode, new_mode }, ctx);
         InputModeSettings::handle(ctx).update(ctx, |input_mode, ctx| {
             report_if_error!(input_mode.input_mode.set_value(new_mode, ctx));
         });
@@ -2303,15 +2215,6 @@ impl AppearanceSettingsPageView {
             });
             self.input_type_radio_state
                 .set_selected_idx(new_type as usize);
-
-            let is_udi_enabled = new_type == InputBoxType::Universal;
-            send_telemetry_from_ctx!(
-                TelemetryEvent::InputUXModeChanged {
-                    is_udi_enabled,
-                    origin: InputUXChangeOrigin::Settings
-                },
-                ctx
-            );
 
             // Selecting classic mode must also enable honor_ps1 so the mode takes
             // effect immediately (input_type() requires honor_ps1 to return classic).
@@ -2340,12 +2243,6 @@ impl AppearanceSettingsPageView {
                     .cursor_display_type
                     .set_value(new_cursor_type, ctx)
             );
-            send_telemetry_from_ctx!(
-                TelemetryEvent::CursorDisplayType {
-                    cursor: new_cursor_type.to_string(),
-                },
-                ctx
-            );
         });
     }
 
@@ -2361,11 +2258,6 @@ impl AppearanceSettingsPageView {
         ctx.update_model(&tab_settings, move |tab_settings, ctx| {
             report_if_error!(tab_settings.show_indicators.set_value(new_value, ctx));
         });
-
-        send_telemetry_from_ctx!(
-            TelemetryEvent::ToggleTabIndicators { enabled: new_value },
-            ctx
-        );
     }
 
     fn toggle_show_code_review_button(&mut self, ctx: &mut ViewContext<Self>) {
@@ -2392,11 +2284,6 @@ impl AppearanceSettingsPageView {
                     .set_value(new_value, ctx)
             );
         });
-
-        send_telemetry_from_ctx!(
-            TelemetryEvent::TogglePreserveActiveTabColor { enabled: new_value },
-            ctx
-        );
     }
 
     fn toggle_vertical_tabs(&mut self, ctx: &mut ViewContext<Self>) {
@@ -2447,7 +2334,7 @@ impl AppearanceSettingsPageView {
         new_value: WorkspaceDecorationVisibility,
         ctx: &mut ViewContext<Self>,
     ) {
-        let previous_value = TabSettings::handle(ctx).update(ctx, |tab_settings, ctx| {
+        TabSettings::handle(ctx).update(ctx, |tab_settings, ctx| {
             let prev_value = *tab_settings.workspace_decoration_visibility.value();
             report_if_error!(
                 tab_settings
@@ -2456,35 +2343,20 @@ impl AppearanceSettingsPageView {
             );
             prev_value
         });
-        send_telemetry_from_ctx!(
-            TelemetryEvent::ToggleWorkspaceDecorationVisibility {
-                previous_value,
-                new_value
-            },
-            ctx
-        );
     }
 
     /// Toggle among the supported workspace decoration visibility values.
     fn toggle_workspace_decoration_visiblity(&mut self, ctx: &mut ViewContext<Self>) {
-        let (new_value, previous_value) =
-            TabSettings::handle(ctx).update(ctx, |tab_settings, ctx| {
-                let previous_value = *tab_settings.workspace_decoration_visibility.value();
-                let new_value = previous_value.toggled();
-                report_if_error!(
-                    tab_settings
-                        .workspace_decoration_visibility
-                        .set_value(new_value, ctx)
-                );
-                (new_value, previous_value)
-            });
-        send_telemetry_from_ctx!(
-            TelemetryEvent::ToggleWorkspaceDecorationVisibility {
-                previous_value,
-                new_value
-            },
-            ctx
-        );
+        TabSettings::handle(ctx).update(ctx, |tab_settings, ctx| {
+            let previous_value = *tab_settings.workspace_decoration_visibility.value();
+            let new_value = previous_value.toggled();
+            report_if_error!(
+                tab_settings
+                    .workspace_decoration_visibility
+                    .set_value(new_value, ctx)
+            );
+            (new_value, previous_value)
+        });
     }
 
     fn build_window_backdrop_dropdown(
@@ -2656,11 +2528,6 @@ impl AppearanceSettingsPageView {
                         .set_value(new_value, ctx)
                 );
             });
-
-            send_telemetry_from_ctx!(
-                TelemetryEvent::ToggleLigatureRendering { enabled: new_value },
-                ctx
-            );
         }
     }
 
@@ -2686,10 +2553,6 @@ impl AppearanceSettingsPageView {
         TabSettings::handle(ctx).update(ctx, |tab_settings, ctx| {
             report_if_error!(tab_settings.close_button_position.set_value(position, ctx));
         });
-        send_telemetry_from_ctx!(
-            TelemetryEvent::TabCloseButtonPositionUpdated { position },
-            ctx
-        );
         ctx.notify();
     }
 }
@@ -3703,11 +3566,7 @@ impl SettingsWidget for PromptWidget {
                 .finish()
         })
         .with_cursor(Cursor::PointingHand)
-        .on_click(|ctx, _, _| {
-            ctx.dispatch_typed_action(WorkspaceAction::OpenPromptEditor {
-                open_source: PromptEditorOpenSource::AppearancePage,
-            })
-        })
+        .on_click(|ctx, _, _| ctx.dispatch_typed_action(WorkspaceAction::OpenPromptEditor))
         .finish()
     }
 }

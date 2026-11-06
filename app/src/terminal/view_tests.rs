@@ -48,13 +48,14 @@ use crate::terminal::cli_agent_sessions::event::{
 };
 use crate::terminal::cli_agent_sessions::listener::CLIAgentSessionListener;
 use crate::terminal::cli_agent_sessions::{
-    CLIAgentInputEntrypoint, CLIAgentInputState, CLIAgentRichInputCloseReason, CLIAgentSession,
-    CLIAgentSessionContext, CLIAgentSessionStatus, CLIAgentSessionsModel,
+    CLIAgentInputEntrypoint, CLIAgentInputState, CLIAgentSession, CLIAgentSessionContext,
+    CLIAgentSessionStatus, CLIAgentSessionsModel,
 };
 use crate::terminal::model::ansi::{self, BootstrappedValue, InitShellValue, PreexecValue};
 use crate::terminal::model::block::AgentViewVisibility;
 use crate::terminal::model::blocks::{TotalIndex, insert_block};
 use crate::terminal::model::grid::Dimensions as _;
+use crate::terminal::model::terminal_model::BlockSelectionCardinality;
 use crate::terminal::model::terminal_model::WithinBlock;
 use crate::terminal::session_settings::AgentToolbarChipSelection;
 use crate::terminal::view::load_ai_conversation::{
@@ -7819,7 +7820,7 @@ fn close_cli_agent_rich_input_saves_draft_and_reopen_restores_it() {
 
         // Close the composer — the buffer text should be saved as a draft.
         terminal.update(&mut app, |view, ctx| {
-            view.close_cli_agent_rich_input(CLIAgentRichInputCloseReason::Manual, ctx);
+            view.close_cli_agent_rich_input(ctx);
             assert!(!view.has_active_cli_agent_input_session(ctx));
         });
 
@@ -7905,7 +7906,7 @@ fn close_cli_agent_rich_input_with_empty_buffer_stores_no_draft() {
 
         // Close immediately without typing anything.
         terminal.update(&mut app, |view, ctx| {
-            view.close_cli_agent_rich_input(CLIAgentRichInputCloseReason::Manual, ctx);
+            view.close_cli_agent_rich_input(ctx);
             assert!(!view.has_active_cli_agent_input_session(ctx));
         });
 
@@ -7950,8 +7951,6 @@ fn ctrl_c_does_not_accept_prompt_suggestion_banner() {
                     should_start_new_conversation: false,
                 }),
                 block_id.clone(),
-                "ls".to_owned(),
-                0,
                 ctx,
             );
 

@@ -130,7 +130,7 @@ impl DiffType {
 pub struct AIRequestedCodeDiff {
     pub file_name: String,
     pub diff_type: DiffType,
-    /// Types of failures to create the diff that we want to capture via telemetry.
+    /// Types of failures to create the diff.
     #[derivative(PartialEq = "ignore")]
     pub failures: Option<DiffMatchFailures>,
     /// Original file content read during diff matching.
@@ -408,7 +408,7 @@ pub struct DiffMatchFailures {
     pub noop_deltas: usize,
     /// Search blocks that are missing line numbers.
     pub missing_line_numbers: u8,
-    /// Identifiers for blocks that failed to fuzzy match. Skipped for telemetry.
+    /// Identifiers for blocks that failed to fuzzy match.
     #[serde(skip)]
     pub fuzzy_match_failure_details: Vec<DiffMatchFailure>,
 }
@@ -427,7 +427,7 @@ pub struct DiffMatchFailure {
 /// Omitting line numbers from the search section of a diff.
 /// Using the wrong line number, often off-by-one.
 ///
-/// Also returns the number of fuzzy matches that failed for telemetry.
+/// Also returns the number of fuzzy matches that failed.
 ///
 /// Method
 /// For each search block of n lines:

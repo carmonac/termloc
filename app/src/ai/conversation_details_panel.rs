@@ -33,7 +33,6 @@ use crate::ai::agent_conversations_model::AgentConversationEntry;
 use crate::ai::agent_management::details_action_buttons::{
     ActionButtonsConfig, AgentDetailsButtonEvent, ConversationActionButtonsRow,
 };
-use crate::ai::agent_management::telemetry::{AgentManagementTelemetryEvent, OpenedFrom};
 use crate::ai::artifacts::{Artifact, ArtifactButtonsRow, ArtifactButtonsRowEvent};
 use crate::ai::blocklist::view_util::{
     UsageLabelKind, effective_usage_unit, format_usage, usage_label,
@@ -42,7 +41,6 @@ use crate::ai::harness_display;
 use crate::appearance::Appearance;
 use crate::auth::UserUid;
 use crate::notebooks::NotebookId;
-use crate::send_telemetry_from_ctx;
 use crate::settings::ai::{AISettings, AISettingsChangedEvent};
 use crate::ui_components::avatar::{Avatar, AvatarContent};
 use crate::ui_components::blended_colors;
@@ -523,28 +521,11 @@ impl ConversationDetailsPanel {
     ) {
         match event {
             AgentDetailsButtonEvent::Open => {
-                if let Some(conversation_id) = self.data.fields.ai_conversation_id {
-                    send_telemetry_from_ctx!(
-                        AgentManagementTelemetryEvent::ConversationOpened {
-                            conversation_id: conversation_id.to_string(),
-                            opened_from: OpenedFrom::DetailsPanel,
-                        },
-                        ctx
-                    );
-                }
-
                 if let Some(action) = &self.data.open_action {
                     ctx.dispatch_typed_action(action);
                 }
             }
             AgentDetailsButtonEvent::ForkConversation { conversation_id } => {
-                send_telemetry_from_ctx!(
-                    AgentManagementTelemetryEvent::ConversationForked {
-                        conversation_id: conversation_id.to_string(),
-                    },
-                    ctx
-                );
-
                 ctx.dispatch_typed_action(&WorkspaceAction::ForkAIConversation {
                     conversation_id: *conversation_id,
                     fork_from_exchange: None,
@@ -560,16 +541,6 @@ impl ConversationDetailsPanel {
                 // only in management view cards
             }
             AgentDetailsButtonEvent::CopyLink { link } => {
-                if let Some(conversation_id) = self.data.fields.ai_conversation_id {
-                    send_telemetry_from_ctx!(
-                        AgentManagementTelemetryEvent::ConversationLinkCopied {
-                            conversation_id: conversation_id.to_string(),
-                            copied_from: OpenedFrom::DetailsPanel,
-                        },
-                        ctx
-                    );
-                }
-
                 ctx.clipboard()
                     .write(ClipboardContent::plain_text(link.clone()));
             }
@@ -1229,10 +1200,6 @@ impl TypedActionView for ConversationDetailsPanel {
             #[cfg(not(target_family = "wasm"))]
             ConversationDetailsPanelAction::ContinueLocally => {
                 if let Some(conversation_id) = self.conversation_to_continue_locally(ctx) {
-                    send_telemetry_from_ctx!(
-                        AgentManagementTelemetryEvent::DetailsPanelContinueLocally,
-                        ctx
-                    );
                     ctx.dispatch_typed_action(&WorkspaceAction::ContinueConversationLocally {
                         conversation_id,
                     });

@@ -10,7 +10,6 @@ pub enum FeatureFlag {
     CrashReporting,
     DebugMode,
     LogExpensiveFramesInSentry,
-    WithSandboxTelemetry,
     RecordAppActiveEvents,
 
     WelcomeTips,
@@ -197,14 +196,6 @@ pub enum FeatureFlag {
     /// Enables support for Warp Packs.
     WarpPacks,
 
-    /// Enables the revised AI analytics policy banner.
-    ///
-    /// This does not gate actual collection of data under the new policy.
-    GlobalAIAnalyticsBanner,
-
-    /// Enables actual collection of AI analytics data per the revised AI analytics policy.
-    GlobalAIAnalyticsCollection,
-
     /// Enables auto-generated AI memories.
     AIMemories,
 
@@ -340,9 +331,6 @@ pub enum FeatureFlag {
 
     /// Enables the tabbed file viewer
     TabbedEditorView,
-
-    /// Enables sending telemetry data to a file in addition to the server
-    SendTelemetryToFile,
 
     /// Enables multiple agent profiles in settings for managing different AI agent configurations.
     MultiProfile,

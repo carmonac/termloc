@@ -16,7 +16,6 @@ use super::alacritty_parser::AlacrittyConfig;
 #[cfg(target_os = "macos")]
 use super::iterm_parser::ITermProfile;
 use super::model::TerminalType;
-use crate::interval_timer::IntervalTimer;
 use crate::root_view::QuakeModePinPosition;
 use crate::settings::ExtraMetaKeys;
 use crate::terminal::session_settings::{StartupShell, WorkingDirectoryConfig};
@@ -155,22 +154,14 @@ impl Config {
     /// Each profile (in terminals that support profiles) is mapped to a separate Config.
     pub async fn create_from_external_configs<Input: ParseableConfig>(
         fonts: Arc<Vec<FontInfo>>,
-    ) -> (Result<Vec<Self>, ConfigError>, IntervalTimer) {
-        let mut timer = IntervalTimer::new();
-        let config = match Input::from_config_paths(&mut timer).await {
-            Ok(config) => config,
-            Err(err) => {
-                return (Err(err), timer);
-            }
-        };
-        let configs = config
+    ) -> Result<Vec<Self>, ConfigError> {
+        let config = Input::from_config_paths().await?;
+        Ok(config
             .into_iter()
             .map(|config| config.remove_default_values())
             .map(|config| config.parse(&fonts))
             .filter(|config| config.is_valid())
-            .collect();
-        timer.mark_interval_end("TERMINAL_SETTINGS_PARSED");
-        (Ok(configs), timer)
+            .collect())
     }
 
     pub(super) fn write_theme(&self) -> Option<ThemeType> {
@@ -232,7 +223,7 @@ impl Config {
     pub async fn create_from_terminal_type(
         terminal: TerminalType,
         fonts: Arc<Vec<FontInfo>>,
-    ) -> (Result<Vec<Self>, ConfigError>, IntervalTimer) {
+    ) -> Result<Vec<Self>, ConfigError> {
         match terminal {
             TerminalType::Alacritty => {
                 Config::create_from_external_configs::<AlacrittyConfig>(fonts).await
@@ -297,13 +288,6 @@ impl Config {
     pub fn is_valid(&self) -> bool {
         !self.valid_setting_types().is_empty()
     }
-}
-
-/// Used for telemetry.
-#[derive(Clone, Serialize)]
-pub struct ParsedTerminalSetting {
-    pub setting_type: SettingType,
-    pub was_imported_by_user: bool,
 }
 
 /// A wrapper for a setting along with its display name
@@ -397,17 +381,13 @@ pub trait ParseableConfig: PartialEq + Sized + Send {
     ///
     /// NOTE: Returns an error if
     /// none of the files are found or any of the files throw some other error.
-    async fn from_config_paths(timer: &mut IntervalTimer) -> Result<Vec<Self>, ConfigError> {
+    async fn from_config_paths() -> Result<Vec<Self>, ConfigError> {
         for path in Self::default_paths() {
             match Self::from_file(path).await {
                 Err(ConfigError::FileNotFoundError) => continue,
-                result => {
-                    timer.mark_interval_end("TERMINAL_SETTINGS_READ_FROM_FILE");
-                    return result;
-                }
+                result => return result,
             }
         }
-        timer.mark_interval_end("TERMINAL_SETTINGS_READ_FROM_FILE");
         Err(ConfigError::FileNotFoundError)
     }
 

@@ -13,17 +13,16 @@ use warp_util::lazy::Lazy;
 use super::history::HistoryEntry;
 use super::model::ansi::{ExternalShellWidgetSelectionValue, FinishUpdateValue};
 use super::model::block::BlockId;
-use super::model::lifecycle::LifecycleRecoveryRecord;
 use super::model::session::{SessionId, SessionInfo};
 use super::model::terminal_model::{BlockIndex, ExitReason};
 use crate::server::ids::SyncId;
-use crate::server::telemetry::ImageProtocol;
 use crate::terminal::ClipboardType;
 use crate::terminal::model::block::{BlockMetadata, SerializedBlock};
 use crate::terminal::model::blocks::BlockList;
 use crate::terminal::model::completions::ShellCompletion;
 use crate::terminal::model::terminal_model::HandlerEvent;
 use crate::terminal::shell::ShellType;
+use warp_terminal::ImageProtocol;
 
 #[derive(Clone)]
 /// Events sent to the main thread by the terminal model & event loop.
@@ -115,8 +114,6 @@ pub enum Event {
         is_tagged_in: bool,
     },
     Handler(HandlerEvent),
-    /// Carries non-UGC lifecycle diagnostics to the model dispatcher for telemetry.
-    LifecycleRecovery(LifecycleRecoveryRecord),
     /// Emitted when the remote server binary has been successfully checked or
     /// installed and is ready. The session is initialized independently on
     /// `Bootstrapped`; when the remote server later connects, the client is
@@ -222,9 +219,6 @@ pub struct BootstrappedEvent {
     // functionally needs to be wrapped in an `Box`.
     pub session_info: Box<SessionInfo>,
     pub restored_block_commands: Vec<HistoryEntry>,
-    /// The time we spent sourcing the user's rcfiles, in seconds.  This may be
-    /// None if the information was not provided by the shell.
-    pub rcfiles_duration_seconds: Option<f64>,
 }
 
 #[derive(Clone)]
@@ -473,7 +467,6 @@ impl Debug for Event {
                 )
             }
             Event::Handler(handler_event) => write!(f, "Handler({handler_event:?}))"),
-            Event::LifecycleRecovery(record) => write!(f, "LifecycleRecovery({record:?})"),
             Event::RemoteServerReady { session_id } => {
                 write!(f, "RemoteServerReady(session: {session_id:?})")
             }

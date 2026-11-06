@@ -80,7 +80,6 @@ fn open_code_action_routes_links_to_configured_editor_and_non_links_to_warp() {
         location: LocalOrRemotePath::Local(PathBuf::from(
             "/workspace/project/.termloc/skills/example/SKILL.md",
         )),
-        origin: crate::ai::skills::SkillOpenOrigin::ReadSkill,
     };
 
     assert!(matches!(

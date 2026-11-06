@@ -10,7 +10,6 @@ use crate::cloud_object::ServerObjectContainer;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::drive::CloudObjectTypeAndId;
 use crate::server::ids::SyncId;
-use crate::server::telemetry::SharingDialogSource;
 use crate::workspace::WorkspaceAction;
 
 /// UI state for inherited permissions.
@@ -60,7 +59,6 @@ impl InheritanceState {
                         Some(Box::new(move |ctx| {
                             ctx.dispatch_typed_action(WorkspaceAction::OpenObjectSharingSettings {
                                 object_id: CloudObjectTypeAndId::Folder(source_folder),
-                                source: SharingDialogSource::InheritedPermission,
                             });
                         })),
                         self.link_handle.clone(),

@@ -3,19 +3,15 @@ use std::sync::Arc;
 use std::sync::mpsc::SyncSender;
 
 use parking_lot::FairMutex;
-use warp_core::send_telemetry_from_ctx;
 use warpui::{AppContext, ModelContext, SingletonEntity, ViewHandle, WindowId};
 
 use super::terminal_manager::{TerminalManager, TerminalSurfaceInit, TerminalSurfaceResult};
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
-use crate::ai::blocklist::agent_view::AgentViewControllerEvent;
 use crate::ai::blocklist::{InputConfig, SerializedBlockListItem};
 use crate::context_chips::current_prompt::CurrentPrompt;
 use crate::context_chips::prompt_type::PromptType;
-use crate::features::FeatureFlag;
 use crate::pane_group::TerminalViewResources;
 use crate::persistence::ModelEvent;
-use crate::server::telemetry::{TelemetryAgentViewEntryOrigin, TelemetryEvent};
 use crate::terminal::view::ConversationRestorationInNewPaneType;
 use crate::terminal::writeable_pty::terminal_manager_util::wire_up_remote_server_controller_with_view;
 use crate::terminal::{TerminalManager as TerminalManagerTrait, TerminalModel, TerminalView};
@@ -157,26 +153,6 @@ fn wire_up_agent_view_with_terminal_view(view: &ViewHandle<TerminalView>, ctx: &
             ctx,
         );
     });
-
-    if FeatureFlag::AgentView.is_enabled() {
-        ctx.subscribe_to_model(&agent_view_controller, move |_, event, ctx| match event {
-            AgentViewControllerEvent::ExitedAgentView {
-                origin,
-                final_exchange_count,
-                ..
-            } => {
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::AgentViewExited {
-                        origin: TelemetryAgentViewEntryOrigin::from(origin.clone()),
-                        was_empty: *final_exchange_count == 0,
-                    },
-                    ctx
-                );
-            }
-            AgentViewControllerEvent::EnteredAgentView { .. }
-            | AgentViewControllerEvent::ExitConfirmed { .. } => {}
-        });
-    }
 }
 
 impl TerminalManager<TerminalView> {

@@ -26,12 +26,10 @@ use crate::editor::{
 };
 use crate::modal::{Modal, ModalEvent};
 use crate::network::NetworkStatus;
-use crate::send_telemetry_from_ctx;
 use crate::server::cloud_objects::update_manager::{
     ObjectOperation, OperationSuccessType, UpdateManager, UpdateManagerEvent,
 };
 use crate::server::ids::SyncId;
-use crate::server::telemetry::TelemetryEvent;
 use crate::ui_components::blended_colors;
 use crate::view_components::action_button::{ActionButton, PrimaryTheme};
 use crate::workspaces::user_workspaces::UserWorkspaces;
@@ -57,8 +55,8 @@ enum EditorType {
 
 #[derive(Debug, Clone)]
 pub enum SuggestedRuleModalEvent {
-    AddNewRule { rule: SuggestedRule },
-    OpenRuleForEditing { rule: SuggestedRule },
+    AddNewRule,
+    OpenRuleForEditing,
     Close,
 }
 
@@ -157,11 +155,9 @@ impl SuggestedRuleModal {
 
     fn handle_view_event(&mut self, event: &SuggestedRuleDialogEvent, ctx: &mut ViewContext<Self>) {
         match event {
-            SuggestedRuleDialogEvent::AddNewRule { rule } => {
-                ctx.emit(SuggestedRuleModalEvent::AddNewRule { rule: rule.clone() })
-            }
-            SuggestedRuleDialogEvent::OpenRuleForEditing { rule } => {
-                ctx.emit(SuggestedRuleModalEvent::OpenRuleForEditing { rule: rule.clone() })
+            SuggestedRuleDialogEvent::AddNewRule => ctx.emit(SuggestedRuleModalEvent::AddNewRule),
+            SuggestedRuleDialogEvent::OpenRuleForEditing => {
+                ctx.emit(SuggestedRuleModalEvent::OpenRuleForEditing)
             }
             SuggestedRuleDialogEvent::Close => ctx.emit(SuggestedRuleModalEvent::Close),
         }
@@ -205,8 +201,8 @@ enum SuggestedRuleDialogAction {
 
 #[derive(Debug, Clone)]
 pub enum SuggestedRuleDialogEvent {
-    AddNewRule { rule: SuggestedRule },
-    OpenRuleForEditing { rule: SuggestedRule },
+    AddNewRule,
+    OpenRuleForEditing,
     Close,
 }
 
@@ -369,15 +365,6 @@ impl SuggestedRuleView {
             }
             EditorEvent::Edited(_) => {
                 // todo this seems noisy?
-                if let Some(SuggestedRuleAndId { rule, .. }) = &self.rule_and_id {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::AISuggestedRuleContentChanged {
-                            rule_id: rule.logging_id.clone(),
-                            is_saved: self.is_saved
-                        },
-                        ctx
-                    );
-                }
             }
             EditorEvent::Navigate(NavigationKey::Tab)
             | EditorEvent::Navigate(NavigationKey::ShiftTab) => {
@@ -528,7 +515,7 @@ impl SuggestedRuleView {
             });
         }
         self.on_add_rule(ctx);
-        ctx.emit(SuggestedRuleDialogEvent::AddNewRule { rule });
+        ctx.emit(SuggestedRuleDialogEvent::AddNewRule);
     }
 
     /// Updates the UI state to reflect that a rule has been added.
@@ -652,8 +639,8 @@ impl TypedActionView for SuggestedRuleView {
                 self.add_rule(ctx);
             }
             SuggestedRuleDialogAction::Edit => {
-                if let Some(SuggestedRuleAndId { rule, .. }) = &self.rule_and_id {
-                    ctx.emit(SuggestedRuleDialogEvent::OpenRuleForEditing { rule: rule.clone() });
+                if self.rule_and_id.is_some() {
+                    ctx.emit(SuggestedRuleDialogEvent::OpenRuleForEditing);
                 } else {
                     log::warn!("No rule to edit in suggested rule dialog");
                 }

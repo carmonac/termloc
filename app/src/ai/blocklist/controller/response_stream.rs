@@ -11,11 +11,10 @@ use warp_multi_agent_api::response_event;
 use warpui::r#async::Timer;
 use warpui::{Entity, ModelContext, SingletonEntity};
 
+use crate::ai::agent::CancellationReason;
 use crate::ai::agent::api::{self, ConvertToAPITypeError, generate_multi_agent_output};
 use crate::ai::agent::conversation::AIConversationId;
-use crate::ai::agent::{AIIdentifiers, CancellationReason};
 use crate::network::NetworkStatus;
-use crate::send_telemetry_from_ctx;
 use crate::server::retry_strategies::backoff_after_attempts;
 use crate::server::server_api::{AIApiError, ServerApiProvider};
 use crate::server::team_scope::RequestTeamScope;
@@ -249,13 +248,9 @@ pub struct ResponseStream {
     start_time: DateTime<Local>,
     time_to_latest_event: TimeDelta,
     cancellation_tx: Option<oneshot::Sender<()>>,
-    /// Store the original error for telemetry when retries succeed
-    original_error: Option<String>,
     /// Track whether we've received any client actions
     /// If true, we cannot retry on subsequent errors since actions may have been executed
     has_received_client_actions: bool,
-    /// AI identifiers for telemetry emission
-    ai_identifiers: AIIdentifiers,
 
     /// The resume to send once the stream finishes, if one was scheduled.
     ///
@@ -344,9 +339,7 @@ impl ResponseStream {
             start_time: Local::now(),
             time_to_latest_event: TimeDelta::seconds(0),
             cancellation_tx: Some(cancellation_tx),
-            original_error: None,
             has_received_client_actions: false,
-            ai_identifiers: AIIdentifiers::default(),
             pending_resume: None,
             stream_finished_received: false,
             error_event_emitted: false,
@@ -359,7 +352,6 @@ impl ResponseStream {
 
     pub fn new(
         params: api::RequestParams,
-        ai_identifiers: AIIdentifiers,
         recovery: RecoveryBudget,
         team_scope: RequestTeamScope,
         ctx: &mut ModelContext<Self>,
@@ -377,9 +369,7 @@ impl ResponseStream {
             cancellation_tx: Some(cancellation_tx),
             recovery,
             retries_sent: 0,
-            original_error: None,
             has_received_client_actions: false,
-            ai_identifiers,
             pending_resume: None,
             stream_finished_received: false,
             error_event_emitted: false,
@@ -417,23 +407,6 @@ impl ResponseStream {
             .as_ref()
             .is_some_and(|metadata| metadata.is_auto_resume_after_error);
         if is_auto_resume { "resume" } else { "original" }
-    }
-
-    /// Helper function to emit AgentModeError telemetry for error that is retryable (not user visible).
-    fn emit_retryable_agent_mode_error_telemetry(
-        &self,
-        error: String,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        send_telemetry_from_ctx!(
-            crate::TelemetryEvent::AgentModeError {
-                identifiers: self.ai_identifiers.clone(),
-                error,
-                is_user_visible: false,
-                will_attempt_to_resume: false,
-            },
-            ctx
-        );
     }
 
     fn retry(&mut self, ctx: &mut ModelContext<Self>) {
@@ -492,15 +465,11 @@ impl ResponseStream {
             RecoveryAction::Retry => {
                 let delay = backoff_after_attempts(self.recovery.attempts_used() + 1);
                 self.log_recovery(action, &format!("{delay:?}"), error);
-                // Only emit error telemetry here if we're recovering in-request. Final
-                // errors that aren't being retried are emitted elsewhere.
-                self.emit_retryable_agent_mode_error_telemetry(format!("{error:?}"), ctx);
                 self.defer_retry_after_backoff(delay, ctx);
                 RecoveryOutcome::InFlight
             }
             RecoveryAction::RetryWhenOnline => {
                 self.log_recovery(action, "connectivity", error);
-                self.emit_retryable_agent_mode_error_telemetry(format!("{error:?}"), ctx);
                 self.defer_retry_until_online(ctx);
                 RecoveryOutcome::InFlight
             }
@@ -648,48 +617,19 @@ impl ResponseStream {
             Ok(response_event) => {
                 if let Some(event_type) = &response_event.r#type {
                     match event_type {
-                        warp_multi_agent_api::response_event::Type::Init(init_event) => {
-                            // Capture server_output_id from StreamInit event
-                            self.ai_identifiers.server_output_id =
-                                Some(crate::ai::agent::ServerOutputId::new(
-                                    init_event.request_id.clone(),
-                                ));
-                        }
+                        warp_multi_agent_api::response_event::Type::Init(_) => {}
                         warp_multi_agent_api::response_event::Type::ClientActions(_) => {
                             // Mark that we've received client actions
                             self.has_received_client_actions = true;
                         }
-                        warp_multi_agent_api::response_event::Type::Finished(finished_event) => {
+                        warp_multi_agent_api::response_event::Type::Finished(_) => {
                             self.stream_finished_received = true;
-                            // Emit retry success telemetry on successful completion
-                            if matches!(
-                                finished_event.reason,
-                                Some(warp_multi_agent_api::response_event::stream_finished::Reason::Done(_)) | None
-                            ) {
-                                // Emit retry success telemetry if this was a successful completion after retries
-                                if self.retries_sent > 0
-                                    && let Some(original_error) = &self.original_error {
-                                        send_telemetry_from_ctx!(
-                                            crate::TelemetryEvent::AgentModeRequestRetrySucceeded {
-                                                identifiers: self.ai_identifiers.clone(),
-                                                retry_count: self.retries_sent,
-                                                original_error: original_error.clone(),
-                                            },
-                                            ctx
-                                        );
-                                    }
-                            }
                         }
                     }
                 }
                 ctx.emit(ResponseStreamEvent::ReceivedEvent(Consumable::new(event)));
             }
             Err(e) => {
-                // Store original error if this is the first error
-                if self.original_error.is_none() {
-                    self.original_error = Some(format!("{e:?}"));
-                }
-
                 if matches!(self.begin_recovery(e, ctx), RecoveryOutcome::InFlight) {
                     // Don't emit the error event, we're recovering in-request.
                     return;

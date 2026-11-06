@@ -6,7 +6,6 @@ pub mod link;
 pub mod manager;
 pub mod notebook;
 mod styles;
-pub mod telemetry;
 
 use std::sync::Arc;
 
@@ -185,7 +184,6 @@ pub enum NotebookLocation {
 
 impl From<Owner> for NotebookLocation {
     fn from(owner: Owner) -> Self {
-        // TODO(ben): Account for shared objects in notebook telemetry.
         match owner {
             Owner::User { .. } => NotebookLocation::PersonalCloud,
             Owner::Team { .. } => NotebookLocation::Team,

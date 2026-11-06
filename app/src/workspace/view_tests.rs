@@ -58,7 +58,6 @@ use crate::server::server_api::ServerApiProvider;
 use crate::server::server_api::team::{MockTeamClient, TeamClient};
 use crate::server::server_api::workspace::MockWorkspaceClient;
 use crate::server::sync_queue::SyncQueue;
-use crate::server::telemetry::context_provider::AppTelemetryContextProvider;
 use crate::settings::PrivacySettings;
 use crate::settings::cloud_preferences_syncer::CloudPreferencesSyncer;
 use crate::settings_view::DisplayCount;
@@ -95,7 +94,6 @@ pub(crate) fn initialize_app_with_team_client(app: &mut App, team_client: Arc<dy
     // Add the necessary singleton models to the App
     app.add_singleton_model(|_ctx| ServerApiProvider::new_for_test());
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-    app.add_singleton_model(AppTelemetryContextProvider::new_context_provider);
     app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(|_ctx| PtySpawner::new_for_test());
     app.add_singleton_model(|_| Prompt::mock());
@@ -4456,7 +4454,7 @@ fn test_tools_panel_warp_drive_toggle_updates_available_views() {
                 "Warp Drive should be an available tools-panel tab by default"
             );
             workspace.left_panel_view.update(ctx, |lp, ctx| {
-                lp.handle_action_with_force_open(&LeftPanelAction::WarpDrive, false, ctx);
+                lp.apply_action(&LeftPanelAction::WarpDrive, ctx);
             });
             assert_eq!(
                 workspace.left_panel_view.as_ref(ctx).active_view(),
@@ -4509,7 +4507,7 @@ fn test_tools_panel_warp_drive_toggle_updates_available_views() {
                 "Re-enabling the setting should restore Warp Drive to the tools panel"
             );
             workspace.left_panel_view.update(ctx, |lp, ctx| {
-                lp.handle_action_with_force_open(&LeftPanelAction::WarpDrive, false, ctx);
+                lp.apply_action(&LeftPanelAction::WarpDrive, ctx);
             });
             assert_eq!(
                 workspace.left_panel_view.as_ref(ctx).active_view(),

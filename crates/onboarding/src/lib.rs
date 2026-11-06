@@ -4,22 +4,12 @@ mod agent_onboarding_view;
 pub mod callout;
 mod model;
 pub mod slides;
-pub mod telemetry;
 
 /// The user's intention selected during onboarding slides.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OnboardingIntention {
     Terminal,
     AgentDrivenDevelopment,
-}
-
-impl std::fmt::Display for OnboardingIntention {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OnboardingIntention::AgentDrivenDevelopment => write!(f, "agent_driven"),
-            OnboardingIntention::Terminal => write!(f, "terminal"),
-        }
-    }
 }
 
 pub use callout::{OnboardingCalloutView, OnboardingKeybindings};
@@ -35,13 +25,6 @@ pub const AI_FEATURES: &[&str] = &[
     "Review code diffs and send comments directly to agents",
     "Remote control for Claude Code, Codex, and other agents",
 ];
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "bin")] {
-        mod telemetry_provider;
-        pub use telemetry_provider::MockTelemetryContextProvider;
-    }
-}
 
 pub mod components;
 
@@ -65,7 +48,6 @@ impl std::fmt::Display for SessionDefault {
 
 pub use agent_onboarding_view::{AgentOnboardingAction, AgentOnboardingEvent, AgentOnboardingView};
 pub use model::{SelectedSettings, UICustomizationSettings};
-pub use telemetry::OnboardingEvent;
 
 pub fn init(app: &mut warpui_core::AppContext) {
     agent_onboarding_view::init(app);

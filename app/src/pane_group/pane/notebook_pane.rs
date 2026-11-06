@@ -235,9 +235,7 @@ fn handle_notebook_event(
         NotebookEvent::OpenDriveObjectShareDialog {
             cloud_object_type_and_id,
             invitee_email,
-            source,
         } => ctx.emit(crate::pane_group::Event::OpenDriveObjectShareDialog {
-            source: *source,
             cloud_object_type_and_id: *cloud_object_type_and_id,
             invitee_email: invitee_email.clone(),
         }),

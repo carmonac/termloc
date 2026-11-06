@@ -27,6 +27,7 @@ use super::{
     MCPServerState, SpawnedServerInfo, TemplatableMCPServerInfo, TemplatableMCPServerManager,
     TemplatableMCPServerManagerEvent,
 };
+use crate::GlobalResourceHandlesProvider;
 use crate::ai::mcp::file_based_manager::FileBasedMCPManagerEvent;
 use crate::ai::mcp::parsing::resolve_json;
 use crate::ai::mcp::templatable::{CloudTemplatableMCPServer, GalleryData};
@@ -49,31 +50,23 @@ use crate::persistence::{
 };
 use crate::server::cloud_objects::update_manager::{InitiatedBy, UpdateManager};
 use crate::server::ids::{ClientId, ServerId, SyncId};
-use crate::server::telemetry::{
-    MCPServerModel, MCPServerTelemetryTransportType, MCPTemplateCreationSource, TelemetryEvent,
-};
 use crate::settings::AISettings;
 use crate::view_components::DismissibleToast;
 use crate::workspace::ToastStack;
 use crate::workspaces::user_workspaces::UserWorkspaces;
-use crate::{GlobalResourceHandlesProvider, send_telemetry_from_ctx};
 
 /// Controls the behavior of `spawn_server_impl`.
 enum SpawnMode {
-    /// Initial spawn - clears logs and sends telemetry.
+    /// Initial spawn - clears logs.
     Initial {
         /// Whether to persist running state to SQLite.
         persist_running_state_to_sqlite: bool,
     },
-    /// Reconnection after transport closed - preserves logs, no telemetry.
+    /// Reconnection after transport closed - preserves logs.
     Reconnect,
 }
 
 impl SpawnMode {
-    fn should_send_telemetry(&self) -> bool {
-        matches!(self, SpawnMode::Initial { .. })
-    }
-
     fn should_persist_running_state_to_sqlite(&self) -> bool {
         matches!(
             self,
@@ -471,7 +464,6 @@ impl TemplatableMCPServerManager {
         self.server_states.insert(installation_uuid, new_state);
         ctx.emit(TemplatableMCPServerManagerEvent::StateChanged {
             uuid: installation_uuid,
-            state: new_state,
         });
     }
 
@@ -996,7 +988,6 @@ impl TemplatableMCPServerManager {
 
         // Extract values from mode before moving it into the closure.
         let should_persist = mode.should_persist_running_state_to_sqlite();
-        let should_send_telemetry = mode.should_send_telemetry();
 
         self.change_server_state(installation_uuid, MCPServerState::Starting, ctx);
         let task = ctx.spawn(
@@ -1015,7 +1006,7 @@ impl TemplatableMCPServerManager {
                 me.pending_oauth_csrf.retain(|_, v| *v != installation_uuid);
                 me.authorization_urls.remove(&installation_uuid);
 
-                let error = match server_info {
+                match server_info {
                     Ok(info) => {
                         let peer = info.peer();
                         me.active_servers.insert(installation_uuid, info);
@@ -1029,7 +1020,6 @@ impl TemplatableMCPServerManager {
                         }
                         me.change_server_state(installation_uuid, MCPServerState::Running, ctx);
                         me.notify_reconnect_waiters(installation_uuid, Ok(peer));
-                        None
                     }
                     Err(e) => {
                         logger_clone
@@ -1053,25 +1043,7 @@ impl TemplatableMCPServerManager {
                         me.delete_credentials_from_secure_storage(installation_uuid, ctx);
 
                         me.notify_reconnect_waiters(installation_uuid, Err(error_message));
-
-                        Some(e.into())
                     }
-                };
-
-                if should_send_telemetry {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::MCPServerSpawned {
-                            transport_type: match server.transport_type {
-                                TransportType::CLIServer { .. } =>
-                                    MCPServerTelemetryTransportType::CLIServer,
-                                TransportType::ServerSentEvents { .. } =>
-                                    MCPServerTelemetryTransportType::ServerSentEvents,
-                            },
-                            server_model: MCPServerModel::Templatable,
-                            error
-                        },
-                        ctx
-                    );
                 }
             },
         );
@@ -1616,16 +1588,7 @@ impl TemplatableMCPServerManager {
                 ctx,
             );
             match result {
-                Ok(result) => {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::MCPTemplateCreated {
-                            source: MCPTemplateCreationSource::Conversion,
-                            variables: result.templatable_mcp_server.template.variables,
-                            name: result.templatable_mcp_server.name,
-                        },
-                        ctx
-                    );
-                }
+                Ok(_) => {}
                 Err(e) => report_error!(
                     anyhow::Error::new(e)
                         .context("Failed to convert legacy MCP server to templatable")
@@ -1656,7 +1619,6 @@ impl TemplatableMCPServerManager {
                     ctx,
                 );
             });
-            send_telemetry_from_ctx!(TelemetryEvent::MCPTemplateShared, ctx);
         }
     }
 

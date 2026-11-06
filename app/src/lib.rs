@@ -4,7 +4,6 @@ mod ai;
 #[cfg(not(target_family = "wasm"))]
 pub use ai::acp;
 mod alloc;
-mod antivirus;
 #[cfg(target_os = "macos")]
 mod app_menus;
 mod app_services;
@@ -37,7 +36,6 @@ mod font_fallback;
 mod global_resource_handles;
 mod gpu_state;
 mod input_classifier;
-mod interval_timer;
 mod linear;
 #[cfg(feature = "local_fs")]
 mod local_control;
@@ -161,7 +159,6 @@ use repo_metadata::{
     RepoMetadataModel, repositories::DetectedRepositories, watcher::DirectoryWatcher,
 };
 use server::network_log_pane_manager::NetworkLogPaneManager;
-use server::telemetry::context_provider::AppTelemetryContextProvider;
 use server::voice_transcriber::ServerVoiceTranscriber;
 #[cfg(feature = "local_fs")]
 use settings::import::model::ImportedConfigModel;
@@ -195,7 +192,6 @@ use anyhow::Context;
 use anyhow::{Result, anyhow};
 use appearance::{Appearance, AppearanceManager};
 use channel::ChannelState;
-use interval_timer::IntervalTimer;
 use itertools::Itertools;
 #[cfg(feature = "integration_tests")]
 pub use persistence::testing as sqlite_testing;
@@ -210,9 +206,6 @@ use url::Url;
 // Re-export the debounce function to simplify imports.
 pub use warp_core::r#async::debounce;
 use warp_core::execution_mode::{AppExecutionMode, ExecutionMode};
-// Re-export the send_telemetry_from_ctx macro at the crate root level
-pub use warp_core::send_telemetry_from_app_ctx;
-pub use warp_core::send_telemetry_from_ctx;
 // Re-export the safe logging macros at the crate root level for backwards compatibility
 pub use warp_core::{safe_debug, safe_error, safe_info, safe_warn};
 use warp_errors::{report_error, report_if_error};
@@ -240,8 +233,6 @@ use crate::ai::mcp::{MCPGalleryManager, TemplatableMCPServerManager};
 use crate::ai::outline::RepoOutlines;
 use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
-#[cfg(not(target_family = "wasm"))]
-use crate::antivirus::AntivirusInfo;
 use crate::app_state::AppState;
 use crate::cloud_object::model::actions::{ObjectAction, ObjectActions};
 use crate::cloud_object::model::persistence::CloudModel;
@@ -263,6 +254,7 @@ use crate::notebooks::editor::keys::NotebookKeybindings;
 use crate::notebooks::manager::NotebookManager;
 use crate::notification::NotificationContext;
 use crate::palette::PaletteMode;
+use crate::palette::PaletteSource;
 use crate::persistence::PersistenceWriter;
 use crate::projects::ProjectManagementModel;
 use crate::root_view::{
@@ -273,10 +265,6 @@ use crate::server::cloud_objects::update_manager::UpdateManager;
 use crate::server::experiments::ServerExperiments;
 #[cfg(not(target_family = "wasm"))]
 use crate::server::sync_queue::{QueueItem, SyncQueue};
-pub use crate::server::telemetry::{
-    AgentModeEntrypoint, AgentModeEntrypointSelectionType, TelemetryEvent,
-};
-use crate::server::telemetry::{AppStartupInfo, CloseTarget, PaletteSource};
 use crate::session_management::{RunningSessionSummary, SessionNavigationData};
 use crate::settings::cloud_preferences_syncer::{
     CloudPreferencesSyncerEvent, initialize_cloud_preferences_syncer,
@@ -685,10 +673,6 @@ pub fn run() -> Result<()> {
             warp_cli::Command::DumpSettingsSchema { output_path } => {
                 return settings::schema_generation::dump_settings_schema(output_path.as_deref());
             }
-            #[cfg(not(target_family = "wasm"))]
-            warp_cli::Command::PrintTelemetryEvents => {
-                return TelemetryEvent::print_telemetry_events_json();
-            }
         }
     }
 
@@ -825,8 +809,6 @@ pub type TuiMountFn = Box<dyn FnOnce(&mut warpui::AppContext)>;
 /// Runs the app (or CLI / daemon). TUI entry points run after `initialize_app`
 /// in place of the GUI/CLI `launch()` path.
 fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
-    let mut timer = IntervalTimer::new();
-
     // ── Early initialization (pre-AppBuilder) ──────────────────────
     // These steps run before the platform event loop is started.
     // They must not depend on AppContext.
@@ -876,8 +858,6 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
             })?;
         }
     }
-
-    timer.mark_interval_end("LOG_FILE_SETUP_COMPLETE");
 
     // Claim a background-only process type before anything else can reach
     // AppKit, so a windowless launch never acquires a Dock tile. See APP-2946.
@@ -1009,8 +989,7 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
         terminal::local_tty::spawner::PtySpawner::new().context("Failed to create pty spawner")?;
 
     // The TUI front-end skips the GUI lifecycle callbacks, which reach for
-    // windows and GUI-only state, but still flushes telemetry and reporting on
-    // termination.
+    // windows and GUI-only state, but still flushes reporting on termination.
     let callbacks = if matches!(launch_mode, LaunchMode::Tui { .. }) {
         warpui::platform::AppCallbacks {
             on_will_terminate: Some(Box::new(move |_| {
@@ -1138,7 +1117,7 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
         #[cfg(enable_crash_recovery)]
         ctx.add_singleton_model(move |_ctx| crash_recovery);
 
-        let app_state = initialize_app(&launch_mode, timer, startup_toml_parse_error, ctx);
+        let app_state = initialize_app(&launch_mode, startup_toml_parse_error, ctx);
 
         if ImprovedPaletteSearch::improved_search_enabled(ctx) {
             FeatureFlag::UseTantivySearch.set_enabled(true);
@@ -1255,7 +1234,6 @@ fn authenticate_user_after_iap_access(
 #[::tracing::instrument(skip_all)]
 pub(crate) fn initialize_app(
     launch_mode: &LaunchMode,
-    mut timer: IntervalTimer,
     startup_toml_parse_error: Option<warpui_extras::user_preferences::Error>,
     ctx: &mut warpui::AppContext,
 ) -> Option<AppState> {
@@ -1295,7 +1273,6 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(|_ctx| SettingsManager::default());
 
     let user_defaults_on_startup = settings::init(startup_toml_parse_error, ctx);
-    timer.mark_interval_end("READ_USER_DEFAULTS_AND_INITIALIZE_SETTINGS");
 
     if FeatureFlag::UIZoom.is_enabled() {
         ctx.set_zoom_factor(WindowSettings::as_ref(ctx).zoom_level.as_zoom_factor());
@@ -1309,7 +1286,6 @@ pub(crate) fn initialize_app(
         ),
     };
     let auth_state = Arc::new(auth_state);
-    timer.mark_interval_end("AUTH_MANAGER_SET_USER");
 
     // NetworkLogModel must be registered before ServerApiProvider so that
     // `NetworkLogModel::install_on_clients` can reach it when forwarding items
@@ -1334,8 +1310,6 @@ pub(crate) fn initialize_app(
     let ai_client = server_api_provider.as_ref(ctx).get_ai_client();
 
     ctx.add_singleton_model(|_ctx| AuthStateProvider::new(auth_state.clone()));
-
-    ctx.add_singleton_model(AppTelemetryContextProvider::new_context_provider);
 
     ctx.add_singleton_model(|ctx| {
         AuthManager::new(
@@ -1377,7 +1351,6 @@ pub(crate) fn initialize_app(
     };
     let (sqlite_data, writer_handles) =
         persistence::initialize(ctx, persistence_scope, persisted_data_scope);
-    timer.mark_interval_end("SQLITE_INITIALIZED");
 
     let persistence_writer = PersistenceWriter::new(writer_handles);
 
@@ -1516,7 +1489,6 @@ pub(crate) fn initialize_app(
             });
         }
     });
-    ctx.add_singleton_model(AntivirusInfo::new);
 
     ctx.set_fallback_font_source_provider(|url| ::asset_cache::url_source(url));
 
@@ -1600,21 +1572,7 @@ pub(crate) fn initialize_app(
     if user_is_logged_in {
         // Set the first frame callback to record the app's startup time.
         // This is only sent for logged-in users so that new users don't skew performance metrics.
-        let is_screen_reader_enabled = ctx.is_screen_reader_enabled();
-        let from_relaunch = launch_mode.args().finish_update;
         ctx.on_first_frame_drawn(move |ctx| {
-            let timing_data = IntervalTimer::handle(ctx).update(ctx, |timer, _| {
-                timer.mark_interval_end("FIRST_FRAME_DRAWN");
-                timer.compute_stats()
-            });
-            let event = TelemetryEvent::AppStartup(AppStartupInfo {
-                is_session_restoration_on: user_defaults_on_startup.should_restore_session,
-                is_screen_reader_enabled,
-                from_relaunch,
-                is_crash_reporting_enabled: false,
-                timing_data,
-            });
-
             GPUState::handle(ctx).update(ctx, |gpu_state, ctx| {
                 gpu_state
                     .set_has_lower_power_gpu(warpui::rendering::is_low_power_gpu_available(), ctx);
@@ -1627,8 +1585,6 @@ pub(crate) fn initialize_app(
                         settings.refresh_preferred_graphics_backend_dropdown(ctx);
                     })
             }
-
-            send_telemetry_from_app_ctx!(event, ctx);
         });
 
         #[cfg(enable_crash_recovery)]
@@ -1637,10 +1593,6 @@ pub(crate) fn initialize_app(
                 crash_recovery.on_frame_drawn(window_id, ctx);
             });
         })
-    } else {
-        // If the app was opened while logged out, record an event for measuring new users.
-        // This is sent immediately in case they quit the app on the signup screen.
-        send_telemetry_sync_from_app_ctx!(TelemetryEvent::LoggedOutStartup, ctx);
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -2105,10 +2057,6 @@ pub(crate) fn initialize_app(
         });
     }
 
-    timer.mark_interval_end("SINGLETON_MODELS_REGISTERED");
-
-    ctx.add_singleton_model(move |_| timer);
-
     ctx.add_singleton_model(|ctx| AIExecutionProfilesModel::new(launch_mode, ctx));
 
     ctx.add_singleton_model(DefaultTerminal::new);
@@ -2330,13 +2278,6 @@ pub(crate) fn app_callbacks(is_integration_test: bool) -> warpui::platform::AppC
 
             let summary = UnsavedStateSummary::for_window(window_id, ctx);
 
-            send_telemetry_from_app_ctx!(
-                TelemetryEvent::UserInitiatedClose {
-                    initiated_on: CloseTarget::Window,
-                },
-                ctx
-            );
-
             // Don't show dialog on integration test. Machine can't press buttons.
             if !is_integration_test && summary.save_unsaved_code_and_should_warn(ctx) {
                 let shown = summary
@@ -2375,13 +2316,6 @@ pub(crate) fn app_callbacks(is_integration_test: bool) -> warpui::platform::AppC
                 return ApproveTerminateResult::Terminate;
             }
 
-            send_telemetry_from_app_ctx!(
-                TelemetryEvent::UserInitiatedClose {
-                    initiated_on: CloseTarget::App,
-                },
-                ctx
-            );
-
             let summary = UnsavedStateSummary::for_app(ctx);
             // Don't show dialog on integration test. Machine can't press buttons.
             if !is_integration_test && summary.save_unsaved_code_and_should_warn(ctx) {
@@ -2406,7 +2340,6 @@ pub(crate) fn app_callbacks(is_integration_test: bool) -> warpui::platform::AppC
                         .toggle_and_save_value(ctx)
                 );
             });
-            send_telemetry_from_app_ctx!(TelemetryEvent::QuitModalDisabled, ctx);
         })),
         on_notification_clicked: Some(Box::new(move |notification_response, ctx| {
             if let Some(notification_data) = notification_response.data() {
@@ -2503,14 +2436,6 @@ pub(crate) fn app_callbacks(is_integration_test: bool) -> warpui::platform::AppC
 }
 
 fn on_close_app_cancelled(open_navigation_palette: bool, ctx: &mut AppContext) {
-    send_telemetry_from_app_ctx!(
-        TelemetryEvent::QuitModalCancel {
-            nav_palette: open_navigation_palette,
-            modal_for: CloseTarget::App,
-        },
-        ctx
-    );
-
     let sessions = SessionNavigationData::all_sessions(ctx).collect_vec();
     let sessions_summary = RunningSessionSummary::new(&sessions);
 
@@ -2557,14 +2482,6 @@ fn on_close_window_cancelled(
     open_navigation_palette: bool,
     ctx: &mut AppContext,
 ) {
-    send_telemetry_from_app_ctx!(
-        TelemetryEvent::QuitModalCancel {
-            nav_palette: open_navigation_palette,
-            modal_for: CloseTarget::Window,
-        },
-        ctx
-    );
-
     let sessions = SessionNavigationData::all_sessions(ctx).collect_vec();
     let sessions_summary = RunningSessionSummary::new(&sessions);
     let num_processes_in_window = sessions_summary.processes_in_window(&window_id).len();
@@ -2599,15 +2516,7 @@ fn on_close_window_cancelled(
 
 #[::tracing::instrument(skip_all)]
 fn launch(ctx: &mut warpui::AppContext, app_state: Option<AppState>, launch_mode: LaunchMode) {
-    IntervalTimer::handle(ctx).update(ctx, |timer, _ctx| {
-        timer.mark_interval_end("APP_LAUNCHED");
-    });
-
     keyboard::load_custom_keybindings(ctx);
-
-    IntervalTimer::handle(ctx).update(ctx, |timer, _ctx| {
-        timer.mark_interval_end("KEYBINDINGS_LOADED");
-    });
 
     // For now, we only specify application-level fallback fonts on web.
     #[cfg(target_family = "wasm")]
@@ -2633,10 +2542,6 @@ fn launch(ctx: &mut warpui::AppContext, app_state: Option<AppState>, launch_mode
             if ctx.window_ids().count() == 0 {
                 ctx.dispatch_global_action("root_view:open_new", &());
             }
-
-            IntervalTimer::handle(ctx).update(ctx, |timer, _| {
-                timer.mark_interval_end("WINDOWS_CREATED");
-            });
 
             // TODO(ben): We should skip this for LaunchMode::Test.
             #[cfg(any(target_os = "macos", target_os = "windows"))]

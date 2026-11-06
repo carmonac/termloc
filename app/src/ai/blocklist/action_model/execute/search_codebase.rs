@@ -16,7 +16,6 @@ use crate::ai::agent::{
     AIAgentAction, AIAgentActionId, AIAgentActionResultType, AIAgentActionType,
     SearchCodebaseFailureReason, SearchCodebaseRequest, SearchCodebaseResult,
 };
-use crate::ai::blocklist::action_model::execute::get_server_output_id;
 use crate::ai::blocklist::{BlocklistAIPermissions, SessionContext};
 use crate::ai::get_relevant_files::controller::{
     GetRelevantFilesController, GetRelevantFilesControllerEvent, GetRelevantFilesControllerResult,
@@ -26,7 +25,6 @@ use crate::features::FeatureFlag;
 use crate::server::team_scope::RequestTeamScope;
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::workspaces::user_workspaces::TeamContext;
-use crate::{TelemetryEvent, send_telemetry_from_ctx};
 
 pub struct SearchCodebaseExecutor {
     active_session: ModelHandle<ActiveSession>,
@@ -212,15 +210,6 @@ impl SearchCodebaseExecutor {
                 .as_deref()
                 .filter(|path| !path.is_empty() && *path != ".")
                 .map(ToOwned::to_owned);
-            let server_output_id = get_server_output_id(conversation_id, ctx);
-            send_telemetry_from_ctx!(
-                TelemetryEvent::SearchCodebaseRequested {
-                    action_id: id.clone(),
-                    server_output_id,
-                    is_cross_repo: requested_codebase_path.is_some(),
-                },
-                ctx
-            );
 
             let root_dir_for_search = self.root_repo_paths.get(id).cloned().or_else(|| {
                 self.get_relevant_files_controller
@@ -291,14 +280,12 @@ impl SearchCodebaseExecutor {
                 }
             }
         } else {
-            let codebase_path = codebase_path.as_ref().map(PathBuf::from);
-
-            let Some(current_working_directory) = self
+            if self
                 .active_session
                 .as_ref(ctx)
                 .current_working_directory()
-                .map(PathBuf::from)
-            else {
+                .is_none()
+            {
                 // This should really never happen; it implies that we don't know what the
                 // current working directory is, which is never the case.
                 return ActionExecution::Sync(AIAgentActionResultType::SearchCodebase(
@@ -308,45 +295,9 @@ impl SearchCodebaseExecutor {
                             .to_string(),
                     },
                 ));
-            };
-
-            let search_dir;
-            let is_cross_repo;
-            if FeatureFlag::CrossRepoContext.is_enabled() {
-                is_cross_repo = codebase_path
-                    .as_ref()
-                    .is_some_and(|path| !current_working_directory.starts_with(path));
-                search_dir = codebase_path.unwrap_or(current_working_directory);
-            } else {
-                is_cross_repo = false;
-                search_dir = current_working_directory;
             }
-            let server_output_id = get_server_output_id(conversation_id, ctx);
-            send_telemetry_from_ctx!(
-                TelemetryEvent::SearchCodebaseRequested {
-                    action_id: id.clone(),
-                    server_output_id,
-                    is_cross_repo,
-                },
-                ctx
-            );
 
             let Some(root_dir_for_search) = self.root_repo_paths.get(id) else {
-                let action_id = id.clone();
-
-                // Check if directory exists on background thread since its a sys call; no need to block
-                // main thread since its just for telemetry.
-                let _ = ctx.spawn(async move { search_dir.exists() }, |_, exists, ctx| {
-                    let error = if exists {
-                        "The codebase isn't indexed".to_string()
-                    } else {
-                        "The codebase doesn't exist".to_string()
-                    };
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::SearchCodebaseRepoUnavailable { action_id, error },
-                        ctx
-                    );
-                });
                 return ActionExecution::Sync(AIAgentActionResultType::SearchCodebase(SearchCodebaseResult::Failed {
                     message: "The search failed because the codebase is not available. Try another way to locate the relevant files.".to_owned(),
                     reason: SearchCodebaseFailureReason::CodebaseNotIndexed

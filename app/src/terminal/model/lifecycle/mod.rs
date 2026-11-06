@@ -5,19 +5,13 @@
 //! policy for an action, and attaches rate-limited diagnostics when the action is conservative or
 //! corrective. Callers apply the planned action before committing its next phase.
 
-mod telemetry;
 mod transition;
 
-pub use telemetry::LifecycleRecoveryRecord;
-pub(in crate::terminal) use telemetry::LifecycleTelemetryEvent;
-use telemetry::LifecycleTelemetryLimiter;
 pub(in crate::terminal) use transition::{
     CommandStartKind, IgnoreReason, LifecycleAction, LifecycleInput, LifecyclePhase,
     LifecycleSnapshot, LifecycleTransition, NextBlockIdDisposition, PreexecObservation,
 };
 use warp_core::features::FeatureFlag;
-
-use super::block::BlockState;
 
 /// Describes whether a command-start intent was accepted or conservatively ignored.
 ///
@@ -50,7 +44,6 @@ impl StartCommandOutcome {
 pub(super) struct BlockLifecycleCoordinator {
     phase: LifecyclePhase,
     epoch: u64,
-    telemetry_limiter: LifecycleTelemetryLimiter,
 }
 
 impl Default for BlockLifecycleCoordinator {
@@ -58,7 +51,6 @@ impl Default for BlockLifecycleCoordinator {
         Self {
             phase: LifecyclePhase::Unknown,
             epoch: 0,
-            telemetry_limiter: LifecycleTelemetryLimiter::default(),
         }
     }
 }
@@ -104,42 +96,10 @@ impl BlockLifecycleCoordinator {
             } else {
                 (planned_next_phase, planned_action)
             };
-        let reconciles_missing_execution = matches!(
-            (input, planned_action),
-            (
-                LifecycleInput::CommandFinished(NextBlockIdDisposition::Novel),
-                LifecycleAction::AcceptCommandFinished,
-            )
-        ) && !snapshot.finished
-            && snapshot.block_state != BlockState::Executing;
-        let should_record = action.is_ignored()
-            || is_gated_recovery
-            || reconciles_missing_execution
-            || snapshot.completion_mismatch
-            || matches!(
-                (previous_phase, input),
-                (
-                    LifecyclePhase::AwaitingPrecmd | LifecyclePhase::Unknown,
-                    LifecycleInput::StartCommand(_) | LifecycleInput::Preexec(_)
-                )
-            );
-        let recovery_record = should_record
-            .then(|| {
-                LifecycleRecoveryRecord::new(
-                    previous_phase,
-                    next_phase,
-                    input.kind(),
-                    action,
-                    snapshot,
-                )
-            })
-            .and_then(|record| self.telemetry_limiter.record(record));
-
         LifecycleTransition {
             previous_phase,
             next_phase,
             action,
-            recovery_record,
         }
     }
 

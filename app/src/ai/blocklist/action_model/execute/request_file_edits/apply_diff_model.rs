@@ -15,9 +15,8 @@ use warpui::r#async::BoxFuture;
 use warpui::{Entity, ModelContext, ModelHandle, SingletonEntity as _};
 
 use super::diff_application::{DiffApplicationError, FileReadResult, apply_edits};
-use crate::ai::agent::{AIIdentifiers, FileEdit};
+use crate::ai::agent::FileEdit;
 use crate::ai::blocklist::SessionContext;
-use crate::auth::AuthStateProvider;
 use crate::terminal::model::session::active_session::ActiveSession;
 
 /// Entity submodel that encapsulates filesystem access for diff application.
@@ -41,14 +40,9 @@ impl ApplyDiffModel {
     pub fn apply_diffs(
         &self,
         edits: Vec<FileEdit>,
-        ai_identifiers: &AIIdentifiers,
-        passive_diff: bool,
         ctx: &mut ModelContext<Self>,
     ) -> BoxFuture<'static, Result<Vec<AIRequestedCodeDiff>, Vec1<DiffApplicationError>>> {
         let session_context = SessionContext::from_session(self.active_session.as_ref(ctx), ctx);
-        let background_executor = ctx.background_executor();
-        let auth_state = AuthStateProvider::as_ref(ctx).get().clone();
-        let ai_identifiers = ai_identifiers.clone();
 
         let host_request_handle = session_context.host_id().map(|host_id| {
             remote_server::manager::RemoteServerManager::as_ref(ctx).host_request_handle(host_id)
@@ -59,18 +53,10 @@ impl ApplyDiffModel {
             if is_remote {
                 match host_request_handle {
                     Some(handle) => {
-                        apply_edits(
-                            edits,
-                            &session_context,
-                            &ai_identifiers,
-                            background_executor,
-                            auth_state,
-                            passive_diff,
-                            |path| {
-                                let handle = &handle;
-                                async move { read_remote_file(handle, &path).await }
-                            },
-                        )
+                        apply_edits(edits, &session_context, |path| {
+                            let handle = &handle;
+                            async move { read_remote_file(handle, &path).await }
+                        })
                         .await
                     }
                     None => Err(vec1::vec1![
@@ -78,15 +64,9 @@ impl ApplyDiffModel {
                     ]),
                 }
             } else {
-                apply_edits(
-                    edits,
-                    &session_context,
-                    &ai_identifiers,
-                    background_executor,
-                    auth_state,
-                    passive_diff,
-                    |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
-                )
+                apply_edits(edits, &session_context, |path| async move {
+                    FileReadResult::from(std::fs::read_to_string(path))
+                })
                 .await
             }
         };

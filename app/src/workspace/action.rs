@@ -26,12 +26,9 @@ use crate::ai::document::ai_document_model::{AIDocumentId, AIDocumentVersion};
 use crate::drive::CloudObjectTypeAndId;
 use crate::drive::items::WarpDriveItemId;
 use crate::palette::PaletteMode;
-use crate::prompt::editor_modal::OpenSource as PromptEditorOpenSource;
+use crate::palette::PaletteSource;
 use crate::search;
 use crate::server::ids::{ServerId, SyncId};
-use crate::server::telemetry::{
-    AddTabWithShellSource, AgentModeEntrypoint, PaletteSource, SharingDialogSource,
-};
 use crate::settings_view::{SettingsAction as SettingsTabAction, SettingsSection};
 use crate::tab::{NewSessionMenuItem, SelectedTabColor};
 use crate::tab_configs::TabConfig;
@@ -239,7 +236,6 @@ pub enum WorkspaceAction {
     },
     AddTabWithShell {
         shell: AvailableShell,
-        source: AddTabWithShellSource,
     },
     AddGetStartedTab,
     /// Add a new tab that immediately enters agent view with a new conversation.
@@ -404,9 +400,7 @@ pub enum WorkspaceAction {
     DisableTerminalInputSync,
     HandleConflictingWorkflow(SyncId),
     HandleConflictingEnvVarCollection(SyncId),
-    OpenPromptEditor {
-        open_source: PromptEditorOpenSource,
-    },
+    OpenPromptEditor,
     OpenAgentToolbarEditor,
     OpenCLIAgentToolbarEditor,
     OpenHeaderToolbarEditor,
@@ -431,7 +425,6 @@ pub enum WorkspaceAction {
     /// Open the object's sharing settings in WD.
     OpenObjectSharingSettings {
         object_id: CloudObjectTypeAndId,
-        source: SharingDialogSource,
     },
     UndoTrash(CloudObjectTypeAndId),
     /// Open a local path in the file explorer.
@@ -462,15 +455,11 @@ pub enum WorkspaceAction {
     },
     /// Open a new tab with its input in AI mode.
     NewTabInAgentMode {
-        /// The entrypoint that triggered this action.
-        entrypoint: AgentModeEntrypoint,
         /// The type of zero state prompt suggestion to start with (optional).
         zero_state_prompt_suggestion_type: Option<ZeroStatePromptSuggestionType>,
     },
     /// Open a new pane with its input in AI mode.
     NewPaneInAgentMode {
-        /// The entrypoint that triggered this action.
-        entrypoint: AgentModeEntrypoint,
         /// The type of zero state prompt suggestion to start with (optional).
         zero_state_prompt_suggestion_type: Option<ZeroStatePromptSuggestionType>,
     },
@@ -911,7 +900,7 @@ impl WorkspaceAction {
             | DisableTerminalInputSync
             | HandleConflictingWorkflow(_)
             | HandleConflictingEnvVarCollection(_)
-            | OpenPromptEditor { .. }
+            | OpenPromptEditor
             | OpenAgentToolbarEditor
             | OpenCLIAgentToolbarEditor
             | OpenHeaderToolbarEditor

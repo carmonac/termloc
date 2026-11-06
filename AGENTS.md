@@ -67,7 +67,7 @@ This is a Rust-based terminal emulator with a custom UI framework called **WarpU
 
 ### Front-ends: GUI and TUI
 
-termloc has two front-ends that share the `warp_core`/`warpui` Entity/model core (App/Entity/`AppContext`, actions, `Appearance`, `FeatureFlag`, telemetry, logging) but differ in UI framework, rendering, input, and verification:
+termloc has two front-ends that share the `warp_core`/`warpui` Entity/model core (App/Entity/`AppContext`, actions, `Appearance`, `FeatureFlag`, logging) but differ in UI framework, rendering, input, and verification:
 - **GUI desktop app** — the `app/` crate on the WarpUI pixel/GPU framework (`warpui`, `crates/warpui_core`): `Element`/`View` layout, GPU/WGSL rendering, mouse input, `.app` bundles. Run with `cargo run` / `./script/run`; verify visually with `computer_use` or the real-display integration framework (`crates/integration`).
 - **Headless TUI** — the `crates/warp_tui` crate: a console app (run with `./script/run-tui`; no `.app`/GPU) rendered with a parallel cell-grid element library at `crates/warpui_core/src/elements/tui` (the `TuiElement` trait), behind the `tui` cargo feature. Verify by running it in a real terminal and observing output; test with render-to-lines unit tests.
 

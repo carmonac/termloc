@@ -134,15 +134,6 @@ impl UnsupportedReason {
             | crate::transport::Error::Other(_) => None,
         }
     }
-
-    pub fn as_telemetry_reason(&self) -> &'static str {
-        match self {
-            Self::GlibcTooOld { .. } => "glibc_too_old",
-            Self::NonGlibc { .. } => "non_glibc",
-            Self::UnsupportedOs { .. } => "unsupported_os",
-            Self::UnsupportedArch { .. } => "unsupported_arch",
-        }
-    }
 }
 
 impl PreinstallCheckResult {

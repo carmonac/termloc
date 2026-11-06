@@ -36,7 +36,7 @@ pub enum VoiceInputLifecycleState {
 
 /// Lifecycle shared by voice-input surfaces.
 ///
-/// Surfaces retain ownership of presentation, telemetry, async handles, and
+/// Surfaces retain ownership of presentation, async handles, and
 /// transcription destinations. This type centralizes valid state transitions;
 /// surfaces abort their owned handles before cancelling or replacing a session.
 #[derive(Debug, Clone, Copy, Default)]
@@ -102,7 +102,6 @@ impl VoiceInputLifecycle {
 pub struct VoiceInput {
     state: VoiceInputState,
     pub should_suppress_new_feature_popup: bool,
-    voice_session_start: Option<instant::Instant>,
     wav_conversion_handle: Option<SpawnedFutureHandle>,
 }
 
@@ -134,12 +133,9 @@ pub enum VoiceInputToggledFrom {
 #[derive(Debug)]
 pub enum VoiceSessionResult {
     /// Recording completed successfully with audio data.
-    Audio {
-        wav_base64: String,
-        session_duration_ms: u64,
-    },
+    Audio { wav_base64: String },
     /// Recording was aborted without producing audio.
-    Aborted { session_duration_ms: Option<u64> },
+    Aborted,
 }
 
 /// Represents an active voice recording session.
@@ -160,9 +156,7 @@ impl VoiceSession {
         match self.result_rx.await {
             Ok(result) => result,
             // Channel closed without sending - treat as aborted
-            Err(_) => VoiceSessionResult::Aborted {
-                session_duration_ms: None,
-            },
+            Err(_) => VoiceSessionResult::Aborted,
         }
     }
 }
@@ -186,7 +180,6 @@ impl VoiceInput {
         Self {
             state: VoiceInputState::Idle,
             should_suppress_new_feature_popup: false,
-            voice_session_start: None,
             wav_conversion_handle: None,
         }
     }
@@ -330,7 +323,6 @@ impl VoiceInput {
         log::debug!("Starting voice input stream with chunk size {buffer_size}");
 
         // Track voice session start time
-        self.voice_session_start = Some(instant::Instant::now());
 
         // Create channel for returning result to caller
         let (result_tx, result_rx) = oneshot::channel();
@@ -346,10 +338,6 @@ impl VoiceInput {
         };
 
         Ok(VoiceSession { result_rx })
-    }
-
-    pub fn start_time(&self) -> Option<instant::Instant> {
-        self.voice_session_start
     }
 
     pub fn set_transcribing_active(&mut self, active: bool) {
@@ -375,13 +363,6 @@ impl VoiceInput {
         {
             cpal::traits::StreamTrait::pause(stream)?;
 
-            // Calculate session duration before conversion
-            let session_duration_ms = self
-                .voice_session_start
-                .take()
-                .map(|start| start.elapsed().as_millis() as u64)
-                .unwrap_or(0);
-
             log::debug!("Disabling voice input and converting to WAV");
 
             // Take the result_tx out to use in the spawn closure
@@ -394,15 +375,10 @@ impl VoiceInput {
                     me.wav_conversion_handle = None;
                     if let Some(tx) = result_tx {
                         let result = match wav_result {
-                            Ok(wav_base64) => VoiceSessionResult::Audio {
-                                wav_base64,
-                                session_duration_ms,
-                            },
+                            Ok(wav_base64) => VoiceSessionResult::Audio { wav_base64 },
                             Err(e) => {
                                 report_error!(e.context("Failed to convert to WAV"));
-                                VoiceSessionResult::Aborted {
-                                    session_duration_ms: Some(session_duration_ms),
-                                }
+                                VoiceSessionResult::Aborted
                             }
                         };
                         let _ = tx.send(result);
@@ -425,12 +401,6 @@ impl VoiceInput {
     pub fn abort_listening(&mut self) {
         log::debug!("Aborting voice input");
 
-        // Calculate session duration before aborting
-        let session_duration_ms = self
-            .voice_session_start
-            .take()
-            .map(|start| start.elapsed().as_millis() as u64);
-
         // Take ownership and send abort result through channel
         let old_state = std::mem::take(&mut self.state);
         if let VoiceInputState::Listening {
@@ -438,9 +408,7 @@ impl VoiceInput {
             ..
         } = old_state
         {
-            let _ = tx.send(VoiceSessionResult::Aborted {
-                session_duration_ms,
-            });
+            let _ = tx.send(VoiceSessionResult::Aborted);
         }
 
         // Reset to Idle state

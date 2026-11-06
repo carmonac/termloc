@@ -40,8 +40,6 @@ use crate::editor::{
     EditorOptions, EditorView, Event as EditorEvent, PropagateAndNoOpEscapeKey,
     PropagateAndNoOpNavigationKeys, PropagateHorizontalNavigationKeys, TextOptions,
 };
-use crate::send_telemetry_from_ctx;
-use crate::server::telemetry::TelemetryEvent;
 use crate::terminal::cli_agent_sessions::{CLIAgentSessionsModel, CLIAgentSessionsModelEvent};
 use crate::terminal::input::suggestions_mode_model::InputSuggestionsModeModel;
 use crate::ui_components::icons::Icon as TerminalIcon;
@@ -595,31 +593,15 @@ impl QueuedPromptsPanelView {
         let Some(conv_id) = self.active_conversation_id else {
             return;
         };
-        let Some(query_id) = self.editing_row_id(ctx) else {
+        if self.editing_row_id(ctx).is_none() {
             return;
-        };
-        let origin = QueuedQueryModel::as_ref(ctx)
-            .queue(conv_id)
-            .iter()
-            .find(|row| row.id() == query_id)
-            .map(|row| row.origin());
+        }
         let new_text = self
             .edit_editor
             .read(ctx, |editor, ctx| editor.buffer_text(ctx).trim().to_owned());
-        let was_empty = new_text.is_empty();
         QueuedQueryModel::handle(ctx).update(ctx, |model, ctx| {
             model.commit_edit(conv_id, new_text, ctx);
         });
-        if let Some(origin) = origin
-            && !was_empty
-        {
-            send_telemetry_from_ctx!(
-                TelemetryEvent::QueuedPromptEdited {
-                    origin: origin.into(),
-                },
-                ctx
-            );
-        }
         ctx.emit(QueuedPromptsPanelEvent::EditEnded);
     }
 
@@ -695,12 +677,6 @@ impl TypedActionView for QueuedPromptsPanelView {
         match action {
             QueuedPromptsPanelAction::ToggleCollapsed => {
                 self.collapsed = !self.collapsed;
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::QueuedPromptPanelCollapseToggled {
-                        collapsed: self.collapsed,
-                    },
-                    ctx
-                );
                 ctx.notify();
             }
             QueuedPromptsPanelAction::SendNow(query_id) => {
@@ -736,13 +712,7 @@ impl TypedActionView for QueuedPromptsPanelView {
                 let query_id = *query_id;
                 let removed = QueuedQueryModel::handle(ctx)
                     .update(ctx, |model, ctx| model.remove_by_id(conv_id, query_id, ctx));
-                if let Some(removed) = removed {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::QueuedPromptDeleted {
-                            origin: removed.origin().into(),
-                        },
-                        ctx
-                    );
+                if removed.is_some() {
                     ctx.emit(QueuedPromptsPanelEvent::RowDeleted);
                 }
             }
@@ -788,27 +758,10 @@ impl TypedActionView for QueuedPromptsPanelView {
                 ctx.notify();
             }
             QueuedPromptsPanelAction::DropEnd => {
-                let Some(source_id) = self.dragging_query_id.take() else {
+                if self.dragging_query_id.take().is_none() {
                     return;
-                };
-                let from_index = self.drag_start_index.take();
-                let model_ref = QueuedQueryModel::as_ref(ctx);
-                let queue = model_ref.queue(conv_id);
-                let to_index = queue.iter().position(|q| q.id() == source_id);
-                let origin = to_index.map(|idx| queue[idx].origin());
-                if let (Some(from_index), Some(to_index), Some(origin)) =
-                    (from_index, to_index, origin)
-                    && from_index != to_index
-                {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::QueuedPromptReordered {
-                            origin: origin.into(),
-                            from_index,
-                            to_index,
-                        },
-                        ctx
-                    );
                 }
+                self.drag_start_index.take();
                 ctx.notify();
             }
         }

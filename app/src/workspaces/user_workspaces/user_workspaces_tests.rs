@@ -69,7 +69,6 @@ use crate::server::ids::ClientId;
 use crate::server::server_api::ServerApiProvider;
 use crate::server::server_api::team::{MockTeamClient, TeamClient};
 use crate::server::sync_queue::SyncQueue;
-use crate::server::telemetry::context_provider::AppTelemetryContextProvider;
 use crate::settings::{
     AISettings, AgentModeCommandExecutionPredicate, CodeSettings, FocusedTerminalInfo,
 };
@@ -136,7 +135,6 @@ fn initialize_app_with_auth(
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
     app.add_singleton_model(|_| auth_state_provider);
     app.add_singleton_model(AuthManager::new_for_test);
-    app.add_singleton_model(AppTelemetryContextProvider::new_context_provider);
     app.add_singleton_model(|_| {
         PublicPreferences::new(Box::<user_preferences::in_memory::InMemoryPreferences>::default())
     });

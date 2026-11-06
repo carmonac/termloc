@@ -19,7 +19,6 @@ use crate::inline_menu::{
     TuiInlineMenuRowStyle, TuiInlineMenuSnapshot, TuiInlineMenuStatus, result_row_capacity,
 };
 use crate::input_suggestions_mode::{TuiInputSuggestionsMode, TuiInputSuggestionsModeModel};
-use crate::telemetry::TuiConversationMenuTelemetryEvent;
 
 const MAX_VISIBLE_ROWS: usize = result_row_capacity(MAX_INLINE_MENU_ROWS, true, false);
 
@@ -107,7 +106,6 @@ impl TuiConversationMenuModel {
         let mut list = TuiInlineMenuListState::default();
         list.set_loading(true);
         self.state = TuiConversationMenuState::Open { list };
-        warp::send_telemetry_from_ctx!(TuiConversationMenuTelemetryEvent::Opened, ctx);
         self.refresh_rows(ctx);
     }
 

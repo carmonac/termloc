@@ -26,7 +26,6 @@ use crate::appearance::Appearance;
 use crate::pane_group::focus_state::{PaneFocusHandle, PaneGroupFocusEvent};
 use crate::pane_group::pane::ActionOrigin;
 use crate::pane_group::{Direction, SplitPaneState, TabBarHoverIndex};
-use crate::server::telemetry::SharingDialogSource;
 use crate::settings::{PaneSettings, PaneSettingsChangedEvent};
 use crate::util::bindings::CustomAction;
 
@@ -251,9 +250,9 @@ impl<P: BackingView> PaneView<P> {
                     header.set_shareable_object(object.clone(), ctx);
                 });
             }
-            PaneConfigurationEvent::ToggleSharingDialog(source) => {
+            PaneConfigurationEvent::ToggleSharingDialog => {
                 self.header.update(ctx, |header, ctx| {
-                    header.share_pane_contents(*source, ctx);
+                    header.share_pane_contents(ctx);
                 });
             }
             _ => {}
@@ -459,7 +458,7 @@ impl<P: BackingView> TypedActionView for PaneView<P> {
     fn handle_action(&mut self, action: &Self::Action, ctx: &mut ViewContext<Self>) {
         match action {
             PaneAction::ShareContents => self.header.update(ctx, |header, ctx| {
-                header.share_pane_contents(SharingDialogSource::CommandPalette, ctx);
+                header.share_pane_contents(ctx);
             }),
         }
     }

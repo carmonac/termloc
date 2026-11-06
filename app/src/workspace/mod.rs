@@ -46,7 +46,7 @@ use crate::ai::blocklist::NEW_AGENT_PANE_LABEL;
 use crate::channel::{Channel, ChannelState};
 use crate::features::FeatureFlag;
 use crate::palette::PaletteMode;
-use crate::server::telemetry::{AgentModeEntrypoint, PaletteSource};
+use crate::palette::PaletteSource;
 use crate::settings_view::{self, SettingsSection, flags};
 use crate::tab::{NewSessionMenuItem, uses_vertical_tabs};
 use crate::util::bindings::{self, CustomAction, cmd_or_ctrl_shift, is_binding_pty_compliant};
@@ -1121,7 +1121,6 @@ pub fn init(app: &mut AppContext) {
             "workspace:toggle_ai_assistant",
             *NEW_AGENT_PANE_LABEL,
             WorkspaceAction::NewPaneInAgentMode {
-                entrypoint: AgentModeEntrypoint::NewPaneBinding,
                 zero_state_prompt_suggestion_type: None,
             },
         )

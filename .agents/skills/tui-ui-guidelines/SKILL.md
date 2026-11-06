@@ -14,7 +14,7 @@ The TUI is a distinct front-end from the GUI desktop app. Do **not** carry over 
 - **Front-end views/screens:** `crates/warp_tui` — per-channel console binaries (e.g. `crates/warp_tui/src/bin`). Run/observe the TUI with `./script/run-tui`. There is no `.app` bundle, no GPU/WGSL, and no mouse-pixel model.
 - **Element library:** `crates/warpui_core/src/elements/tui`, behind the `tui` cargo feature. This is a *parallel* cell-grid element vocabulary, separate from the GUI `Element`/`View` library.
 
-**Shared with the GUI** (do reuse): the Entity/model core in `warp_core`/`warpui` — `App`/`Entity`/`AppContext`/`ViewContext`, the actions system, `Appearance`/theming, `FeatureFlag` runtime checks (`FeatureFlag::X.is_enabled()` works in both front-ends), telemetry, and logging.
+**Shared with the GUI** (do reuse): the Entity/model core in `warp_core`/`warpui` — `App`/`Entity`/`AppContext`/`ViewContext`, the actions system, `Appearance`/theming, `FeatureFlag` runtime checks (`FeatureFlag::X.is_enabled()` works in both front-ends), and logging.
 
 **Different from the GUI** (do NOT use here): the GUI `Element`/`View` types, pixel geometry, and GPU/WGSL rendering or pixel-drawn button themes. The TUI has its own `crates/warp_tui/Cargo.toml`; the compile-time Cargo-feature bridge in `app/Cargo.toml` + `app/src/lib.rs enabled_features()` is GUI-app-specific and does not gate TUI code. (The TUI *does* have hover/click: `TuiHoverable` and `tui_collapsible` reuse the shared `MouseStateHandle`, so own that handle outside render just like the GUI — only pixel-based hit-testing is GUI-only.)
 

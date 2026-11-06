@@ -55,7 +55,6 @@ use crate::notebooks::notebook::NotebookView;
 use crate::pane_group::focus_state::PaneFocusHandle;
 use crate::pane_group::pane::get_started_view::GetStartedView;
 use crate::server::network_log_view::NetworkLogView;
-use crate::server::telemetry::SharingDialogSource;
 use crate::settings::PaneSettings;
 use crate::settings_view::SettingsView;
 use crate::terminal::TerminalView;
@@ -772,12 +771,8 @@ impl PaneConfiguration {
         ));
     }
 
-    pub fn toggle_sharing_dialog(
-        &mut self,
-        source: SharingDialogSource,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        ctx.emit(PaneConfigurationEvent::ToggleSharingDialog(source));
+    pub fn toggle_sharing_dialog(&mut self, ctx: &mut ModelContext<Self>) {
+        ctx.emit(PaneConfigurationEvent::ToggleSharingDialog);
     }
 
     /// Notifies that the header content has changed and the pane header should re-render.
@@ -803,7 +798,7 @@ pub enum PaneConfigurationEvent {
     OpenModalUpdated,
     RefreshPaneHeaderOverflowMenuItems,
     ShareableObjectChanged(Option<ShareableObject>),
-    ToggleSharingDialog(SharingDialogSource),
+    ToggleSharingDialog,
     DimEvenIfFocusedUpdated,
     /// The header content has changed and should be re-rendered.
     /// This is used when the backing view's state changes in a way that
@@ -933,7 +928,7 @@ pub trait BackingView: View {
 
     /// Processes the corresponding action when one of the
     /// overflow menu items is selected. Allows implementers
-    /// to add pre-/post-processing logic (e.g. telemetry).
+    /// to add pre-/post-processing logic (e.g. logging).
     ///
     // Note: even if the [`PaneHeaderOverflowMenuAction`] was [`TypedActionView::Action`]
     // (assuming [`TypedActionView`] was one of the trait bounds for [`BackingView`]),

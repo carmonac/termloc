@@ -21,10 +21,9 @@ use warp::tui_export::{
     AIBlockModelHelper, AIBlockOutputStatus, AIConversationId, AuthStateProvider, BlockId,
     BlocklistAIActionEvent, BlocklistAIActionModel, BlocklistAIHistoryModel,
     FAILED_OUTPUT_USAGE_NOTICE_TEXT, FailedOutputPresentation, MessageId, ModelEvent,
-    ModelEventDispatcher, RenderableAIError, SummarizationType, TelemetryEvent, TerminalModel,
-    TodoOperation, TodoStatus, TuiOnboardingMarker, TuiOnboardingMarkers,
-    TuiOnboardingMarkersEvent, UserWorkspaces, failed_output_presentation,
-    should_show_failed_output_usage_notice,
+    ModelEventDispatcher, RenderableAIError, SummarizationType, TerminalModel, TodoOperation,
+    TodoStatus, TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent,
+    UserWorkspaces, failed_output_presentation, should_show_failed_output_usage_notice,
 };
 use warpui::SingletonEntity;
 use warpui_core::elements::MouseStateHandle;
@@ -414,10 +413,10 @@ pub(super) struct TuiAIBlock {
     /// conversation-wide todo/status invalidations to the blocks whose
     /// rendering can actually change.
     renders_todos: bool,
-    is_restored_for_telemetry: bool,
+    is_restored: bool,
     time_to_first_token: OnceCell<TimeDelta>,
     time_to_last_token: Option<TimeDelta>,
-    terminal_telemetry_emitted: bool,
+    output_latency_finalized: bool,
     last_measured_width: Cell<Option<u16>>,
 }
 
@@ -433,7 +432,7 @@ impl TuiAIBlock {
         action_model: ModelHandle<BlocklistAIActionModel>,
         model_events: &ModelHandle<ModelEventDispatcher>,
         terminal_model: Arc<FairMutex<TerminalModel>>,
-        is_restored_for_telemetry: bool,
+        is_restored: bool,
         ctx: &mut ViewContext<Self>,
     ) -> Self {
         let (conversation_id, exchange_id) = identity;
@@ -450,10 +449,10 @@ impl TuiAIBlock {
             action_views: HashMap::new(),
             code_block_views: HashMap::new(),
             renders_todos: false,
-            is_restored_for_telemetry,
+            is_restored,
             time_to_first_token: OnceCell::new(),
             time_to_last_token: None,
-            terminal_telemetry_emitted: false,
+            output_latency_finalized: false,
             last_measured_width: Cell::new(None),
         };
         block.sync_action_views(&action_model, ctx);
@@ -518,7 +517,7 @@ impl TuiAIBlock {
         });
         block.block_model.on_updated_output(
             Box::new(move |me, ctx| {
-                me.record_output_telemetry(ctx);
+                me.record_output_latency(ctx);
                 me.sync_action_views(&action_model, ctx);
                 me.sync_code_block_views(ctx);
                 me.sync_first_credit_gate(ctx);
@@ -552,8 +551,8 @@ impl TuiAIBlock {
         }
     }
 
-    fn record_output_telemetry(&mut self, ctx: &mut ViewContext<Self>) {
-        if self.is_restored_for_telemetry || self.terminal_telemetry_emitted {
+    fn record_output_latency(&mut self, ctx: &mut ViewContext<Self>) {
+        if self.is_restored || self.output_latency_finalized {
             return;
         }
         let status = self.block_model.status(ctx);
@@ -571,32 +570,12 @@ impl TuiAIBlock {
             }
             self.time_to_last_token = Some(latency);
         }
-        let (was_user_facing_error, cancelled) = match status {
-            AIBlockOutputStatus::Pending | AIBlockOutputStatus::PartiallyReceived { .. } => return,
-            AIBlockOutputStatus::Complete { .. } => (false, false),
-            AIBlockOutputStatus::Cancelled { .. } => (false, true),
-            AIBlockOutputStatus::Failed { .. } => (true, false),
-        };
-        self.terminal_telemetry_emitted = true;
-        warp::send_telemetry_from_ctx!(
-            TelemetryEvent::AgentModeCreatedAIBlock {
-                client_exchange_id: self.exchange_id.to_string(),
-                server_output_id: self.block_model.server_output_id(ctx),
-                was_autodetected_ai_query: self.block_model.was_autodetected_ai_query(ctx),
-                time_to_first_token_ms: self
-                    .time_to_first_token
-                    .get()
-                    .map(|duration| duration.num_milliseconds() as u128),
-                time_to_last_token_ms: self
-                    .time_to_last_token
-                    .map(|duration| duration.num_milliseconds() as u128),
-                was_user_facing_error,
-                cancelled,
-                conversation_id: self.conversation_id,
-                is_udi_enabled: false,
-            },
-            ctx
-        );
+        match status {
+            AIBlockOutputStatus::Pending | AIBlockOutputStatus::PartiallyReceived { .. } => {}
+            AIBlockOutputStatus::Complete { .. }
+            | AIBlockOutputStatus::Cancelled { .. }
+            | AIBlockOutputStatus::Failed { .. } => self.output_latency_finalized = true,
+        }
     }
 
     /// Records the exchange's tool-call action ids and todo presence, and

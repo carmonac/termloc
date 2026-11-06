@@ -21,10 +21,9 @@ use warp::tui_export::slash_commands;
 use warp::tui_export::{
     AIAgentActionId, AIAgentContext, AIAgentExchangeId, AIAgentPtyWriteMode, AIConversation,
     AIConversationAutoexecuteMode, AIConversationId, AcceptSlashCommandOrSavedPrompt,
-    ActiveSession, ActiveSessionEvent, AfterBlockCompletedEvent, AgentConversationEntryId,
-    AgentConversationListEntryState, AgentConversationsModel, AgentInteractionMetadata,
-    AgentViewEntryOrigin, Appearance, BlockId, BlockType, BlocklistAIActionEvent,
-    BlocklistAIActionModel, BlocklistAIContextModel, BlocklistAIController,
+    ActiveSession, ActiveSessionEvent, AgentConversationEntryId, AgentConversationListEntryState,
+    AgentConversationsModel, AgentInteractionMetadata, AgentViewEntryOrigin, Appearance, BlockId,
+    BlocklistAIActionEvent, BlocklistAIActionModel, BlocklistAIContextModel, BlocklistAIController,
     BlocklistAIHistoryEvent, BlocklistAIHistoryModel, BlocklistAIInputModel, CLISubagentController,
     CLISubagentEvent, CLISubagentTarget, COMMAND_REGISTRY, CancellationReason,
     CloudConversationData, CommandExecutionSource, ConversationFileExport, ConversationSelection,
@@ -33,18 +32,17 @@ use warp::tui_export::{
     LLMPreferencesEvent, LinkedWorkflowData, ModelEvent, ParsedSlashCommandInput,
     PersistenceWriter, PtyIntent, PtyIntentEvent, QueuedQueryEvent, QueuedQueryModel,
     RepoDetectionSessionType, RepoDetectionSource, ResolvedTeamScope, ServerConversationToken,
-    ServerId, SessionSettings, Sessions, SessionsEvent, ShellCommandExecutorEvent, SizeInfo,
-    SizeUpdate, SkillReference, SlashCommandDataSource as _, SlashCommandKind,
-    SlashCommandSelectionBehavior, StaticCommand, TelemetryEvent, TerminalModel, TerminalSurface,
-    TerminalSurfaceInit, TranscriptScope, TuiMcpAction, TuiMcpManager, TuiMcpServerId,
-    TuiMcpVariableValue, TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent,
-    TuiSlashCommandDataSource, TuiSlashCommandDataSourceArgs, TuiUpArrowHistoryItemKind,
-    TuiUserInfoManager, TuiUserInfoManagerEvent, TuiZeroStateDataSource, UserTakeOverReason,
-    UserWorkspaces, UserWorkspacesEvent, WAKEUP_THROTTLE_PERIOD, WarpConfig, WarpConfigUpdateEvent,
+    ServerId, Sessions, SessionsEvent, ShellCommandExecutorEvent, SizeInfo, SizeUpdate,
+    SkillReference, SlashCommandDataSource as _, SlashCommandKind, SlashCommandSelectionBehavior,
+    StaticCommand, TerminalModel, TerminalSurface, TerminalSurfaceInit, TranscriptScope,
+    TuiMcpAction, TuiMcpManager, TuiMcpServerId, TuiMcpVariableValue, TuiOnboardingMarker,
+    TuiOnboardingMarkers, TuiOnboardingMarkersEvent, TuiSlashCommandDataSource,
+    TuiSlashCommandDataSourceArgs, TuiUpArrowHistoryItemKind, TuiUserInfoManager,
+    TuiUserInfoManagerEvent, TuiZeroStateDataSource, UserTakeOverReason, UserWorkspaces,
+    UserWorkspacesEvent, WAKEUP_THROTTLE_PERIOD, WarpConfig, WarpConfigUpdateEvent,
     block_context_from_terminal_model, build_slash_command_mixer, detect_possible_git_repo,
     export_conversation_markdown, log_out_tui, maybe_build_ai_query_upsert_event,
-    prepare_conversation_block_restoration, record_autodetection_toggle_from_slash_command,
-    record_saved_prompt_accepted, record_static_slash_command_accepted, saved_prompt_text_for_id,
+    prepare_conversation_block_restoration, saved_prompt_text_for_id,
     slash_command_selection_behavior, throttle,
 };
 use warp_core::channel::{Channel, ChannelState};
@@ -118,10 +116,6 @@ use crate::skills_menu::{TuiSkillMenuEvent, TuiSkillMenuModel};
 use crate::slash_commands::TuiSlashCommandModel;
 use crate::statusline_config_view::{TuiStatuslineConfigEvent, TuiStatuslineConfigView};
 use crate::team_menu::{TuiTeamMenuEvent, TuiTeamMenuModel};
-use crate::telemetry::{
-    TuiConversationMenuTelemetryEvent, TuiConversationRestoreTelemetryEvent,
-    TuiConversationRestoreTelemetryState, TuiConversationRestoreTelemetryTarget,
-};
 use crate::terminal_background::probed_colors;
 use crate::terminal_content_element::TuiTerminalContentElement;
 use crate::terminal_use::{
@@ -490,10 +484,6 @@ impl TuiConversationRestoreOrigin {
             Self::Fork => AgentViewEntryOrigin::Tui,
         }
     }
-
-    fn records_telemetry(self) -> bool {
-        matches!(self, Self::ConversationList)
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -502,22 +492,12 @@ pub(crate) enum TuiConversationRestoreTarget {
     Server(ServerConversationToken),
 }
 
-impl TuiConversationRestoreTarget {
-    fn telemetry_target(&self) -> TuiConversationRestoreTelemetryTarget {
-        match self {
-            Self::Local(_) => TuiConversationRestoreTelemetryTarget::Local,
-            Self::Server(_) => TuiConversationRestoreTelemetryTarget::Server,
-        }
-    }
-}
-
 #[derive(Default)]
 enum ConversationRestoreState {
     #[default]
     Idle,
     Loading {
         origin: TuiConversationRestoreOrigin,
-        target: TuiConversationRestoreTelemetryTarget,
         request_id: u64,
         future: Option<SpawnedFutureHandle>,
     },
@@ -902,93 +882,6 @@ impl TuiTerminalSessionView {
         self.session_state.as_ref(ctx).resolve(ctx)
     }
 
-    fn emit_input_buffer_submitted_telemetry(&self, ctx: &mut ViewContext<Self>) {
-        let input_model = self.ai_input_model.as_ref(ctx);
-        let block_id = self.terminal_model.lock().active_block_id().clone();
-        warp::send_telemetry_from_ctx!(
-            TelemetryEvent::InputBufferSubmitted {
-                input_type: input_model.input_type(),
-                is_locked: input_model.is_input_type_locked(),
-                input_type_decision_source: input_model.last_ai_autodetection_source(),
-                was_lock_set_with_empty_buffer: input_model.was_lock_set_with_empty_buffer(),
-                block_id,
-            },
-            ctx
-        );
-    }
-
-    fn emit_block_completed_telemetry(
-        &self,
-        completed: &AfterBlockCompletedEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        let Some(delay) = completed.command_finished_to_precmd_delay else {
-            return;
-        };
-        let honor_ps1_enabled = match &completed.block_type {
-            BlockType::User(user_block) => {
-                user_block
-                    .serialized_block
-                    .get_with(|compute| {
-                        let model = self.terminal_model.lock();
-                        compute(model.block_list())
-                    })
-                    .honor_ps1
-            }
-            BlockType::BootstrapVisible(serialized_block) => serialized_block.honor_ps1,
-            BlockType::BootstrapHidden
-            | BlockType::Restored
-            | BlockType::InBandCommand
-            | BlockType::Background(_)
-            | BlockType::Static => *SessionSettings::as_ref(ctx).honor_ps1,
-        };
-        let BlockType::User(user_block) = &completed.block_type else {
-            return;
-        };
-        let serialized_block = user_block.serialized_block.get_with(|compute| {
-            let model = self.terminal_model.lock();
-            compute(model.block_list())
-        });
-        warp::send_telemetry_from_ctx!(
-            TelemetryEvent::BlockCompleted {
-                block_finished_to_precmd_delay_ms: delay.as_millis() as u64,
-                honor_ps1_enabled,
-                num_secrets_redacted: completed.num_secrets_obfuscated,
-                num_output_lines: user_block.num_output_lines,
-                num_output_lines_truncated: user_block.num_output_lines_truncated,
-                terminal_session_id: serialized_block.session_id,
-                is_udi_enabled: false,
-                is_in_agent_view: true,
-            },
-            ctx
-        );
-        if ChannelState::channel().is_dogfood() {
-            let duration = match (serialized_block.start_ts, serialized_block.completed_ts) {
-                (Some(start), Some(completed)) => (completed - start).to_std().unwrap_or_default(),
-                (None, _) | (_, None) => Duration::default(),
-            };
-            warp::send_telemetry_from_ctx!(
-                TelemetryEvent::BlockCompletedOnDogfoodOnly {
-                    block_finished_to_precmd_delay_ms: delay.as_millis() as u64,
-                    honor_ps1_enabled,
-                    num_secrets_redacted: completed.num_secrets_obfuscated,
-                    num_output_lines: user_block.num_output_lines,
-                    num_output_lines_truncated: user_block.num_output_lines_truncated,
-                    command: user_block
-                        .command_with_obfuscated_secrets
-                        .get_with(|compute| {
-                            let model = self.terminal_model.lock();
-                            compute(model.block_list())
-                        })
-                        .to_owned(),
-                    duration,
-                    exit_code: serialized_block.exit_code,
-                    terminal_session_id: serialized_block.session_id,
-                },
-                ctx
-            );
-        }
-    }
     fn handle_accepted_mcp_install_action(
         &mut self,
         action: TuiMcpInstallFlowAction,
@@ -1938,8 +1831,7 @@ impl TuiTerminalSessionView {
             ModelEvent::BlockCompleted(completed) => {
                 view.handle_block_completed(&completed.block_id, ctx);
             }
-            ModelEvent::AfterBlockCompleted(completed) => {
-                view.emit_block_completed_telemetry(completed, ctx);
+            ModelEvent::AfterBlockCompleted(_) => {
                 view.ensure_external_commands_are_warming(ctx);
             }
             ModelEvent::AfterBlockStarted { .. } => {
@@ -1967,7 +1859,6 @@ impl TuiTerminalSessionView {
             | ModelEvent::Handler(_)
             | ModelEvent::FinishUpdate(_) => ctx.notify(),
             ModelEvent::BackgroundBlockStarted => {
-                warp::send_telemetry_from_ctx!(TelemetryEvent::BackgroundBlockStarted, ctx);
                 ctx.notify();
             }
             _ => {}
@@ -2437,22 +2328,11 @@ impl TuiTerminalSessionView {
         }
         self.next_restore_request_id = self.next_restore_request_id.wrapping_add(1);
         let request_id = self.next_restore_request_id;
-        let telemetry_target = target.telemetry_target();
         self.conversation_restore_state = ConversationRestoreState::Loading {
             origin,
-            target: telemetry_target,
             request_id,
             future: None,
         };
-        if origin.records_telemetry() {
-            warp::send_telemetry_from_ctx!(
-                TuiConversationRestoreTelemetryEvent {
-                    state: TuiConversationRestoreTelemetryState::Started,
-                    target: telemetry_target,
-                },
-                ctx
-            );
-        }
 
         ctx.notify();
         let future =
@@ -2532,7 +2412,7 @@ impl TuiTerminalSessionView {
             return;
         }
 
-        self.replace_conversation_surface(*conversation, origin, target.telemetry_target(), ctx);
+        self.replace_conversation_surface(*conversation, origin, ctx);
     }
 
     /// Replaces the visible conversation and completes the restore state transition.
@@ -2540,7 +2420,6 @@ impl TuiTerminalSessionView {
         &mut self,
         conversation: AIConversation,
         origin: TuiConversationRestoreOrigin,
-        telemetry_target: TuiConversationRestoreTelemetryTarget,
         ctx: &mut ViewContext<Self>,
     ) {
         let previous_conversation_id = self
@@ -2599,15 +2478,6 @@ impl TuiTerminalSessionView {
         self.conversation_restore_state = ConversationRestoreState::Idle;
         self.refresh_exit_summary(ctx);
         self.reconcile_focus(ctx);
-        if origin.records_telemetry() {
-            warp::send_telemetry_from_ctx!(
-                TuiConversationRestoreTelemetryEvent {
-                    state: TuiConversationRestoreTelemetryState::Succeeded,
-                    target: telemetry_target,
-                },
-                ctx
-            );
-        }
         ctx.notify();
     }
 
@@ -2631,10 +2501,7 @@ impl TuiTerminalSessionView {
     fn cancel_conversation_restore(&mut self, ctx: &mut ViewContext<Self>) -> bool {
         let state = std::mem::take(&mut self.conversation_restore_state);
         let ConversationRestoreState::Loading {
-            origin,
-            target,
-            future,
-            ..
+            origin: _, future, ..
         } = state
         else {
             self.conversation_restore_state = state;
@@ -2644,15 +2511,6 @@ impl TuiTerminalSessionView {
             future.abort();
         }
         self.next_restore_request_id = self.next_restore_request_id.wrapping_add(1);
-        if origin.records_telemetry() {
-            warp::send_telemetry_from_ctx!(
-                TuiConversationRestoreTelemetryEvent {
-                    state: TuiConversationRestoreTelemetryState::Cancelled,
-                    target,
-                },
-                ctx
-            );
-        }
         self.reconcile_focus(ctx);
         ctx.notify();
         true
@@ -2664,13 +2522,12 @@ impl TuiTerminalSessionView {
         message: String,
         ctx: &mut ViewContext<Self>,
     ) {
-        let (origin, target) = match &self.conversation_restore_state {
+        let origin = match &self.conversation_restore_state {
             ConversationRestoreState::Loading {
                 origin,
-                target,
                 request_id: active_request_id,
                 ..
-            } if *active_request_id == request_id => (*origin, *target),
+            } if *active_request_id == request_id => *origin,
             ConversationRestoreState::Idle
             | ConversationRestoreState::Failed(_)
             | ConversationRestoreState::Loading { .. } => return,
@@ -2680,15 +2537,6 @@ impl TuiTerminalSessionView {
                 self.conversation_restore_state = ConversationRestoreState::Failed(message);
             }
             TuiConversationRestoreOrigin::ConversationList | TuiConversationRestoreOrigin::Fork => {
-                if origin.records_telemetry() {
-                    warp::send_telemetry_from_ctx!(
-                        TuiConversationRestoreTelemetryEvent {
-                            state: TuiConversationRestoreTelemetryState::Failed,
-                            target,
-                        },
-                        ctx
-                    );
-                }
                 self.conversation_restore_state = ConversationRestoreState::Idle;
                 self.show_transient_hint(message, ctx);
                 self.reconcile_focus(ctx);
@@ -3388,7 +3236,6 @@ impl TuiTerminalSessionView {
                 source: CommandExecutionSource::User,
             },
         )));
-        self.emit_input_buffer_submitted_telemetry(ctx);
 
         // The submission was accepted: clear the input and return to the
         // setting-derived agent default.
@@ -3425,9 +3272,6 @@ impl TuiTerminalSessionView {
             self.cli_subagent_controller.update(ctx, |controller, ctx| {
                 controller.set_latest_instruction(block_id, prompt, ctx);
             });
-        }
-        if dispatched {
-            self.emit_input_buffer_submitted_telemetry(ctx);
         }
     }
 
@@ -3496,9 +3340,6 @@ impl TuiTerminalSessionView {
             }
             input.start_voice_input(source, ctx)
         });
-        if started && matches!(source, VoiceInputStartSource::SlashCommand) {
-            record_static_slash_command_accepted("/voice", true, ctx);
-        }
         started
     }
 
@@ -3621,7 +3462,6 @@ impl TuiTerminalSessionView {
                 self.input_view.update(ctx, |input, ctx| {
                     input.set_text(&prompt, ctx);
                 });
-                record_saved_prompt_accepted(true, ctx);
             }
             AcceptSlashCommandOrSavedPrompt::Skill { name, .. } => {
                 self.input_view.update(ctx, |input, ctx| {
@@ -3687,7 +3527,6 @@ impl TuiTerminalSessionView {
             }
         };
 
-        warp::send_telemetry_from_ctx!(TuiConversationMenuTelemetryEvent::ItemSelected, ctx);
         self.conversation_menu
             .update(ctx, |menu, ctx| menu.dismiss(ctx));
         self.restore_conversation(target, TuiConversationRestoreOrigin::ConversationList, ctx);
@@ -3898,7 +3737,6 @@ impl TuiTerminalSessionView {
         self.replace_conversation_surface(
             forked_conversation,
             TuiConversationRestoreOrigin::Fork,
-            TuiConversationRestoreTelemetryTarget::Local,
             ctx,
         );
         let resume_command =
@@ -3937,35 +3775,28 @@ impl TuiTerminalSessionView {
 
         match command.kind {
             SlashCommandKind::Agent | SlashCommandKind::New | SlashCommandKind::Clear => {
-                if self.start_new_conversation(argument, ctx) {
-                    record_static_slash_command_accepted(command.name, true, ctx);
-                }
+                self.start_new_conversation(argument, ctx);
             }
             SlashCommandKind::Conversations => {
                 self.conversation_menu
                     .update(ctx, |menu, ctx| menu.open(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Fork => {
-                if self.fork_current_conversation(argument, ctx) {
-                    record_static_slash_command_accepted(command.name, true, ctx);
-                }
+                self.fork_current_conversation(argument, ctx);
             }
             SlashCommandKind::AutoApprove => {
                 self.toggle_auto_approve(true, ctx);
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Statusline => {
-                self.open_statusline_config(command.name, ctx);
+                self.open_statusline_config(ctx);
             }
             SlashCommandKind::ResetStatusline => {
-                self.reset_statusline(command.name, ctx);
+                self.reset_statusline(ctx);
             }
             SlashCommandKind::Upgrade => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
                 ctx.open_url(&upgrade_url(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::ManageBilling => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
@@ -3981,33 +3812,27 @@ impl TuiTerminalSessionView {
                     return;
                 };
                 ctx.open_url(&url);
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Cost => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
                 ctx.dispatch_typed_action_deferred(
                     TuiTerminalSessionAction::ToggleResponseSummaryVisibility,
                 );
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Model => {
                 self.model_menu.update(ctx, |menu, ctx| menu.open(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Team => {
                 self.team_menu.update(ctx, |menu, ctx| menu.open(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::InvokeSkill => {
                 if !FeatureFlag::ListSkills.is_enabled() {
                     return;
                 }
                 self.skills_menu.update(ctx, |menu, ctx| menu.open(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Mcp => {
                 self.mcp_menu.update(ctx, |menu, ctx| menu.open(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Status => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
@@ -4017,7 +3842,6 @@ impl TuiTerminalSessionView {
                         ctx,
                     );
                 });
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Usage => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
@@ -4027,14 +3851,11 @@ impl TuiTerminalSessionView {
                         ctx,
                     );
                 });
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Exit => {
-                record_static_slash_command_accepted(command.name, true, ctx);
                 ctx.terminate_app(TerminationMode::ForceTerminate, None);
             }
             SlashCommandKind::Logout => {
-                record_static_slash_command_accepted(command.name, true, ctx);
                 log_out_tui(ctx);
             }
             SlashCommandKind::ViewLogs => {
@@ -4064,7 +3885,6 @@ impl TuiTerminalSessionView {
                         }
                     },
                 );
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Voice => {
                 #[cfg(feature = "voice_input")]
@@ -4093,7 +3913,6 @@ impl TuiTerminalSessionView {
                     controller.send_create_new_project_request(query.to_owned(), ctx);
                 });
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::ExportToClipboard => {
                 if let Some(conversation) = self
@@ -4119,7 +3938,6 @@ impl TuiTerminalSessionView {
                     self.show_transient_hint("No active conversation to export".to_owned(), ctx);
                 }
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::ExportToFile => {
                 let Some(conversation) = self
@@ -4159,7 +3977,6 @@ impl TuiTerminalSessionView {
                     }
                 }
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::CopyDebuggingId => {
                 let debugging_payload = self
@@ -4183,7 +4000,6 @@ impl TuiTerminalSessionView {
                     }
                 }
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                record_static_slash_command_accepted(command.name, true, ctx);
             }
             SlashCommandKind::Compact | SlashCommandKind::Plan => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
@@ -4198,16 +4014,15 @@ impl TuiTerminalSessionView {
                     })
                     .unwrap_or_else(|| command_name.to_owned());
                 self.send_prompt(prompt, ctx);
-                record_static_slash_command_accepted(command_name, true, ctx);
             }
             SlashCommandKind::NaturalLanguageDetection => {
-                self.toggle_nld(command.name, ctx);
+                self.toggle_nld(ctx);
             }
             SlashCommandKind::VimMode => {
-                self.toggle_vim_mode(command.name, ctx);
+                self.toggle_vim_mode(ctx);
             }
             SlashCommandKind::Theme => {
-                self.toggle_theme(command.name, argument.map(String::as_str), ctx);
+                self.toggle_theme(argument.map(String::as_str), ctx);
             }
             SlashCommandKind::AddMcp
             | SlashCommandKind::CreateDockerSandbox
@@ -4242,7 +4057,7 @@ impl TuiTerminalSessionView {
         }
     }
 
-    fn open_statusline_config(&mut self, command_name: &'static str, ctx: &mut ViewContext<Self>) {
+    fn open_statusline_config(&mut self, ctx: &mut ViewContext<Self>) {
         let Ok(state) = self.session_state(ctx) else {
             return;
         };
@@ -4258,7 +4073,6 @@ impl TuiTerminalSessionView {
         self.statusline_config_view = Some(statusline_config_view);
         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
         self.reconcile_focus(ctx);
-        record_static_slash_command_accepted(command_name, true, ctx);
         ctx.notify();
     }
 
@@ -4300,14 +4114,12 @@ impl TuiTerminalSessionView {
         }
     }
 
-    fn reset_statusline(&mut self, command_name: &'static str, ctx: &mut ViewContext<Self>) {
+    fn reset_statusline(&mut self, ctx: &mut ViewContext<Self>) {
         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
         self.persist_statusline_config(TuiStatuslineConfig::default(), STATUSLINE_RESET_HINT, ctx);
-        record_static_slash_command_accepted(command_name, true, ctx);
     }
-    /// Toggles and persists natural-language detection (NLD), reports the change
-    /// via telemetry, and surfaces a confirmation hint.
-    fn toggle_nld(&mut self, command_name: &'static str, ctx: &mut ViewContext<Self>) {
+    /// Toggles and persists natural-language detection (NLD) and surfaces a confirmation hint.
+    fn toggle_nld(&mut self, ctx: &mut ViewContext<Self>) {
         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
         let enabled = !AISettings::as_ref(ctx).is_ai_autodetection_enabled(ctx);
         let result = AISettings::handle(ctx).update(ctx, |settings, ctx| {
@@ -4317,7 +4129,6 @@ impl TuiTerminalSessionView {
         });
         match result {
             Ok(()) => {
-                record_autodetection_toggle_from_slash_command(enabled, ctx);
                 let hint = if enabled {
                     NLD_ENABLED_HINT
                 } else {
@@ -4334,11 +4145,10 @@ impl TuiTerminalSessionView {
                 self.show_transient_hint(NLD_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
             }
         }
-        record_static_slash_command_accepted(command_name, true, ctx);
     }
 
     /// Toggles and persists vim mode, and surfaces a confirmation hint.
-    fn toggle_vim_mode(&mut self, command_name: &'static str, ctx: &mut ViewContext<Self>) {
+    fn toggle_vim_mode(&mut self, ctx: &mut ViewContext<Self>) {
         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
         // Guard: AppEditorSettings may be absent in lightweight test contexts.
         // Without it, the toggle cannot persist, so surface a transient hint
@@ -4346,7 +4156,6 @@ impl TuiTerminalSessionView {
         if !ctx.has_singleton_model::<AppEditorSettings>() {
             log::warn!("TUI vim mode toggle ignored: AppEditorSettings not registered");
             self.show_transient_hint(VIM_MODE_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
-            record_static_slash_command_accepted(command_name, true, ctx);
             return;
         }
         let enabled = !AppEditorSettings::as_ref(ctx).vim_mode_enabled();
@@ -4377,20 +4186,13 @@ impl TuiTerminalSessionView {
                 self.show_transient_hint(VIM_MODE_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
             }
         }
-        record_static_slash_command_accepted(command_name, true, ctx);
     }
 
-    fn toggle_theme(
-        &mut self,
-        command_name: &'static str,
-        argument: Option<&str>,
-        ctx: &mut ViewContext<Self>,
-    ) {
+    fn toggle_theme(&mut self, argument: Option<&str>, ctx: &mut ViewContext<Self>) {
         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
         let Some(theme) = argument.and_then(|argument| argument.trim().parse::<TuiTheme>().ok())
         else {
             self.show_transient_hint(THEME_INVALID_ARGUMENT_HINT.to_owned(), ctx);
-            record_static_slash_command_accepted(command_name, true, ctx);
             return;
         };
         let result = TuiThemeSettings::handle(ctx)
@@ -4419,7 +4221,6 @@ impl TuiTerminalSessionView {
                 self.show_transient_hint(THEME_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
             }
         }
-        record_static_slash_command_accepted(command_name, true, ctx);
     }
 
     /// Bridges shared shell-tool executor events into terminal-manager PTY intents.

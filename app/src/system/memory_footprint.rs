@@ -12,8 +12,8 @@ pub fn memory_footprint_bytes() -> u64 {
 /// current process's memory usage.
 ///
 /// Each platform populates whichever fields it can natively provide.  The
-/// returned value is an opaque JSON blob suitable for attaching to Sentry
-/// events and telemetry payloads.
+/// returned value is an opaque JSON blob suitable for logging.
+#[cfg(feature = "heap_usage_tracking")]
 pub fn memory_breakdown() -> serde_json::Value {
     platform::memory_breakdown()
 }
@@ -56,6 +56,7 @@ mod platform {
             .unwrap_or(0)
     }
 
+    #[cfg(feature = "heap_usage_tracking")]
     pub fn memory_breakdown() -> serde_json::Value {
         let Some(info) = query_task_vm_info() else {
             return serde_json::json!({});
@@ -123,6 +124,7 @@ mod platform {
             .unwrap_or(0)
     }
 
+    #[cfg(feature = "heap_usage_tracking")]
     pub fn memory_breakdown() -> serde_json::Value {
         let Ok(status) = std::fs::read_to_string("/proc/self/status") else {
             return serde_json::json!({});
@@ -157,8 +159,7 @@ mod platform {
     /// rarely mounted), so we use `getrusage(RUSAGE_SELF)`. `ru_maxrss` is
     /// reported in kilobytes and represents the maximum resident set size, not
     /// the current value, but it's the closest portable signal we have without
-    /// pulling in `kvm`/`sysctl(KERN_PROC_PID)` plumbing for one telemetry
-    /// number.
+    /// pulling in `kvm`/`sysctl(KERN_PROC_PID)` plumbing for one number.
     pub fn memory_footprint_bytes() -> u64 {
         let mut usage: libc::rusage = unsafe { std::mem::zeroed() };
         if unsafe { libc::getrusage(libc::RUSAGE_SELF, &mut usage) } != 0 {
@@ -167,6 +168,7 @@ mod platform {
         (usage.ru_maxrss as u64).saturating_mul(1024)
     }
 
+    #[cfg(feature = "heap_usage_tracking")]
     pub fn memory_breakdown() -> serde_json::Value {
         let mut usage: libc::rusage = unsafe { std::mem::zeroed() };
         if unsafe { libc::getrusage(libc::RUSAGE_SELF, &mut usage) } != 0 {
@@ -225,6 +227,7 @@ mod platform {
         }
     }
 
+    #[cfg(feature = "heap_usage_tracking")]
     pub fn memory_breakdown() -> serde_json::Value {
         let Some(counters) = query_counters() else {
             return serde_json::json!({});

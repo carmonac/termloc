@@ -49,6 +49,7 @@ use super::settings::WarpDriveSettings;
 use super::sharing::dialog::{SharingDialog, SharingDialogEvent};
 use super::sharing::{ContentEditability, ShareableObject};
 use super::{CloudObjectTypeAndId, DriveObjectType, DriveSortOrder};
+use crate::ObjectActions;
 use crate::ai::document::ai_document_model::AIDocumentId;
 use crate::ai::facts::{AIFact, AIMemory};
 use crate::appearance::Appearance;
@@ -73,7 +74,6 @@ use crate::server::cloud_objects::update_manager::{
 };
 use crate::server::ids::{ClientId, ObjectUid, ServerId, SyncId};
 use crate::server::sync_queue::SyncQueue;
-use crate::server::telemetry::{SharingDialogSource, TelemetryEvent};
 use crate::settings::app_installation_detection::{
     UserAppInstallDetectionSettings, UserAppInstallStatus,
 };
@@ -90,7 +90,6 @@ use crate::workspace::active_terminal_in_window;
 use crate::workspaces::update_manager::TeamUpdateManager;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::WorkspaceUid;
-use crate::{ObjectActions, send_telemetry_from_ctx};
 
 const WARP_DRIVE_TITLE: &str = "Drive";
 
@@ -3399,13 +3398,6 @@ impl DriveIndex {
         WarpDriveSettings::handle(ctx).update(ctx, |settings, ctx| {
             report_if_error!(settings.sorting_choice.set_value(*sorting_choice, ctx));
         });
-
-        send_telemetry_from_ctx!(
-            TelemetryEvent::UpdateSortingChoice {
-                sorting_choice: *sorting_choice
-            },
-            ctx
-        );
     }
 
     fn toggle_sorting_menu(&mut self, ctx: &mut ViewContext<Self>) {
@@ -4050,7 +4042,6 @@ impl DriveIndex {
         &mut self,
         warp_drive_item_id: &WarpDriveItemId,
         invitee_email: Option<String>,
-        source: SharingDialogSource,
         ctx: &mut ViewContext<Self>,
     ) {
         let WarpDriveItemId::Object(cloud_object_type_and_id) = warp_drive_item_id else {
@@ -4065,7 +4056,6 @@ impl DriveIndex {
                 if let Some(invitee_email) = invitee_email {
                     sharing_dialog.add_invitee_email(invitee_email, ctx);
                 }
-                sharing_dialog.report_open(source, ctx);
             });
             ctx.focus(&self.sharing_dialog);
         }
@@ -4385,11 +4375,6 @@ impl TypedActionView for DriveIndex {
                 }
             }
             DriveIndexAction::CopyObjectToClipboard(cloud_object_type_and_id) => {
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::CopyObjectToClipboard(cloud_object_type_and_id.into()),
-                    ctx
-                );
-
                 let shell_family =
                     active_terminal_in_window(ctx.window_id(), ctx, |terminal, ctx| {
                         terminal.shell_family(ctx)
@@ -4432,14 +4417,9 @@ impl TypedActionView for DriveIndex {
                     .write(ClipboardContent::plain_text(workflow_id));
             }
             DriveIndexAction::DuplicateObject(cloud_object_type_and_id) => {
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::DuplicateObject(cloud_object_type_and_id.into()),
-                    ctx
-                );
                 ctx.emit(DriveIndexEvent::DuplicateObject(*cloud_object_type_and_id));
             }
             DriveIndexAction::ExportObject(type_and_id) => {
-                send_telemetry_from_ctx!(TelemetryEvent::ExportObject(type_and_id.into()), ctx);
                 ctx.emit(DriveIndexEvent::ExportObject(*type_and_id));
             }
             DriveIndexAction::ToggleNewAssetsMenu(space) => {
@@ -4679,10 +4659,6 @@ impl TypedActionView for DriveIndex {
                 }
             }
             DriveIndexAction::CopyObjectLinkToClipboard(link) => {
-                send_telemetry_from_ctx!(
-                    TelemetryEvent::ObjectLinkCopied { link: link.clone() },
-                    ctx
-                );
                 ctx.clipboard()
                     .write(ClipboardContent::plain_text(link.to_owned()));
             }
@@ -4698,12 +4674,7 @@ impl TypedActionView for DriveIndex {
                 ctx.emit(DriveIndexEvent::InvokeEnvVarCollectionInSubshell(*id))
             }
             DriveIndexAction::ToggleShareDialog { warp_drive_item_id } => {
-                self.toggle_share_dialog(
-                    warp_drive_item_id,
-                    None,
-                    SharingDialogSource::DriveIndex,
-                    ctx,
-                );
+                self.toggle_share_dialog(warp_drive_item_id, None, ctx);
             }
             DriveIndexAction::SetCurrentWorkspace(workspace_uid) => {
                 TeamUpdateManager::handle(ctx).update(ctx, |manager, ctx| {

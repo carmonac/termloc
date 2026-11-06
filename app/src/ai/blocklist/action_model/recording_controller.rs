@@ -40,20 +40,6 @@ pub(crate) enum FinalizeReason {
 }
 
 impl FinalizeReason {
-    /// Stable, machine-readable key identifying why finalization ran, used by
-    /// the `Recording.Stopped` telemetry event. Distinct from
-    /// [`FinalizeReason::termination_reason`], which is human-readable prose.
-    #[cfg_attr(target_family = "wasm", allow(dead_code))]
-    pub(crate) fn telemetry_key(self) -> &'static str {
-        match self {
-            FinalizeReason::StoppedByAgent => "agent_stopped",
-            FinalizeReason::LimitReached => "limit_reached",
-            FinalizeReason::FfmpegExited => "encoding_failed",
-            FinalizeReason::RunCancelled => "run_cancelled",
-            FinalizeReason::FinalizationDropped => "finalization_dropped",
-        }
-    }
-
     #[cfg(not(target_family = "wasm"))]
     pub(crate) fn termination_reason(
         self,
@@ -503,8 +489,8 @@ impl RecordingController {
     /// Completes an in-flight finalization with its resolved result and the
     /// *actual* reason that drove the work (not the reason any caller merely
     /// claimed when joining). Every waiter receives the same reason, and the
-    /// reason is retained with the result until it is consumed, so telemetry
-    /// downstream always reflects why finalization actually ran.
+    /// reason is retained with the result until it is consumed, so callers always see why
+    /// finalization actually ran.
     #[cfg_attr(target_family = "wasm", allow(dead_code))]
     pub(crate) fn complete_finalization(
         &mut self,

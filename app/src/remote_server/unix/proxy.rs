@@ -112,7 +112,7 @@ pub fn run(identity_key: &str) -> anyhow::Result<()> {
     // error.  With hashed identity + version names the path should
     // always fit, so hitting this guard indicates a new path component
     // was added without budgeting for sun_path.  The error surfaces in
-    // client telemetry (RemoteServerInitialization) and daemon logs.
+    // daemon logs.
     let path_len = socket_path.as_os_str().len();
     if path_len > SUN_PATH_MAX {
         anyhow::bail!(

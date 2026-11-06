@@ -307,11 +307,8 @@ fn should_trigger_notification_returns_false_for_cancelled() {
 // regardless of status; this still pins the user-visible contract that
 // no stale "Task completed" toast survives a non-terminal transition.
 
-/// Disables `show_agent_notifications` so subsequent `add_notification`
-/// calls skip the `send_telemetry_from_ctx!` branch — the test app does
-/// not register a `TelemetryContextProvider` singleton and the macro
-/// would otherwise panic.
-fn disable_telemetry_path(app: &mut App) {
+/// Disables `show_agent_notifications` for the notification-clearing tests below.
+fn disable_agent_notifications(app: &mut App) {
     AISettings::handle(app).update(app, |settings, ctx| {
         report_if_error!(settings.show_agent_notifications.set_value(false, ctx));
     });
@@ -345,7 +342,7 @@ fn waiting_for_events_clears_stale_notification_and_adds_none() {
     App::test((), |mut app| async move {
         let _guard = FeatureFlag::HOANotifications.override_enabled(true);
         let (history, notifications) = setup_app(&mut app);
-        disable_telemetry_path(&mut app);
+        disable_agent_notifications(&mut app);
 
         let conversation = AIConversation::new(false);
         let conversation_id = conversation.id();
@@ -389,7 +386,7 @@ fn in_progress_resume_clears_stale_notification_and_adds_none() {
     App::test((), |mut app| async move {
         let _guard = FeatureFlag::HOANotifications.override_enabled(true);
         let (history, notifications) = setup_app(&mut app);
-        disable_telemetry_path(&mut app);
+        disable_agent_notifications(&mut app);
 
         let conversation = AIConversation::new(false);
         let conversation_id = conversation.id();

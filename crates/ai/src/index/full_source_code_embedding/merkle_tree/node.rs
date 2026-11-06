@@ -509,7 +509,6 @@ impl MerkleNode {
                         Ok((child, mapping)) => (child, mapping),
                         // When encountering a node construction error, instead of early returning and interrupting the rest of the update,
                         // consider it a skippable error.
-                        // TODO: We should capture and log these errors in the telemetry.
                         Err(e) => {
                             log::debug!("Failed to create new node for update: {e:#}");
                             continue;

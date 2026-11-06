@@ -1,5 +1,4 @@
 use ai::LLMId;
-use warp_core::telemetry::testing::MockTelemetryContextProvider;
 use warpui_core::{App, ModelHandle};
 
 use crate::OnboardingIntention;
@@ -8,7 +7,6 @@ use crate::model::{
 };
 
 fn add_test_model(app: &mut App) -> ModelHandle<OnboardingStateModel> {
-    app.update(MockTelemetryContextProvider::register);
     add_model(app)
 }
 

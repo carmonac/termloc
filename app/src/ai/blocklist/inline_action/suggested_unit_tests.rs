@@ -16,11 +16,10 @@ use warpui::{
     AppContext, Element, Entity, FocusContext, SingletonEntity, TypedActionView, View, ViewContext,
 };
 
-use crate::ai::agent::{AIAgentActionId, AIIdentifiers};
+use crate::ai::agent::AIAgentActionId;
 use crate::ai::predict::prompt_suggestions::{
     ACCEPT_PROMPT_SUGGESTION_KEYBINDING, REJECT_PROMPT_SUGGESTION_KEYSTROKE,
 };
-use crate::server::telemetry::ToggleCodeSuggestionsSettingSource;
 use crate::settings::AISettings;
 use crate::ui_components::blended_colors;
 use crate::ui_components::icons::Icon;
@@ -30,7 +29,6 @@ use crate::view_components::action_button::{
 use crate::view_components::compactible_action_button::{
     CompactibleActionButton, MEDIUM_SIZE_SWITCH_THRESHOLD, render_compact_and_regular_button_rows,
 };
-use crate::{TelemetryEvent, send_telemetry_from_ctx};
 
 const ACCEPT_LABEL: &str = "Generate tests";
 const CANCEL_LABEL: &str = "Dismiss";
@@ -52,8 +50,6 @@ pub enum SuggestedUnitTestsAction {
 }
 
 pub struct SuggestedUnitTestsView {
-    /// Client and server identifiers for the AI output associated with the suggested prompt.
-    identifiers: AIIdentifiers,
     action_id: AIAgentActionId,
 
     is_hidden: bool,
@@ -73,7 +69,6 @@ pub struct SuggestedUnitTestsView {
 
 impl SuggestedUnitTestsView {
     pub fn new(
-        identifiers: AIIdentifiers,
         action_id: AIAgentActionId,
         query: String,
         title: String,
@@ -112,7 +107,6 @@ impl SuggestedUnitTestsView {
             .collect();
 
         Self {
-            identifiers,
             action_id,
             is_hidden: false,
             is_keybindings_hidden: false,
@@ -126,10 +120,6 @@ impl SuggestedUnitTestsView {
             ai_settings_link_highlight_index: Default::default(),
             position_id_prefix: random_str,
         }
-    }
-
-    pub fn identifiers(&self) -> &AIIdentifiers {
-        &self.identifiers
     }
 
     pub fn action_id(&self) -> &AIAgentActionId {
@@ -404,22 +394,12 @@ impl TypedActionView for SuggestedUnitTestsView {
             SuggestedUnitTestsAction::Accept => ctx.emit(SuggestedUnitTestsEvent::Accept),
             SuggestedUnitTestsAction::Cancel => ctx.emit(SuggestedUnitTestsEvent::Cancel),
             SuggestedUnitTestsAction::ToggleSetting => {
-                let checked = AISettings::handle(ctx).update(ctx, |settings, ctx| {
+                let _ = AISettings::handle(ctx).update(ctx, |settings, ctx| {
                     settings
                         .code_suggestions_enabled_internal
                         .toggle_and_save_value(ctx)
                 });
                 ctx.notify();
-
-                if let Ok(checked) = checked {
-                    send_telemetry_from_ctx!(
-                        TelemetryEvent::ToggleCodeSuggestionsSetting {
-                            source: ToggleCodeSuggestionsSettingSource::Speedbump,
-                            is_code_suggestions_enabled: checked,
-                        },
-                        ctx
-                    );
-                }
             }
             SuggestedUnitTestsAction::OpenSettings => {
                 ctx.emit(SuggestedUnitTestsEvent::OpenSettings)

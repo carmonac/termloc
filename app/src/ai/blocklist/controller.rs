@@ -44,9 +44,9 @@ use crate::ai::agent::conversation::{AIConversation, AIConversationId, Conversat
 use crate::ai::agent::task::TaskId;
 use crate::ai::agent::{
     AIAgentActionResult, AIAgentActionResultType, AIAgentAttachment, AIAgentContext,
-    AIAgentExchange, AIAgentExchangeId, AIAgentInput, AIAgentOutputStatus, AIIdentifiers,
-    CancellationOutcome, CancellationReason, DocumentContentAttachmentSource, EntrypointType,
-    FileContext, FinishedAIAgentOutput, PassiveSuggestionResultType, PassiveSuggestionTrigger,
+    AIAgentExchange, AIAgentExchangeId, AIAgentInput, AIAgentOutputStatus, CancellationOutcome,
+    CancellationReason, DocumentContentAttachmentSource, EntrypointType, FileContext,
+    FinishedAIAgentOutput, PassiveSuggestionResultType, PassiveSuggestionTrigger,
     PassiveSuggestionTriggerType, RenderableAIError, RequestCost, RequestMetadata, RunningCommand,
     StaticQueryType, TransientNetworkErrorKind, UserQueryMode, extract_user_query_mode,
 };
@@ -60,10 +60,8 @@ use crate::global_resource_handles::GlobalResourceHandlesProvider;
 use crate::network::NetworkStatus;
 use crate::notebooks::editor::model::FileLinkResolutionContext;
 use crate::persistence::ModelEvent;
-use crate::send_telemetry_from_ctx;
 use crate::server::server_api::AIApiError;
 use crate::server::team_scope::RequestTeamScope;
-use crate::server::telemetry::TelemetryEvent;
 use crate::terminal::ShellLaunchData;
 use crate::terminal::model::block::{
     BlockId, CURSOR_MARKER, formatted_terminal_contents_for_input,
@@ -2095,19 +2093,6 @@ impl BlocklistAIController {
             .in_flight_response_streams
             .has_active_stream_for_conversation(conversation_id, ctx)
         {
-            send_telemetry_from_ctx!(
-                TelemetryEvent::AIInputNotSent {
-                    entrypoint: query_metadata.map(|metadata| metadata.entrypoint),
-                    inputs: request_input
-                        .all_inputs()
-                        .cloned()
-                        .map(|input| input.into())
-                        .collect(),
-                    active_server_conversation_id: conversation_server_token.clone(),
-                    active_client_conversation_id: Some(conversation_id),
-                },
-                ctx
-            );
             const AI_INPUT_NOT_SENT_ERROR_STR: &str =
                 "Not sending AI input because there is an in-flight request";
             safe_assert!(false, "{}", AI_INPUT_NOT_SENT_ERROR_STR);
@@ -2145,25 +2130,8 @@ impl BlocklistAIController {
             ctx,
         );
 
-        let server_conversation_token_for_identifiers =
-            conversation_data.server_conversation_token.clone();
-
         let response_stream = ctx.add_model(|ctx| {
-            // Create AIIdentifiers for the response stream
-            let ai_identifiers = AIIdentifiers {
-                server_output_id: None, // Will be populated by the successful response
-                server_conversation_id: server_conversation_token_for_identifiers.map(Into::into),
-                client_conversation_id: Some(conversation_data.id),
-                client_exchange_id: None,
-                model_id: Some(request_params.model.clone()),
-            };
-            ResponseStream::new(
-                request_params.clone(),
-                ai_identifiers,
-                recovery,
-                team_scope,
-                ctx,
-            )
+            ResponseStream::new(request_params.clone(), recovery, team_scope, ctx)
         });
         let response_stream_id = response_stream.as_ref(ctx).id().clone();
         let response_stream_clone = response_stream.clone();

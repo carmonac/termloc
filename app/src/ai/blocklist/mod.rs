@@ -26,7 +26,6 @@ pub mod summarization_cancel_dialog;
 pub mod usage;
 
 pub(crate) mod codebase_index_speedbump_banner;
-pub(crate) mod telemetry_banner;
 pub(crate) mod view_util;
 
 // Consumed by `tui_export` for the `warp_tui` frontend.
@@ -43,12 +42,11 @@ pub use action_model::{
 };
 #[cfg_attr(target_family = "wasm", allow(unused_imports))]
 pub(crate) use action_model::{
-    FileReadResult, ReadFileContextResult, RequestFileEditsFormatKind, apply_edits,
-    read_local_file_context,
+    FileReadResult, ReadFileContextResult, apply_edits, read_local_file_context,
 };
 #[cfg(any(test, feature = "integration_tests"))]
 pub(crate) use block::model::testing::FakeAIBlockModel;
-pub(crate) use block::{AIBlock, AIBlockEvent, RequestedEditResolution, init, model};
+pub(crate) use block::{AIBlock, AIBlockEvent, init, model};
 pub use block::{keyboard_navigable_buttons, toggleable_items};
 #[cfg(feature = "tui")]
 pub use context_model::PendingAttachmentSummary;
@@ -95,9 +93,9 @@ pub(crate) use passive_suggestions::{
     LegacyPassiveSuggestionsEvent, LegacyPassiveSuggestionsModel, MaaPassiveSuggestionsEvent,
     MaaPassiveSuggestionsModel, PassiveSuggestionsModels,
 };
+pub use permissions::BlocklistAIPermissions;
 #[cfg(test)]
 pub(crate) use permissions::is_agent_mode_autonomy_allowed;
-pub use permissions::{BlocklistAIPermissions, CommandExecutionPermissionAllowedReason};
 #[cfg_attr(target_family = "wasm", allow(unused_imports))]
 pub(crate) use permissions::{
     CommandExecutionPermission, CommandExecutionPermissionDeniedReason, FileWritePermission,

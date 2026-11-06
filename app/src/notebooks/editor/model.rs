@@ -41,7 +41,6 @@ use warpui::{
     AppContext, Entity, ModelAsRef, ModelContext, ModelHandle, SingletonEntity, WindowId,
 };
 
-use super::super::telemetry::SelectionMode as TelemetrySelectionMode;
 use super::NotebookWorkflow;
 use super::embedding_model::NotebookEmbed;
 use super::interaction_state_model::InteractionStateModel;
@@ -50,7 +49,6 @@ use crate::cloud_object::model::persistence::{CloudModel, CloudModelEvent};
 use crate::editor::InteractionState;
 use crate::notebooks::editor::interaction_state_model::InteractionStateModelEvent;
 use crate::notebooks::file::MarkdownDisplayMode;
-use crate::notebooks::telemetry::BlockInfo;
 use crate::terminal::ShellLaunchData;
 
 const DEBOUNCED_RESIZE_PERIOD: Duration = Duration::from_millis(5);
@@ -1073,28 +1071,25 @@ impl NotebooksEditorModel {
     }
 
     /// Copy the current selection. If a code block is selected, copy its entire contents.
-    pub fn copy(&self, ctx: &mut ModelContext<Self>) -> Option<BlockInfo> {
-        let (clipboard, block) = match self.single_selected_command_range(ctx) {
+    pub fn copy(&self, ctx: &mut ModelContext<Self>) {
+        let clipboard = match self.single_selected_command_range(ctx) {
             SelectedCommandResult::Single { start, end } => {
-                let clipboard = self.command_clipboard_content(start, end, ctx);
-                (clipboard, Some(BlockInfo::CodeBlock))
+                self.command_clipboard_content(start, end, ctx)
             }
             SelectedCommandResult::None if !self.selection_is_single_cursor(ctx) => {
-                (self.read_selected_text_as_clipboard_content(ctx), None)
+                self.read_selected_text_as_clipboard_content(ctx)
             }
-            _ => return None,
+            _ => return,
         };
 
         ctx.clipboard().write(clipboard);
-        block
     }
 
     /// Cut the current text or command selection.
-    pub fn cut(&mut self, ctx: &mut ModelContext<Self>) -> Option<BlockInfo> {
+    pub fn cut(&mut self, ctx: &mut ModelContext<Self>) {
         match self.single_selected_command_range(ctx) {
             SelectedCommandResult::Single { start, end } => {
                 self.delete_selected_command_range(start, end, true, ctx);
-                Some(BlockInfo::CodeBlock)
             }
             SelectedCommandResult::None if !self.selection_is_single_cursor(ctx) => {
                 let clipboard = self.read_selected_text_as_clipboard_content(ctx);
@@ -1113,9 +1108,8 @@ impl NotebooksEditorModel {
                     ctx,
                 );
                 self.validate(ctx);
-                None
             }
-            _ => None,
+            _ => {}
         }
     }
 
@@ -1422,7 +1416,7 @@ impl NotebooksEditorModel {
         // If the selection is on a valid block, we clear selections first so that if there
         // were any other selected commands, the end result is that _just_ the given command
         // is selected.
-        let had_command_selection = self.clear_command_selections(ctx);
+        self.clear_command_selections(ctx);
 
         self.cursor_at(block_start, ctx);
 
@@ -1459,12 +1453,6 @@ impl NotebooksEditorModel {
             .update(ctx, |interaction_state, ctx| {
                 interaction_state.set_is_block_selected(true, ctx);
             });
-
-        if !had_command_selection {
-            ctx.emit(RichTextEditorModelEvent::SwitchedSelectionMode {
-                new_mode: TelemetrySelectionMode::Command,
-            });
-        };
 
         ctx.notify();
     }
@@ -1554,11 +1542,7 @@ impl NotebooksEditorModel {
             .min_by_key(|(start, _)| *start)
             .and_then(|(_, command)| command.end_offset(ctx));
 
-        if self.clear_command_selections(ctx) {
-            ctx.emit(RichTextEditorModelEvent::SwitchedSelectionMode {
-                new_mode: TelemetrySelectionMode::Text,
-            });
-        }
+        self.clear_command_selections(ctx);
 
         if let Some(cursor_location) = new_cursor_location {
             self.cursor_at(cursor_location, ctx);
@@ -1892,10 +1876,6 @@ pub enum RichTextEditorModelEvent {
         block_type: BlockType,
     },
     ContentChanged(EditOrigin),
-    /// The user switched selection modes.
-    SwitchedSelectionMode {
-        new_mode: TelemetrySelectionMode,
-    },
 }
 
 impl Entity for NotebooksEditorModel {

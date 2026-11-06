@@ -199,7 +199,6 @@ fn initial_files_reach_the_agent_shaped_by_its_capabilities() {
                             .with_shell_type(ShellType::Zsh),
                         "test command".to_owned(),
                         Vec::new(),
-                        None,
                         ctx,
                     );
                 });

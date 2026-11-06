@@ -7,7 +7,6 @@ use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::blocklist::AIBlock;
 use crate::ai::blocklist::agent_view::AgentViewEntryOrigin;
 use crate::ai::blocklist::block::PendingUserQueryBlock;
-use crate::ai::blocklist::telemetry_banner::TelemetryBanner;
 use crate::env_vars::env_var_collection_block::EnvVarCollectionBlock;
 use crate::terminal::TerminalView;
 use crate::terminal::block_list_viewport::ScrollPositionUpdate;
@@ -152,13 +151,6 @@ impl RichContent {
         matches!(self.metadata, Some(RichContentMetadata::UsageFooter))
     }
 
-    pub fn is_telemetry_banner(&self) -> bool {
-        matches!(
-            self.metadata,
-            Some(RichContentMetadata::TelemetryBanner { .. })
-        )
-    }
-
     pub fn is_agent_view_entry(&self) -> bool {
         matches!(self.metadata, Some(RichContentMetadata::AgentViewEntry(_)))
     }
@@ -250,9 +242,6 @@ pub enum RichContentMetadata {
     },
     WarpifySuccessBlock {
         bootstrap_success_block_handle: ViewHandle<WarpifySuccessBlock>,
-    },
-    TelemetryBanner {
-        telemetry_banner_handle: ViewHandle<TelemetryBanner>,
     },
     AgentViewEntry(AgentViewEntryMetadata),
     InlineAgentViewHeader,

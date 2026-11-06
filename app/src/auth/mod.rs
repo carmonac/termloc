@@ -43,18 +43,15 @@ use crate::server::cloud_objects::update_manager::UpdateManager;
 #[cfg(feature = "tui")]
 use crate::server::sync_queue::SyncQueue;
 #[cfg(feature = "tui")]
-use crate::server::telemetry::TelemetryEvent;
-#[cfg(feature = "tui")]
 use crate::settings::{
     AISettings, CRASH_REPORTING_ENABLED_DEFAULTS_KEY, CloudPreferencesSettings, PrivacySettings,
-    TELEMETRY_ENABLED_DEFAULTS_KEY,
 };
 #[cfg(feature = "tui")]
 use crate::workflows::manager::WorkflowManager;
 #[cfg(feature = "tui")]
 use crate::workspaces::update_manager::TeamUpdateManager;
 #[cfg(feature = "tui")]
-use crate::{GlobalResourceHandlesProvider, persistence, send_telemetry_sync_from_app_ctx};
+use crate::{GlobalResourceHandlesProvider, persistence};
 
 /// Returns the configured Warp web logout URL.
 ///
@@ -106,8 +103,6 @@ mod tests;
 // Log out the user, clears workspace state, stops running processes, and deletes database.
 #[cfg(feature = "tui")]
 pub fn log_out(app: &mut AppContext) {
-    send_telemetry_sync_from_app_ctx!(TelemetryEvent::LogOut, app);
-
     CodebaseIndexManager::handle(app).update(app, |index_manager, ctx| {
         index_manager.reset_codebase_indexing(ctx);
     });
@@ -178,16 +173,6 @@ fn remove_cloud_persisted_settings(app: &mut AppContext) {
                 );
             }
         });
-    }
-
-    if let Err(e) = app
-        .private_user_preferences()
-        .remove_value(TELEMETRY_ENABLED_DEFAULTS_KEY)
-    {
-        report_error!(
-            anyhow::Error::new(e)
-                .context("Failed to remove Telemetry Enabled Defaults Key from user defaults")
-        );
     }
 
     if let Err(e) = app

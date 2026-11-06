@@ -51,7 +51,7 @@ When applying the core skill to Warp, ensure the parent prompt and child prompts
 
 - Match the reporter's Warp version/build/channel before broadening the search space.
 - Follow the issue's exact steps first, then test at most two targeted variations supported by the issue or by a code-path hypothesis.
-- Prefer targeted hypotheses derived from Warp UI strings, settings names, feature names, telemetry names, route names, and relevant components over broad exploratory clicking.
+- Prefer targeted hypotheses derived from Warp UI strings, settings names, feature names, route names, and relevant components over broad exploratory clicking.
 - In the final report, include:
   - the reporter-requested Warp version/build/channel
   - the installed Linux Warp version/build/channel

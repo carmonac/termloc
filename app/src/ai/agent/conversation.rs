@@ -10,7 +10,6 @@ use vec1::{Size0Error, Vec1};
 use warp_core::command::ExitCode;
 use warp_core::execution_mode::AppExecutionMode;
 use warp_core::features::FeatureFlag;
-use warp_core::send_telemetry_from_ctx;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::theme::WarpTheme;
 use warp_core::ui::theme::color::internal_colors;
@@ -51,8 +50,8 @@ use crate::ai::agent::request_metadata::{
 };
 use crate::ai::agent::todos::AIAgentTodoList;
 use crate::ai::agent::{
-    AIAgentOutputMessage, AIAgentOutputMessageType, AIIdentifiers, CancellationOutcome,
-    CancellationReason, MessageToAIAgentOutputMessageError, SummarizationType,
+    AIAgentOutputMessage, AIAgentOutputMessageType, CancellationOutcome, CancellationReason,
+    MessageToAIAgentOutputMessageError, SummarizationType,
 };
 use crate::ai::artifacts::Artifact;
 use crate::ai::blocklist::{
@@ -61,7 +60,6 @@ use crate::ai::blocklist::{
 };
 use crate::ai::llms::CUSTOM_ENDPOINT_USAGE_LABEL;
 use crate::ai::skills::SkillDescriptor;
-use crate::code_review::CodeReviewTelemetryEvent;
 use crate::notebooks::NotebookId;
 use crate::persistence::ModelEvent;
 use crate::persistence::model::{
@@ -2236,28 +2234,6 @@ impl AIConversation {
             self.commit_transaction()
         }
 
-        let AddedExchange {
-            exchange_id: initial_exchange_id,
-            ..
-        } = added_exchanges.first();
-        let identifiers = AIIdentifiers {
-            server_output_id: None,
-            server_conversation_id: self.server_conversation_token.clone().map(Into::into),
-            client_conversation_id: Some(self.id),
-            client_exchange_id: Some(*initial_exchange_id),
-            model_id: None,
-        };
-
-        send_telemetry_from_ctx!(
-            crate::TelemetryEvent::AgentModeError {
-                identifiers,
-                error: error.to_string(),
-                is_user_visible: true,
-                will_attempt_to_resume: recovery_pending,
-            },
-            ctx
-        );
-
         for AddedExchange {
             exchange_id,
             task_id,
@@ -2574,18 +2550,10 @@ impl AIConversation {
                         Some(api::message::Message::UpdateReviewComments(comments)) => {
                             if let Some(comments_op) = comments.operation.as_ref() {
                                 if let Some(active_code_review) = self.code_review.as_mut() {
-                                    let resolved_count = update_comment_from_comment_operation(
+                                    update_comment_from_comment_operation(
                                         active_code_review,
                                         comments_op.clone(),
                                     );
-                                    if resolved_count > 0 {
-                                        send_telemetry_from_ctx!(
-                                            CodeReviewTelemetryEvent::CommentResolved {
-                                                resolved_count
-                                            },
-                                            ctx
-                                        );
-                                    }
                                 } else {
                                     report_error!(
                                         "Received an UpdateReviewComments message but there's no active code review state"
@@ -4180,10 +4148,8 @@ pub(super) fn update_todo_list_from_todo_op(
 pub(super) fn update_comment_from_comment_operation(
     current_comment_state: &mut CodeReview,
     op: api::message::update_review_comments::Operation,
-) -> usize {
+) {
     use api::message::update_review_comments::Operation;
-
-    let mut resolved_count = 0usize;
 
     match op {
         Operation::AddressReviewComments(addressed_comments) => {
@@ -4195,13 +4161,10 @@ pub(super) fn update_comment_from_comment_operation(
                     .map(|i| current_comment_state.pending_comments.remove(i))
                 {
                     current_comment_state.addressed_comments.push(item);
-                    resolved_count += 1;
                 }
             }
         }
     }
-
-    resolved_count
 }
 
 /// Cleans up temporary directories created by conversation search subagents.
@@ -4383,7 +4346,6 @@ impl AIAgentExchange {
                         server_output_id: Some(server_output_id),
                         api_metadata_bytes: None,
                         suggestions: None,
-                        telemetry_events: vec![],
                         model_info: None,
                         request_cost: None,
                     }));

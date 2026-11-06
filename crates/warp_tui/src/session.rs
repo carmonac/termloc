@@ -27,7 +27,6 @@ use crate::clipboard::copy_to_clipboard;
 use crate::resume::TuiExitSummaryHandle;
 use crate::root_view::RootTuiView;
 use crate::session_registry::{TuiSessions, TuiSessionsEvent};
-use crate::telemetry::TuiStartupTelemetryEvent;
 use crate::terminal_background::probe_and_select_theme;
 use crate::terminal_session_view::{
     TuiConversationRestoreOrigin, TuiConversationRestoreTarget, tui_resume_shell_command,
@@ -144,7 +143,6 @@ fn init(
     exit_summary: TuiExitSummaryHandle,
     ctx: &mut AppContext,
 ) {
-    warp_core::send_telemetry_from_app_ctx!(TuiStartupTelemetryEvent::from_environment(), ctx);
     // Register the TUI views' keybindings (and, in debug builds, the
     // cross-surface binding validators) before any input can be dispatched.
     crate::keybindings::init(ctx);
@@ -301,7 +299,6 @@ fn ensure_terminal_session(
         });
     }
     root.update(ctx, |root, ctx| root.show_terminal(ctx));
-    TuiLoginModel::record_terminal_shown(ctx);
 }
 
 #[cfg(test)]

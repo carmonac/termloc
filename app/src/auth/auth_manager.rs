@@ -38,14 +38,14 @@ use crate::terminal::general_settings::GeneralSettings;
 #[cfg(target_family = "wasm")]
 use crate::uri::browser_url_handler::{parse_current_url, update_browser_url};
 use crate::workspaces::team_tester::TeamTesterStatus;
-use crate::{GlobalResourceHandlesProvider, TelemetryEvent, persistence, send_telemetry_from_ctx};
+use crate::{GlobalResourceHandlesProvider, persistence};
 
 #[derive(Debug)]
 pub enum AuthManagerEvent {
     /// Successfully authenticated a user with no errors.
     AuthComplete,
     /// Failed to authenticate a user, due to a particular `UserAuthenticationError`.
-    AuthFailed(UserAuthenticationError),
+    AuthFailed(#[cfg_attr(not(feature = "tui"), allow(dead_code))] UserAuthenticationError),
     /// The user now needs to reauthenticate. If the user needs to reauth, an `AuthFailed`
     /// event might be triggered instead, but there are some code paths where we don't
     /// refresh the entire user, only their token, which is when this event might be emitted.
@@ -443,7 +443,6 @@ impl AuthManager {
         let became_true = self.auth_state.set_needs_reauth(needs_reauth);
 
         if became_true {
-            send_telemetry_from_ctx!(TelemetryEvent::NeedsReauth, ctx);
             ctx.emit(AuthManagerEvent::NeedsReauth);
         }
     }

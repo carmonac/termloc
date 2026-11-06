@@ -31,7 +31,6 @@ use crate::notebooks::CloudNotebook;
 use crate::notebooks::manager::NotebookSource;
 use crate::server::cloud_objects::update_manager::{InitiatedBy, UpdateManager};
 use crate::server::ids::{ClientId, ServerId, SyncId};
-use crate::server::telemetry::SharingDialogSource;
 use crate::workflows::manager::WorkflowOpenSource;
 use crate::workflows::{CloudWorkflow, WorkflowViewMode};
 use crate::workspaces::user_workspaces::UserWorkspaces;
@@ -643,13 +642,12 @@ impl DrivePanel {
         &mut self,
         object_id: CloudObjectTypeAndId,
         invitee_email: Option<String>,
-        source: SharingDialogSource,
         ctx: &mut ViewContext<Self>,
     ) {
         let warp_drive_item_id = WarpDriveItemId::Object(object_id);
         self.index_view.update(ctx, |index, ctx| {
             index.set_focused_item(warp_drive_item_id, true, ctx);
-            index.toggle_share_dialog(&warp_drive_item_id, invitee_email, source, ctx);
+            index.toggle_share_dialog(&warp_drive_item_id, invitee_email, ctx);
         });
     }
 

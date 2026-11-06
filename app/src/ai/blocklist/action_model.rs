@@ -17,27 +17,21 @@ mod preprocess;
 pub(crate) mod recording_controller;
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod recording_finalize;
-pub(crate) mod recording_telemetry;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use execute::{
-    AskUserQuestionExecutor, EditAcceptAndContinueClickedEvent, EditAcceptClickedEvent,
-    EditResolvedEvent, EditStats, NewConversationDecision, PromptSuggestionExecutor,
-    ReadFileContextResult, RequestFileEditsExecutor, RequestFileEditsFormatKind,
-    RequestFileEditsTelemetryEvent, ShellCommandExecutor, ShellCommandExecutorEvent,
-    read_local_file_context,
+    AskUserQuestionExecutor, NewConversationDecision, PromptSuggestionExecutor,
+    ReadFileContextResult, RequestFileEditsExecutor, ShellCommandExecutor,
+    ShellCommandExecutorEvent, read_local_file_context,
 };
-pub(crate) use execute::{
-    FileReadResult, MalformedFinalLineProxyEvent, apply_edits, coerce_integer_args,
-};
+pub(crate) use execute::{FileReadResult, apply_edits, coerce_integer_args};
 use futures::future::{BoxFuture, join_all};
 use itertools::Itertools;
 use parking_lot::FairMutex;
 use preprocess::{PendingPreprocessedActions, PreprocessId};
-pub(crate) use recording_telemetry::RecordingTelemetryEvent;
 use warpui::{AppContext, Entity, EntityId, ModelContext, ModelHandle, SingletonEntity};
 
 use self::execute::search_codebase::SearchCodebaseExecutor;
@@ -62,7 +56,6 @@ use crate::terminal::TerminalModel;
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::terminal::model_events::ModelEventDispatcher;
 use crate::workspaces::user_workspaces::TeamContextResolver;
-use crate::{TelemetryEvent, send_telemetry_from_ctx};
 
 /// The status of an action from an AI output.
 #[derive(Clone, Debug)]
@@ -801,12 +794,10 @@ impl BlocklistAIActionModel {
     fn preprocess_action(
         &mut self,
         action: &AIAgentAction,
-        conversation_id: AIConversationId,
         ctx: &mut ModelContext<Self>,
     ) -> BoxFuture<'static, ()> {
-        self.executor.update(ctx, |executor, ctx| {
-            executor.preprocess_action(action, conversation_id, ctx)
-        })
+        self.executor
+            .update(ctx, |executor, ctx| executor.preprocess_action(action, ctx))
     }
 
     /// Queues the `actions` in the given iterator for the given conversation,
@@ -830,7 +821,7 @@ impl BlocklistAIActionModel {
 
         for action in actions.iter() {
             action_ids.insert(action.id.clone());
-            preprocess_future.push(self.preprocess_action(action, conversation_id, ctx));
+            preprocess_future.push(self.preprocess_action(action, ctx));
         }
 
         let preprocess_id = self
@@ -1042,24 +1033,6 @@ impl BlocklistAIActionModel {
         reason: Option<CancellationReason>,
         ctx: &mut ModelContext<Self>,
     ) {
-        if matches!(
-            pending_action.action,
-            AIAgentActionType::RequestComputerUse(_)
-        ) {
-            let server_conversation_id = BlocklistAIHistoryModel::as_ref(ctx)
-                .conversation(&conversation_id)
-                .and_then(|c| c.server_conversation_token())
-                .map(|t| t.as_str().to_string());
-            send_telemetry_from_ctx!(
-                TelemetryEvent::ComputerUseCancelled {
-                    client_conversation_id: conversation_id,
-                    server_conversation_id,
-                    ambient_agent_task_id: None,
-                },
-                ctx
-            );
-        }
-
         let cancelled_result = pending_action.action.cancelled_result();
         let result = Arc::new(AIAgentActionResult {
             id: pending_action.id,

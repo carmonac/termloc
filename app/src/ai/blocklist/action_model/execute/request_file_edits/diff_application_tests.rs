@@ -1,18 +1,14 @@
 use std::io::Write as _;
-use std::sync::Arc;
 
 use ai::diff_validation::{DiffDelta, ParsedDiff, V4AHunk};
 use async_io::block_on;
-use serde_json::json;
 use tempfile::NamedTempFile;
 use vec1::vec1;
-use warp_core::telemetry::TelemetryEvent;
 use warpui::App;
 
 use super::*;
-use crate::ai::agent::{AIIdentifiers, FileEdit};
+use crate::ai::agent::FileEdit;
 use crate::ai::blocklist::SessionContext;
-use crate::auth::auth_state::AuthState;
 
 fn update_deltas(diff: &AIRequestedCodeDiff) -> &[DiffDelta] {
     match &diff.diff_type {
@@ -22,60 +18,8 @@ fn update_deltas(diff: &AIRequestedCodeDiff) -> &[DiffDelta] {
 }
 
 #[test]
-fn v4a_mixed_hunk_match_outcomes() {
-    block_on(async {
-        let hunk = |old: &str, new: &str| V4AHunk {
-            change_context: vec![],
-            pre_context: String::new(),
-            old: old.into(),
-            new: new.into(),
-            post_context: String::new(),
-            line_data: None,
-        };
-        let requested = vec![
-            FileEdit::Edit(ParsedDiff::V4AEdit {
-                file: Some("mixed.txt".into()),
-                move_to: None,
-                hunks: vec![hunk("same", "same"), hunk("\n\n", ""), hunk("old", "new")],
-            }),
-            FileEdit::Edit(ParsedDiff::V4AEdit {
-                file: Some("success.txt".into()),
-                move_to: None,
-                hunks: vec![hunk("same", "same"), hunk("old", "new")],
-            }),
-        ];
-        let result = apply_edits_internal(requested, &SessionContext::new_for_test(), &|_| async {
-            FileReadResult::Found("same\nold\n".into())
-        })
-        .await;
-        let outcomes = result.v4a_outcomes.unwrap();
-        let event = RequestFileEditsTelemetryEvent::V4AMatchFinished(V4AMatchFinishedEvent {
-            identifiers: AIIdentifiers {
-                server_conversation_id: Some("conversation".into()),
-                ..Default::default()
-            },
-            outcomes,
-        });
-        assert_eq!(
-            event.payload(),
-            Some(json!({
-                "server_conversation_id": "conversation", "total_hunks": 5,
-                "noop_hunks": 2, "unmatched_hunks": 1,
-            }))
-        );
-        assert_eq!(result.errors.len(), 1);
-        for diff in result.diffs {
-            assert_eq!(update_deltas(&diff).len(), 1);
-            assert_eq!(update_deltas(&diff)[0].insertion, "new");
-            assert_eq!(diff.failures.as_ref().unwrap().noop_deltas, 1);
-            assert_eq!(diff.warrants_failure(), diff.file_name == "mixed.txt");
-        }
-    });
-}
-
-#[test]
 fn test_apply_diffs_error_when_no_diffs_applied() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "First line\nSecond line\n").unwrap();
@@ -87,17 +31,11 @@ fn test_apply_diffs_error_when_no_diffs_applied() {
             replace: Some("Replacement content".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(invalid_diff)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -121,7 +59,7 @@ fn test_apply_diffs_error_when_no_diffs_applied() {
 
 #[test]
 fn test_apply_diffs_succeeds_with_valid_diff() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "First line\nSecond line\n").unwrap();
@@ -133,18 +71,11 @@ fn test_apply_diffs_succeeds_with_valid_diff() {
             replace: Some("Modified first line".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(valid_diff)],
             &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -164,7 +95,7 @@ fn test_apply_diffs_succeeds_with_valid_diff() {
 
 #[test]
 fn test_apply_diffs_with_partial_failures() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "First line\nSecond line\n").unwrap();
@@ -182,18 +113,11 @@ fn test_apply_diffs_with_partial_failures() {
             replace: Some("Replacement content".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(valid_diff), FileEdit::Edit(invalid_diff)],
             &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -212,7 +136,7 @@ fn test_apply_diffs_with_partial_failures() {
 #[test]
 fn test_apply_diffs_with_new_file() {
     // TODO(ben): Drop support for this behavior once the file-creation tool is live.
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         // Create a diff for a non-existent file with empty search (file creation)
         let non_existent_file = "non_existent_file.txt".to_string();
         let create_file_diff = ParsedDiff::StrReplaceEdit {
@@ -221,18 +145,11 @@ fn test_apply_diffs_with_new_file() {
             replace: Some("New file content".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(create_file_diff)],
             &session_context,
-            ai_identifiers,
-            background_executor.clone(),
-            auth_state.clone(),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -256,7 +173,7 @@ fn test_apply_diffs_with_new_file() {
 
 #[test]
 fn test_apply_diffs_with_missing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let non_existent_file = "non_existent_file.txt".to_string();
 
         // Create a diff for a non-existent file with non-empty search (should fail)
@@ -266,18 +183,11 @@ fn test_apply_diffs_with_missing_file() {
             replace: Some("New content".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = block_on(apply_edits(
             vec![FileEdit::Edit(invalid_non_existent_diff)],
             &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         ));
 
@@ -294,7 +204,7 @@ fn test_apply_diffs_with_missing_file() {
 
 #[test]
 fn test_parse_diffs_with_mixed_empty_and_valid_diffs() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut file1 = NamedTempFile::new().expect("Failed to create first temporary file");
         let file1_path = file1.path().to_string_lossy().to_string();
         writeln!(&mut file1, "File 1 content\nSecond line\n").unwrap();
@@ -315,21 +225,13 @@ fn test_parse_diffs_with_mixed_empty_and_valid_diffs() {
             replace: Some("New content".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         // Even though we could apply a diff to file1, no diffs could be applied to file2. Overall,
         // this is an error because there's at least one file with an empty diff.
         let result = apply_edits(
             vec![FileEdit::Edit(valid_diff), FileEdit::Edit(invalid_diff)],
             &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -347,7 +249,7 @@ fn test_parse_diffs_with_mixed_empty_and_valid_diffs() {
 
 #[test]
 fn test_apply_diffs_noop_with_successful_change() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut file = NamedTempFile::new().expect("Failed to create temporary file");
         writeln!(&mut file, "Line One\nLine Two\n").unwrap();
         let file_path = file.path().to_string_lossy().to_string();
@@ -370,10 +272,6 @@ fn test_apply_diffs_noop_with_successful_change() {
         let result = apply_edits(
             diffs.into_iter().map(FileEdit::Edit).collect(),
             &SessionContext::new_for_test(),
-            &AIIdentifiers::default(),
-            app.background_executor(),
-            Arc::new(AuthState::new_for_test()),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -398,7 +296,7 @@ fn test_apply_diffs_noop_with_successful_change() {
 
 #[test]
 fn test_apply_diffs_fails_with_only_noop() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         let content = "First line\nSecond line\n";
@@ -411,17 +309,11 @@ fn test_apply_diffs_fails_with_only_noop() {
             replace: Some("First line".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(noop_diff)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -445,7 +337,7 @@ fn test_apply_diffs_fails_with_only_noop() {
 
 #[test]
 fn test_multiple_file_create_edits_for_same_path() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let file_path = "new_file.txt".to_string();
 
         // Create two FileEdit::Create edits for the same file path
@@ -460,18 +352,11 @@ fn test_multiple_file_create_edits_for_same_path() {
             allow_overwrite: false,
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![create_edit1, create_edit2],
             &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -489,7 +374,7 @@ fn test_multiple_file_create_edits_for_same_path() {
 
 #[test]
 fn test_mixed_create_and_edit_for_same_path() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let file_path = "mixed_file.txt".to_string();
 
         // Create a FileEdit::Create and FileEdit::Edit for the same file path
@@ -504,18 +389,11 @@ fn test_mixed_create_and_edit_for_same_path() {
             replace: Some("Modified content".to_string()),
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![create_edit, FileEdit::Edit(edit_diff)],
             &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -534,7 +412,7 @@ fn test_mixed_create_and_edit_for_same_path() {
 
 #[test]
 fn test_delete_and_create_same_path_replaces_existing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "Old line one\nOld line two").unwrap();
@@ -551,10 +429,6 @@ fn test_delete_and_create_same_path_replaces_existing_file() {
         let result = apply_edits(
             vec![delete_edit, create_edit],
             &SessionContext::new_for_test(),
-            &AIIdentifiers::default(),
-            app.background_executor(),
-            Arc::new(AuthState::new_for_test()),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -574,7 +448,7 @@ fn test_delete_and_create_same_path_replaces_existing_file() {
 
 #[test]
 fn test_create_then_delete_same_path_replaces_existing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "Old line one\nOld line two").unwrap();
@@ -591,10 +465,6 @@ fn test_create_then_delete_same_path_replaces_existing_file() {
         let result = apply_edits(
             vec![create_edit, delete_edit],
             &SessionContext::new_for_test(),
-            &AIIdentifiers::default(),
-            app.background_executor(),
-            Arc::new(AuthState::new_for_test()),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -613,7 +483,7 @@ fn test_create_then_delete_same_path_replaces_existing_file() {
 
 #[test]
 fn test_delete_create_and_edit_same_path_still_fails() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "Existing content").unwrap();
@@ -635,10 +505,6 @@ fn test_delete_create_and_edit_same_path_still_fails() {
         let result = apply_edits(
             vec![delete_edit, create_edit, FileEdit::Edit(edit_diff)],
             &SessionContext::new_for_test(),
-            &AIIdentifiers::default(),
-            app.background_executor(),
-            Arc::new(AuthState::new_for_test()),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -655,7 +521,7 @@ fn test_delete_create_and_edit_same_path_still_fails() {
 
 #[test]
 fn test_create_edit_for_existing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         // Create a temporary file that already exists
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
@@ -668,20 +534,11 @@ fn test_create_edit_for_existing_file() {
             allow_overwrite: false,
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let background_executor = app.background_executor();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
-        let result = apply_edits(
-            vec![create_edit],
-            &session_context,
-            ai_identifiers,
-            background_executor,
-            auth_state,
-            false,
-            |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
-        )
+        let result = apply_edits(vec![create_edit], &session_context, |path| async move {
+            FileReadResult::from(std::fs::read_to_string(path))
+        })
         .await;
 
         // Should fail because the file already exists
@@ -706,7 +563,7 @@ fn test_create_edit_for_existing_file() {
 
 #[test]
 fn test_create_with_overwrite_replaces_existing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "Old line one\nOld line two").unwrap();
@@ -720,10 +577,6 @@ fn test_create_with_overwrite_replaces_existing_file() {
         let result = apply_edits(
             vec![create_edit],
             &SessionContext::new_for_test(),
-            &AIIdentifiers::default(),
-            app.background_executor(),
-            Arc::new(AuthState::new_for_test()),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -745,7 +598,7 @@ fn test_create_with_overwrite_replaces_existing_file() {
 
 #[test]
 fn test_create_with_overwrite_on_nonexistent_file_creates_normally() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let non_existent_file = "non_existent_overwrite_file.txt".to_string();
 
         let create_edit = FileEdit::Create {
@@ -757,10 +610,6 @@ fn test_create_with_overwrite_on_nonexistent_file_creates_normally() {
         let result = apply_edits(
             vec![create_edit],
             &SessionContext::new_for_test(),
-            &AIIdentifiers::default(),
-            app.background_executor(),
-            Arc::new(AuthState::new_for_test()),
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -911,7 +760,7 @@ fn test_format_single_errors() {
 
 #[test]
 fn test_apply_v4a_edits_simple_match() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(
@@ -934,17 +783,11 @@ fn test_apply_v4a_edits_simple_match() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -963,7 +806,7 @@ fn test_apply_v4a_edits_simple_match() {
 
 #[test]
 fn test_apply_v4a_edits_with_jump_context() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(
@@ -986,17 +829,11 @@ fn test_apply_v4a_edits_with_jump_context() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1013,7 +850,7 @@ fn test_apply_v4a_edits_with_jump_context() {
 
 #[test]
 fn test_apply_v4a_edits_no_match() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "First line\nSecond line\n").unwrap();
@@ -1032,17 +869,11 @@ fn test_apply_v4a_edits_no_match() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1063,7 +894,7 @@ fn test_apply_v4a_edits_no_match() {
 
 #[test]
 fn test_apply_v4a_edits_noop() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "Line One\nLine Two\nLine Three").unwrap();
@@ -1082,17 +913,11 @@ fn test_apply_v4a_edits_noop() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1115,7 +940,7 @@ fn test_apply_v4a_edits_noop() {
 
 #[test]
 fn test_apply_v4a_edits_multiline_change() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(
@@ -1138,17 +963,11 @@ fn test_apply_v4a_edits_multiline_change() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1166,7 +985,7 @@ fn test_apply_v4a_edits_multiline_change() {
 
 #[test]
 fn test_apply_v4a_edits_nested_jump_context() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(
@@ -1189,17 +1008,11 @@ fn test_apply_v4a_edits_nested_jump_context() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1216,7 +1029,7 @@ fn test_apply_v4a_edits_nested_jump_context() {
 
 #[test]
 fn test_apply_v4a_edits_missing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let non_existent_file = "non_existent_file.txt".to_string();
 
         let v4a_edit = ParsedDiff::V4AEdit {
@@ -1232,17 +1045,11 @@ fn test_apply_v4a_edits_missing_file() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1259,7 +1066,7 @@ fn test_apply_v4a_edits_missing_file() {
 
 #[test]
 fn test_apply_v4a_edits_empty_context() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut temp_file = NamedTempFile::new().expect("Failed to create temporary file");
         let file_path = temp_file.path().to_string_lossy().to_string();
         writeln!(&mut temp_file, "first\nsecond\nthird").unwrap();
@@ -1278,17 +1085,11 @@ fn test_apply_v4a_edits_empty_context() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1307,7 +1108,7 @@ fn test_apply_v4a_edits_empty_context() {
 
 #[test]
 fn test_apply_v4a_rename_to_nonexistent_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         let mut source_file = NamedTempFile::new().expect("Failed to create source file");
         let source_path = source_file.path().to_string_lossy().to_string();
         writeln!(&mut source_file, "line one\nline two\nline three").unwrap();
@@ -1329,17 +1130,11 @@ fn test_apply_v4a_rename_to_nonexistent_file() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1364,7 +1159,7 @@ fn test_apply_v4a_rename_to_nonexistent_file() {
 
 #[test]
 fn test_apply_v4a_rename_to_existing_file() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         // Create source file A
         let mut source_file = NamedTempFile::new().expect("Failed to create source file");
         let source_path = source_file.path().to_string_lossy().to_string();
@@ -1393,17 +1188,11 @@ fn test_apply_v4a_rename_to_existing_file() {
             }],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
@@ -1454,7 +1243,7 @@ fn test_apply_v4a_rename_to_existing_file() {
 
 #[test]
 fn test_apply_v4a_rename_to_existing_file_no_deltas() {
-    App::test((), |app| async move {
+    App::test((), |_| async move {
         // Create source file A
         let mut source_file = NamedTempFile::new().expect("Failed to create source file");
         let source_path = source_file.path().to_string_lossy().to_string();
@@ -1473,17 +1262,11 @@ fn test_apply_v4a_rename_to_existing_file_no_deltas() {
             hunks: vec![],
         };
 
-        let ai_identifiers = &AIIdentifiers::default();
         let session_context = SessionContext::new_for_test();
-        let auth_state = Arc::new(AuthState::new_for_test());
 
         let result = apply_edits(
             vec![FileEdit::Edit(v4a_edit)],
             &session_context,
-            ai_identifiers,
-            app.background_executor(),
-            auth_state,
-            false,
             |path| async move { FileReadResult::from(std::fs::read_to_string(path)) },
         )
         .await;
