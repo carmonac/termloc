@@ -1,12 +1,9 @@
 use std::collections::HashMap;
 
-use session_sharing_protocol::common::{AgentAttachment, ParticipantId};
 use uuid::Uuid;
-use warp_multi_agent_api::AgentType;
 use warpui::{AppContext, Entity, EntityId, ModelContext, SingletonEntity};
 
 use crate::ai::agent::conversation::AIConversationId;
-use crate::ai::agent::{AIAgentAttachment, BaseUserQuery};
 use crate::ai::blocklist::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel, PendingAttachment};
 use crate::features::FeatureFlag;
 use crate::settings::{
@@ -31,8 +28,8 @@ pub enum QueuedQueryOrigin {
     /// Filed by the local input in `Steer` mode while the agent was mid-turn. Fires on the next
     /// request boundary of the current turn rather than waiting for the turn to finish.
     LocalSteering,
-    /// Received through session sharing while a native run was starting.
-    SharedSessionInjection,
+    /// Waiting for the external harness driving the conversation to send it.
+    ExternalHarness,
     /// Filed via the `/queue <prompt>` slash command.
     QueueSlashCommand,
     /// Filed via the auto-queue toggle in the warping indicator.
@@ -50,22 +47,16 @@ pub enum QueuedQueryOrigin {
     ForkAndCompactSlashCommand,
 }
 
-/// Whether a queued row is a local prompt, an attributed shared-session prompt, or a command.
+/// Whether a queued row is a local prompt, an external harness prompt, or a command.
 #[derive(Debug, Clone)]
 enum QueuedQueryKind {
     /// An agent prompt, with any image/file attachments captured from the input when it was
     /// queued. The attachments fire with the prompt and are dropped when the row is removed.
     Prompt { attachments: Vec<PendingAttachment> },
-    SharedSessionPrompt {
-        participant_id: ParticipantId,
-        attachments: Vec<AgentAttachment>,
-        /// None while downloading; Some also represents a settled partial or failed download.
-        prepared_files: Option<HashMap<String, AIAgentAttachment>>,
-        /// The `Request.Input.UserQuery` warp-server injected with the prompt, when it sent one.
-        /// It seeds the input and is the base of the request once the row dispatches.
-        base: Option<BaseUserQuery>,
-    },
-    /// A shell command run in the terminal (or via the shared session for cloud panes).
+    /// A follow-up waiting for the external harness driving the conversation. The harness sends
+    /// it itself, so the row is only ever displayed.
+    ExternalHarnessPrompt,
+    /// A shell command run in the terminal.
     Command,
 }
 
@@ -79,46 +70,18 @@ pub struct QueuedQuery {
 }
 
 impl QueuedQuery {
-    pub(crate) fn new_shared_session_prompt(
-        text: String,
-        participant_id: ParticipantId,
-        attachments: Vec<AgentAttachment>,
-        base: Option<BaseUserQuery>,
-    ) -> Self {
-        let prepared_files = (!attachments
-            .iter()
-            .any(|attachment| matches!(attachment, AgentAttachment::FileReference { .. })))
-        .then(HashMap::new);
+    pub(crate) fn new_external_harness_prompt(text: String) -> Self {
         Self {
             id: QueuedQueryId::new(),
             text,
-            origin: QueuedQueryOrigin::SharedSessionInjection,
-            kind: QueuedQueryKind::SharedSessionPrompt {
-                participant_id,
-                attachments,
-                prepared_files,
-                base,
-            },
+            origin: QueuedQueryOrigin::ExternalHarness,
+            kind: QueuedQueryKind::ExternalHarnessPrompt,
         }
     }
 
-    pub(crate) fn shared_session_prompt(&self) -> Option<(&ParticipantId, &[AgentAttachment])> {
-        match &self.kind {
-            QueuedQueryKind::SharedSessionPrompt {
-                participant_id,
-                attachments,
-                ..
-            } => Some((participant_id, attachments)),
-            QueuedQueryKind::Prompt { .. } | QueuedQueryKind::Command => None,
-        }
-    }
-
-    /// The base user query warp-server injected with a shared-session prompt row, if any.
-    pub(crate) fn base_user_query(&self) -> Option<&BaseUserQuery> {
-        match &self.kind {
-            QueuedQueryKind::SharedSessionPrompt { base, .. } => base.as_ref(),
-            QueuedQueryKind::Prompt { .. } | QueuedQueryKind::Command => None,
-        }
+    /// Whether this row is waiting for an external harness to send it.
+    pub(crate) fn is_external_harness_prompt(&self) -> bool {
+        matches!(self.kind, QueuedQueryKind::ExternalHarnessPrompt)
     }
 
     pub fn new(text: String, origin: QueuedQueryOrigin) -> Self {
@@ -158,28 +121,9 @@ impl QueuedQuery {
         self.origin == QueuedQueryOrigin::LocalSteering
     }
 
-    /// Whether this is a shared-session injection addressed to the conversation's primary
-    /// task, as opposed to a prompt intended for the CLI subagent.
-    pub(crate) fn is_primary_injected_followup(&self) -> bool {
-        self.shared_session_prompt().is_some()
-            && self
-                .base_user_query()
-                .is_none_or(|base| base.intended_agent() != Some(AgentType::Cli))
-    }
-
-    /// Whether all asynchronous preparation for this row has settled.
+    /// Whether this row can be sent by the client.
     pub fn is_ready(&self) -> bool {
-        match &self.kind {
-            QueuedQueryKind::SharedSessionPrompt { prepared_files, .. } => prepared_files.is_some(),
-            QueuedQueryKind::Prompt { .. } | QueuedQueryKind::Command => true,
-        }
-    }
-
-    pub(crate) fn prepared_files(&self) -> Option<&HashMap<String, AIAgentAttachment>> {
-        match &self.kind {
-            QueuedQueryKind::SharedSessionPrompt { prepared_files, .. } => prepared_files.as_ref(),
-            QueuedQueryKind::Prompt { .. } | QueuedQueryKind::Command => None,
-        }
+        !self.is_external_harness_prompt()
     }
 
     pub fn text(&self) -> &str {
@@ -198,7 +142,7 @@ impl QueuedQuery {
     pub fn attachments(&self) -> &[PendingAttachment] {
         match &self.kind {
             QueuedQueryKind::Prompt { attachments } => attachments,
-            QueuedQueryKind::Command | QueuedQueryKind::SharedSessionPrompt { .. } => &[],
+            QueuedQueryKind::Command | QueuedQueryKind::ExternalHarnessPrompt => &[],
         }
     }
 
@@ -244,9 +188,6 @@ pub enum AutofireAction {
 /// the turn to finish, tagged with the reason it qualifies.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum RequestRow<'a> {
-    /// A shared-session injection at the head of the queue. The caller may need to interrupt
-    /// a running agent command before it can be sent.
-    InjectedFollowup(&'a QueuedQuery),
     /// The head of a queue delivered in [`QueuedPromptDeliveryMode::Steering`].
     SteeredHead(&'a QueuedQuery),
     /// A prompt filed in `Steer` mode. It passes plain prompts, which wait for the turn to
@@ -257,7 +198,7 @@ pub(crate) enum RequestRow<'a> {
 impl<'a> RequestRow<'a> {
     pub(crate) fn row(self) -> &'a QueuedQuery {
         match self {
-            Self::InjectedFollowup(row) | Self::SteeredHead(row) | Self::LocalSteering(row) => row,
+            Self::SteeredHead(row) | Self::LocalSteering(row) => row,
         }
     }
 }
@@ -288,10 +229,9 @@ pub(crate) enum QueuedPromptDeliveryMode {
 #[derive(Default)]
 struct ConversationQueueState {
     queue: Vec<QueuedQuery>,
-    /// True from when this conversation is bound for native startup injections until its
-    /// initial prompt is actually sent. Sharing can deliver startup follow-ups during this
-    /// window; they are held in `queue` until setup finishes, at which point normal dispatch
-    /// (steering or idle-drain, depending on `delivery_mode`) takes over.
+    /// True from when this conversation is bound to an externally driven run until its initial
+    /// prompt is actually sent. Queued rows are held until setup finishes, at which point normal
+    /// dispatch (steering or idle-drain, depending on `delivery_mode`) takes over.
     native_setup_pending: bool,
     /// How queued rows for this conversation are delivered. See [`QueuedPromptDeliveryMode`].
     delivery_mode: QueuedPromptDeliveryMode,
@@ -327,10 +267,6 @@ pub struct QueuedQueryModel {
 /// to so subscribers can filter to the conversation they care about.
 #[derive(Debug, Clone)]
 pub enum QueuedQueryEvent {
-    PromptReady {
-        conversation_id: AIConversationId,
-        query_id: QueuedQueryId,
-    },
     DispatchStateChanged {
         conversation_id: AIConversationId,
     },
@@ -488,9 +424,6 @@ impl QueuedQueryModel {
         let head = self
             .ready_head(conversation_id)
             .filter(|row| !row.is_command());
-        if let Some(head) = head.filter(|row| row.is_primary_injected_followup()) {
-            return Some(RequestRow::InjectedFollowup(head));
-        }
         if self.is_steering(conversation_id) {
             return head.map(RequestRow::SteeredHead);
         }
@@ -508,61 +441,6 @@ impl QueuedQueryModel {
         }
         self.ready_query(conversation_id, row.id)
             .map(RequestRow::LocalSteering)
-    }
-
-    /// Settles attachment preparation once; stale completions never recreate removed rows.
-    pub(crate) fn complete_preparation(
-        &mut self,
-        conversation_id: AIConversationId,
-        query_id: QueuedQueryId,
-        files: HashMap<String, AIAgentAttachment>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        let Some(row) = self
-            .queues
-            .get_mut(&conversation_id)
-            .and_then(|state| state.queue.iter_mut().find(|row| row.id == query_id))
-        else {
-            return;
-        };
-        let QueuedQueryKind::SharedSessionPrompt {
-            attachments,
-            prepared_files,
-            ..
-        } = &mut row.kind
-        else {
-            return;
-        };
-        if prepared_files.is_some() {
-            return;
-        }
-        let missing: Vec<_> = attachments
-            .iter()
-            .filter_map(|attachment| {
-                let AgentAttachment::FileReference {
-                    attachment_id,
-                    file_name,
-                } = attachment
-                else {
-                    return None;
-                };
-                (!files.values().any(|file| matches!(file,
-                AIAgentAttachment::FilePathReference { file_id, .. } if file_id == attachment_id
-            ))).then_some(file_name.as_str())
-            })
-            .collect();
-        if !missing.is_empty() {
-            row.text
-                .push_str("\nThe following attachments could not be downloaded: ");
-            row.text.push_str(&missing.join(", "));
-            row.text
-                .push_str(". Do not assume their contents are available.\n");
-        }
-        *prepared_files = Some(files);
-        ctx.emit(QueuedQueryEvent::PromptReady {
-            conversation_id,
-            query_id,
-        });
     }
 
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
@@ -888,11 +766,8 @@ impl QueuedQueryModel {
         let query_id = query.id;
         let state = self.queues.entry(conversation_id).or_default();
         log::info!(
-            "event=queued_prompt_appended conversation_id={conversation_id} query_id={query_id:?} origin={:?} participant_id={:?} queue_len={} setup_pending={}",
+            "event=queued_prompt_appended conversation_id={conversation_id} query_id={query_id:?} origin={:?} queue_len={} setup_pending={}",
             query.origin,
-            query
-                .shared_session_prompt()
-                .map(|(participant_id, _)| participant_id),
             state.queue.len() + 1,
             state.native_setup_pending,
         );
@@ -918,9 +793,7 @@ impl QueuedQueryModel {
             return None;
         }
         let state = self.queues.get_mut(&conversation_id)?;
-        if state.queue.first()?.is_locked()
-            || state.queue.first()?.shared_session_prompt().is_some()
-        {
+        if state.queue.first()?.is_locked() || state.queue.first()?.is_external_harness_prompt() {
             return None;
         }
         let popped = state.queue.remove(0);
@@ -995,7 +868,7 @@ impl QueuedQueryModel {
         let Some(idx) = state.queue.iter().position(|q| q.id == query_id) else {
             return;
         };
-        if state.queue[idx].shared_session_prompt().is_none() {
+        if !state.queue[idx].is_external_harness_prompt() {
             log::info!(
                 "event=queued_prompt_removed conversation_id={conversation_id} query_id={query_id:?} reason=dispatched_or_restored queue_len_after={}",
                 state.queue.len() - 1,
@@ -1097,7 +970,7 @@ impl QueuedQueryModel {
         if !state
             .queue
             .iter()
-            .any(|q| q.id == query_id && !q.is_locked() && q.shared_session_prompt().is_none())
+            .any(|q| q.id == query_id && !q.is_locked() && !q.is_external_harness_prompt())
         {
             return;
         }

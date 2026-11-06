@@ -125,7 +125,7 @@ impl ConvertAPIMessageToClientOutputMessage for api::Message {
         params: ConversionParams,
     ) -> Result<MaybeAIAgentOutputMessage, MessageToAIAgentOutputMessageError> {
         let Some(message) = self.message else {
-            // In shared-session streams we can receive skeleton placeholder task messages without payloads.
+            // Streams can carry skeleton placeholder task messages without payloads.
             // Treat them as having no client representation rather than erroring and aborting ingestion entirely.
             return Ok(MaybeAIAgentOutputMessage::NoClientRepresentation);
         };

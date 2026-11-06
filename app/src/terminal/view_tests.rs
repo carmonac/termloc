@@ -1030,142 +1030,6 @@ fn waterfall_background_right_click_honors_right_click_pastes_setting() {
     })
 }
 
-/// Registers a rich-status-capable, `InProgress` CLI agent session that has
-/// already observed a `prompt_submit` -- the state a real working third-party
-/// harness turn is in -- so `observe_ctrl_c_write` is able to arm.
-fn register_armable_cli_agent_session(app: &mut App, view_id: EntityId) {
-    let cli_sessions = CLIAgentSessionsModel::handle(app);
-    cli_sessions.update(app, |sessions, ctx| {
-        sessions.set_session(
-            view_id,
-            CLIAgentSession {
-                agent: CLIAgent::Claude,
-                status: CLIAgentSessionStatus::InProgress,
-                session_context: CLIAgentSessionContext::default(),
-                input_state: CLIAgentInputState::Closed,
-                should_auto_toggle_input: false,
-                listener: None,
-                plugin_version: None,
-                remote_host: None,
-                draft_text: None,
-                custom_command_prefix: None,
-                received_rich_notification: true,
-            },
-            ctx,
-        );
-    });
-    cli_sessions.update(app, |sessions, ctx| {
-        sessions.update_from_event(
-            view_id,
-            &CLIAgentEvent {
-                v: 1,
-                agent: CLIAgent::Claude,
-                event: CLIAgentEventType::PromptSubmit,
-                session_id: None,
-                cwd: None,
-                project: None,
-                payload: CLIAgentEventPayload::default(),
-                source: CLIAgentEventSource::RichPlugin,
-            },
-            ctx,
-        );
-    });
-}
-
-#[test]
-fn ctrl_c_from_shared_viewer_forwards_and_arms_cancel_window() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let _flag = FeatureFlag::CtrlCCancelsThirdPartyHarness.override_enabled(true);
-        let terminal = add_window_with_terminal(&mut app, None);
-        let view_id = terminal.id();
-        let pty_writes: Rc<RefCell<Vec<Vec<u8>>>> = Rc::new(RefCell::new(Vec::new()));
-        let writes = pty_writes.clone();
-        app.update(|ctx| {
-            ctx.subscribe_to_view(&terminal, move |_, event, _| {
-                if let Event::WriteBytesToPty { bytes } = event {
-                    writes.borrow_mut().push(bytes.to_vec());
-                }
-            });
-        });
-
-        register_armable_cli_agent_session(&mut app, view_id);
-        terminal.update(&mut app, |view, ctx| {
-            view.model.lock().simulate_long_running_block("claude", "");
-            view.write_viewer_bytes_to_pty(vec![0x03], ctx);
-        });
-
-        assert_eq!(
-            *pty_writes.borrow(),
-            vec![vec![0x03]],
-            "Ctrl-C must still be forwarded to the pty unchanged"
-        );
-        let armed = CLIAgentSessionsModel::handle(&app).read(&app, |sessions, _| {
-            sessions.has_pending_or_resolved_ctrl_c_cancel(view_id)
-        });
-        assert!(
-            armed,
-            "a forwarded Ctrl-C to a working rich-status session should arm the cancel window"
-        );
-    })
-}
-
-#[test]
-fn ctrl_c_from_shared_viewer_rejected_by_agent_in_control_does_not_arm_cancel_window() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let _flag = FeatureFlag::CtrlCCancelsThirdPartyHarness.override_enabled(true);
-        let terminal = add_window_with_terminal(&mut app, None);
-        let view_id = terminal.id();
-        let pty_writes: Rc<RefCell<Vec<Vec<u8>>>> = Rc::new(RefCell::new(Vec::new()));
-        let writes = pty_writes.clone();
-        app.update(|ctx| {
-            ctx.subscribe_to_view(&terminal, move |_, event, _| {
-                if let Event::WriteBytesToPty { bytes } = event {
-                    writes.borrow_mut().push(bytes.to_vec());
-                }
-            });
-        });
-
-        register_armable_cli_agent_session(&mut app, view_id);
-        terminal.update(&mut app, |view, ctx| {
-            {
-                let mut model = view.model.lock();
-                model.simulate_long_running_block("claude", "");
-                let task_id = TaskId::new("test-task".to_owned());
-                model
-                    .block_list_mut()
-                    .active_block_mut()
-                    .set_agent_interaction_mode_for_agent_monitored_command(
-                        &task_id,
-                        AIConversationId::new(),
-                    )
-                    .expect("user-mode block should become agent-monitored");
-                assert!(
-                    model.block_list().active_block().is_agent_in_control(),
-                    "active block should be agent-controlled for this test"
-                );
-            }
-
-            // `write_user_bytes_to_pty` rejects writes while the agent is in
-            // control of the command, so this Ctrl-C never reaches the pty.
-            view.write_viewer_bytes_to_pty(vec![0x03], ctx);
-        });
-
-        assert!(
-            pty_writes.borrow().is_empty(),
-            "a rejected write must not reach the pty"
-        );
-        let armed = CLIAgentSessionsModel::handle(&app).read(&app, |sessions, _| {
-            sessions.has_pending_or_resolved_ctrl_c_cancel(view_id)
-        });
-        assert!(
-            !armed,
-            "a Ctrl-C that never reached the pty must not arm the cancel window"
-        );
-    })
-}
-
 fn exchange_with_inputs(inputs: Vec<AIAgentInput>) -> AIAgentExchange {
     AIAgentExchange {
         id: AIAgentExchangeId::new(),
@@ -1181,7 +1045,6 @@ fn exchange_with_inputs(inputs: Vec<AIAgentInput>) -> AIAgentExchange {
         coding_model_id: LLMId::from("test-coding-model"),
         cli_agent_model_id: LLMId::from("test-cli-agent-model"),
         computer_use_model_id: LLMId::from("test-computer-use-model"),
-        response_initiator: None,
     }
 }
 
@@ -1212,7 +1075,7 @@ fn append_exchange_with_inputs_and_handle_event(
     let (conversation_id, task_id, exchange_id, response_stream_id) =
         history_model.update(ctx, |history_model, ctx| {
             let conversation_id =
-                history_model.start_new_conversation(view.view_id, false, false, false, ctx);
+                history_model.start_new_conversation(view.view_id, false, false, ctx);
             let task_id = history_model
                 .conversation(&conversation_id)
                 .expect("conversation should exist")
@@ -1796,7 +1659,7 @@ fn is_passive_conversation_is_recomputed_on_conversation_reassignment() {
             let history_model = BlocklistAIHistoryModel::handle(ctx);
             history_model.update(ctx, |history_model, ctx| {
                 let new_conversation_id =
-                    history_model.start_new_conversation(view.view_id, false, false, false, ctx);
+                    history_model.start_new_conversation(view.view_id, false, false, ctx);
                 let exchange = history_model
                     .conversation_mut(&old_conversation_id)
                     .expect("old conversation should exist")
@@ -5722,9 +5585,7 @@ fn test_prompt_context_menu_items_for_context_chips() {
         terminal.update(&mut app, |view, ctx| {
             let model = view.model.lock();
             view.current_prompt.update(ctx, |prompt, ctx| {
-                let PromptType::Dynamic { prompt } = prompt else {
-                    return;
-                };
+                let PromptType::Dynamic { prompt } = prompt;
                 prompt.update(ctx, |prompt, ctx| {
                     prompt.update_context(model.block_list().active_block(), ctx)
                 });
@@ -5783,9 +5644,7 @@ fn test_prompt_context_menu_items_for_no_context_chips() {
         terminal.update(&mut app, |view, ctx| {
             let model = view.model.lock();
             view.current_prompt.update(ctx, |prompt, ctx| {
-                let PromptType::Dynamic { prompt } = prompt else {
-                    return;
-                };
+                let PromptType::Dynamic { prompt } = prompt;
                 prompt.update(ctx, |prompt, ctx| {
                     prompt.update_context(model.block_list().active_block(), ctx)
                 });
@@ -5887,9 +5746,7 @@ fn agent_footer_updates_chip_groups_when_side_assignment_changes() {
         terminal.update(&mut app, |view, ctx| {
             let model = view.model.lock();
             view.current_prompt.update(ctx, |prompt, ctx| {
-                let PromptType::Dynamic { prompt } = prompt else {
-                    return;
-                };
+                let PromptType::Dynamic { prompt } = prompt;
                 prompt.update(ctx, |prompt, ctx| {
                     prompt.update_context(model.block_list().active_block(), ctx);
                 });
@@ -6137,9 +5994,9 @@ fn ctrl_c_after_stop_takeover_cancels_conversation() {
         });
 
         let conversation_id = terminal.update(&mut app, |view, ctx| {
-            let conversation_id =
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.start_new_conversation(view.view_id, false, false, false, ctx)
+            let conversation_id = BlocklistAIHistoryModel::handle(ctx)
+                .update(ctx, |history, ctx| {
+                    history.start_new_conversation(view.view_id, false, false, ctx)
                 });
 
             view.model
@@ -6197,9 +6054,9 @@ fn ctrl_c_after_transfer_takeover_does_not_cancel_conversation() {
         });
 
         let conversation_id = terminal.update(&mut app, |view, ctx| {
-            let conversation_id =
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.start_new_conversation(view.view_id, false, false, false, ctx)
+            let conversation_id = BlocklistAIHistoryModel::handle(ctx)
+                .update(ctx, |history, ctx| {
+                    history.start_new_conversation(view.view_id, false, false, ctx)
                 });
 
             view.model
@@ -6258,122 +6115,6 @@ fn capture_pty_writes(
         });
     });
     pty_writes
-}
-
-/// Starts an in-progress conversation bound to a server token whose agent-requested command is
-/// still running in the active block.
-fn start_conversation_with_running_agent_command(
-    view: &mut TerminalView,
-    server_conversation_token: &SessionSharingServerConversationToken,
-    ctx: &mut ViewContext<TerminalView>,
-) -> AIConversationId {
-    let conversation_id = BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-        let conversation_id =
-            history.start_new_conversation(view.view_id, false, false, false, ctx);
-        history.set_server_conversation_token_for_conversation(
-            conversation_id,
-            server_conversation_token.to_string(),
-        );
-        conversation_id
-    });
-
-    let mut model = view.model.lock();
-    model.simulate_long_running_block("echo step-one; sleep 12; echo done-one", "step-one");
-    model
-        .block_list_mut()
-        .active_block_mut()
-        .set_agent_interaction_mode_for_requested_command(
-            AIAgentActionId::from("requested-command".to_owned()),
-            None,
-            conversation_id,
-        );
-    conversation_id
-}
-
-#[test]
-fn shared_session_cancel_action_interrupts_running_agent_command() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        FeatureFlag::AgentView.set_enabled(true);
-
-        let terminal = add_window_with_terminal(&mut app, None);
-        let pty_writes = capture_pty_writes(&mut app, &terminal);
-        let server_conversation_token = SessionSharingServerConversationToken::new();
-
-        let conversation_id = terminal.update(&mut app, |view, ctx| {
-            start_conversation_with_running_agent_command(view, &server_conversation_token, ctx)
-        });
-
-        let cancelled = terminal.update(&mut app, |view, ctx| {
-            view.handle_shared_session_cancel_action(server_conversation_token, ctx)
-        });
-        assert!(cancelled);
-
-        assert_eq!(*pty_writes.borrow(), vec![vec![C0::ETX]]);
-        terminal.read(&app, |_, ctx| {
-            let conversation = BlocklistAIHistoryModel::as_ref(ctx)
-                .conversation(&conversation_id)
-                .expect("conversation should exist");
-            assert_eq!(conversation.status(), &ConversationStatus::Cancelled);
-        });
-    })
-}
-
-#[test]
-fn shared_session_cancel_action_releases_agent_controlled_command_before_interrupting() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        FeatureFlag::AgentView.set_enabled(true);
-
-        let terminal = add_window_with_terminal(&mut app, None);
-        let pty_writes = capture_pty_writes(&mut app, &terminal);
-        let server_conversation_token = SessionSharingServerConversationToken::new();
-
-        let conversation_id = terminal.update(&mut app, |view, ctx| {
-            let conversation_id = start_conversation_with_running_agent_command(
-                view,
-                &server_conversation_token,
-                ctx,
-            );
-            let task_id = TaskId::new("test-cli-subagent".to_owned());
-            view.model
-                .lock()
-                .block_list_mut()
-                .active_block_mut()
-                .set_agent_interaction_mode_for_agent_monitored_command(&task_id, conversation_id)
-                .expect("command should become agent monitored");
-            assert!(
-                view.model
-                    .lock()
-                    .block_list()
-                    .active_block()
-                    .is_agent_in_control()
-            );
-            conversation_id
-        });
-
-        terminal.update(&mut app, |view, ctx| {
-            view.handle_shared_session_cancel_action(server_conversation_token, ctx);
-        });
-
-        // The agent-controlled block would otherwise swallow the Ctrl-C (see
-        // `write_user_bytes_to_pty`), so control must be handed to the user for teardown first.
-        assert_eq!(*pty_writes.borrow(), vec![vec![C0::ETX]]);
-        terminal.read(&app, |view, ctx| {
-            let model = view.model.lock();
-            let active_block = model.block_list().active_block();
-            assert!(!active_block.is_agent_in_control());
-            assert!(
-                !active_block
-                    .long_running_control_state()
-                    .is_some_and(|state| state.should_auto_resume())
-            );
-            let conversation = BlocklistAIHistoryModel::as_ref(ctx)
-                .conversation(&conversation_id)
-                .expect("conversation should exist");
-            assert_eq!(conversation.status(), &ConversationStatus::Cancelled);
-        });
-    })
 }
 
 /// Binds the pane's AI controller to a harness-driven conversation with a turn in progress and
@@ -6464,54 +6205,6 @@ fn stopping_a_harness_driven_conversation_falls_back_once_the_harness_stopped() 
 }
 
 #[test]
-fn shared_session_cancel_action_ignores_unknown_and_finished_conversations() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        FeatureFlag::AgentView.set_enabled(true);
-
-        let terminal = add_window_with_terminal(&mut app, None);
-        let pty_writes = capture_pty_writes(&mut app, &terminal);
-        let server_conversation_token = SessionSharingServerConversationToken::new();
-
-        let conversation_id = terminal.update(&mut app, |view, ctx| {
-            start_conversation_with_running_agent_command(view, &server_conversation_token, ctx)
-        });
-
-        // A token that isn't bound to any conversation on this surface is a no-op.
-        let cancelled = terminal.update(&mut app, |view, ctx| {
-            view.handle_shared_session_cancel_action(
-                SessionSharingServerConversationToken::new(),
-                ctx,
-            )
-        });
-        assert!(!cancelled);
-        assert!(pty_writes.borrow().is_empty());
-
-        // A cancel that arrives after the conversation already finished must neither interrupt
-        // the command nor overwrite the terminal status.
-        let cancelled = terminal.update(&mut app, |view, ctx| {
-            BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                history.update_conversation_status(
-                    view.view_id,
-                    conversation_id,
-                    ConversationStatus::Success,
-                    ctx,
-                );
-            });
-            view.handle_shared_session_cancel_action(server_conversation_token, ctx)
-        });
-        assert!(!cancelled);
-        assert!(pty_writes.borrow().is_empty());
-        terminal.read(&app, |_, ctx| {
-            let conversation = BlocklistAIHistoryModel::as_ref(ctx)
-                .conversation(&conversation_id)
-                .expect("conversation should exist");
-            assert_eq!(conversation.status(), &ConversationStatus::Success);
-        });
-    })
-}
-
-#[test]
 fn completed_user_controlled_lrc_resumes_when_not_suppressed() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
@@ -6519,9 +6212,9 @@ fn completed_user_controlled_lrc_resumes_when_not_suppressed() {
 
         let terminal = add_window_with_terminal(&mut app, None);
         terminal.update(&mut app, |view, ctx| {
-            let conversation_id =
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.start_new_conversation(view.view_id, false, false, false, ctx)
+            let conversation_id = BlocklistAIHistoryModel::handle(ctx)
+                .update(ctx, |history, ctx| {
+                    history.start_new_conversation(view.view_id, false, false, ctx)
                 });
 
             view.model
@@ -6578,9 +6271,9 @@ fn completed_user_controlled_lrc_skips_resume_when_suppressed() {
 
         let terminal = add_window_with_terminal(&mut app, None);
         terminal.update(&mut app, |view, ctx| {
-            let conversation_id =
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.start_new_conversation(view.view_id, false, false, false, ctx)
+            let conversation_id = BlocklistAIHistoryModel::handle(ctx)
+                .update(ctx, |history, ctx| {
+                    history.start_new_conversation(view.view_id, false, false, ctx)
                 });
 
             view.model
@@ -8696,9 +8389,9 @@ fn cmd_k_does_not_clear_buffer_when_agent_is_driving_command() {
         terminal.update(&mut app, |view, ctx| {
             bootstrap_with_long_running_block(view);
 
-            let conversation_id =
-                BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.start_new_conversation(view.view_id, false, false, false, ctx)
+            let conversation_id = BlocklistAIHistoryModel::handle(ctx)
+                .update(ctx, |history, ctx| {
+                    history.start_new_conversation(view.view_id, false, false, ctx)
                 });
             set_active_block_agent_driving(view, conversation_id);
 

@@ -14,5 +14,3 @@ pub mod sync_queue;
 pub mod team_scope;
 pub mod telemetry;
 pub mod voice_transcriber;
-
-pub use warp_core::operating_system_info::OperatingSystemInfo;

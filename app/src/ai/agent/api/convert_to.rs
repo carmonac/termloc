@@ -267,11 +267,9 @@ pub(super) fn convert_input(
 }
 
 /// Builds the outgoing `Request.Input.UserQuery` by writing the fields this client models over
-/// `base`, the query warp-server injected with a shared-session prompt (if any).
+/// `base`, the query the input was restored from (if any).
 ///
-/// `query`, `mode`, and `intended_agent` were seeded from the base when the input was built
-/// (see `BaseUserQuery::seed_input_fields`), so writing them back wholesale drops nothing the
-/// server sent. Attachments are the one field this client does not model losslessly
+/// Attachments are the one field this client does not model losslessly
 /// (`TryFrom<api::Attachment>` keeps only file path references), so the base's entries stay
 /// and the ones this client resolved locally are added alongside them.
 fn user_query_proto(
@@ -298,10 +296,9 @@ fn user_query_proto(
 /// Marks a query this client built from local input as freshly typed here.
 ///
 /// warp-server attributes an input to the authenticated caller only when it carries a bare
-/// `WarpClient` origin. An input with no origin at all is deliberately left alone, because an
-/// older relay could have forwarded it from another participant. Without this marker, locally
-/// typed queries would be recorded with no author. A query with a base is never marked: its
-/// fields, including an absent origin, are what the server or viewer decided.
+/// `WarpClient` origin. Without this marker, locally typed queries would be recorded with no
+/// author. A query with a base is never marked: its fields, including an absent origin, are what
+/// the server decided.
 fn mark_fresh_local(base: Option<&BaseUserQuery>, query: &mut api::request::input::UserQuery) {
     if base.is_none() && query.origin.is_none() {
         query.origin = Some(warp_client_origin());

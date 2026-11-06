@@ -131,7 +131,7 @@ impl TerminalView {
     /// Shows a pending user query indicator and queues the query to be sent after
     /// the current conversation finishes. If the conversation completes successfully,
     /// the queued prompt is re-submitted through the normal input flow (so slash
-    /// commands, skill commands, and session sharing are all handled correctly).
+    /// commands and skill commands are all handled correctly).
     /// The pending indicator is removed regardless of the finish reason.
     ///
     /// `show_close_button` controls whether a dismiss ("X") button appears on the pending

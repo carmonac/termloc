@@ -9,8 +9,8 @@ pub use header_content::{
 };
 use pathfinder_geometry::rect::RectF;
 use warpui::elements::{
-    Border, ConstrainedBox, Container, DropTarget, DropTargetData, Flex, MainAxisSize,
-    ParentElement, SavePosition, Shrinkable,
+    ConstrainedBox, Container, DropTarget, DropTargetData, Flex, MainAxisSize, ParentElement,
+    SavePosition, Shrinkable,
 };
 use warpui::keymap::EditableBinding;
 use warpui::presenter::ChildView;
@@ -233,10 +233,8 @@ impl<P: BackingView> PaneView<P> {
         ctx: &mut ViewContext<Self>,
     ) {
         match event {
-            PaneConfigurationEvent::ShowAccentBorderUpdated
-            | PaneConfigurationEvent::DimEvenIfFocusedUpdated => ctx.notify(),
-            PaneConfigurationEvent::RefreshPaneHeaderOverflowMenuItems
-            | PaneConfigurationEvent::SharedSessionLinkChanged => {
+            PaneConfigurationEvent::DimEvenIfFocusedUpdated => ctx.notify(),
+            PaneConfigurationEvent::RefreshPaneHeaderOverflowMenuItems => {
                 let child = self.child(ctx);
                 let items = child.read(ctx, |view, ctx| view.pane_header_overflow_menu_items(ctx));
                 self.header.update(ctx, |header, ctx| {
@@ -246,11 +244,6 @@ impl<P: BackingView> PaneView<P> {
                 self.header.update(ctx, |header, ctx| {
                     header.set_toolbelt_buttons(buttons, ctx);
                 });
-                if matches!(event, PaneConfigurationEvent::SharedSessionLinkChanged) {
-                    self.header.update(ctx, |header, ctx| {
-                        header.refresh_shared_session_link(ctx);
-                    });
-                }
                 ctx.notify();
             }
             PaneConfigurationEvent::ShareableObjectChanged(object) => {
@@ -261,11 +254,6 @@ impl<P: BackingView> PaneView<P> {
             PaneConfigurationEvent::ToggleSharingDialog(source) => {
                 self.header.update(ctx, |header, ctx| {
                     header.share_pane_contents(*source, ctx);
-                });
-            }
-            PaneConfigurationEvent::OpenSharingQrCode(source) => {
-                self.header.update(ctx, |header, ctx| {
-                    header.open_shared_session_qr_code(*source, ctx);
                 });
             }
             _ => {}
@@ -416,11 +404,6 @@ impl<P: BackingView> View for PaneView<P> {
         column.add_child(Shrinkable::new(1., ChildView::new(&active_child).finish()).finish());
 
         let mut container = Container::new(column.finish());
-        if pane_configuration.show_accent_border {
-            let border = Border::all(2.).with_border_fill(appearance.theme().accent());
-            container = container.with_border(border);
-        }
-
         // Dim inactive panes.
         let should_dim_inactive_panes = *PaneSettings::as_ref(app).should_dim_inactive_panes;
         let dim_even_if_focused = pane_configuration.dim_even_if_focused();

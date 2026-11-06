@@ -4,8 +4,7 @@
 //! Runs are unattended, so anything the native executor would *ask* the user about is allowed
 //! here, and the policy's verdict is logged instead. Only what the native executor refuses
 //! outright is refused: commands on the user's or organization's execution denylist, and writes
-//! to protected files. Surfacing a blocked action for a shared-session viewer to approve is a
-//! separate piece of work.
+//! to protected files.
 use std::path::PathBuf;
 
 use warp_util::path::EscapeChar;

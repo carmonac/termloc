@@ -2952,32 +2952,6 @@ impl<A: Action + Clone> MenuItem<A> {
     pub fn is_separator(&self) -> bool {
         matches!(self, MenuItem::Separator)
     }
-
-    /// Returns true iff a and b are "approximately" equal. By "approximately", we mean:
-    /// - they are either both separators
-    /// - or, they are both single items with the same label
-    /// - or, they are both item rows with items whose labels match pairwise
-    pub fn is_approximately_same_item_as(&self, other: &MenuItem<A>) -> bool {
-        match (self, other) {
-            (MenuItem::Separator, MenuItem::Separator) => true,
-            (MenuItem::Item(self_fields), MenuItem::Item(other_fields)) => {
-                self_fields.label() == other_fields.label()
-            }
-            (
-                MenuItem::ItemsRow { items: self_items },
-                MenuItem::ItemsRow { items: other_items },
-            ) => {
-                self_items.len() == other_items.len()
-                    && self_items
-                        .iter()
-                        .zip(other_items)
-                        .all(|(self_fields, other_fields)| {
-                            self_fields.label() == other_fields.label()
-                        })
-            }
-            _ => false,
-        }
-    }
 }
 
 #[cfg(test)]

@@ -26,8 +26,7 @@ use crate::view_components::action_button::{ActionButton, ButtonSize, NakedTheme
 
 /// Renders a pending user query block with dimmed text and a "Queued" badge.
 /// Displayed when a follow-up prompt is queued via `/fork-and-compact <prompt>`,
-/// `/compact-and <prompt>`, `/queue <prompt>`, or for the initial prompt of a
-/// Cloud Mode run waiting for its real shared-session transcript query to arrive.
+/// `/compact-and <prompt>`, or `/queue <prompt>`.
 pub struct PendingUserQueryBlock {
     prompt: String,
     user_display_name: String,
@@ -147,7 +146,6 @@ impl View for PendingUserQueryBlock {
         let avatar = Container::new(render_user_avatar(
             &self.user_display_name,
             self.profile_image_path.as_ref(),
-            None,
             app,
         ))
         .with_margin_right(16.)

@@ -33,7 +33,6 @@ use derivative::Derivative;
 use markdown_parser::{FormattedTable, FormattedText, FormattedTextInline, parse_markdown};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use session_sharing_protocol::common::ParticipantId;
 use task::TaskId;
 pub use telemetry::AIIdentifiers;
 use uuid::Uuid;
@@ -2790,11 +2789,10 @@ pub enum AIAgentInput {
         user_query_mode: UserQueryMode,
         running_command: Option<RunningCommand>,
         intended_agent: Option<AgentType>,
-        /// The `Request.Input.UserQuery` this input starts from, when warp-server injected one
-        /// with a shared-session prompt. `query`, `user_query_mode`, and `intended_agent` were
-        /// seeded from it (see [`BaseUserQuery::seed_input_fields`]) and `convert_to` writes
-        /// them back over it, so fields this client does not model travel through untouched.
-        /// `None` for everything typed locally.
+        /// The `Request.Input.UserQuery` this input starts from, when one was restored.
+        /// `convert_to` writes `query`, `user_query_mode`, and `intended_agent` over it, so fields
+        /// this client does not model travel through untouched. `None` for everything typed
+        /// locally.
         base: Option<BaseUserQuery>,
     },
 
@@ -3219,10 +3217,6 @@ pub struct AIAgentExchange {
 
     /// The computer use model to which the request was sent.
     pub computer_use_model_id: LLMId,
-
-    /// The participant who initiated this exchange (for shared sessions)
-    /// For non-shared sessions, we just leave this as None.
-    pub response_initiator: Option<ParticipantId>,
 }
 
 impl AIAgentExchange {

@@ -472,13 +472,11 @@ impl TuiInputView {
     #[cfg(feature = "voice_input")]
     pub(crate) fn start_voice_input(
         &mut self,
-        available: bool,
         source: VoiceInputStartSource,
         ctx: &mut ViewContext<Self>,
     ) -> bool {
-        self.voice_input.update(ctx, |voice_input, ctx| {
-            voice_input.start(available, source, ctx)
-        })
+        self.voice_input
+            .update(ctx, |voice_input, ctx| voice_input.start(source, ctx))
     }
 
     #[cfg(feature = "voice_input")]
@@ -498,11 +496,10 @@ impl TuiInputView {
         &mut self,
         key: KeyCode,
         state: KeyState,
-        available: bool,
         ctx: &mut ViewContext<Self>,
     ) {
         self.voice_input.update(ctx, |voice_input, ctx| {
-            voice_input.handle_hold_key(key, state, available, ctx);
+            voice_input.handle_hold_key(key, state, ctx);
         });
     }
 

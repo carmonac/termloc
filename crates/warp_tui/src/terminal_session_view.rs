@@ -30,22 +30,21 @@ use warp::tui_export::{
     CloudConversationData, CommandExecutionSource, ConversationFileExport, ConversationSelection,
     ConversationSelectionHandle, ExecuteCommandEvent, FORK_PREFIX, ForkConversationError,
     GetRelevantFilesController, GitHubRepoModel, GitRepoStatusModel, LLMId, LLMPreferences,
-    LLMPreferencesEvent, LOCAL_SKILLS_REMOTE_EXECUTION_ERROR_MESSAGE, LinkedWorkflowData,
-    ModelEvent, ParsedSlashCommandInput, PersistenceWriter, PtyIntent, PtyIntentEvent,
-    QueuedQueryEvent, QueuedQueryModel, RepoDetectionSessionType, RepoDetectionSource,
-    ResolvedTeamScope, ServerConversationToken, ServerId, SessionSettings, Sessions, SessionsEvent,
-    ShellCommandExecutorEvent, SizeInfo, SizeUpdate, SkillReference, SlashCommandDataSource as _,
-    SlashCommandKind, SlashCommandSelectionBehavior, StaticCommand, TelemetryEvent, TerminalModel,
-    TerminalSurface, TerminalSurfaceInit, TranscriptScope, TuiMcpAction, TuiMcpManager,
-    TuiMcpServerId, TuiMcpVariableValue, TuiOnboardingMarker, TuiOnboardingMarkers,
-    TuiOnboardingMarkersEvent, TuiSlashCommandDataSource, TuiSlashCommandDataSourceArgs,
-    TuiUpArrowHistoryItemKind, TuiUserInfoManager, TuiUserInfoManagerEvent, TuiZeroStateDataSource,
-    UserTakeOverReason, UserWorkspaces, UserWorkspacesEvent, WAKEUP_THROTTLE_PERIOD, WarpConfig,
-    WarpConfigUpdateEvent, block_context_from_terminal_model, build_slash_command_mixer,
-    detect_possible_git_repo, export_conversation_markdown, log_out_tui,
-    maybe_build_ai_query_upsert_event, prepare_conversation_block_restoration,
-    record_autodetection_toggle_from_slash_command, record_saved_prompt_accepted,
-    record_static_slash_command_accepted, saved_prompt_text_for_id,
+    LLMPreferencesEvent, LinkedWorkflowData, ModelEvent, ParsedSlashCommandInput,
+    PersistenceWriter, PtyIntent, PtyIntentEvent, QueuedQueryEvent, QueuedQueryModel,
+    RepoDetectionSessionType, RepoDetectionSource, ResolvedTeamScope, ServerConversationToken,
+    ServerId, SessionSettings, Sessions, SessionsEvent, ShellCommandExecutorEvent, SizeInfo,
+    SizeUpdate, SkillReference, SlashCommandDataSource as _, SlashCommandKind,
+    SlashCommandSelectionBehavior, StaticCommand, TelemetryEvent, TerminalModel, TerminalSurface,
+    TerminalSurfaceInit, TranscriptScope, TuiMcpAction, TuiMcpManager, TuiMcpServerId,
+    TuiMcpVariableValue, TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent,
+    TuiSlashCommandDataSource, TuiSlashCommandDataSourceArgs, TuiUpArrowHistoryItemKind,
+    TuiUserInfoManager, TuiUserInfoManagerEvent, TuiZeroStateDataSource, UserTakeOverReason,
+    UserWorkspaces, UserWorkspacesEvent, WAKEUP_THROTTLE_PERIOD, WarpConfig, WarpConfigUpdateEvent,
+    block_context_from_terminal_model, build_slash_command_mixer, detect_possible_git_repo,
+    export_conversation_markdown, log_out_tui, maybe_build_ai_query_upsert_event,
+    prepare_conversation_block_restoration, record_autodetection_toggle_from_slash_command,
+    record_saved_prompt_accepted, record_static_slash_command_accepted, saved_prompt_text_for_id,
     slash_command_selection_behavior, throttle,
 };
 use warp_core::channel::{Channel, ChannelState};
@@ -1362,7 +1361,7 @@ impl TuiTerminalSessionView {
         ctx.notify();
 
         let dispatched = self.ai_controller.update(ctx, |controller, ctx| {
-            controller.send_user_query_in_conversation(prompt.clone(), conversation_id, None, ctx)
+            controller.send_user_query_in_conversation(prompt.clone(), conversation_id, ctx)
         });
         if !dispatched {
             self.cli_subagent_controller.update(ctx, |controller, ctx| {
@@ -1535,7 +1534,6 @@ impl TuiTerminalSessionView {
                     active_session: active_session.clone(),
                     cli_subagent_controller: cli_subagent_controller.clone(),
                     terminal_view_id: terminal_surface_id,
-                    terminal_model: model.clone(),
                     team_context_resolver: slash_commands_team_context,
                 },
                 ctx,
@@ -1597,7 +1595,6 @@ impl TuiTerminalSessionView {
                 input_editor_model.clone(),
                 suggestions_mode.clone(),
                 active_session.clone(),
-                slash_commands_source.clone(),
                 terminal_surface_id,
                 ctx,
             )
@@ -1807,12 +1804,7 @@ impl TuiTerminalSessionView {
                 text,
             } => {
                 view.ai_controller.update(ctx, |controller, ctx| {
-                    controller.send_user_query_in_conversation(
-                        text.clone(),
-                        *conversation_id,
-                        None,
-                        ctx,
-                    );
+                    controller.send_user_query_in_conversation(text.clone(), *conversation_id, ctx);
                 });
             }
         });
@@ -1922,7 +1914,6 @@ impl TuiTerminalSessionView {
                 }
                 QueuedQueryEvent::DefaultModeChanged => ctx.notify(),
                 QueuedQueryEvent::Appended { .. }
-                | QueuedQueryEvent::PromptReady { .. }
                 | QueuedQueryEvent::DispatchStateChanged { .. }
                 | QueuedQueryEvent::RowUnlocked { .. }
                 | QueuedQueryEvent::Removed { .. }
@@ -3423,7 +3414,7 @@ impl TuiTerminalSessionView {
             return;
         };
         let dispatched = self.ai_controller.update(ctx, |controller, ctx| {
-            controller.send_user_query_in_conversation(prompt.clone(), conversation_id, None, ctx)
+            controller.send_user_query_in_conversation(prompt.clone(), conversation_id, ctx)
         });
         if dispatched && let Some(publisher) = &self.cli_agent_osc_event_publisher {
             publisher
@@ -3499,15 +3490,11 @@ impl TuiTerminalSessionView {
         source: VoiceInputStartSource,
         ctx: &mut ViewContext<Self>,
     ) -> bool {
-        let local_skills_available = self
-            .slash_commands_source
-            .as_ref(ctx)
-            .local_skills_available(ctx);
         let started = self.input_view.update(ctx, |input, ctx| {
             if source.clears_input() {
                 input.clear(ctx);
             }
-            input.start_voice_input(local_skills_available, source, ctx)
+            input.start_voice_input(source, ctx)
         });
         if started && matches!(source, VoiceInputStartSource::SlashCommand) {
             record_static_slash_command_accepted("/voice", true, ctx);
@@ -3599,14 +3586,6 @@ impl TuiTerminalSessionView {
         user_query: Option<String>,
         ctx: &mut ViewContext<Self>,
     ) {
-        if !self
-            .slash_commands_source
-            .as_ref(ctx)
-            .local_skills_available()
-        {
-            self.show_transient_hint(LOCAL_SKILLS_REMOTE_EXECUTION_ERROR_MESSAGE.to_owned(), ctx);
-            return;
-        }
         let result = self.ai_controller.update(ctx, |controller, ctx| {
             controller.send_invoke_skill_request(reference, user_query, ctx)
         });
@@ -4252,7 +4231,6 @@ impl TuiTerminalSessionView {
             | SlashCommandKind::Queue
             | SlashCommandKind::ForkAndCompact
             | SlashCommandKind::ForkFrom
-            | SlashCommandKind::RemoteControl
             | SlashCommandKind::Prompts
             | SlashCommandKind::Rewind => {
                 debug_assert!(
@@ -5029,12 +5007,8 @@ impl TypedActionView for TuiTerminalSessionView {
             }
             #[cfg(feature = "voice_input")]
             TuiTerminalSessionAction::VoiceHoldKeyChanged { key, state } => {
-                let local_skills_available = self
-                    .slash_commands_source
-                    .as_ref(ctx)
-                    .local_skills_available(ctx);
                 self.input_view.update(ctx, |input, ctx| {
-                    input.handle_voice_hold_key(*key, *state, local_skills_available, ctx);
+                    input.handle_voice_hold_key(*key, *state, ctx);
                 });
             }
             TuiTerminalSessionAction::ReadOnlyMenuSelectionStarted => {

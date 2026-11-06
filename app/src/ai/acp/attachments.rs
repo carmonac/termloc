@@ -1,12 +1,10 @@
 //! Turns the attachments on a prompt into ACP prompt content.
 //!
-//! Shared-session viewers attach context in the `AgentAttachment` wire shape; the agent only
-//! understands `ContentBlock`s. Plain text is inlined as its own text block. Local files are
-//! shaped by what the agent said it accepts in its `promptCapabilities`: raster images go inline
-//! when it takes images, text files go inline as embedded resources when it takes embedded
-//! context, and everything else is handed over as a resource link, which every ACP agent
-//! accepts. Block references need the terminal's block contents and uploaded file references
-//! have nowhere to be fetched from, so neither is forwarded.
+//! The agent only understands `ContentBlock`s. Plain text is inlined as its own text block. Local
+//! files are shaped by what the agent said it accepts in its `promptCapabilities`: raster images
+//! go inline when it takes images, text files go inline as embedded resources when it takes
+//! embedded context, and everything else is handed over as a resource link, which every ACP agent
+//! accepts.
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
@@ -14,12 +12,11 @@ use std::sync::OnceLock;
 use base64::Engine as _;
 use futures::io::AsyncReadExt as _;
 use mime_guess::mime;
-use session_sharing_protocol::common::AgentAttachment;
 use url::Url;
 use warp_core::safe_warn;
 
 use super::protocol::{ContentBlock, EmbeddedResource, PromptCapabilities};
-use crate::ai::attachment_utils::{DownloadedAttachment, resolve_agent_attachments};
+use crate::ai::attachment_utils::DownloadedAttachment;
 use crate::util::image::{
     MAX_IMAGE_SIZE_BYTES, MIME_SNIFF_BYTES, infer_mime_type, is_supported_image_mime_type,
 };
@@ -51,24 +48,6 @@ impl AttachmentResolver {
 
     pub(super) fn prompt_capabilities(&self) -> PromptCapabilities {
         self.prompt_capabilities.get().copied().unwrap_or_default()
-    }
-
-    /// Builds the prompt content for `text` plus `attachments`.
-    pub(super) async fn prompt_content(
-        &self,
-        text: String,
-        attachments: Vec<AgentAttachment>,
-    ) -> Vec<ContentBlock> {
-        let (block_ids, selected_text, file_references) = resolve_agent_attachments(attachments);
-        if !block_ids.is_empty() || !file_references.is_empty() {
-            log::warn!(
-                "Ignoring {} block reference(s) and {} file reference(s) on an ACP follow-up",
-                block_ids.len(),
-                file_references.len()
-            );
-        }
-        self.prompt_content_for_files(text, selected_text, &[])
-            .await
     }
 
     /// Builds the prompt content for `text` plus files that are already on disk.

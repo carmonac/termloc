@@ -2,8 +2,7 @@
 
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
-    AcceptSkill, ActiveSession, ActiveSessionEvent, SkillReference, TuiSlashCommandDataSource,
-    query_selectable_skills,
+    AcceptSkill, ActiveSession, ActiveSessionEvent, SkillReference, query_selectable_skills,
 };
 use warp_editor::model::CoreEditorModel;
 use warpui_core::{AppContext, Entity, EntityId, ModelContext, ModelHandle};
@@ -39,7 +38,6 @@ pub(crate) struct TuiSkillMenuModel {
     input_editor: ModelHandle<CodeEditorModel>,
     suggestions_mode: ModelHandle<TuiInputSuggestionsModeModel>,
     active_session: ModelHandle<ActiveSession>,
-    slash_commands_source: ModelHandle<TuiSlashCommandDataSource>,
     terminal_view_id: EntityId,
     state: TuiSkillMenuState,
 }
@@ -49,7 +47,6 @@ impl TuiSkillMenuModel {
         input_editor: ModelHandle<CodeEditorModel>,
         suggestions_mode: ModelHandle<TuiInputSuggestionsModeModel>,
         active_session: ModelHandle<ActiveSession>,
-        slash_commands_source: ModelHandle<TuiSlashCommandDataSource>,
         terminal_view_id: EntityId,
         ctx: &mut ModelContext<Self>,
     ) -> Self {
@@ -72,7 +69,6 @@ impl TuiSkillMenuModel {
             input_editor,
             suggestions_mode,
             active_session,
-            slash_commands_source,
             terminal_view_id,
             state: TuiSkillMenuState::Closed,
         }
@@ -222,32 +218,24 @@ impl TuiSkillMenuModel {
         };
         let selected_reference = list.selected_row().map(|row| row.reference.clone());
         let query = input_text(&self.input_editor, ctx);
-        let rows = if self
-            .slash_commands_source
+        let working_directory = self
+            .active_session
             .as_ref(ctx)
-            .local_skills_available()
-        {
-            let working_directory = self
-                .active_session
-                .as_ref(ctx)
-                .current_working_directory_location(ctx);
-            query_selectable_skills(
-                working_directory.as_ref(),
-                self.terminal_view_id,
-                true,
-                &query,
-                ctx,
-            )
-            .into_iter()
-            .map(|skill| TuiSkillMenuRow {
-                name: skill.name,
-                reference: skill.reference,
-                description: skill.description,
-            })
-            .collect()
-        } else {
-            Vec::new()
-        };
+            .current_working_directory_location(ctx);
+        let rows: Vec<_> = query_selectable_skills(
+            working_directory.as_ref(),
+            self.terminal_view_id,
+            true,
+            &query,
+            ctx,
+        )
+        .into_iter()
+        .map(|skill| TuiSkillMenuRow {
+            name: skill.name,
+            reference: skill.reference,
+            description: skill.description,
+        })
+        .collect();
         let preferred_index = selected_reference
             .and_then(|reference| rows.iter().position(|row| row.reference == reference))
             .or_else(|| rows.len().checked_sub(1));

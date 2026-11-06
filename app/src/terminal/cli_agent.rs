@@ -185,7 +185,7 @@ pub enum CLIAgent {
 }
 
 impl CLIAgent {
-    /// Stable analytics values, independent of display names and session-sharing serialization.
+    /// Stable analytics values, independent of display names.
     pub fn telemetry_name(&self) -> &'static str {
         match self {
             CLIAgent::Claude => "Claude",
@@ -250,8 +250,7 @@ impl CLIAgent {
         self.command_prefixes().first().copied().unwrap_or_default()
     }
 
-    /// Serialized version of the CLIAgent name (e.g. "Claude", "Gemini"). Used for the
-    /// session-sharing protocol's opaque `cli_agent` string field.
+    /// Serialized version of the CLIAgent name (e.g. "Claude", "Gemini").
     pub fn to_serialized_name(&self) -> String {
         serde_json::to_value(self)
             .ok()

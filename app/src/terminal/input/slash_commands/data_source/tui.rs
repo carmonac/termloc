@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
 
-use parking_lot::FairMutex;
 use warpui::{AppContext, Entity, EntityId, ModelContext, ModelHandle, SingletonEntity as _};
 
 use super::core::subscribe_to_shared_dependencies;
@@ -20,7 +18,6 @@ use crate::search::slash_command_menu::static_commands::commands::{COMMAND_REGIS
 use crate::search::slash_command_menu::static_commands::{Availability, SlashCommandKind};
 #[cfg(feature = "voice_input")]
 use crate::settings::{AISettings, AISettingsChangedEvent};
-use crate::terminal::TerminalModel;
 use crate::terminal::input::slash_commands::AcceptSlashCommandOrSavedPrompt;
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::workspaces::user_workspaces::{TeamContextResolver, UserWorkspaces};
@@ -29,7 +26,6 @@ pub struct TuiDataSourceArgs {
     pub active_session: ModelHandle<ActiveSession>,
     pub cli_subagent_controller: ModelHandle<CLISubagentController>,
     pub terminal_view_id: EntityId,
-    pub terminal_model: Arc<FairMutex<TerminalModel>>,
     /// Resolves this data source's terminal surface's window's team context. Minted by the
     /// owning view at construction via `UserWorkspaces::team_context_resolver`.
     pub team_context_resolver: TeamContextResolver,
@@ -37,7 +33,6 @@ pub struct TuiDataSourceArgs {
 
 pub struct TuiSlashCommandDataSource {
     state: SlashCommandDataSourceState,
-    terminal_model: Arc<FairMutex<TerminalModel>>,
 }
 
 impl TuiSlashCommandDataSource {
@@ -46,7 +41,6 @@ impl TuiSlashCommandDataSource {
             active_session,
             cli_subagent_controller,
             terminal_view_id,
-            terminal_model,
             team_context_resolver,
         } = args;
 
@@ -79,19 +73,9 @@ impl TuiSlashCommandDataSource {
                 terminal_view_id,
                 team_context_resolver,
             ),
-            terminal_model,
         };
         me.recompute_active_commands(ctx);
         me
-    }
-
-    /// Returns whether this TUI surface routes AI work to its local execution host.
-    pub fn local_skills_available(&self) -> bool {
-        !self
-            .terminal_model
-            .lock()
-            .shared_session_status()
-            .is_active_viewer()
     }
 
     pub fn manage_billing_url(&self, app: &AppContext) -> Option<String> {
@@ -114,8 +98,7 @@ impl TuiSlashCommandDataSource {
         #[cfg(feature = "voice_input")]
         let voice_command_is_available = AISettings::as_ref(ctx).is_voice_input_enabled(ctx)
             && UserWorkspaces::as_ref(ctx).is_voice_enabled()
-            && AIRequestUsageModel::as_ref(ctx).can_request_voice()
-            && self.local_skills_available();
+            && AIRequestUsageModel::as_ref(ctx).can_request_voice();
         #[cfg(not(feature = "voice_input"))]
         let voice_command_is_available = false;
         let commands = HashMap::from_iter(
@@ -154,9 +137,7 @@ impl SyncDataSource for TuiSlashCommandDataSource {
 
         let query_text = query.text.trim().to_lowercase();
         let mut results = self.match_active_commands(&query_text, app);
-        if self.local_skills_available() {
-            results.extend(self.match_skills(&query_text, app));
-        }
+        results.extend(self.match_skills(&query_text, app));
         Ok(results
             .into_iter()
             .map(|item: InlineItem| item.into())

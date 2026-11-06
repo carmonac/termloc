@@ -277,7 +277,6 @@ impl Task {
             cli_agent_model_id: existing_exchange.cli_agent_model_id.clone(),
             computer_use_model_id: existing_exchange.computer_use_model_id.clone(),
             request_cost: None,
-            response_initiator: existing_exchange.response_initiator.clone(),
         };
         new_exchange
             .init_output(
@@ -412,7 +411,6 @@ impl Task {
             cli_agent_model_id: existing_exchange.cli_agent_model_id.clone(),
             computer_use_model_id: existing_exchange.computer_use_model_id.clone(),
             request_cost: None,
-            response_initiator: existing_exchange.response_initiator.clone(),
         };
         new_exchange
             .init_output(
@@ -713,8 +711,8 @@ impl Task {
 
         // Task message updates can carry tool call result updates with them,
         // so we need to convert any tool call results and update the exchange accordingly
-        // (this is necessary for session sharing, where the tool call input has not already been
-        // optimistically inserted into the exchange)
+        // (this is necessary when the tool call input has not already been optimistically
+        // inserted into the exchange)
         if should_convert_input_messages && let Some(tool_call_result) = message.tool_call_result()
         {
             let mut document_versions: HashMap<AIDocumentId, AIDocumentVersion> = HashMap::new();

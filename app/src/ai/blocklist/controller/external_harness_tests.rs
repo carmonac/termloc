@@ -1,6 +1,5 @@
 use std::time::SystemTime;
 
-use session_sharing_protocol::common::AgentAttachment;
 use uuid::Uuid;
 use warp_multi_agent_api::client_action::{AddMessagesToTask, CreateTask, UpdateTaskMessage};
 use warp_multi_agent_api::message::tool_call::{CallMcpTool, RunShellCommand, Tool};
@@ -10,9 +9,8 @@ use warp_multi_agent_api::message::{
 };
 use warp_multi_agent_api::response_event::{StreamFinished, stream_finished};
 use warp_multi_agent_api::{
-    self as api, ClientAction, Message, QueryAuthor, ResponseEvent, RunShellCommandResult,
-    ShellCommandFinished, Task, client_action, query_author, response_event,
-    run_shell_command_result,
+    ClientAction, Message, ResponseEvent, RunShellCommandResult, ShellCommandFinished, Task,
+    client_action, response_event, run_shell_command_result,
 };
 use warpui::{App, AppContext};
 
@@ -20,7 +18,6 @@ use super::*;
 use crate::ai::agent::api::serde_json_to_prost;
 use crate::ai::agent::conversation::{AIConversation, ConversationDriver, ConversationStatus};
 use crate::ai::agent::{AIAgentActionId, AIAgentInput, CancellationReason};
-use crate::ai::blocklist::controller::ParticipantId;
 use crate::ai::blocklist::{CancellationRoute, QueuedQueryModel};
 use crate::persistence::model::AgentConversationData;
 use crate::test_util::terminal::{add_window_with_terminal, initialize_app_for_terminal_view};
@@ -189,113 +186,6 @@ fn begin_turn_with_query(
 }
 
 #[test]
-fn injections_queued_before_the_sink_exists_are_relayed_when_it_is_installed() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let terminal = add_window_with_terminal(&mut app, None);
-        let (sink, prompts) = async_channel::unbounded();
-        terminal.update(&mut app, |terminal, ctx| {
-            terminal.ai_controller().update(ctx, |controller, ctx| {
-                let id = controller.bind_native_prompt_conversation(None, ctx);
-                let author = QueryAuthor {
-                    principal: Some(query_author::Principal::User(api::WarpUser {
-                        uid: "viewer-uid".to_owned(),
-                        email: "viewer@example.com".to_owned(),
-                        team_uid: String::new(),
-                    })),
-                    resolution: api::IdentityResolution::ClientSession.into(),
-                };
-                let base = BaseUserQuery::from_proto(api::request::input::UserQuery {
-                    author: Some(author.clone()),
-                    ..Default::default()
-                });
-                let participant_id = ParticipantId::new();
-                controller.execute_warp_agent_prompt_from_shared_session_injection(
-                    "first".into(),
-                    None,
-                    vec![AgentAttachment::PlainText {
-                        content: "first context".into(),
-                    }],
-                    participant_id.clone(),
-                    Some(base.clone()),
-                    ctx,
-                );
-                controller.execute_warp_agent_prompt_from_shared_session_injection(
-                    "second".into(),
-                    None,
-                    vec![AgentAttachment::PlainText {
-                        content: "second context".into(),
-                    }],
-                    participant_id.clone(),
-                    Some(base),
-                    ctx,
-                );
-                assert_eq!(
-                    QueuedQueryModel::as_ref(ctx).queue(id).len(),
-                    2,
-                    "with no sink and setup pending, injections are held in the queue"
-                );
-
-                controller.set_external_harness_prompt_sink(sink, ctx);
-
-                let first = prompts
-                    .try_recv()
-                    .expect("first prompt is relayed on install");
-                assert_eq!(first.text, "first");
-                assert!(
-                    matches!(
-                        first.attachments.as_slice(),
-                        [AgentAttachment::PlainText { content }] if content == "first context"
-                    ),
-                    "first prompt's attachments must survive the queue: {:?}",
-                    first.attachments
-                );
-                assert_eq!(first.participant_id, participant_id);
-                assert_eq!(
-                    first.base.map(|base| base.to_proto().author),
-                    Some(Some(author.clone()))
-                );
-
-                let second = prompts
-                    .try_recv()
-                    .expect("second prompt is relayed on install, after the first");
-                assert_eq!(second.text, "second");
-                assert!(
-                    matches!(
-                        second.attachments.as_slice(),
-                        [AgentAttachment::PlainText { content }] if content == "second context"
-                    ),
-                    "second prompt's attachments must survive the queue: {:?}",
-                    second.attachments
-                );
-                assert_eq!(second.participant_id, participant_id);
-                assert_eq!(
-                    second.base.map(|base| base.to_proto().author),
-                    Some(Some(author))
-                );
-
-                assert!(
-                    prompts.is_empty(),
-                    "each queued row is relayed exactly once"
-                );
-                assert!(
-                    !QueuedQueryModel::as_ref(ctx).has_queue(id),
-                    "relayed rows are removed from the queue"
-                );
-                assert_eq!(
-                    BlocklistAIHistoryModel::as_ref(ctx)
-                        .conversation(&id)
-                        .unwrap()
-                        .exchange_count(),
-                    0,
-                    "nothing is sent to Warp's agent"
-                );
-            });
-        });
-    });
-}
-
-#[test]
 fn a_turn_cut_short_by_a_follow_up_ends_cancelled_with_the_status_still_in_progress() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
@@ -404,8 +294,6 @@ fn queued_harness_prompts_are_shown_as_rows_until_hidden() {
                 let id = controller.bind_native_prompt_conversation(None, ctx);
                 let prompt = ExternalHarnessPrompt {
                     text: "waiting".into(),
-                    attachments: vec![],
-                    participant_id: ParticipantId::new(),
                     base: None,
                 };
                 let row = controller.show_external_harness_prompt_queued(id, &prompt, ctx);
@@ -771,7 +659,7 @@ fn cancelling_a_harness_driven_conversation_goes_to_the_cancel_sink() {
 }
 
 #[test]
-fn shared_session_injections_go_to_the_prompt_sink_instead_of_the_queue() {
+fn relayed_prompts_go_to_the_prompt_sink_instead_of_the_queue() {
     App::test((), |mut app| async move {
         initialize_app_for_terminal_view(&mut app);
         let terminal = add_window_with_terminal(&mut app, None);
@@ -779,27 +667,15 @@ fn shared_session_injections_go_to_the_prompt_sink_instead_of_the_queue() {
         terminal.update(&mut app, |terminal, ctx| {
             terminal.ai_controller().update(ctx, |controller, ctx| {
                 let id = controller.bind_native_prompt_conversation(None, ctx);
-                controller.set_external_harness_prompt_sink(sink, ctx);
-                controller.execute_warp_agent_prompt_from_shared_session_injection(
-                    "follow-up".into(),
-                    None,
-                    vec![AgentAttachment::PlainText {
-                        content: "selected text".into(),
-                    }],
-                    ParticipantId::new(),
-                    None,
-                    ctx,
+                controller.set_external_harness_prompt_sink(sink);
+                assert!(
+                    controller.relay_prompt_to_external_harness(ExternalHarnessPrompt {
+                        text: "follow-up".into(),
+                        base: None,
+                    })
                 );
                 let relayed = prompts.try_recv().unwrap();
                 assert_eq!(relayed.text, "follow-up");
-                assert!(
-                    matches!(
-                        relayed.attachments.as_slice(),
-                        [AgentAttachment::PlainText { content }] if content == "selected text"
-                    ),
-                    "attachments must reach the harness alongside the prompt: {:?}",
-                    relayed.attachments
-                );
                 assert!(!QueuedQueryModel::as_ref(ctx).has_queue(id));
                 assert_eq!(
                     BlocklistAIHistoryModel::as_ref(ctx)

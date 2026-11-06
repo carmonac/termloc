@@ -102,7 +102,6 @@ pub enum EntrypointType {
     },
     UserInitiated,
     AgentInitiated,
-    SharedSession,
     CloneRepository,
     ResumeConversation,
 }
@@ -140,7 +139,6 @@ impl EntrypointType {
                 format!("TRIGGER_SUGGEST_PROMPT.{trigger_name}")
             }
             Self::CloneRepository => "CLONE_REPOSITORY".to_string(),
-            Self::SharedSession => "SHARED_SESSION".to_string(),
             Self::ResumeConversation => "RESUME_CONVERSATION".to_string(),
         }
     }

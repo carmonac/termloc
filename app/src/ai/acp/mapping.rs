@@ -347,9 +347,7 @@ impl AcpTurnMapper {
     }
 
     /// Echoes a user prompt into the task, as the MAA server does for each request. The
-    /// attribution of `base` (who injected the prompt and from where), when there is one, is
-    /// carried onto the echoed query so viewers see the follow-up's author rather than the
-    /// sharer's.
+    /// attribution of `base`, when there is one, is carried onto the echoed query.
     pub(super) fn user_query_action(
         &self,
         prompt: &str,

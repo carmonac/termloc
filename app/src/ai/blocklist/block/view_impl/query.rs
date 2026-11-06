@@ -2,7 +2,6 @@
 //!
 //! Queries are not rendered in blocks corresponding to requested command or requested action responses.
 use chrono::{DateTime, Local};
-use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::vec2f;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::color::Opacity;
@@ -41,7 +40,6 @@ const NAVIGATION_HALO_OPACITY: Opacity = 60;
 pub(super) struct Props<'a> {
     pub(super) user_display_name: &'a String,
     pub(super) profile_image_path: Option<&'a String>,
-    pub(super) avatar_color: Option<ColorU>,
     pub(super) query_sent_at: Option<DateTime<Local>>,
     pub(super) query_timestamp_tooltip_handle: &'a MouseStateHandle,
     pub(super) query_and_index: Option<(&'a str, usize)>,
@@ -61,7 +59,6 @@ pub(super) fn maybe_render(props: Props, app: &AppContext) -> Option<Box<dyn Ele
             query,
             props.user_display_name,
             props.profile_image_path,
-            props.avatar_color,
             props.query_sent_at,
             props.query_timestamp_tooltip_handle.clone(),
             props.detected_links_state,
@@ -83,7 +80,6 @@ pub(crate) fn render_query(
     query: &str,
     user_display_name: &str,
     profile_image_path: Option<&String>,
-    avatar_color: Option<ColorU>,
     query_sent_at: Option<DateTime<Local>>,
     query_timestamp_tooltip_handle: MouseStateHandle,
     detected_links_state: &DetectedLinksState,
@@ -101,7 +97,6 @@ pub(crate) fn render_query(
     let mut avatar_container = Container::new(render_user_avatar(
         user_display_name,
         profile_image_path,
-        avatar_color,
         app,
     ));
     if is_agent_transcript_navigation_target {

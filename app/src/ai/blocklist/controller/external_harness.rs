@@ -2,10 +2,8 @@
 // conversation: the harness translates its own protocol into MAA response events, which flow
 // through the same controller path as events from the MAA server. The conversation stays owned
 // by this client (so task status syncing keeps working); only the turn itself is the harness's.
-use session_sharing_protocol::common::{AgentAttachment, ParticipantId};
 use uuid::Uuid;
-use warp_errors::report_error;
-use warp_multi_agent_api::response_event::{StreamFinished, StreamInit, stream_finished};
+use warp_multi_agent_api::response_event::StreamInit;
 use warp_multi_agent_api::{ResponseEvent, response_event};
 use warpui::{ModelContext, SingletonEntity};
 
@@ -26,16 +24,10 @@ pub(crate) struct ExternalHarnessTurn {
 
 /// A prompt relayed to the external harness driving a native conversation.
 #[derive(Clone, Debug)]
-pub(in crate::ai) struct ExternalHarnessPrompt {
+pub struct ExternalHarnessPrompt {
     pub text: String,
-    /// Context the prompt's author attached, kept in its shared-session wire shape so the
-    /// harness can decide how to present each kind to its agent.
-    pub attachments: Vec<AgentAttachment>,
-    /// The shared-session participant who injected the prompt, so the turn it opens is
-    /// attributed to them for viewers.
-    pub participant_id: ParticipantId,
-    /// The `Request.Input.UserQuery` warp-server injected with the prompt, when it sent one.
-    /// Its attribution is copied onto the user query echoed into the conversation.
+    /// The user query this prompt was built from, if any. Its attribution is copied onto the user
+    /// query echoed into the conversation.
     pub base: Option<BaseUserQuery>,
 }
 
@@ -44,21 +36,22 @@ pub(in crate::ai) struct ExternalHarnessPrompt {
 pub(crate) struct ExternalHarnessCancel;
 
 impl BlocklistAIController {
-    /// Diverts prompts injected into the bound native conversation to an external harness.
-    /// Shared-session prompts that were queued for the conversation before the sink existed
-    /// (the conversation is bound at driver construction, long before the harness is up) are
-    /// relayed first, in arrival order, so the harness sees them ahead of anything injected
-    /// later. The native setup barrier is left in place: nothing may dispatch from the queue
-    /// to Warp's agent while the harness owns the conversation.
+    /// Sets where follow-up prompts for the bound native conversation go. Native dispatch stays
+    /// blocked: nothing may go from the queue to Warp's agent while the harness owns the
+    /// conversation.
     pub(in crate::ai) fn set_external_harness_prompt_sink(
         &mut self,
         sink: async_channel::Sender<ExternalHarnessPrompt>,
-        ctx: &mut ModelContext<Self>,
     ) {
-        if let Some(conversation_id) = self.native_prompt_conversation_id {
-            self.relay_queued_shared_session_prompts(conversation_id, &sink, ctx);
-        }
         self.external_harness_prompt_sink = Some(sink);
+    }
+
+    /// Hands `prompt` to the external harness driving the bound native conversation. Returns
+    /// `false` when no harness is accepting prompts.
+    pub fn relay_prompt_to_external_harness(&self, prompt: ExternalHarnessPrompt) -> bool {
+        self.external_harness_prompt_sink
+            .as_ref()
+            .is_some_and(|sink| sink.try_send(prompt).is_ok())
     }
 
     /// Diverts cancellations of the bound native conversation to the external harness driving
@@ -128,7 +121,7 @@ impl BlocklistAIController {
     /// Ends the harness-driven turn open on `stream_id` as a cancellation, the way an
     /// interrupted native request ends: its exchanges finish as cancelled and the conversation
     /// status follows `reason` (a follow-up that cut the turn short keeps it `InProgress`; an
-    /// interrupt marks it `Cancelled`). Viewers see the stream finish.
+    /// interrupt marks it `Cancelled`).
     pub(in crate::ai) fn cancel_external_harness_turn(
         &mut self,
         stream_id: &ResponseStreamId,
@@ -141,13 +134,6 @@ impl BlocklistAIController {
             log::warn!("No conversation for external harness response stream {stream_id:?}");
             return;
         };
-        let finished = ResponseEvent {
-            r#type: Some(response_event::Type::Finished(StreamFinished {
-                reason: Some(stream_finished::Reason::Done(stream_finished::Done {})),
-                ..Default::default()
-            })),
-        };
-        self.tee_response_event_to_viewers(&finished, conversation_id, ctx);
         let terminal_surface_id = self.terminal_surface_id;
         BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
             history.mark_response_stream_cancelled(
@@ -177,20 +163,15 @@ impl BlocklistAIController {
         });
     }
 
-    /// Shows `prompt` as queued on `conversation_id` while the harness waits to send it, so
-    /// viewers see it is pending. Returns the row to remove once it is sent.
+    /// Shows `prompt` as queued on `conversation_id` while the harness waits to send it. Returns
+    /// the row to remove once it is sent.
     pub(in crate::ai) fn show_external_harness_prompt_queued(
         &self,
         conversation_id: AIConversationId,
         prompt: &ExternalHarnessPrompt,
         ctx: &mut ModelContext<Self>,
     ) -> QueuedQueryId {
-        let row = QueuedQuery::new_shared_session_prompt(
-            prompt.text.clone(),
-            prompt.participant_id.clone(),
-            prompt.attachments.clone(),
-            prompt.base.clone(),
-        );
+        let row = QueuedQuery::new_external_harness_prompt(prompt.text.clone());
         QueuedQueryModel::handle(ctx)
             .update(ctx, |queue, ctx| queue.append(conversation_id, row, ctx))
     }
@@ -203,49 +184,6 @@ impl BlocklistAIController {
     ) {
         QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
             queue.remove_fired_row(conversation_id, query_id, ctx);
-        });
-    }
-
-    fn relay_queued_shared_session_prompts(
-        &self,
-        conversation_id: AIConversationId,
-        sink: &async_channel::Sender<ExternalHarnessPrompt>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        let queued: Vec<_> = QueuedQueryModel::as_ref(ctx)
-            .queue(conversation_id)
-            .iter()
-            .filter_map(|row| {
-                let (participant_id, attachments) = row.shared_session_prompt()?;
-                Some((
-                    row.id(),
-                    ExternalHarnessPrompt {
-                        text: row.text().to_owned(),
-                        attachments: attachments.to_vec(),
-                        participant_id: participant_id.clone(),
-                        base: row.base_user_query().cloned(),
-                    },
-                ))
-            })
-            .collect();
-        if queued.is_empty() {
-            return;
-        }
-        log::info!(
-            "event=queued_injections_relayed_to_external_harness terminal_id={:?} conversation_id={conversation_id} count={}",
-            self.terminal_surface_id,
-            queued.len(),
-        );
-        QueuedQueryModel::handle(ctx).update(ctx, |queue, ctx| {
-            for (query_id, prompt) in queued {
-                if sink.try_send(prompt).is_err() {
-                    report_error!(
-                        "Dropped a queued shared-session prompt because the external harness is not accepting prompts",
-                        extra: { "conversation_id" => %conversation_id, "query_id" => ?query_id }
-                    );
-                }
-                queue.remove_fired_row(conversation_id, query_id, ctx);
-            }
         });
     }
 
@@ -279,14 +217,13 @@ impl BlocklistAIController {
             request_id: request_id.clone(),
             run_id: run_id.unwrap_or_default(),
         };
-        let stream_id = ResponseStreamId::for_shared_session(&init);
+        let stream_id = ResponseStreamId::for_stream_init(&init);
 
         let scope = ResolvedTeamScope::from_scope(&self.team_context(ctx));
         let request_input = RequestInput::for_task(
             vec![],
             root_task_id,
             &self.active_session,
-            self.get_current_response_initiator(),
             conversation_id,
             self.terminal_surface_id,
             &scope,

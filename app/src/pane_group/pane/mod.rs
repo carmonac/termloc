@@ -642,9 +642,6 @@ pub struct PaneConfiguration {
     custom_vertical_tabs_title: Option<String>,
     show_active_pane_indicator: bool,
 
-    /// If true, we draw an accent border around the pane.
-    show_accent_border: bool,
-
     /// Pane views set this when they have an open modal. We dim the pane header along with the
     /// pane contents.
     has_open_modal: bool,
@@ -668,7 +665,6 @@ impl PaneConfiguration {
             title_secondary: String::from(""),
             custom_vertical_tabs_title: None,
             show_active_pane_indicator: false,
-            show_accent_border: false,
             has_open_modal: false,
             dim_even_if_focused: false,
             header_left_inset: 0.,
@@ -754,15 +750,6 @@ impl PaneConfiguration {
         }
     }
 
-    pub fn set_show_accent_border(
-        &mut self,
-        show_accent_border: bool,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        self.show_accent_border = show_accent_border;
-        ctx.emit(PaneConfigurationEvent::ShowAccentBorderUpdated);
-    }
-
     pub fn set_has_open_modal(&mut self, has_open_modal: bool, ctx: &mut ModelContext<Self>) {
         self.has_open_modal = has_open_modal;
         ctx.emit(PaneConfigurationEvent::OpenModalUpdated);
@@ -793,18 +780,6 @@ impl PaneConfiguration {
         ctx.emit(PaneConfigurationEvent::ToggleSharingDialog(source));
     }
 
-    pub fn open_sharing_qr_code(
-        &mut self,
-        source: SharingDialogSource,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        ctx.emit(PaneConfigurationEvent::OpenSharingQrCode(source));
-    }
-
-    pub fn notify_shared_session_link_changed(&mut self, ctx: &mut ModelContext<Self>) {
-        ctx.emit(PaneConfigurationEvent::SharedSessionLinkChanged);
-    }
-
     /// Notifies that the header content has changed and the pane header should re-render.
     /// Use this when the backing view's state has changed in a way that affects the header
     /// content returned by `render_header_content()`.
@@ -825,13 +800,10 @@ pub enum PaneConfigurationEvent {
     VerticalTabsTitleUpdated,
     ShowActivePaneIndicatorUpdated,
     RenderElementFnUpdated,
-    ShowAccentBorderUpdated,
     OpenModalUpdated,
     RefreshPaneHeaderOverflowMenuItems,
     ShareableObjectChanged(Option<ShareableObject>),
     ToggleSharingDialog(SharingDialogSource),
-    OpenSharingQrCode(SharingDialogSource),
-    SharedSessionLinkChanged,
     DimEvenIfFocusedUpdated,
     /// The header content has changed and should be re-rendered.
     /// This is used when the backing view's state changes in a way that

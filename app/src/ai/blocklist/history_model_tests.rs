@@ -122,7 +122,6 @@ fn create_exchange_with_query(
         coding_model_id: LLMId::from("test-coding-model"),
         cli_agent_model_id: LLMId::from("test-cli-agent-model"),
         computer_use_model_id: LLMId::from("test-computer-use-model"),
-        response_initiator: None,
     }
 }
 
@@ -259,8 +258,7 @@ fn begin_conversation_rename_rejects_optimistic_root_task() {
         let history_model = app.add_singleton_model(|_| BlocklistAIHistoryModel::new_for_test());
 
         let (conversation_id, result) = history_model.update(&mut app, |model, ctx| {
-            let conversation_id =
-                model.start_new_conversation(terminal_view_id, false, false, false, ctx);
+            let conversation_id = model.start_new_conversation(terminal_view_id, false, false, ctx);
             model.set_server_conversation_token_for_conversation(
                 conversation_id,
                 "server-conversation-token".to_string(),
@@ -608,7 +606,7 @@ fn prompt_history_candidates_seeds_from_snapshot_then_appends_session_prompts() 
         // A new in-memory query submitted this session duplicates a persisted prompt. It is NOT
         // deduped; it is appended as the newest (last) session prompt.
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         history_model.update(&mut app, |history_model, ctx| {
             let exchange = create_exchange_with_query("live query", now, None);
@@ -625,7 +623,6 @@ fn prompt_history_candidates_seeds_from_snapshot_then_appends_session_prompts() 
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -703,7 +700,7 @@ fn test_ai_queries_for_terminal_view_up_arrow_history() {
 
         // Start a new conversation and add "live query 1"
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         let stream_id = ResponseStreamId::new_for_test();
@@ -722,7 +719,6 @@ fn test_ai_queries_for_terminal_view_up_arrow_history() {
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -745,7 +741,7 @@ fn test_ai_queries_for_terminal_view_up_arrow_history() {
 
         // Start another new conversation and add "live query 2"
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         history_model.update(&mut app, |history_model, ctx| {
@@ -768,7 +764,6 @@ fn test_ai_queries_for_terminal_view_up_arrow_history() {
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -805,7 +800,7 @@ fn test_ai_queries_for_terminal_view_up_arrow_history() {
 
         // Start a new conversation after clearing and add "new query after clear"
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         history_model.update(&mut app, |history_model, ctx| {
@@ -828,7 +823,6 @@ fn test_ai_queries_for_terminal_view_up_arrow_history() {
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -957,7 +951,7 @@ fn test_merge_cloud_metadata_updates_already_restored_conversations() {
         let terminal_view_id = EntityId::new();
 
         // Create a conversation with a server token and restore it
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_server_conversation_token("token-1".to_string());
         let conversation_id = conversation.id();
 
@@ -1020,7 +1014,7 @@ fn test_merge_cloud_metadata_refreshes_stale_restored_conversation_metadata() {
         let terminal_view_id = EntityId::new();
         let token = "stale-metadata-token";
 
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_server_conversation_token(token.to_string());
         conversation.set_server_metadata(create_server_metadata(
             "Stale Conversation",
@@ -1070,7 +1064,7 @@ fn test_merge_cloud_metadata_reuses_restored_conversation_id_for_token() {
         let terminal_view_id = EntityId::new();
         let token = ServerConversationToken::new("restored-canonical-token".to_string());
 
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_server_conversation_token(token.as_str().to_string());
         let conversation_id = conversation.id();
 
@@ -1225,7 +1219,7 @@ fn test_transcript_viewer_terminal_view_is_not_marked_historical() {
             app.add_singleton_model(|_| BlocklistAIHistoryModel::new(vec![], vec![], &[]));
 
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         history_model.update(&mut app, |history_model, ctx| {
@@ -1244,7 +1238,6 @@ fn test_transcript_viewer_terminal_view_is_not_marked_historical() {
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -1276,7 +1269,7 @@ fn closed_surface_cleanup_preserves_transferred_conversation() {
     App::test((), |mut app| async move {
         let old_surface = EntityId::new();
         let new_surface = EntityId::new();
-        let conversation = AIConversation::new(false, false);
+        let conversation = AIConversation::new(false);
         let conversation_id = conversation.id();
         let history = app.add_singleton_model(|_| BlocklistAIHistoryModel::new_for_test());
         history.update(&mut app, |model, ctx| {
@@ -1330,7 +1323,7 @@ fn closed_surface_cleanup_preserves_transferred_conversation() {
 fn closed_surface_cleanup_clears_owned_conversations() {
     App::test((), |mut app| async move {
         let surface_id = EntityId::new();
-        let conversation = AIConversation::new(false, false);
+        let conversation = AIConversation::new(false);
         let conversation_id = conversation.id();
         let history = app.add_singleton_model(|_| BlocklistAIHistoryModel::new_for_test());
         history.update(&mut app, |model, ctx| {
@@ -1364,7 +1357,7 @@ fn test_all_cleared_conversations_includes_terminal_view_id() {
             app.add_singleton_model(|_| BlocklistAIHistoryModel::new(vec![], vec![], &[]));
 
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         history_model.update(&mut app, |history_model, ctx| {
@@ -1383,7 +1376,6 @@ fn test_all_cleared_conversations_includes_terminal_view_id() {
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -1428,7 +1420,7 @@ fn test_toggle_autoexecute_override_persists_updated_conversation_state() {
         let terminal_view_id = EntityId::new();
 
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         history_model.update(&mut app, |history_model, ctx| {
@@ -1475,7 +1467,7 @@ fn test_truncate_from_exchange_to_empty_persist_event_has_empty_updated_tasks() 
         let now = Local::now();
 
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            history_model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history_model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         // Upgrade the root to a server-backed task so the truncate path
@@ -1512,7 +1504,6 @@ fn test_truncate_from_exchange_to_empty_persist_event_has_empty_updated_tasks() 
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -1605,7 +1596,7 @@ fn test_find_by_token_after_restore_conversations() {
             app.add_singleton_model(|_| BlocklistAIHistoryModel::new(vec![], vec![], &[]));
         let terminal_view_id = EntityId::new();
 
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_server_conversation_token("restored-token".to_string());
         let conversation_id = conversation.id();
 
@@ -1679,7 +1670,7 @@ fn test_find_by_token_after_mark_conversations_historical_for_terminal_surface()
         let terminal_view_id = EntityId::new();
 
         // Needs a real exchange to pass `conversation_would_render_in_blocklist`.
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_server_conversation_token("historical-token".to_string());
         let conversation_id = conversation.id();
 
@@ -1702,7 +1693,6 @@ fn test_find_by_token_after_mark_conversations_historical_for_terminal_surface()
                 coding_model_id: exchange.coding_model_id,
                 cli_agent_model_id: exchange.cli_agent_model_id,
                 computer_use_model_id: exchange.computer_use_model_id,
-                shared_session_response_initiator: exchange.response_initiator,
                 request_start_ts: exchange.start_time,
                 supported_tools_override: None,
             };
@@ -1751,8 +1741,7 @@ fn test_set_server_conversation_token_rebinds_reverse_index() {
         let terminal_view_id = EntityId::new();
 
         let conversation_id = history_model.update(&mut app, |history_model, ctx| {
-            let id =
-                history_model.start_new_conversation(terminal_view_id, false, false, false, ctx);
+            let id = history_model.start_new_conversation(terminal_view_id, false, false, ctx);
             history_model.set_server_conversation_token_for_conversation(id, "old".to_string());
             id
         });
@@ -1787,7 +1776,7 @@ fn test_fork_conversation_rejects_an_empty_source() {
     App::test((), |mut app| async move {
         let history_model =
             app.add_singleton_model(|_| BlocklistAIHistoryModel::new(vec![], vec![], &[]));
-        let source = AIConversation::new(false, false);
+        let source = AIConversation::new(false);
 
         let error = history_model.update(&mut app, |model, ctx| {
             model
@@ -1827,7 +1816,7 @@ fn test_new_conversation_does_not_inherit_waiting_for_events() {
 
         // First conversation enters the waiting state via the normal status-update path.
         let first_id = history_model.update(&mut app, |model, ctx| {
-            let id = model.start_new_conversation(terminal_view_id, false, false, false, ctx);
+            let id = model.start_new_conversation(terminal_view_id, false, false, ctx);
             model.update_conversation_status(
                 terminal_view_id,
                 id,
@@ -1847,7 +1836,7 @@ fn test_new_conversation_does_not_inherit_waiting_for_events() {
         // Starting a new conversation in the same terminal view must not
         // copy the waiting state forward.
         let second_id = history_model.update(&mut app, |model, ctx| {
-            model.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            model.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         assert_ne!(
             first_id, second_id,
@@ -1874,7 +1863,7 @@ fn repeated_stream_completions_share_one_in_flight_metadata_fetch() {
         let terminal_surface_id = EntityId::new();
         let conversation_id = history_model.update(&mut app, |history, ctx| {
             let conversation_id =
-                history.start_new_conversation(terminal_surface_id, false, false, false, ctx);
+                history.start_new_conversation(terminal_surface_id, false, false, ctx);
             history.set_server_conversation_token_for_conversation(
                 conversation_id,
                 "metadata-fetch-token".to_string(),
@@ -2598,7 +2587,7 @@ fn todo_projections_delegate_to_the_conversation() {
         let history_model = app.add_singleton_model(|_| BlocklistAIHistoryModel::new_for_test());
         let terminal_view_id = EntityId::new();
         let conversation_id = history_model.update(&mut app, |history, ctx| {
-            history.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            history.start_new_conversation(terminal_view_id, false, false, ctx)
         });
 
         let completed = AIAgentTodo::new("t1".to_owned().into(), "one".to_owned(), String::new());

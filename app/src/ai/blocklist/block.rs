@@ -114,7 +114,6 @@ use crate::ai::blocklist::inline_action::ask_user_question_view::{
     self, AskUserQuestionView, AskUserQuestionViewEvent,
 };
 use crate::ai::blocklist::inline_action::code_diff_view;
-use crate::ai::blocklist::inline_action::code_diff_view::convert_file_edits_to_file_diffs;
 use crate::ai::blocklist::inline_action::requested_command::{
     self, RequestedActionViewType, RequestedCommand, RequestedCommandView,
     RequestedCommandViewEvent,
@@ -862,7 +861,6 @@ pub struct AIBlock {
     controller: ModelHandle<BlocklistAIController>,
     active_session: ModelHandle<ActiveSession>,
     terminal_view_id: EntityId,
-    window_id: warpui::WindowId,
 
     /// The current working directory at the time the AI block was created. Note that this
     /// is different from `directory_context`, which represents the directory-related contexts
@@ -1376,7 +1374,6 @@ impl AIBlock {
             requested_action_ids: Default::default(),
             auto_expand_requested_command_timer_handle: None,
             selected_text: Arc::new(RwLock::new(None)),
-            window_id: ctx.window_id(),
             state_handles: Default::default(),
             time_to_first_token: OnceCell::new(),
             time_to_last_token: None,
@@ -2964,30 +2961,11 @@ impl AIBlock {
             .as_ref(ctx)
             .request_file_edits_executor(ctx);
 
-        // If the diff is being viewed in a shared session (read-only mode), populate diffs from the payload.
-        if self.action_model.as_ref(ctx).is_view_only() {
-            let active_session = self.active_session.as_ref(ctx);
-            let file_diffs = convert_file_edits_to_file_diffs(
-                file_edits,
-                &active_session.shell_launch_data(ctx),
-                &active_session.current_working_directory().cloned(),
-            );
-            view.update(ctx, |diff_view, ctx| {
-                diff_view.set_candidate_diffs(file_diffs, ctx);
-            });
-        } else {
-            // Register the review view as the action's diff storage: the
-            // executor seeds it with the resolved diffs when preprocess
-            // completes and drives its save at execute time.
-            //
-            // View-only (shared-session viewer) diffs must not be registered:
-            // registration wires the view into the persistence flow, and a
-            // spectator's view must never become the surface that writes the
-            // edits to disk.
-            executor.update(ctx, |executor, _| {
-                executor.register_requested_edits(action_id, Box::new(view.downgrade()));
-            });
-        }
+        // Register the review view as the action's diff storage: the executor seeds it with the
+        // resolved diffs when preprocess completes and drives its save at execute time.
+        executor.update(ctx, |executor, _| {
+            executor.register_requested_edits(action_id, Box::new(view.downgrade()));
+        });
 
         let action_id_clone = action_id.clone();
         ctx.subscribe_to_view(&view, move |me, view, event, ctx| {

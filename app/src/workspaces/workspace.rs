@@ -364,12 +364,6 @@ pub struct SharedWorkflowsPolicy {
 }
 
 #[derive(Clone, Debug, Copy, Serialize, Deserialize)]
-pub struct SessionSharingPolicy {
-    pub is_enabled: bool,
-    pub max_session_size: u64,
-}
-
-#[derive(Clone, Debug, Copy, Serialize, Deserialize)]
 pub struct AIAutonomyPolicy {
     pub is_enabled: bool,
     pub toggleable: bool,
@@ -546,7 +540,6 @@ pub struct Tier {
     pub workspace_size_policy: Option<WorkspaceSizePolicy>,
     pub shared_notebooks_policy: Option<SharedNotebooksPolicy>,
     pub shared_workflows_policy: Option<SharedWorkflowsPolicy>,
-    pub session_sharing_policy: Option<SessionSharingPolicy>,
     pub ai_autonomy_policy: Option<AIAutonomyPolicy>,
     pub telemetry_data_collection_policy: Option<TelemetryDataCollectionPolicy>,
     pub ugc_data_collection_policy: Option<UgcDataCollectionPolicy>,

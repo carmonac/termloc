@@ -134,10 +134,6 @@ pub struct View {
 
     /// The current navigation mode.
     navigation_mode: NavigationMode,
-
-    /// Whether the active session is a shared session viewer.
-    /// This is set by the workspace when opening the palette.
-    is_shared_session_viewer: bool,
 }
 
 impl Entity for View {
@@ -275,7 +271,7 @@ impl View {
 
         let mixer = ctx.add_model(|_| CommandPaletteMixer::new());
         data_source_store.update(ctx, |store, ctx| {
-            store.reset_search_mixer(mixer.clone(), false, ctx);
+            store.reset_search_mixer(mixer.clone(), ctx);
             ctx.notify();
         });
 
@@ -317,7 +313,6 @@ impl View {
             placeholder_query_renderer: placeholder_element,
             suggested_binding_ids,
             zero_state_items,
-            is_shared_session_viewer: false,
         }
     }
 
@@ -407,18 +402,6 @@ impl View {
     ) {
         self.session_source.update(ctx, |binding_source, ctx| {
             *binding_source = session_source;
-            ctx.notify();
-        });
-    }
-
-    /// Sets whether the active session is a shared session viewer.
-    /// This should be called by the workspace before opening the palette.
-    pub fn set_is_shared_session_viewer(&mut self, is_viewer: bool, ctx: &mut ViewContext<Self>) {
-        self.is_shared_session_viewer = is_viewer;
-
-        let mixer = self.search_bar.as_ref(ctx).mixer().clone();
-        self.data_source_store.update(ctx, |store, ctx| {
-            store.reset_search_mixer(mixer.clone(), self.is_shared_session_viewer, ctx);
             ctx.notify();
         });
     }

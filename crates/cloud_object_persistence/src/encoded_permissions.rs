@@ -105,10 +105,6 @@ impl PersistedSubject {
                 UserKind::Account(user_uid) => Ok(PersistedSubject::User {
                     firebase_uid: user_uid.to_string(),
                 }),
-                UserKind::SharedSessionParticipant(_) => {
-                    // Shared sessions are transient, so we don't persist their ACLs to SQLite.
-                    Err(anyhow!("Session-sharing participants not supported"))
-                }
             },
             Subject::PendingUser { email } => Ok(PersistedSubject::PendingUser {
                 email: email.clone(),
@@ -117,10 +113,6 @@ impl PersistedSubject {
                 TeamKind::Team { team_uid } => Ok(PersistedSubject::Team {
                     team_uid: *team_uid,
                 }),
-                TeamKind::SharedSessionTeam { .. } => {
-                    // Shared sessions are transient, so we don't persist their ACLs to SQLite.
-                    Err(anyhow!("Session-sharing teams not supported"))
-                }
             },
             Subject::AnyoneWithLink(_) => {
                 // Link sharing is persisted separately in the schema.

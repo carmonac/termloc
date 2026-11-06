@@ -484,7 +484,6 @@ fn create_exchange(
         coding_model_id: model_id.clone(),
         cli_agent_model_id: model_id.clone(),
         computer_use_model_id: model_id,
-        response_initiator: None,
     }
 }
 
@@ -625,7 +624,7 @@ fn test_upsert_message_cross_exchange_swaps_screenshot_bytes_for_stored_ref() {
     );
 
     // The earlier exchange owns the screenshot message and already finished, and holds the
-    // corresponding action-result input as reconstructed by shared-session viewers.
+    // corresponding action-result input.
     let mut earlier_exchange = create_exchange(
         &["m-shot"],
         finished_output_status(),

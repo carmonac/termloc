@@ -16,7 +16,6 @@ use warp_graphql::billing::{
     ManagedByokByoePolicy as GqlManagedByokByoePolicy, MultiAdminPolicy as GqlMultiAdminPolicy,
     NativeWorkspacesPolicy as GqlNativeWorkspacesPolicy,
     PurchaseAddOnCreditsPolicy as GqlPurchaseAddOnCreditsPolicy, ServiceAgreementType,
-    SessionSharingPolicy as GqlSessionSharingPolicy,
     SharedNotebooksPolicy as GqlSharedNotebooksPolicy,
     SharedWorkflowsPolicy as GqlSharedWorkflowsPolicy, StripeSubscriptionPlan,
     TeamSizePolicy as GqlTeamSizePolicy,
@@ -63,13 +62,13 @@ use super::workspace::{
     CloudConversationStorageSettings, CodebaseContextSettings, CustomerType, DelinquencyStatus,
     EmailInvite, EnforceableSetting, EnterpriseSecretRegex, HostEnablementSetting,
     InviteLinkDomainRestriction, LinkSharingSettings, LlmSettings, MaxPriorCycles,
-    SandboxedAgentSettings, SecretRedactionSettings, SessionSharingPolicy, SharedNotebooksPolicy,
-    SharedWorkflowsPolicy, SplitListSetting, TeamAiAutonomySettings, TeamAiPermissionsSettings,
-    TeamByoSettings, TeamLinkSharingSettings, TeamSandboxedAgentSettings,
-    TeamSecretRedactionSettings, TeamSettings, TelemetryDataCollectionPolicy, TelemetrySettings,
-    Tier, UgcCollectionEnablementSetting, UgcCollectionSettings, UgcDataCollectionPolicy,
-    UsageBasedPricingPolicy, UsageVisibilityGranularity, UsageVisibilityPolicy, WarpAiPolicy,
-    Workspace, WorkspaceMember, WorkspaceMemberUsageInfo, WorkspaceSettings, WorkspaceSizePolicy,
+    SandboxedAgentSettings, SecretRedactionSettings, SharedNotebooksPolicy, SharedWorkflowsPolicy,
+    SplitListSetting, TeamAiAutonomySettings, TeamAiPermissionsSettings, TeamByoSettings,
+    TeamLinkSharingSettings, TeamSandboxedAgentSettings, TeamSecretRedactionSettings, TeamSettings,
+    TelemetryDataCollectionPolicy, TelemetrySettings, Tier, UgcCollectionEnablementSetting,
+    UgcCollectionSettings, UgcDataCollectionPolicy, UsageBasedPricingPolicy,
+    UsageVisibilityGranularity, UsageVisibilityPolicy, WarpAiPolicy, Workspace, WorkspaceMember,
+    WorkspaceMemberUsageInfo, WorkspaceSettings, WorkspaceSizePolicy,
 };
 use crate::ai::blocklist::usage::conversation_usage_view::ConversationUsageInfo;
 use crate::ai::execution_profiles::{
@@ -339,16 +338,6 @@ impl From<GqlSharedWorkflowsPolicy> for SharedWorkflowsPolicy {
         Self {
             is_unlimited: gql_shared_workflows_policy.is_unlimited,
             limit: i64::from(gql_shared_workflows_policy.limit),
-        }
-    }
-}
-
-impl From<GqlSessionSharingPolicy> for SessionSharingPolicy {
-    fn from(gql_session_sharing_policy: GqlSessionSharingPolicy) -> SessionSharingPolicy {
-        Self {
-            is_enabled: gql_session_sharing_policy.enabled,
-            max_session_size: u64::try_from(gql_session_sharing_policy.max_session_bytes_size)
-                .unwrap_or_default(),
         }
     }
 }
@@ -716,7 +705,6 @@ impl From<GqlTier> for Tier {
             workspace_size_policy: gql_tier.team_size_policy.map(From::from),
             shared_notebooks_policy: gql_tier.shared_notebooks_policy.map(From::from),
             shared_workflows_policy: gql_tier.shared_workflows_policy.map(From::from),
-            session_sharing_policy: gql_tier.session_sharing_policy.map(From::from),
             ai_autonomy_policy: gql_tier.ai_autonomy_policy.map(From::from),
             telemetry_data_collection_policy: gql_tier
                 .telemetry_data_collection_policy

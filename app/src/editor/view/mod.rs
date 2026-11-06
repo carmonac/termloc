@@ -3296,35 +3296,12 @@ impl EditorView {
         self.editor_model.as_ref(ctx).replica_id(ctx)
     }
 
-    /// Forces the collaborative buffer to be recreated.
-    /// If a replica ID is provided, the buffer will be initialized with that replica ID.
-    /// Otherwise, the new buffer will have the same replica ID as before.
-    pub fn reinitialize_buffer(
-        &mut self,
-        replica_id: Option<ReplicaId>,
-        ctx: &mut ViewContext<Self>,
-    ) {
+    /// Forces the collaborative buffer to be recreated with the same replica ID.
+    pub fn reinitialize_buffer(&mut self, ctx: &mut ViewContext<Self>) {
         self.editor_model.update(ctx, |model, ctx| {
-            model.recreate_buffer(replica_id, ctx);
+            model.recreate_buffer(ctx);
         });
         ctx.emit(Event::BufferReinitialized);
-    }
-
-    /// Exits the ephemeral loading state created by `set_buffer_text_ignoring_undo`
-    /// without touching the CRDT buffer or emitting any `UpdatePeers` operations.
-    /// The editor switches back to displaying the regular collaborative buffer.
-    pub fn exit_ephemeral_loading_state(&mut self, ctx: &mut ViewContext<Self>) {
-        self.editor_model.update(ctx, |model, ctx| {
-            model.exit_ephemeral_loading_state(ctx);
-        });
-    }
-
-    /// Shows an empty display-only ephemeral overlay for immediate visual feedback.
-    /// See [`EditorModel::show_display_only_empty_buffer`] for the full contract.
-    pub fn show_display_only_empty_buffer(&mut self, ctx: &mut ViewContext<Self>) {
-        self.editor_model.update(ctx, |model, ctx| {
-            model.show_display_only_empty_buffer(ctx);
-        });
     }
 
     pub fn register_remote_peer(

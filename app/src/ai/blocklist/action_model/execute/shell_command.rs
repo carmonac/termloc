@@ -84,18 +84,6 @@ impl ShellCommandExecutor {
         }
     }
 
-    pub(crate) fn interrupt_for_injected_followup(
-        &self,
-        conversation_id: AIConversationId,
-        block_id: BlockId,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        ctx.emit(ShellCommandExecutorEvent::InterruptForInjectedFollowup {
-            conversation_id,
-            block_id,
-        });
-    }
-
     /// Begins collecting liveness signals for the command this action will
     /// snapshot, starting the sampler if it is not already running.
     ///

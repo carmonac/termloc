@@ -97,10 +97,10 @@ impl Workspace {
     ) -> bool {
         focused_terminal_view
             .as_ref(ctx)
-            .should_show_wasm_conversation_details_panel(ctx)
+            .should_show_wasm_conversation_details_panel()
     }
 
-    /// Renders the transcript details panel for WASM conversation transcript and shared session viewing.
+    /// Renders the transcript details panel for WASM conversation transcript viewing.
     pub(super) fn render_transcript_details_panel(
         &self,
         app: &AppContext,

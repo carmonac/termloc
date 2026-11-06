@@ -5026,7 +5026,7 @@ fn terminal_use_interrupt_closes_shortcuts_before_taking_control() {
             let terminal_surface_id = ctx.view_id();
             let conversation_id =
                 BlocklistAIHistoryModel::handle(ctx).update(ctx, |history, ctx| {
-                    history.start_new_conversation(terminal_surface_id, false, false, false, ctx)
+                    history.start_new_conversation(terminal_surface_id, false, false, ctx)
                 });
             view.terminal_model
                 .lock()

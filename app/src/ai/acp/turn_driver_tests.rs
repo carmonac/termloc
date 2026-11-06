@@ -9,7 +9,6 @@ use futures::executor::block_on;
 use futures::future::join;
 use futures::io::{AsyncBufReadExt as _, AsyncRead, AsyncWrite, AsyncWriteExt as _, BufReader};
 use serde_json::{Value, json};
-use session_sharing_protocol::common::AgentAttachment;
 use warp_multi_agent_api::client_action::Action;
 use warp_multi_agent_api::message::Message as MessageKind;
 use warp_multi_agent_api::response_event::StreamInit;
@@ -264,7 +263,6 @@ fn prompt_text(prompt: &Value) -> String {
 enum HostEvent {
     BeginTurn {
         stream: ResponseStreamId,
-        initiator: Option<ParticipantId>,
     },
     /// User queries and agent output texts applied to `stream`.
     Texts {
@@ -421,21 +419,20 @@ fn message_texts(actions: &[ClientAction]) -> Vec<String> {
 
 #[async_trait]
 impl TurnHost for RecordingHost {
-    async fn begin_turn(&self, initiator: Option<ParticipantId>) -> Result<ExternalHarnessTurn> {
+    async fn begin_turn(&self) -> Result<ExternalHarnessTurn> {
         let n = {
             let mut opened = self.streams_opened.lock();
             *opened += 1;
             *opened
         };
         let request_id = format!("req-{n}");
-        let stream_id = ResponseStreamId::for_shared_session(&StreamInit {
+        let stream_id = ResponseStreamId::for_stream_init(&StreamInit {
             conversation_id: "conversation".to_owned(),
             request_id: request_id.clone(),
             run_id: String::new(),
         });
         self.record(HostEvent::BeginTurn {
             stream: stream_id.clone(),
-            initiator,
         });
         let gate = self.begin_gate.lock().take();
         if let Some(gate) = gate {
@@ -536,18 +533,14 @@ struct Fixture {
 }
 
 impl Fixture {
-    async fn send_follow_up(&self, text: &str) -> ParticipantId {
-        let participant_id = ParticipantId::new();
+    async fn send_follow_up(&self, text: &str) {
         self.follow_ups
             .send(ExternalHarnessPrompt {
                 text: text.to_owned(),
-                attachments: Vec::new(),
-                participant_id: participant_id.clone(),
                 base: None,
             })
             .await
             .unwrap();
-        participant_id
     }
 
     async fn send_interrupt(&self) {
@@ -589,7 +582,7 @@ fn start(
     let host = Arc::new(RecordingHost::new(state.clone()));
     let (follow_up_tx, follow_up_rx) = async_channel::unbounded();
     let (cancel_tx, cancel_rx) = async_channel::unbounded();
-    let turn = block_on(host.begin_turn(None)).unwrap();
+    let turn = block_on(host.begin_turn()).unwrap();
     let mapper = AcpTurnMapper::new("task-1".to_owned(), turn.request_id.clone(), HashMap::new());
     let driver = TurnDriver {
         connection: connection.clone(),
@@ -990,7 +983,7 @@ fn a_follow_up_mid_turn_cancels_the_turn_then_prompts_with_an_interruption_note(
             })
             .await;
 
-        let participant = fixture.send_follow_up("steer").await;
+        fixture.send_follow_up("steer").await;
         fixture.agent.expect_cancel().await;
         // What the agent streams before answering the cancel still belongs to the first turn.
         fixture.agent.send_chunk(" late").await;
@@ -1006,9 +999,9 @@ fn a_follow_up_mid_turn_cancels_the_turn_then_prompts_with_an_interruption_note(
             .host
             .wait_for(|events| matches!(events.last(), Some(HostEvent::Finished { .. })))
             .await;
-        (participant, fixture.unbind())
+        fixture.unbind()
     };
-    let ((participant, (host, state)), ()) = block_on(join(script, driver.run(&mut mapper)));
+    let ((host, state), ()) = block_on(join(script, driver.run(&mut mapper)));
 
     let streams = host.streams();
     assert_eq!(streams.len(), 2, "{:?}", host.events());
@@ -1060,7 +1053,6 @@ fn a_follow_up_mid_turn_cancels_the_turn_then_prompts_with_an_interruption_note(
         events[second_began],
         HostEvent::BeginTurn {
             stream: second.clone(),
-            initiator: Some(participant),
         }
     );
     assert!(
@@ -1145,7 +1137,7 @@ fn follow_ups_that_arrive_during_one_cancel_go_out_together_in_order() {
     let (driver, mut mapper, mut fixture) = start_default();
     let script = async {
         let first = fixture.agent.next_prompt().await;
-        let author_a = fixture.send_follow_up("a").await;
+        fixture.send_follow_up("a").await;
         fixture.agent.expect_cancel().await;
         fixture.send_follow_up("b").await;
         fixture
@@ -1169,9 +1161,9 @@ fn follow_ups_that_arrive_during_one_cancel_go_out_together_in_order() {
             .host
             .wait_for(|events| matches!(events.last(), Some(HostEvent::Finished { .. })))
             .await;
-        (author_a, fixture.unbind())
+        fixture.unbind()
     };
-    let ((author_a, (host, state)), ()) = block_on(join(script, driver.run(&mut mapper)));
+    let ((host, state), ()) = block_on(join(script, driver.run(&mut mapper)));
 
     let streams = host.streams();
     assert_eq!(streams.len(), 2);
@@ -1191,7 +1183,6 @@ fn follow_ups_that_arrive_during_one_cancel_go_out_together_in_order() {
     );
     assert!(host.events().contains(&HostEvent::BeginTurn {
         stream: streams[1].clone(),
-        initiator: Some(author_a),
     }));
     assert!(host.queued_rows.lock().is_empty());
     assert!(!state.is_settling());
@@ -1202,7 +1193,7 @@ fn exhausted_soft_cancels_retain_fifo_rows_and_drain_updates_until_a_natural_fin
     let (driver, mut mapper, mut fixture, timers) = start_manual();
     let script = async {
         let first = fixture.agent.next_prompt().await;
-        let author = fixture.send_follow_up("B").await;
+        fixture.send_follow_up("B").await;
         fixture.agent.expect_cancel().await;
         let grace = timers.take(STEER_CANCEL_DEADLINE).await;
         timers.take(Duration::from_secs(1)).await.send(()).unwrap();
@@ -1266,9 +1257,9 @@ fn exhausted_soft_cancels_retain_fifo_rows_and_drain_updates_until_a_natural_fin
         assert!(fixture.host.queued_rows.lock().is_empty());
         fixture.agent.respond(&second, "end_turn").await;
         fixture.host.wait_for_finished(2).await;
-        (author, fixture.unbind())
+        fixture.unbind()
     };
-    let ((author, (host, state)), ()) = block_on(join(script, driver.run(&mut mapper)));
+    let ((host, state), ()) = block_on(join(script, driver.run(&mut mapper)));
     let streams = host.streams();
     assert_eq!(streams.len(), 2, "{:?}", host.events());
     assert_eq!(
@@ -1278,7 +1269,6 @@ fn exhausted_soft_cancels_retain_fifo_rows_and_drain_updates_until_a_natural_fin
     assert_eq!(host.texts_on(&streams[1]), vec!["B", "C"]);
     assert!(host.events().contains(&HostEvent::BeginTurn {
         stream: streams[1].clone(),
-        initiator: Some(author),
     }));
     assert!(!host.events().iter().any(|event| matches!(
         event,
@@ -1375,27 +1365,20 @@ fn more_than_two_ready_batches_are_submitted_fifo_without_empty_prompts_or_dupli
     let expected = (0..MAX_BATCHED_FOLLOW_UPS * 2 + 3)
         .map(|index| format!("follow-up-{index}"))
         .collect::<Vec<_>>();
-    let authors = block_on(async {
-        let mut authors = Vec::new();
+    block_on(async {
         for (index, text) in expected.iter().enumerate() {
-            let author = if index < 5 {
-                let participant_id = ParticipantId::new();
+            if index < 5 {
                 driver.queued.push_back(QueuedFollowUp {
                     prompt: ExternalHarnessPrompt {
                         text: text.clone(),
-                        attachments: Vec::new(),
-                        participant_id: participant_id.clone(),
                         base: None,
                     },
                     row: None,
                 });
-                participant_id
             } else {
-                fixture.send_follow_up(text).await
-            };
-            authors.push(author);
+                fixture.send_follow_up(text).await;
+            }
         }
-        authors
     });
     let script = async {
         let mut received = Vec::new();
@@ -1437,10 +1420,9 @@ fn more_than_two_ready_batches_are_submitted_fifo_without_empty_prompts_or_dupli
         .flat_map(|stream| host.texts_on(stream))
         .collect::<Vec<_>>();
     assert_eq!(echoes, expected);
-    for (index, stream) in streams.iter().enumerate().skip(1) {
+    for stream in streams.iter().skip(1) {
         assert!(host.events().contains(&HostEvent::BeginTurn {
             stream: stream.clone(),
-            initiator: Some(authors[index * MAX_BATCHED_FOLLOW_UPS].clone()),
         }));
     }
     assert!(host.queued_rows.lock().is_empty());
@@ -1809,9 +1791,8 @@ fn turn_state_reports_idle_once_the_prompt_resolves() {
 }
 
 #[test]
-fn opening_batch_preserves_attachments_and_authorship_across_preparation() {
+fn opening_batch_preserves_authorship_across_preparation() {
     let (driver, mut mapper, mut fixture) = start_default();
-    let author_b = ParticipantId::new();
     let base = BaseUserQuery::from_proto(warp_multi_agent_api::request::input::UserQuery {
         author: Some(QueryAuthor {
             principal: Some(query_author::Principal::User(WarpUser {
@@ -1827,10 +1808,6 @@ fn opening_batch_preserves_attachments_and_authorship_across_preparation() {
         .follow_ups
         .try_send(ExternalHarnessPrompt {
             text: "B".to_owned(),
-            attachments: vec![AgentAttachment::PlainText {
-                content: "B context".to_owned(),
-            }],
-            participant_id: author_b,
             base: Some(base),
         })
         .unwrap();
@@ -1848,7 +1825,6 @@ fn opening_batch_preserves_attachments_and_authorship_across_preparation() {
             json!([
                 {"type": "text", "text": "initial prompt"},
                 {"type": "text", "text": "B"},
-                {"type": "text", "text": "<attached_text>\nB context\n</attached_text>"},
                 {"type": "text", "text": "C"},
                 {"type": "text", "text": "D during preparation"}
             ])
@@ -1891,7 +1867,7 @@ fn idle_batch_preserves_fifo_and_first_author_across_async_preparation() {
         fixture.agent.respond(&first, "end_turn").await;
         fixture.host.wait_for_finished(1).await;
         let release = fixture.host.gate_next_begin();
-        let author = fixture.send_follow_up("B").await;
+        fixture.send_follow_up("B").await;
         fixture.send_follow_up("C ready").await;
         fixture
             .host
@@ -1917,9 +1893,9 @@ fn idle_batch_preserves_fifo_and_first_author_across_async_preparation() {
         fixture.agent.read_barrier().await;
         fixture.agent.respond(&second, "end_turn").await;
         fixture.host.wait_for_finished(2).await;
-        (author, fixture.unbind())
+        fixture.unbind()
     };
-    let ((author, (host, _)), ()) = block_on(join(script, driver.run(&mut mapper)));
+    let ((host, _), ()) = block_on(join(script, driver.run(&mut mapper)));
     let streams = host.streams();
     assert_eq!(streams.len(), 2, "{:?}", host.events());
     assert_eq!(
@@ -1928,7 +1904,6 @@ fn idle_batch_preserves_fifo_and_first_author_across_async_preparation() {
     );
     assert!(host.events().contains(&HostEvent::BeginTurn {
         stream: streams[1].clone(),
-        initiator: Some(author),
     }));
     assert!(
         !host
@@ -2347,8 +2322,6 @@ fn follow_ups_a_prompt_could_not_carry_are_steered_into_its_turn() {
         driver.queued.push_back(QueuedFollowUp {
             prompt: ExternalHarnessPrompt {
                 text: text.clone(),
-                attachments: Vec::new(),
-                participant_id: ParticipantId::new(),
                 base: None,
             },
             row: None,

@@ -15,8 +15,6 @@ use crate::terminal::view::{ContextMenuAction, PromptPart, PromptPosition, Termi
 pub enum PromptType {
     /// A warp prompt that refreshes chip values on its own. Typical for local sessions.
     Dynamic { prompt: ModelHandle<CurrentPrompt> },
-    /// A warp prompt that does not change unless explicitly overwritten. Used for viewers of shared sessions.
-    Static { snapshot: PromptSnapshot },
 }
 
 impl PromptType {
@@ -35,16 +33,6 @@ impl PromptType {
         ctx.observe(&current_prompt, |_, _, ctx| ctx.notify());
         Self::Dynamic {
             prompt: current_prompt,
-        }
-    }
-
-    pub fn new_static(
-        chips: Vec<ChipResult>,
-        same_line_prompt_enabled: bool,
-        separator: WarpPromptSeparator,
-    ) -> Self {
-        PromptType::Static {
-            snapshot: PromptSnapshot::from_chips(chips, same_line_prompt_enabled, separator),
         }
     }
 
@@ -90,14 +78,12 @@ impl PromptType {
     ) -> Option<ChipValue> {
         match self {
             Self::Dynamic { prompt } => prompt.as_ref(ctx).latest_chip_value(chip_kind).cloned(),
-            Self::Static { snapshot } => snapshot.chip_value(chip_kind),
         }
     }
 
     pub fn prompt_as_string(&self, ctx: &AppContext) -> String {
         match self {
             Self::Dynamic { prompt } => prompt.as_ref(ctx).prompt_as_string(ctx),
-            Self::Static { snapshot } => snapshot.to_string(),
         }
     }
 
@@ -106,7 +92,6 @@ impl PromptType {
             Self::Dynamic { prompt } => {
                 PromptSnapshot::from_current_prompt(prompt.as_ref(ctx), ctx)
             }
-            Self::Static { snapshot } => snapshot.clone(),
         }
     }
 
@@ -151,11 +136,6 @@ impl PromptType {
             .into_iter()
             .filter_map(|chip_kind| match self {
                 Self::Dynamic { prompt } => prompt.as_ref(ctx).latest_chip_result(&chip_kind),
-                Self::Static { snapshot } => snapshot
-                    .chips()
-                    .iter()
-                    .find(|chip_result| chip_result.kind() == &chip_kind)
-                    .cloned(),
             })
             .collect()
     }
@@ -164,7 +144,6 @@ impl PromptType {
     pub fn same_line_prompt_enabled(&self, ctx: &AppContext) -> bool {
         match self {
             Self::Dynamic { prompt } => prompt.as_ref(ctx).same_line_prompt_enabled(),
-            Self::Static { snapshot } => snapshot.same_line_prompt_enabled(),
         }
     }
 
@@ -172,7 +151,6 @@ impl PromptType {
     pub fn separator(&self, ctx: &AppContext) -> WarpPromptSeparator {
         match self {
             Self::Dynamic { prompt } => prompt.as_ref(ctx).separator(),
-            Self::Static { snapshot } => snapshot.separator(),
         }
     }
 }

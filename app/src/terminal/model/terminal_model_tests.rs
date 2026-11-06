@@ -1,5 +1,4 @@
 use std::fs;
-use std::sync::Arc;
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use chrono::{DateTime, Local};
@@ -8,23 +7,18 @@ use warp_completer::completer::MatchedSuggestion;
 use warp_core::command::ExitCode;
 use warp_core::features::FeatureFlag;
 use warp_terminal::model::ansi::ClearMode;
-use warpui::r#async::executor::Background;
 use warpui::text::{SelectionType, str_to_byte_vec};
 
 use super::*;
 use crate::ai::agent::conversation::AIConversationId;
-use crate::terminal::color;
 use crate::terminal::event_listener::ChannelEventListener;
-use crate::terminal::model::ObfuscateSecrets;
-use crate::terminal::model::ansi::{CompletionMetadata, Handler, Processor};
-use crate::terminal::model::block::BlockId;
+use crate::terminal::model::ansi::{CompletionMetadata, Handler};
+use crate::terminal::model::block::{BlockId, SerializedBlock};
 use crate::terminal::model::bootstrap::BootstrapStage;
 use crate::terminal::model::grid::Dimensions as _;
 use crate::terminal::model::image_map::StoredImageMetadata;
 use crate::terminal::model::index::Side;
 use crate::terminal::model::selection::ExpandedSelectionRange;
-use crate::terminal::model::test_utils::block_size;
-use crate::terminal::shared_session::SharedSessionStatus;
 
 /// Helper function to create a SerializedBlock with default values,
 /// including the new is_local field.
@@ -108,26 +102,6 @@ fn take_typeahead_for_input_is_none_when_typeahead_is_empty() {
 
     assert_eq!(model.take_typeahead_for_input(), None);
 }
-#[test]
-fn generic_shared_session_viewer_model_starts_view_pending() {
-    let model = TerminalModel::new_for_shared_session_viewer(
-        block_size(),
-        color::List::from(&color::Colors::default()),
-        ChannelEventListener::new_for_test(),
-        Arc::new(Background::default()),
-        false,
-        false,
-        false,
-        ObfuscateSecrets::No,
-    );
-
-    assert!(matches!(
-        model.shared_session_status(),
-        SharedSessionStatus::ViewPending
-    ));
-    assert!(model.shared_session_status().is_viewer());
-}
-
 fn iterm_file_osc(name: &str, inline: bool, payload: &[u8]) -> String {
     let inline = if inline { "1" } else { "0" };
     format!(
@@ -152,13 +126,6 @@ fn multipart_iterm_file_osc(name: &str, inline: bool, payload: &[u8]) -> Vec<Str
         format!("\x1b]1337;FilePart={}\x07", &encoded_payload[midpoint..]),
         "\x1b]1337;FileEnd\x07".to_owned(),
     ]
-}
-
-fn hex_encoded_json_dcs(payload: &str) -> Vec<u8> {
-    let mut bytes = b"\x1bP$d".to_vec();
-    bytes.extend(hex::encode(payload).bytes());
-    bytes.push(0x9c);
-    bytes
 }
 
 fn command_finished_and_precmd(terminal: &mut TerminalModel) {
@@ -1037,9 +1004,6 @@ fn normal_lifecycle_pipeline_emits_completion_and_prompt_side_effects_once() {
     let mut terminal = TerminalModel::mock(None, Some(event_proxy));
     while event_rx.try_recv().is_ok() {}
 
-    let (ordered_tx, ordered_rx) = async_channel::unbounded();
-    terminal.set_ordered_terminal_events_for_shared_session_tx(ordered_tx);
-
     let completed_block_id = terminal.active_block_id().clone();
     let next_block_id = BlockId::new();
     let completion_metadata = CompletionMetadata {
@@ -1129,12 +1093,6 @@ fn normal_lifecycle_pipeline_emits_completion_and_prompt_side_effects_once() {
             .count(),
         1
     );
-
-    assert!(matches!(
-        ordered_rx.try_recv(),
-        Ok(OrderedTerminalEventType::CommandExecutionFinished { .. })
-    ));
-    assert!(ordered_rx.try_recv().is_err());
 }
 
 /// The shell ranks its own completions by relevance, so the order it emits them in is information
@@ -1275,8 +1233,6 @@ fn precmd_with_completion_metadata_recovers_missing_completion_with_exact_side_e
     let mut terminal = TerminalModel::mock(None, Some(event_proxy));
     while event_rx.try_recv().is_ok() {}
 
-    let (ordered_tx, ordered_rx) = async_channel::unbounded();
-    terminal.set_ordered_terminal_events_for_shared_session_tx(ordered_tx);
     let completed_block_id = terminal.active_block_id().clone();
     terminal.start_command_execution();
     for c in "missing-finish".chars() {
@@ -1338,11 +1294,6 @@ fn precmd_with_completion_metadata_recovers_missing_completion_with_exact_side_e
             .count();
         assert_eq!(count, 1, "Expected exactly one {expected} event.");
     }
-    assert!(matches!(
-        ordered_rx.try_recv(),
-        Ok(OrderedTerminalEventType::CommandExecutionFinished { .. })
-    ));
-    assert!(ordered_rx.try_recv().is_err());
 
     terminal.precmd_with_completion_metadata(PrecmdValue {
         completion_metadata,
@@ -1551,8 +1502,6 @@ fn recovery_advances_finished_active_block_without_republishing_completion() {
         .with_terminal_events_tx(event_tx)
         .build();
     let mut terminal = TerminalModel::mock(None, Some(event_proxy));
-    let (ordered_tx, ordered_rx) = async_channel::unbounded();
-    terminal.set_ordered_terminal_events_for_shared_session_tx(ordered_tx);
     let completed_block_id = terminal.active_block_id().clone();
     terminal
         .block_list_mut()
@@ -1608,7 +1557,6 @@ fn recovery_advances_finished_active_block_without_republishing_completion() {
             .count(),
         1
     );
-    assert!(ordered_rx.try_recv().is_err());
 }
 
 #[test]
@@ -2053,161 +2001,4 @@ fn test_rect_selection_in_alt_screen() {
             ],
         })
     );
-}
-
-#[test]
-fn viewer_processes_dcs_hook_with_unregistered_session_id() {
-    let mut terminal = TerminalModel::mock(None, None);
-    terminal.set_shared_session_status(SharedSessionStatus::reader());
-    terminal.start_command_execution();
-    terminal.command_finished(CommandFinishedValue {
-        completion_metadata: CompletionMetadata {
-            exit_code: ExitCode::from(0),
-            next_block_id: BlockId::new(),
-        },
-        session_id: None,
-    });
-
-    let bytes = hex_encoded_json_dcs(
-        r#"{
-                "hook": "Precmd",
-                "value": {
-                    "pwd": "/viewer",
-                    "session_id": 999
-                }
-            }"#,
-    );
-    terminal.process_bytes(bytes.as_slice());
-
-    assert_eq!(
-        terminal
-            .block_list()
-            .active_block()
-            .pwd()
-            .map(String::as_str),
-        Some("/viewer")
-    );
-}
-
-#[test]
-fn sharer_rejects_dcs_hook_with_unregistered_session_id() {
-    let mut terminal = TerminalModel::mock(None, None);
-    terminal.set_shared_session_status(SharedSessionStatus::ActiveSharer);
-    terminal.start_command_execution();
-    terminal.command_finished(CommandFinishedValue {
-        completion_metadata: CompletionMetadata {
-            exit_code: ExitCode::from(0),
-            next_block_id: BlockId::new(),
-        },
-        session_id: None,
-    });
-
-    let bytes = hex_encoded_json_dcs(
-        r#"{
-                "hook": "Precmd",
-                "value": {
-                    "pwd": "/sharer",
-                    "session_id": 999
-                }
-            }"#,
-    );
-    terminal.process_bytes(bytes.as_slice());
-
-    assert_eq!(
-        terminal
-            .block_list()
-            .active_block()
-            .pwd()
-            .map(String::as_str),
-        None
-    );
-}
-
-#[test]
-fn test_synchronized_output_sharing_session() {
-    let mut terminal: TerminalModel = TerminalModel::mock(None, None);
-
-    // Configure the terminal model for a shared session.
-    terminal.set_shared_session_status(SharedSessionStatus::ActiveSharer);
-    let (tx, rx) = async_channel::unbounded();
-    terminal.set_ordered_terminal_events_for_shared_session_tx(tx);
-
-    // Process bytes including synchronized output markers.
-    terminal.process_bytes(&b"Before\x1b[?2026hsynchronized\x1b[?2026lafter"[..]);
-
-    // Bytes are flushed every time synchronized output toggles, plus the trailing bytes.
-    rx.close();
-    let events: Vec<_> = std::iter::from_fn(|| rx.try_recv().ok()).collect();
-    assert_eq!(events.len(), 3);
-
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[0] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[0]);
-    };
-    assert_eq!(bytes.as_slice(), b"Before\x1b[?2026h");
-
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[1] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[1]);
-    };
-    assert_eq!(bytes.as_slice(), b"synchronized\x1b[?2026l");
-
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[2] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[2]);
-    };
-    assert_eq!(bytes.as_slice(), b"after");
-}
-
-/// Tests the split-batch case where synchronized output markers arrive in separate
-/// `parse_bytes` calls on a persistent [`Processor`], preserving sync output state across calls.
-#[test]
-fn test_synchronized_output_sharing_session_split_batch() {
-    let mut terminal: TerminalModel = TerminalModel::mock(None, None);
-
-    // Configure the terminal model for a shared session.
-    terminal.set_shared_session_status(SharedSessionStatus::ActiveSharer);
-    let (tx, rx) = async_channel::unbounded();
-    terminal.set_ordered_terminal_events_for_shared_session_tx(tx);
-
-    // Use a single Processor so that synchronized output state is preserved across calls.
-    let mut processor = Processor::new();
-
-    // First batch: contains the sync output start marker but not the end marker.
-    processor.parse_bytes(
-        &mut terminal,
-        &b"Before\x1b[?2026hsync"[..],
-        &mut std::io::sink(),
-    );
-
-    // Second batch: contains the sync output end marker.
-    processor.parse_bytes(
-        &mut terminal,
-        &b"hronized\x1b[?2026lafter"[..],
-        &mut std::io::sink(),
-    );
-
-    // Bytes are flushed at each toggle point and at the end of each parse_bytes call.
-    rx.close();
-    let events: Vec<_> = std::iter::from_fn(|| rx.try_recv().ok()).collect();
-    assert_eq!(events.len(), 4);
-
-    // First batch flushes at the sync start toggle, then the remaining bytes.
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[0] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[0]);
-    };
-    assert_eq!(bytes.as_slice(), b"Before\x1b[?2026h");
-
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[1] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[1]);
-    };
-    assert_eq!(bytes.as_slice(), b"sync");
-
-    // Second batch flushes at the sync end toggle, then the remaining bytes.
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[2] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[2]);
-    };
-    assert_eq!(bytes.as_slice(), b"hronized\x1b[?2026l");
-
-    let OrderedTerminalEventType::PtyBytesRead { bytes } = &events[3] else {
-        panic!("Expected PtyBytesRead, got {:?}", events[3]);
-    };
-    assert_eq!(bytes.as_slice(), b"after");
 }

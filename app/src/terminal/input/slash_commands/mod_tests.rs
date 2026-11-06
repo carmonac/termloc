@@ -5,7 +5,7 @@ use crate::search::slash_command_menu::static_commands::{
 
 /// The centralized classifier must mark only the prompt-submitting commands (/compact, /plan) as
 /// "submitted as a prompt". Every other slash command emits an immediate action
-/// and must be treated as "run now" by the prompt-queue gate and the shared-session viewer path.
+/// and must be treated as "run now" by the prompt-queue gate.
 #[test]
 fn slash_command_is_submitted_as_prompt_only_for_prompt_commands() {
     assert!(slash_command_is_submitted_as_prompt(&commands::COMPACT));

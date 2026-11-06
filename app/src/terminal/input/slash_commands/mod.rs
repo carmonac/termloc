@@ -860,23 +860,6 @@ impl Input {
                 self.open_rewind_menu(ctx);
             }
             SlashCommandKind::Usage => return false,
-            SlashCommandKind::RemoteControl => {
-                if !FeatureFlag::CreatingSharedSessions.is_enabled()
-                    || !FeatureFlag::HOARemoteControl.is_enabled()
-                {
-                    return false;
-                }
-                if self
-                    .model
-                    .lock()
-                    .shared_session_status()
-                    .is_sharer_or_viewer()
-                {
-                    show_error_toast("Session is already being shared".to_owned(), ctx);
-                    return true;
-                }
-                ctx.emit(Event::StartRemoteControl);
-            }
             SlashCommandKind::Cost => {
                 let history = BlocklistAIHistoryModel::handle(ctx);
                 let conversation = history
@@ -1273,8 +1256,7 @@ impl Input {
 /// distinction: only `/compact` and `/plan` are sent as prompts (mirroring the
 /// `command_that_just_sends_ai_request_with_prefix` arm in [`Input::execute_slash_command`]).
 /// Every other slash command emits an immediate action (forking, switching model, opening a
-/// menu, etc.), so callers gating prompt queuing or shared-session forwarding should treat those
-/// as "run now".
+/// menu, etc.), so callers gating prompt queuing should treat those as "run now".
 pub fn slash_command_is_submitted_as_prompt(command: &StaticCommand) -> bool {
     matches!(
         command.kind,

@@ -222,21 +222,6 @@ server_id: ServerId::from_string_lossy("LkDlnAe34vfYD2JXsAkssc"),
 }
 
 #[test]
-fn test_warp_web_link_session() {
-    assert_eq!(
-        get_item_data_from_warp_link(
-            &Url::parse(&format!(
-                "{}/session/317d0686-7a0b-4b67-806b-aaa3e9df501b?
-                pwd=6f727249-af9f-4025-a240-59df40a4c64b",
-                ChannelState::server_root_url()
-            ))
-            .unwrap()
-        ),
-        Some(WarpWebLink::Session)
-    );
-}
-
-#[test]
 fn test_warp_web_link_workflow() {
     assert_eq!(
         get_item_data_from_warp_link(

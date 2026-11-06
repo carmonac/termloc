@@ -11,7 +11,6 @@ use fuzzy_match::FuzzyMatchResult;
 use repo_metadata::RepoMetadataModel;
 use repo_metadata::repositories::DetectedRepositories;
 use repo_metadata::watcher::DirectoryWatcher;
-use session_sharing_protocol::common::{ParticipantId, Role};
 use smol_str::SmolStr;
 use unindent::Unindent;
 #[cfg(feature = "voice_input")]
@@ -48,8 +47,8 @@ use crate::ai::outline::RepoOutlines;
 use crate::ai::persisted_workspace::PersistedWorkspace;
 use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
+use crate::auth::AuthStateProvider;
 use crate::auth::auth_manager::AuthManager;
-use crate::auth::{AuthStateProvider, UserUid};
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::context_chips::prompt::Prompt;
 use crate::editor::{DisplayPoint, EditorAction, Point, TextStyleOperation};
@@ -100,9 +99,6 @@ use crate::terminal::model::session::{BootstrapSessionType, SessionInfo};
 use crate::terminal::model::terminal_model::BlockIndex;
 use crate::terminal::model_events::ModelEvent;
 use crate::terminal::resizable_data::ResizableData;
-use crate::terminal::shared_session::SharedSessionSource;
-use crate::terminal::shared_session::permissions_manager::SessionPermissionsManager;
-use crate::terminal::shared_session::presence_manager::PresenceManager;
 use crate::terminal::shell::{Shell, ShellType};
 use crate::terminal::universal_developer_input::UniversalDeveloperInputButtonBarEvent;
 use crate::terminal::view::Event as TerminalViewEvent;
@@ -220,158 +216,6 @@ fn unshared_terminal_executes_command_locally() {
         let events = events.borrow();
         assert_eq!(events[0].0, "echo local");
         assert!(matches!(&events[0].1, CommandExecutionSource::User));
-    });
-}
-
-#[test]
-fn share_pending_creator_executes_setup_command_locally() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        terminal.update(&mut app, |view, _| {
-            view.model
-                .lock()
-                .set_shared_session_status(SharedSessionStatus::SharePending);
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        input.read(&app, |input, _| {
-            assert!(input.shared_session_presence_manager.is_none());
-        });
-        let events = subscribe_to_execute_command_events(&mut app, &terminal);
-
-        assert!(input.update(&mut app, |input, ctx| {
-            input.try_execute_command("echo setup", ctx)
-        }));
-        assert_eventually!(
-            600 => events.borrow().len() == 1,
-            "a pending sharer's setup command should reach the terminal surface"
-        );
-        let events = events.borrow();
-        assert_eq!(events[0].0, "echo setup");
-        assert!(matches!(&events[0].1, CommandExecutionSource::User));
-    });
-}
-
-#[test]
-fn share_pending_queued_command_uses_queued_source() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        terminal.update(&mut app, |view, _| {
-            view.model
-                .lock()
-                .set_shared_session_status(SharedSessionStatus::SharePending);
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let events = subscribe_to_execute_command_events(&mut app, &terminal);
-
-        assert!(input.update(&mut app, |input, ctx| {
-            input.try_execute_command_with_options("echo queued", true, ctx)
-        }));
-        assert_eventually!(
-            600 => events.borrow().len() == 1,
-            "a queued setup command should reach the terminal surface"
-        );
-        let events = events.borrow();
-        assert_eq!(events[0].0, "echo queued");
-        assert!(matches!(
-            &events[0].1,
-            CommandExecutionSource::QueuedCommand
-        ));
-        assert!(events[0].1.should_preserve_input());
-    });
-}
-
-#[test]
-fn active_sharer_keeps_participant_attribution() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let active_sharer_terminal =
-            add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        let sharer_id = ParticipantId::new();
-        let firebase_uid = UserUid::new("mock_firebase_uid");
-        let sharer_id_for_manager = sharer_id.clone();
-        let presence_manager = app.add_model(move |_| {
-            PresenceManager::new_for_sharer(sharer_id_for_manager, firebase_uid)
-        });
-        active_sharer_terminal.update(&mut app, |view, _| {
-            view.model
-                .lock()
-                .set_shared_session_status(SharedSessionStatus::ActiveSharer);
-        });
-        let active_sharer_input = active_sharer_terminal.read(&app, |view, _| view.input().clone());
-        active_sharer_input.update(&mut app, |input, _| {
-            input.set_shared_session_presence_manager(presence_manager);
-        });
-
-        let active_sharer_events =
-            subscribe_to_execute_command_events(&mut app, &active_sharer_terminal);
-        assert!(active_sharer_input.update(&mut app, |input, ctx| {
-            input.try_execute_command("echo attributed", ctx)
-        }));
-        assert_eventually!(
-            600 => active_sharer_events.borrow().len() == 1,
-            "active sharer command should reach the terminal surface"
-        );
-        let events = active_sharer_events.borrow();
-        assert_eq!(events[0].0, "echo attributed");
-        match &events[0].1 {
-            CommandExecutionSource::SharedSession { participant_id, .. } => {
-                assert_eq!(participant_id, &sharer_id)
-            }
-            _ => panic!("active sharer command should retain its participant source"),
-        }
-    });
-}
-
-#[test]
-fn view_pending_viewer_cannot_execute_commands() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        terminal.update(&mut app, |view, _| {
-            view.model
-                .lock()
-                .set_shared_session_status(SharedSessionStatus::ViewPending);
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let events = subscribe_to_execute_command_events(&mut app, &terminal);
-
-        assert!(!input.update(&mut app, |input, ctx| {
-            input.try_execute_command("echo pending viewer", ctx)
-        }));
-        assert!(
-            events.borrow().is_empty(),
-            "a view-pending session must not emit a command intent"
-        );
-    });
-}
-
-#[test]
-fn reader_viewer_cannot_execute_commands() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        terminal.update(&mut app, |view, _| {
-            view.model
-                .lock()
-                .set_shared_session_status(SharedSessionStatus::reader());
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let events = subscribe_to_execute_command_events(&mut app, &terminal);
-
-        assert!(!input.update(&mut app, |input, ctx| {
-            input.try_execute_command("echo reader", ctx)
-        }));
-        assert!(
-            events.borrow().is_empty(),
-            "a reader session must not emit a command intent"
-        );
     });
 }
 
@@ -547,7 +391,6 @@ pub fn initialize_app(app: &mut App) {
     app.add_singleton_model(AppTelemetryContextProvider::new_context_provider);
     app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(LLMPreferences::new);
-    app.add_singleton_model(SessionPermissionsManager::new);
     app.add_singleton_model(DirectoryWatcher::new);
     app.add_singleton_model(|_| DetectedRepositories::default());
     app.add_singleton_model(crate::remote_server::manager::RemoteServerManager::new);
@@ -1431,227 +1274,9 @@ fn test_history_up_buffer_restoration() {
 }
 
 #[test]
-fn test_history_up_for_shared_session_executor() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        // Initialize as shared session executor
-        // such that the history model isn't also initialized during bootstrapping
-        // TODO(maggs): Improve testing utils for session sharing
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model
-                .block_list_mut()
-                .active_block_for_test()
-                .set_session_id(SessionId::from(0));
-            model.set_shared_session_status(SharedSessionStatus::ActiveViewer {
-                role: Role::Executor,
-            });
-        });
-
-        let (input, suggestions) = terminal.read(&app, |view, _ctx| {
-            let input = view.input().clone();
-            let input_suggestions = input.read(&app, |input, _ctx| input.input_suggestions.clone());
-            (input, input_suggestions)
-        });
-
-        input.update(&mut app, |input, ctx| {
-            // Initialize shared session history model
-            let shared_session_history_model = ctx.add_model(|_| SharedSessionHistoryModel::new());
-
-            // Simulate blocks
-            shared_session_history_model.update(ctx, |history_model, _ctx| {
-                history_model.push(HistoryEntry::for_completed_block(
-                    "echo foo".into(),
-                    &SerializedBlock::new_for_test("echo foo".as_bytes().to_vec(), vec![]),
-                ));
-
-                history_model.push(HistoryEntry::for_completed_block(
-                    "cd ~".into(),
-                    &SerializedBlock::new_for_test("cd ~".as_bytes().to_vec(), vec![]),
-                ));
-            });
-
-            input.shared_session_input_state = Some(SharedSessionInputState {
-                history_model: shared_session_history_model,
-                pending_command_execution_request: None,
-            });
-            input.editor_up(ctx);
-        });
-
-        // Arrow up displays history in the correct order for an empty buffer
-        suggestions.read(&app, |suggestions, _ctx| {
-            assert_eq!(suggestions.items().len(), 2);
-            assert_eq!(suggestions.item_text(0).as_str(), "echo foo");
-            assert_eq!(suggestions.item_text(1).as_str(), "cd ~");
-        });
-
-        // The buffer should contain the text of the last item
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "cd ~");
-        });
-
-        // Shared session executor should be able to navigate through history
-        input.update(&mut app, |input, ctx| {
-            input.editor_up(ctx);
-        });
-
-        // The buffer should contain the text of the second last item after another arrow-up
-        input.read(&app, |input, ctx| {
-            assert_eq!(input.buffer_text(ctx), "echo foo");
-        });
-    });
-}
-
-#[test]
-fn maybe_route_ai_query_to_remote_target_proceeds_for_empty_buffer() {
-    // Even on a viewer pane, an empty buffer is a no-op the caller handles normally, so the
-    // helper returns false and does not forward anything.
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model.set_shared_session_status(SharedSessionStatus::executor());
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-
-        let sent = Rc::new(RefCell::new(Vec::<String>::new()));
-        let sent_cb = sent.clone();
-        app.update(|ctx| {
-            ctx.subscribe_to_view(&input, move |_, event: &super::Event, _| {
-                if let super::Event::SendAgentPrompt { prompt, .. } = event {
-                    sent_cb.borrow_mut().push(prompt.clone());
-                }
-            });
-        });
-
-        let handled = input.update(&mut app, |input, ctx| {
-            input.maybe_route_ai_query_to_remote_target(ctx)
-        });
-        assert!(!handled, "an empty buffer must not be routed");
-        assert!(
-            sent.borrow().is_empty(),
-            "an empty buffer must not forward a viewer prompt"
-        );
-    });
-}
-
-#[test]
-fn maybe_route_ai_query_to_remote_target_blocks_read_only_viewer() {
-    // A read-only (reader) viewer cannot submit; the helper handles it (blocks) without
-    // forwarding a prompt to the sharer.
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model.set_shared_session_status(SharedSessionStatus::ActiveViewer {
-                role: Role::Reader,
-            });
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-
-        let sent = Rc::new(RefCell::new(Vec::<String>::new()));
-        let sent_cb = sent.clone();
-        app.update(|ctx| {
-            ctx.subscribe_to_view(&input, move |_, event: &super::Event, _| {
-                if let super::Event::SendAgentPrompt { prompt, .. } = event {
-                    sent_cb.borrow_mut().push(prompt.clone());
-                }
-            });
-        });
-
-        input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("please continue", ctx);
-        });
-
-        let handled = input.update(&mut app, |input, ctx| {
-            input.maybe_route_ai_query_to_remote_target(ctx)
-        });
-        assert!(
-            handled,
-            "a read-only viewer submission must be handled (blocked)"
-        );
-        assert!(
-            sent.borrow().is_empty(),
-            "a read-only viewer must not forward a prompt to the sharer"
-        );
-    });
-}
-
-#[test]
-fn maybe_route_ai_query_to_remote_target_forwards_executor_viewer_prompt() {
-    // An executor viewer forwards the prompt to the sharer (SendAgentPrompt) instead of running
-    // it on the viewer's local machine.
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model
-                .block_list_mut()
-                .active_block_for_test()
-                .set_session_id(SessionId::from(0));
-            model.set_shared_session_status(SharedSessionStatus::executor());
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-
-        let sent = Rc::new(RefCell::new(Vec::<String>::new()));
-        let sent_cb = sent.clone();
-        app.update(|ctx| {
-            ctx.subscribe_to_view(&input, move |_, event: &super::Event, _| {
-                if let super::Event::SendAgentPrompt { prompt, .. } = event {
-                    sent_cb.borrow_mut().push(prompt.clone());
-                }
-            });
-        });
-
-        input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("continue please", ctx);
-        });
-
-        let handled = input.update(&mut app, |input, ctx| {
-            input.maybe_route_ai_query_to_remote_target(ctx)
-        });
-        assert!(handled, "an executor viewer submission must be handled");
-        assert_eq!(
-            sent.borrow().as_slice(),
-            ["continue please"],
-            "an executor viewer must forward the prompt to the sharer"
-        );
-    });
-}
-
-#[test]
-fn send_now_event_submits_through_active_pane_and_preserves_draft() {
+fn send_now_event_submits_prompt_and_preserves_draft() {
     // A queued-prompt "send now" surfaces as a SendNow event on the input. The host should
-    // immediately route the removed prompt through the active-pane submission path (here, the
-    // shared-session viewer path, which emits SendAgentPrompt) without clobbering a draft the
-    // user has typed locally.
+    // immediately submit the removed prompt without clobbering a draft the user has typed locally.
     App::test((), |mut app| async move {
         initialize_app(&mut app);
 
@@ -1666,19 +1291,16 @@ fn send_now_event_submits_through_active_pane_and_preserves_draft() {
                 .block_list_mut()
                 .active_block_for_test()
                 .set_session_id(SessionId::from(0));
-            model.set_shared_session_status(SharedSessionStatus::executor());
         });
 
         let input = terminal.read(&app, |view, _| view.input().clone());
 
-        let submitted_prompts = Rc::new(RefCell::new(Vec::<String>::new()));
-        let submitted_prompts_for_subscription = submitted_prompts.clone();
+        let submitted_queries = Rc::new(RefCell::new(0));
+        let submitted_queries_for_subscription = submitted_queries.clone();
         app.update(|ctx| {
             ctx.subscribe_to_view(&input, move |_, event: &super::Event, _| {
-                if let super::Event::SendAgentPrompt { prompt, .. } = event {
-                    submitted_prompts_for_subscription
-                        .borrow_mut()
-                        .push(prompt.clone());
+                if matches!(event, super::Event::ExecuteAIQuery) {
+                    *submitted_queries_for_subscription.borrow_mut() += 1;
                 }
             });
         });
@@ -1710,7 +1332,7 @@ fn send_now_event_submits_through_active_pane_and_preserves_draft() {
         });
 
         // The queued prompt was submitted immediately...
-        assert_eq!(submitted_prompts.borrow().as_slice(), ["queued prompt"]);
+        assert_eq!(*submitted_queries.borrow(), 1);
         // ...the in-progress draft the user typed was left untouched...
         input.read(&app, |input, ctx| {
             assert_eq!(input.buffer_text(ctx), "draft in progress");
@@ -1791,7 +1413,7 @@ fn queued_command_completion_preserves_draft() {
         let terminal_view_id = terminal.read(&app, |view, _| view.id());
         let conversation_id =
             BlocklistAIHistoryModel::handle(&app).update(&mut app, |history, ctx| {
-                let id = history.start_new_conversation(terminal_view_id, false, false, false, ctx);
+                let id = history.start_new_conversation(terminal_view_id, false, false, ctx);
                 history.set_active_conversation_id(id, terminal_view_id, ctx);
                 id
             });
@@ -1802,7 +1424,7 @@ fn queued_command_completion_preserves_draft() {
         let input = terminal.read(&app, |view, _| view.input().clone());
         input.update(&mut app, |input, ctx| {
             input.replace_buffer_content("draft in progress", ctx);
-            input.deferred_remote_operations.latest_block_id = BlockId::new();
+            input.latest_block_id = BlockId::new();
             input.handle_block_completed_event(
                 BlockCompletedEvent {
                     block_type: BlockType::User(UserBlockCompleted::new_for_test(
@@ -1870,7 +1492,7 @@ async fn complete_ctrl_t_handoff(
             apply_mode,
             cursor_offset: Some(ByteOffset::from(cursor_offset)),
         });
-        input.deferred_remote_operations.latest_block_id = BlockId::new();
+        input.latest_block_id = BlockId::new();
         input.handle_block_completed_event(
             BlockCompletedEvent {
                 block_type: user_block_completed_for_test(original_buffer),
@@ -1911,7 +1533,7 @@ async fn complete_ctrl_r_handoff(
             apply_mode: ShellWidgetApplyMode::Replace,
             cursor_offset: None,
         });
-        input.deferred_remote_operations.latest_block_id = BlockId::new();
+        input.latest_block_id = BlockId::new();
         input.handle_block_completed_event(
             BlockCompletedEvent {
                 block_type: user_block_completed_for_test(original_buffer),
@@ -2068,7 +1690,7 @@ fn ctrl_t_handoff_cancel_restores_cursor_captured_by_a_real_trigger() {
         });
 
         input.update(&mut app, |input, _ctx| {
-            input.deferred_remote_operations.latest_block_id = BlockId::new();
+            input.latest_block_id = BlockId::new();
         });
 
         input.update(&mut app, |input, ctx| {
@@ -2174,7 +1796,7 @@ fn row_deleted_event_preserves_existing_draft() {
 /// prompts panel (and the empty-buffer Enter path) can resolve it.
 fn seed_active_conversation(app: &mut App, terminal_view_id: EntityId) -> AIConversationId {
     BlocklistAIHistoryModel::handle(app).update(app, |history, ctx| {
-        let id = history.start_new_conversation(terminal_view_id, false, false, false, ctx);
+        let id = history.start_new_conversation(terminal_view_id, false, false, ctx);
         history.set_active_conversation_id(id, terminal_view_id, ctx);
         id
     })
@@ -2347,7 +1969,6 @@ fn seed_in_progress_conversation(
             coding_model_id: LLMId::from("test-coding-model"),
             cli_agent_model_id: LLMId::from("test-cli-agent-model"),
             computer_use_model_id: LLMId::from("test-computer-use-model"),
-            response_initiator: None,
         };
         let response_stream_id = ResponseStreamId::new_for_test();
         history
@@ -2400,17 +2021,15 @@ fn local_steering_does_not_capture_interrupt_slash_idle_or_external_prompts() {
             assert!(!input.maybe_steer_input_for_in_progress_conversation(ctx));
             input.replace_buffer_content("prompt", ctx);
         });
-        for driver in [
-            ConversationDriver::ExternalHarness,
-            ConversationDriver::SharedSessionViewer,
-        ] {
-            BlocklistAIHistoryModel::handle(&app).update(&mut app, |history, _| {
-                history.conversation_mut(&id).unwrap().set_driver(driver)
-            });
-            input.update(&mut app, |input, ctx| {
-                assert!(!input.maybe_steer_input_for_in_progress_conversation(ctx))
-            });
-        }
+        BlocklistAIHistoryModel::handle(&app).update(&mut app, |history, _| {
+            history
+                .conversation_mut(&id)
+                .unwrap()
+                .set_driver(ConversationDriver::ExternalHarness)
+        });
+        input.update(&mut app, |input, ctx| {
+            assert!(!input.maybe_steer_input_for_in_progress_conversation(ctx))
+        });
         BlocklistAIHistoryModel::handle(&app).update(&mut app, |history, _| {
             let conversation = history.conversation_mut(&id).unwrap();
             conversation.set_driver(ConversationDriver::Native);
@@ -2941,70 +2560,6 @@ fn zero_state_hint_text_registers_active_slash_command_placeholders() {
                 .is_some()),
             "always-active slash command placeholders should be registered"
         );
-    });
-}
-
-#[test]
-fn maybe_route_ai_query_to_remote_target_proceeds_for_local_pane() {
-    // An ordinary local pane (not a viewer) must not be intercepted: the helper returns false so
-    // the caller proceeds with normal local submission.
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-        let (_, terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model
-                .block_list_mut()
-                .active_block_for_test()
-                .set_session_id(SessionId::from(0));
-        });
-
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("run something", ctx);
-        });
-
-        let handled = input.update(&mut app, |input, ctx| {
-            input.maybe_route_ai_query_to_remote_target(ctx)
-        });
-        assert!(
-            !handled,
-            "a local pane must not be intercepted by viewer routing"
-        );
-    });
-}
-
-#[test]
-fn prebootstrap_share_status_uses_local_path_when_shell_is_ready() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let terminal = add_window_with_bootstrapped_terminal(&mut app, None, None).await;
-        terminal.update(&mut app, |view, _| {
-            view.model.lock().set_shared_session_status(
-                SharedSessionStatus::SharePendingPreBootstrap {
-                    source: SharedSessionSource::user(None),
-                },
-            );
-        });
-        let input = terminal.read(&app, |view, _| view.input().clone());
-        let events = subscribe_to_execute_command_events(&mut app, &terminal);
-
-        assert!(input.update(&mut app, |input, ctx| {
-            input.try_execute_command("echo setup", ctx)
-        }));
-        assert_eventually!(
-            600 => events.borrow().len() == 1,
-            "a pre-bootstrap share status should use the local path after shell bootstrap"
-        );
-        let events = events.borrow();
-        assert_eq!(events[0].0, "echo setup");
-        assert!(matches!(&events[0].1, CommandExecutionSource::User));
     });
 }
 
@@ -5391,7 +4946,6 @@ fn test_new_conversation_keybinding_requires_double_press_in_non_empty_agent_vie
                 controller.send_user_query_in_conversation(
                     "hello".to_owned(),
                     conversation_id,
-                    None,
                     ctx,
                 );
             });
@@ -5626,7 +5180,6 @@ fn test_new_conversation_input_trigger_remains_single_step_in_non_empty_agent_vi
                 controller.send_user_query_in_conversation(
                     "hello".to_owned(),
                     conversation_id,
-                    None,
                     ctx,
                 );
             });
@@ -10013,80 +9566,6 @@ fn ctrl_enter_inserts_newline_when_submit_on_ctrl_enter_is_false() {
                  InsertNewLineIfMultiLine when rich input is open; got Emit instead"
             );
         });
-    });
-}
-
-/// `unfreeze_agent_input` must NOT clear the buffer. The buffer is cleared via CRDT
-/// delete ops emitted by `system_clear_buffer` when `SentRequest` fires, which flow to
-/// both the server (for new viewers) and existing viewers (via `InputUpdated`).
-/// Clearing the buffer here would cause CRDT inconsistencies (see the function doc).
-#[test]
-fn unfreeze_agent_input_does_not_clear_buffer() {
-    App::test((), |mut app| async move {
-        initialize_app(&mut app);
-
-        let tips_model = app.add_model(|_| TipsCompleted::default());
-
-        // Test for ActiveSharer
-        let (_, sharer_terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model, None, ctx)
-        });
-        sharer_terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model.set_shared_session_status(SharedSessionStatus::ActiveSharer);
-        });
-        let sharer_input = sharer_terminal.read(&app, |view, _| view.input().clone());
-
-        sharer_input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("help me write a test", ctx);
-        });
-        assert_eq!(
-            sharer_input.read(&app, |i, ctx| i.buffer_text(ctx)),
-            "help me write a test"
-        );
-
-        sharer_input.update(&mut app, |input, ctx| {
-            input.unfreeze_agent_input(false, ctx);
-        });
-
-        // Buffer must be unchanged — clearing is the responsibility of system_clear_buffer
-        // via the SentRequest event, not of this unfreeze function.
-        assert_eq!(
-            sharer_input.read(&app, |i, ctx| i.buffer_text(ctx)),
-            "help me write a test",
-            "unfreeze_agent_input must not clear the sharer's buffer"
-        );
-
-        // Same for ActiveViewer
-        let tips_model2 = app.add_model(|_| TipsCompleted::default());
-        let (_, viewer_terminal) = app.add_window(WindowStyle::NotStealFocus, move |ctx| {
-            TerminalView::new_for_test(tips_model2, None, ctx)
-        });
-        viewer_terminal.update(&mut app, |view, _| {
-            let mut model = view.model.lock();
-            model.block_list_mut().set_bootstrapped();
-            model.set_shared_session_status(SharedSessionStatus::executor());
-        });
-        let viewer_input = viewer_terminal.read(&app, |view, _| view.input().clone());
-
-        viewer_input.update(&mut app, |input, ctx| {
-            input.replace_buffer_content("follow-up question", ctx);
-        });
-        assert_eq!(
-            viewer_input.read(&app, |i, ctx| i.buffer_text(ctx)),
-            "follow-up question"
-        );
-
-        viewer_input.update(&mut app, |input, ctx| {
-            input.unfreeze_agent_input(false, ctx);
-        });
-
-        assert_eq!(
-            viewer_input.read(&app, |i, ctx| i.buffer_text(ctx)),
-            "follow-up question",
-            "unfreeze_agent_input must not clear the viewer's buffer"
-        );
     });
 }
 

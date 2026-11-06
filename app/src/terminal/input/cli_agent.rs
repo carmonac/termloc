@@ -164,7 +164,7 @@ impl Input {
 
         // Only override while the CLI agent rich input is actually open - the
         // same editor is reused for the normal terminal input and for other
-        // modes (AI, shared sessions), and those shouldn't see the override.
+        // modes (AI), and those shouldn't see the override.
         let rich_input_open =
             CLIAgentSessionsModel::as_ref(ctx).is_input_open(self.terminal_view_id);
 

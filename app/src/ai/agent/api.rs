@@ -8,7 +8,6 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 pub use ai::agent::convert::ConvertToAPITypeError;
-pub(crate) use convert_from::convert_user_query_mode;
 pub use convert_from::{
     ConversionParams, ConvertAPIMessageToClientOutputMessage, MaybeAIAgentOutputMessage,
     MessageToAIAgentOutputMessageError, user_inputs_from_messages,
@@ -109,23 +108,6 @@ mod injected_attribution_tests;
 impl From<ServerConversationToken> for String {
     fn from(value: ServerConversationToken) -> Self {
         value.0
-    }
-}
-
-// Conversions between AI ServerConversationToken and protocol ServerConversationToken
-impl From<session_sharing_protocol::common::ServerConversationToken> for ServerConversationToken {
-    fn from(token: session_sharing_protocol::common::ServerConversationToken) -> Self {
-        Self(token.to_string())
-    }
-}
-
-impl TryFrom<ServerConversationToken>
-    for session_sharing_protocol::common::ServerConversationToken
-{
-    type Error = uuid::Error;
-
-    fn try_from(token: ServerConversationToken) -> Result<Self, Self::Error> {
-        token.as_str().parse()
     }
 }
 

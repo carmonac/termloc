@@ -721,10 +721,6 @@ impl BlockGridPoint {
             BlockGridPoint::PromptAndCommand(point) => *point,
         }
     }
-
-    pub fn to_within_block_point(self, block_index: BlockIndex) -> WithinBlock<Point> {
-        WithinBlock::new(self.grid_point(), block_index, self.into())
-    }
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -1476,15 +1472,6 @@ impl Block {
 
     pub fn set_should_hide_command_grid(&mut self, should_hide: bool) {
         self.should_hide_command_grid = should_hide;
-    }
-
-    /// Returns true iff this block should be used as a scrollback block in a shared session context.
-    /// The active block is included when it is eligible so viewers can restore the active prompt.
-    pub fn is_scrollback_block_for_shared_session(
-        &self,
-        transcript_scope: &TranscriptScope,
-    ) -> bool {
-        !self.should_hide_block(transcript_scope) && !self.is_restored()
     }
 
     pub fn index(&self) -> BlockIndex {

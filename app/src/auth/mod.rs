@@ -50,8 +50,6 @@ use crate::settings::{
     TELEMETRY_ENABLED_DEFAULTS_KEY,
 };
 #[cfg(feature = "tui")]
-use crate::terminal::shared_session::manager::Manager as SharedSessionManager;
-#[cfg(feature = "tui")]
 use crate::workflows::manager::WorkflowManager;
 #[cfg(feature = "tui")]
 use crate::workspaces::update_manager::TeamUpdateManager;
@@ -162,12 +160,6 @@ pub fn log_out(app: &mut AppContext) {
     NotebookManager::handle(app).update(app, |manager, _| manager.reset());
     EnvVarCollectionManager::handle(app).update(app, |manager, _| manager.reset());
     WorkflowManager::handle(app).update(app, |manager, _| manager.reset());
-
-    // Stop and leave all shared sessions
-    SharedSessionManager::handle(app).update(app, |manager, ctx| {
-        manager.stop_all_shared_sessions(ctx);
-        manager.clear_joined();
-    });
 }
 
 // Remove the cloud persisted settings from user defaults.

@@ -143,7 +143,6 @@ plist = "1"
 pprof = { workspace = true, optional = true, features = ["protobuf-codec"] }
 prost.workspace = true
 prost-types.workspace = true
-qrcode.workspace = true
 rand.workspace = true
 rangemap.workspace = true
 rayon.workspace = true
@@ -163,7 +162,6 @@ serde_regex = "1.1.0"
 serde_urlencoded.workspace = true
 serde_with.workspace = true
 serde_yaml.workspace = true
-session-sharing-protocol.workspace = true
 settings.workspace = true
 settings_value = { workspace = true, features = ["derive"] }
 sha2.workspace = true
@@ -437,22 +435,18 @@ agent_mode_debug = []
 agent_mode_primary_xml = []
 agent_mode_pre_plan_xml = []
 agent_onboarding = []
-agent_shared_sessions = []
 ask_user_question = []
 async_find = []
 clear_autosuggestion_on_escape = []
 codebase_index_speedbump = []
 context_line_review_comments = []
-creating_shared_sessions = []
 cross_repo_context = []
 codebase_index_persistence = ["full_source_code_embedding"]
 default = [
     "agent_mode",
     "osc_hyperlinks",
-    "viewing_shared_sessions",
     "render_continuous_block_selections_with_single_border",
     "shared_with_me",
-    "session_sharing_acls",
     "external_agent_mode_context",
     "shell_selector",
     "minimalist_ui",
@@ -524,11 +518,9 @@ default = [
     "summarize_conversation_command",
     "inline_code_review",
     "web_search_ui",
-    "agent_shared_sessions",
     "create_environment_slash_command",
     "code_review_find",
     "async_find",
-    "shared_session_long_running_commands",
     "mcp_grouped_server_context",
     "fork_from_command",
     "context_window_usage_v2",
@@ -595,7 +587,6 @@ default = [
     "pinned_tabs",
     "agent_harness",
     "hoa_onboarding_flow",
-    "hoa_remote_control",
     "codex_notifications",
     "codex_plugin",
     "trim_trailing_blank_lines",
@@ -612,7 +603,6 @@ default = [
     "terminal_lifecycle_recovery",
     "file_backed_execution_profiles",
     "ime_marked_text",
-    "ctrl_c_cancels_third_party_harness",
     "shell_widget_handoff",
     "native_shell_completions",
     "history_search_ranking_v2",
@@ -740,7 +730,6 @@ runtime_feature_flags = []
 selectable_prompt = []
 settings_file = []
 sequential_storage = []
-session_sharing_acls = []
 skip_login = ["warp_server_client/skip_login"]
 # This feature should only be enabled when building a self-contained binary with the bundle script.
 standalone = ["warp_assets/standalone", "warp_core/standalone"]
@@ -767,7 +756,6 @@ integration_tests = [
     "warp_server_client/integration_tests",
 ]
 traces = []
-viewing_shared_sessions = []
 workflow_aliases = []
 rect_selection = []
 alacritty_settings_import = []
@@ -775,7 +763,6 @@ shared_with_me = []
 ai_rules = []
 am_workflows = []
 shell_selector = []
-shared_session_long_running_commands = []
 blocklist_markdown_table_rendering = []
 blocklist_markdown_images = []
 minimalist_ui = []
@@ -901,12 +888,10 @@ configurable_toolbar = []
 warpify_footer = []
 hoa_onboarding_flow = []
 git_operations_in_code_review = []
-hoa_remote_control = []
 codex_notifications = []
 codex_plugin = []
 prompt_cache_expiry_warning = []
 osc_hyperlinks = []
-ctrl_c_cancels_third_party_harness = []
 shell_widget_handoff = []
 history_search_ranking_v2 = []
 stored_screenshots = []

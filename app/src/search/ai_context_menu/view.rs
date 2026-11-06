@@ -206,8 +206,6 @@ struct AIContextMenuState {
     main_menu_query: String,
     /// Whether we're in AI/autodetect mode (true) or locked in terminal mode (false)
     is_ai_or_autodetect_mode: bool,
-    /// Whether this terminal is viewing a shared session
-    is_shared_session_viewer: bool,
     /// Whether this is a CLI agent rich input (restricts categories to files/folders + code)
     is_cli_agent_input: bool,
 }
@@ -236,13 +234,6 @@ pub struct AIContextMenu {
 }
 
 impl AIContextMenu {
-    pub fn set_is_shared_session_viewer(&mut self, is_viewer: bool, ctx: &mut ViewContext<Self>) {
-        if self.state.is_shared_session_viewer != is_viewer {
-            self.state.is_shared_session_viewer = is_viewer;
-            self.refresh_categories_state(ctx);
-        }
-    }
-
     pub fn set_is_cli_agent_input(
         &mut self,
         is_cli_agent_input: bool,
@@ -359,7 +350,6 @@ impl AIContextMenu {
     /// If false (locked in terminal mode), return only Files category
     pub(crate) fn get_categories_for_mode(
         is_ai_or_autodetect_mode: bool,
-        is_shared_session_viewer: bool,
         is_cli_agent_input: bool,
         app: &AppContext,
     ) -> Vec<AIContextMenuCategory> {
@@ -389,20 +379,16 @@ impl AIContextMenu {
         // can interpret. This is safer than a blocklist because new categories added
         // to the enum in the future won't accidentally leak into the CLI agent menu.
         if is_cli_agent_input {
-            let mut categories = vec![];
-            if !is_shared_session_viewer {
-                if is_active_dir_in_git_repo {
-                    categories.push(AIContextMenuCategory::RepoFiles);
-                } else {
-                    categories.push(AIContextMenuCategory::CurrentFolderFiles);
-                }
-            }
+            let mut categories = vec![if is_active_dir_in_git_repo {
+                AIContextMenuCategory::RepoFiles
+            } else {
+                AIContextMenuCategory::CurrentFolderFiles
+            }];
             if FeatureFlag::AIContextMenuCode.is_enabled()
                 && *InputSettings::as_ref(app)
                     .outline_codebase_symbols_for_at_context_menu
                     .value()
                 && is_active_dir_in_git_repo
-                && !is_shared_session_viewer
             {
                 categories.push(AIContextMenuCategory::Code);
             }
@@ -410,16 +396,11 @@ impl AIContextMenu {
         }
 
         if is_ai_or_autodetect_mode {
-            let mut categories = vec![];
-
-            // Hide file options for shared session viewers
-            if !is_shared_session_viewer {
-                if is_active_dir_in_git_repo {
-                    categories.push(AIContextMenuCategory::RepoFiles);
-                } else {
-                    categories.push(AIContextMenuCategory::CurrentFolderFiles);
-                }
-            }
+            let mut categories = vec![if is_active_dir_in_git_repo {
+                AIContextMenuCategory::RepoFiles
+            } else {
+                AIContextMenuCategory::CurrentFolderFiles
+            }];
 
             if FeatureFlag::AIContextMenuCommands.is_enabled() {
                 categories.push(AIContextMenuCategory::Commands);
@@ -430,7 +411,6 @@ impl AIContextMenu {
                     .outline_codebase_symbols_for_at_context_menu
                     .value()
                 && is_active_dir_in_git_repo
-                && !is_shared_session_viewer
             {
                 categories.push(AIContextMenuCategory::Code);
             }
@@ -439,10 +419,7 @@ impl AIContextMenu {
                 categories.push(AIContextMenuCategory::Notebooks);
                 categories.push(AIContextMenuCategory::Plans);
             }
-            if FeatureFlag::DiffSetAsContext.is_enabled()
-                && is_active_dir_in_git_repo
-                && !is_shared_session_viewer
-            {
+            if FeatureFlag::DiffSetAsContext.is_enabled() && is_active_dir_in_git_repo {
                 categories.push(AIContextMenuCategory::DiffSet);
             }
             if FeatureFlag::ConversationsAsContext.is_enabled() {
@@ -453,7 +430,7 @@ impl AIContextMenu {
             }
             categories.push(AIContextMenuCategory::Skills);
             categories
-        } else if !is_shared_session_viewer {
+        } else {
             // Terminal mode: show Files and Code categories (when enabled)
             let mut categories = if is_active_dir_in_git_repo {
                 vec![AIContextMenuCategory::RepoFiles]
@@ -472,9 +449,6 @@ impl AIContextMenu {
             }
 
             categories
-        } else {
-            // File searching is not available in shared session viewers
-            vec![]
         }
     }
 
@@ -490,7 +464,6 @@ impl AIContextMenu {
     fn refresh_categories_state(&mut self, ctx: &mut ViewContext<Self>) {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -582,7 +555,7 @@ impl AIContextMenu {
         );
 
         // Get initial categories for proper initialization
-        let initial_categories = Self::get_categories_for_mode(true, false, false, ctx); // Default to AI mode, not a viewer, not CLI agent input
+        let initial_categories = Self::get_categories_for_mode(true, false, ctx); // Default to AI mode, not CLI agent input
 
         #[cfg(not(target_family = "wasm"))]
         let code_symbol_cache = ctx.add_model(CodeSymbolCache::new);
@@ -625,8 +598,7 @@ impl AIContextMenu {
                     .collect(),
                 selected_category_index: 0,
                 main_menu_query: String::new(),
-                is_ai_or_autodetect_mode: true,  // Default to AI mode
-                is_shared_session_viewer: false, // Will be updated by set_is_shared_session_viewer if needed
+                is_ai_or_autodetect_mode: true, // Default to AI mode
                 is_cli_agent_input: false, // Will be updated by set_is_cli_agent_input if needed
             },
             handle: ctx.handle(),
@@ -698,7 +670,6 @@ impl AIContextMenu {
         let item_count = self.item_count(ctx);
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -716,7 +687,6 @@ impl AIContextMenu {
     pub fn reset_menu_state(&mut self, ctx: &mut ViewContext<Self>) {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -1035,7 +1005,6 @@ impl AIContextMenu {
         // Add all available data sources
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -1152,7 +1121,6 @@ impl AIContextMenu {
 
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             ctx,
         );
@@ -1180,7 +1148,6 @@ impl AIContextMenu {
     fn get_filtered_categories(&self, app: &AppContext) -> Vec<AIContextMenuCategory> {
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             app,
         );
@@ -1285,7 +1252,6 @@ impl AIContextMenu {
             // Find the original index of this category in current categories for hover state
             let categories = Self::get_categories_for_mode(
                 self.state.is_ai_or_autodetect_mode,
-                self.state.is_shared_session_viewer,
                 self.state.is_cli_agent_input,
                 app,
             );
@@ -1459,7 +1425,6 @@ impl AIContextMenu {
     pub fn should_render(&self, app: &AppContext) -> bool {
         !Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             app,
         )
@@ -1537,7 +1502,6 @@ impl AIContextMenu {
         // Only show the title if there are multiple categories
         let categories = Self::get_categories_for_mode(
             self.state.is_ai_or_autodetect_mode,
-            self.state.is_shared_session_viewer,
             self.state.is_cli_agent_input,
             app,
         );

@@ -235,7 +235,7 @@ fn tui_selection_applies_session_default_to_agent_requested_split() {
             .expect("TUI should have an initial conversation");
         let new_conversation_id = history.update(&mut app, |history, ctx| {
             let conversation_id =
-                history.start_new_conversation(terminal_surface_id, false, false, false, ctx);
+                history.start_new_conversation(terminal_surface_id, false, false, ctx);
             history.set_active_conversation_id(conversation_id, terminal_surface_id, ctx);
             ctx.emit(BlocklistAIHistoryEvent::SplitConversation {
                 terminal_surface_id,

@@ -3,15 +3,13 @@
 //! Covers FIFO ordering, append from each origin, edit semantics, reorder semantics, the
 //! per-conversation auto-queue toggle, and history-driven cleanup.
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
-use session_sharing_protocol::common::{AgentAttachment, ParticipantId};
 use warpui::{App, SingletonEntity};
 
 use super::{
-    AutofireAction, QueuedPromptDeliveryMode, QueuedQuery, QueuedQueryEvent, QueuedQueryId,
-    QueuedQueryModel, QueuedQueryOrigin, RequestRow,
+    AutofireAction, QueuedQuery, QueuedQueryEvent, QueuedQueryId, QueuedQueryModel,
+    QueuedQueryOrigin, RequestRow,
 };
 use crate::ai::agent::ImageContext;
 use crate::ai::agent::conversation::AIConversationId;
@@ -55,7 +53,7 @@ fn steering_query(text: &str) -> QueuedQuery {
 fn local_steering_row_id(queue: &QueuedQueryModel, id: AIConversationId) -> Option<QueuedQueryId> {
     match queue.next_row_for_request(id)? {
         RequestRow::LocalSteering(row) => Some(row.id()),
-        RequestRow::InjectedFollowup(_) | RequestRow::SteeredHead(_) => None,
+        RequestRow::SteeredHead(_) => None,
     }
 }
 
@@ -81,41 +79,6 @@ fn steering_row_passes_plain_prompts_but_keeps_its_own_order_and_edit_hold() {
             assert_eq!(local_steering_row_id(queue, id), None);
             queue.clear_command_in_flight(id);
             assert_eq!(local_steering_row_id(queue, id), Some(second));
-        });
-    });
-}
-
-#[test]
-fn next_row_for_request_prefers_injections_then_steered_heads() {
-    with_model(|mut app, model, _| {
-        let id = AIConversationId::new();
-        model.update(&mut app, |queue, ctx| {
-            let plain = queue.append(id, user_query("plain"), ctx);
-            queue.append(id, steering_query("correction"), ctx);
-            assert!(matches!(
-                queue.next_row_for_request(id),
-                Some(RequestRow::LocalSteering(_))
-            ));
-            queue.set_delivery_mode(id, QueuedPromptDeliveryMode::Steering);
-            assert!(matches!(
-                queue.next_row_for_request(id),
-                Some(RequestRow::SteeredHead(row)) if row.id() == plain
-            ));
-            let injected = queue.append(
-                id,
-                QueuedQuery::new_shared_session_prompt(
-                    "injected".into(),
-                    ParticipantId::new(),
-                    vec![],
-                    None,
-                ),
-                ctx,
-            );
-            queue.reorder(id, injected, 0, ctx);
-            assert!(matches!(
-                queue.next_row_for_request(id),
-                Some(RequestRow::InjectedFollowup(row)) if row.id() == injected
-            ));
         });
     });
 }
@@ -674,10 +637,10 @@ fn delete_conversation_drops_only_that_conversation_state() {
         let history = BlocklistAIHistoryModel::handle(&app);
         let terminal_view_id = warpui::EntityId::new();
         let conv_a = history.update(&mut app, |h, ctx| {
-            h.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            h.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         let conv_b = history.update(&mut app, |h, ctx| {
-            h.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            h.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         append_user(&model, &mut app, conv_a, "a1");
         append_user(&model, &mut app, conv_b, "b1");
@@ -842,42 +805,13 @@ fn command_in_flight_flag_arms_and_clears() {
     });
 }
 
-fn preparing_query() -> QueuedQuery {
-    QueuedQuery::new_shared_session_prompt(
-        "follow up".into(),
-        ParticipantId::new(),
-        vec![AgentAttachment::FileReference {
-            attachment_id: "file-id".into(),
-            file_name: "event-payload.json".into(),
-        }],
-        None,
-    )
-}
-
-#[test]
-fn later_download_finishing_first_does_not_overtake_fifo_head() {
-    with_model(|mut app, model, _| {
-        let conv = AIConversationId::new();
-        model.update(&mut app, |m, ctx| {
-            let first = m.append(conv, preparing_query(), ctx);
-            let second = m.append(conv, preparing_query(), ctx);
-            m.complete_preparation(conv, second, HashMap::new(), ctx);
-            assert!(m.ready_head(conv).is_none());
-            m.complete_preparation(conv, first, HashMap::new(), ctx);
-            assert_eq!(m.ready_head(conv).unwrap().id(), first);
-            m.remove_fired_row(conv, first, ctx);
-            assert_eq!(m.ready_head(conv).unwrap().id(), second);
-        });
-    });
-}
-
 #[test]
 fn delete_conversation_clears_in_flight_command() {
     with_model(|mut app, model, _events| {
         let history = BlocklistAIHistoryModel::handle(&app);
         let terminal_view_id = warpui::EntityId::new();
         let conv = history.update(&mut app, |h, ctx| {
-            h.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            h.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         model.update(&mut app, |m, _| m.arm_command_in_flight(conv));
         model.read(&app, |m, _| assert!(m.has_command_in_flight(conv)));
@@ -896,10 +830,10 @@ fn clear_conversations_for_terminal_surface_drops_every_listed_conversation() {
         let history = BlocklistAIHistoryModel::handle(&app);
         let terminal_view_id = warpui::EntityId::new();
         let conv_a = history.update(&mut app, |h, ctx| {
-            h.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            h.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         let conv_b = history.update(&mut app, |h, ctx| {
-            h.start_new_conversation(terminal_view_id, false, false, false, ctx)
+            h.start_new_conversation(terminal_view_id, false, false, ctx)
         });
         append_user(&model, &mut app, conv_a, "a1");
         append_user(&model, &mut app, conv_b, "b1");

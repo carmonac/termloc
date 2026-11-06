@@ -136,7 +136,7 @@ impl CodexModal {
         // Description - second paragraph
         let description_2 = FormattedTextElement::from_str(
             "Use Codex directly in Termloc and leverage \
-            features like in-app code review, agent session sharing and file editing.",
+            features like in-app code review and file editing.",
             appearance.ui_font_family(),
             14.,
         )

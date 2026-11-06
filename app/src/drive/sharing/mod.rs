@@ -1,28 +1,22 @@
 use std::borrow::Cow;
 
-use chrono::{DateTime, Local};
-use session_sharing_protocol::common::SessionId;
 use warp_core::channel::ChannelState;
 use warp_core::ui::appearance::Appearance;
 use warpui::color::ColorU;
 use warpui::ui_components::components::{UiComponent, UiComponentStyles};
-use warpui::{AppContext, SingletonEntity, WeakViewHandle};
+use warpui::{AppContext, SingletonEntity};
 
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::blocklist::BlocklistAIHistoryModel;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::server::ids::ServerId;
 use crate::server::server_api::object::GuestIdentifier;
-use crate::terminal::TerminalView;
-use crate::terminal::shared_session::join_link;
-use crate::terminal::shared_session::manager::Manager;
 use crate::ui_components::avatar::{Avatar, AvatarContent};
 use crate::ui_components::icons::Icon;
 use crate::workspaces::user_profiles::UserProfiles;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 
 pub mod dialog;
-mod qr_code;
 mod style;
 
 // Re-export types from cloud_objects.
@@ -36,13 +30,6 @@ pub use cloud_objects::drive::sharing::{
 pub enum ShareableObject {
     /// A shareable Warp Drive object.
     WarpDriveObject(ServerId),
-    /// A shared terminal session. Shared sessions are identified by the participating terminal
-    /// pane.
-    Session {
-        handle: WeakViewHandle<TerminalView>,
-        session_id: SessionId,
-        started_at: DateTime<Local>,
-    },
     /// An AI conversation.
     AIConversation(AIConversationId),
 }
@@ -54,21 +41,6 @@ impl ShareableObject {
             ShareableObject::WarpDriveObject(id) => CloudModel::as_ref(app)
                 .get_by_uid(&id.uid())
                 .and_then(|object| object.object_link()),
-            ShareableObject::Session {
-                handle, session_id, ..
-            } => {
-                let handle = handle.upgrade(app)?;
-                let shared_session_status = handle
-                    .as_ref(app)
-                    .model
-                    .lock()
-                    .shared_session_status()
-                    .clone();
-                let link_session_id = Manager::as_ref(app)
-                    .session_id_for_link(&handle.id(), &shared_session_status)?;
-
-                (link_session_id == *session_id).then(|| join_link(session_id))
-            }
             ShareableObject::AIConversation(id) => {
                 // Use the unified helper that checks both loaded conversation and historical metadata
                 BlocklistAIHistoryModel::as_ref(app)
@@ -161,7 +133,6 @@ impl SubjectExt for Subject {
                 UserKind::Account(user_uid) => UserProfiles::as_ref(app)
                     .profile_for_uid(*user_uid)
                     .map(|profile| profile.email.as_str()),
-                UserKind::SharedSessionParticipant(profile_data) => profile_data.email.as_deref(),
             },
             Subject::PendingUser { email } => email.as_deref(),
             Subject::Team(_) => None,
@@ -201,9 +172,6 @@ impl UserKindExt for UserKind {
             UserKind::Account(id) => UserProfiles::as_ref(app)
                 .displayable_identifier_for_uid(*id)
                 .map(Cow::from),
-            UserKind::SharedSessionParticipant(participant_info) => {
-                Some(participant_info.display_name.clone().into())
-            }
         }
     }
 
@@ -218,18 +186,6 @@ impl UserKindExt for UserKind {
                     None
                 }
             }
-            UserKind::SharedSessionParticipant(participant_info) => {
-                // Only show the user's email if it's not the display name.
-                if participant_info
-                    .email
-                    .as_ref()
-                    .is_some_and(|email| email == &participant_info.display_name)
-                {
-                    None
-                } else {
-                    participant_info.email.clone()
-                }
-            }
         }
     }
 
@@ -242,15 +198,6 @@ impl UserKindExt for UserKind {
                 },
                 None => AvatarContent::DisplayName(String::new()),
             },
-            UserKind::SharedSessionParticipant(participant_info) => {
-                match &participant_info.photo_url {
-                    Some(url) => AvatarContent::Image {
-                        url: url.clone(),
-                        display_name: participant_info.display_name.clone(),
-                    },
-                    None => AvatarContent::DisplayName(participant_info.display_name.clone()),
-                }
-            }
         }
     }
 }
@@ -267,7 +214,6 @@ impl TeamKindExt for TeamKind {
             TeamKind::Team { team_uid, .. } => UserWorkspaces::as_ref(app)
                 .team_from_uid(*team_uid)
                 .map(|team| team.name.clone()),
-            TeamKind::SharedSessionTeam { name, .. } => Some(name.clone()),
         }
     }
 }
@@ -277,7 +223,6 @@ fn named_subject_avatar(content: AvatarContent, appearance: &Appearance) -> Avat
     Avatar::new(
         content,
         UiComponentStyles {
-            // TODO: Apply session-sharing color logic.
             background: Some(ColorU::new(93, 202, 60, 255).into()),
             font_color: Some(ColorU::black()),
             ..Default::default()

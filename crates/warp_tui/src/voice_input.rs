@@ -122,7 +122,6 @@ impl TuiVoiceInputModel {
 
     pub(crate) fn start(
         &mut self,
-        local_skills_available: bool,
         source: VoiceInputStartSource,
         ctx: &mut ModelContext<Self>,
     ) -> bool {
@@ -130,8 +129,7 @@ impl TuiVoiceInputModel {
             return false;
         }
 
-        let available = local_skills_available
-            && AISettings::as_ref(ctx).is_voice_input_enabled(ctx)
+        let available = AISettings::as_ref(ctx).is_voice_input_enabled(ctx)
             && UserWorkspaces::as_ref(ctx).is_voice_enabled()
             && AIRequestUsageModel::as_ref(ctx).can_request_voice();
         if !available {
@@ -203,17 +201,12 @@ impl TuiVoiceInputModel {
         &mut self,
         key: KeyCode,
         state: KeyState,
-        local_skills_available: bool,
         ctx: &mut ModelContext<Self>,
     ) {
         match state {
             KeyState::Pressed => {
                 if self.hold_key.is_none() {
-                    self.start(
-                        local_skills_available,
-                        VoiceInputStartSource::HoldKey(key),
-                        ctx,
-                    );
+                    self.start(VoiceInputStartSource::HoldKey(key), ctx);
                 }
             }
             KeyState::Released => {

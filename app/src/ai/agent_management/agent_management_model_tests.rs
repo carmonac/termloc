@@ -347,7 +347,7 @@ fn waiting_for_events_clears_stale_notification_and_adds_none() {
         let (history, notifications) = setup_app(&mut app);
         disable_telemetry_path(&mut app);
 
-        let conversation = AIConversation::new(false, false);
+        let conversation = AIConversation::new(false);
         let conversation_id = conversation.id();
         let terminal_view_id = EntityId::new();
         history.update(&mut app, |model, ctx| {
@@ -391,7 +391,7 @@ fn in_progress_resume_clears_stale_notification_and_adds_none() {
         let (history, notifications) = setup_app(&mut app);
         disable_telemetry_path(&mut app);
 
-        let conversation = AIConversation::new(false, false);
+        let conversation = AIConversation::new(false);
         let conversation_id = conversation.id();
         let terminal_view_id = EntityId::new();
         history.update(&mut app, |model, ctx| {

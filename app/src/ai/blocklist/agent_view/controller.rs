@@ -112,8 +112,6 @@ pub enum AgentViewEntryOrigin {
     AutoFollowUp,
     /// Entered agent view due to conversation restoration on startup or forking.
     RestoreExistingConversation,
-    /// Entered agent view due to shared-session synchronization.
-    SharedSessionSelection,
     /// Entered agent view due to a server-driven conversation split (StartNewConversation client action).
     AgentRequestedNewConversation,
     /// Entered agent view via accepting a prompt suggestion.
@@ -769,13 +767,7 @@ impl AgentViewController {
             (conversation.id(), conversation.exchange_count())
         } else {
             let id = history_model.update(ctx, |history_model, ctx| {
-                history_model.start_new_conversation(
-                    self.terminal_view_id,
-                    false,
-                    false,
-                    false,
-                    ctx,
-                )
+                history_model.start_new_conversation(self.terminal_view_id, false, false, ctx)
             });
             (id, 0)
         };

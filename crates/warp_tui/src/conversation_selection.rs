@@ -58,7 +58,6 @@ impl TuiConversationSelection {
                 terminal_surface_id,
                 is_autoexecute_override,
                 false,
-                false,
                 ctx,
             );
             history.set_active_conversation_id(conversation_id, terminal_surface_id, ctx);

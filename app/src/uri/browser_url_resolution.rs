@@ -11,8 +11,8 @@ const BASE_APP_PATH: &str = "/app";
 /// decision is testable apart from the DOM-writing wrapper in
 /// `browser_url_handler`.
 ///
-/// A `ConversationView`/`SessionView` URL is never replaced by a non-forced
-/// request: that route anchors the web session viewer and must hold
+/// A `ConversationView` URL is never replaced by a non-forced
+/// request: that route anchors the web conversation view and must hold
 /// regardless of which pane inside it is focused.
 #[cfg(any(target_family = "wasm", test))]
 pub(crate) fn resolve_browser_url(
@@ -24,7 +24,7 @@ pub(crate) fn resolve_browser_url(
     // always take effect, not be held back by the viewer guard below.
     if !force_redirect
         && let Some(current) = current_url.clone()
-        && WebIntent::is_conversation_or_session_view(&current)
+        && WebIntent::is_conversation_view(&current)
     {
         return Some(current);
     }

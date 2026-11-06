@@ -32,9 +32,8 @@ use warpui::{
 use super::inline_action_icons::{self, icon_size};
 use crate::ai::agent::conversation::ConversationStatus;
 use crate::ai::agent::{
-    AIAgentActionId, AIAgentActionResult, AIAgentActionResultType, AIAgentActionType,
-    AIAgentCitation, AIAgentOutputMessageType, CallMCPToolResult, RequestCommandOutputResult,
-    icons,
+    AIAgentActionId, AIAgentActionResultType, AIAgentCitation, AIAgentOutputMessageType,
+    CallMCPToolResult, RequestCommandOutputResult, icons,
 };
 use crate::ai::blocklist::action_model::AIActionStatus;
 use crate::ai::blocklist::block::cli_controller::{
@@ -465,31 +464,6 @@ impl RequestedCommandView {
                     BlocklistAIActionEvent::ExecutingAction(action_id)
                         if *action_id == me.action_id =>
                     {
-                        // For shared-session viewers, sync the command text from the action when it starts executing.
-                        if me.action_model.as_ref(ctx).is_view_only() {
-                            // Get the action from the block's output to sync the command text.
-                            if let Some(command) = me
-                                .block_model
-                                .status(ctx)
-                                .output_to_render()
-                                .and_then(|output| {
-                                    output
-                                        .get()
-                                        .actions()
-                                        .find(|a| a.id == *action_id)
-                                        .and_then(|action| match &action.action {
-                                            AIAgentActionType::RequestCommandOutput {
-                                                command,
-                                                ..
-                                            } => Some(command.clone()),
-                                            _ => None,
-                                        })
-                                })
-                            {
-                                me.apply_streamed_update(&command, ctx);
-                            }
-                        }
-
                         me.destroy_editor();
 
                         if me.is_header_expanded {
@@ -513,8 +487,6 @@ impl RequestedCommandView {
                             return;
                         }
 
-                        let is_view_only = me.action_model.as_ref(ctx).is_view_only();
-                        me.sync_command_from_result_for_viewer(&action_result, is_view_only);
                         me.destroy_editor();
 
                         match &action_result.result {
@@ -1046,24 +1018,6 @@ impl RequestedCommandView {
     ) {
         self.autonomy_setting_speedbump = speedbump;
         ctx.notify();
-    }
-
-    /// For shared-session viewers, reset the command text to the executed command from
-    /// the action result. This is important for showing the correct command in the action
-    /// header if the command was manually edited by the user.
-    fn sync_command_from_result_for_viewer(
-        &mut self,
-        action_result: &AIAgentActionResult,
-        is_view_only: bool,
-    ) {
-        if !is_view_only {
-            return;
-        }
-        if let Some(command) = action_result.result.command_str()
-            && !command.is_empty()
-        {
-            self.command_text = command.to_string();
-        }
     }
 
     /// Apply a streamed update from the server.

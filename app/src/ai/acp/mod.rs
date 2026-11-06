@@ -37,7 +37,6 @@ use futures::{FutureExt, future, pin_mut, select};
 use instant::Instant;
 use parking_lot::Mutex;
 use serde_json::Value;
-use session_sharing_protocol::common::ParticipantId;
 use uuid::Uuid;
 use warp_cli::agent::Harness;
 use warp_core::channel::ChannelState;
@@ -462,7 +461,7 @@ impl AcpRunner {
             foreground: foreground.clone(),
             conversation_id,
         });
-        let turn = match host.begin_turn(None).await {
+        let turn = match host.begin_turn().await {
             Ok(turn) => turn,
             Err(error) => {
                 connection.close().await;
@@ -472,8 +471,8 @@ impl AcpRunner {
         };
         let (follow_up_tx, follow_up_rx) = async_channel::unbounded::<ExternalHarnessPrompt>();
         let (cancel_tx, cancel_rx) = async_channel::unbounded::<ExternalHarnessCancel>();
-        with_ai_controller(foreground, move |controller, ctx| {
-            controller.set_external_harness_prompt_sink(follow_up_tx, ctx);
+        with_ai_controller(foreground, move |controller, _| {
+            controller.set_external_harness_prompt_sink(follow_up_tx);
             controller.set_external_harness_cancel_sink(cancel_tx);
         })
         .await?;
@@ -619,17 +618,11 @@ struct TerminalTurnHost {
 
 #[async_trait]
 impl TurnHost for TerminalTurnHost {
-    /// `initiator` names the shared-session participant whose prompt opens the stream; `None`
-    /// keeps the previous one, as the streams a tool round trip chains together all answer the
-    /// same prompt.
-    async fn begin_turn(&self, initiator: Option<ParticipantId>) -> Result<ExternalHarnessTurn> {
+    async fn begin_turn(&self) -> Result<ExternalHarnessTurn> {
         with_ai_controller(&self.foreground, move |controller, ctx| {
             let conversation_id = controller
                 .native_prompt_conversation_id()
                 .unwrap_or_else(|| controller.bind_native_prompt_conversation(None, ctx));
-            if let Some(initiator) = initiator {
-                controller.set_current_response_initiator(initiator);
-            }
             controller.begin_external_harness_turn(conversation_id, None, ctx)
         })
         .await

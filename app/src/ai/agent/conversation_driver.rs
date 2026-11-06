@@ -6,8 +6,6 @@ pub enum ConversationDriver {
     /// Warp's agent loop: the MAA server streams events and this client executes tools.
     #[default]
     Native,
-    /// Another client's conversation mirrored over a shared session; view-only here.
-    SharedSessionViewer,
     /// A restored 3p CLI transcript rendered through a vehicle conversation; view-only here.
     CliAgentTranscript,
     /// A harness running outside Warp's agent loop in this client's session; it authors the MAA
@@ -20,7 +18,7 @@ impl ConversationDriver {
     pub fn owns_turn_lifecycle(self) -> bool {
         match self {
             Self::Native => true,
-            Self::SharedSessionViewer | Self::CliAgentTranscript | Self::ExternalHarness => false,
+            Self::CliAgentTranscript | Self::ExternalHarness => false,
         }
     }
 
@@ -28,7 +26,7 @@ impl ConversationDriver {
     pub fn executes_tool_calls_locally(self) -> bool {
         match self {
             Self::Native => true,
-            Self::SharedSessionViewer | Self::CliAgentTranscript | Self::ExternalHarness => false,
+            Self::CliAgentTranscript | Self::ExternalHarness => false,
         }
     }
 
@@ -36,7 +34,7 @@ impl ConversationDriver {
     /// of being inserted by the local executor when the request is sent.
     pub fn reconstructs_inputs_from_messages(self) -> bool {
         match self {
-            Self::SharedSessionViewer | Self::ExternalHarness => true,
+            Self::ExternalHarness => true,
             Self::Native | Self::CliAgentTranscript => false,
         }
     }
@@ -45,16 +43,8 @@ impl ConversationDriver {
     /// that would let the user act on it.
     pub fn is_read_only_ui(self) -> bool {
         match self {
-            Self::SharedSessionViewer | Self::CliAgentTranscript => true,
+            Self::CliAgentTranscript => true,
             Self::Native | Self::ExternalHarness => false,
-        }
-    }
-
-    /// The conversation is persisted to the local session database.
-    pub fn is_persisted_locally(self) -> bool {
-        match self {
-            Self::Native | Self::CliAgentTranscript | Self::ExternalHarness => true,
-            Self::SharedSessionViewer => false,
         }
     }
 }

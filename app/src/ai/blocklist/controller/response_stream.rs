@@ -213,10 +213,9 @@ enum RecoveryOutcome {
 pub struct ResponseStreamId(String);
 
 impl ResponseStreamId {
-    pub fn for_shared_session(init_event: &response_event::StreamInit) -> Self {
-        // Make the stream ID unique per viewing by appending a local UUID
-        // This prevents collisions when replaying the same conversation multiple times
-        // (either on close-and-reopen or when viewing the same shared session from multiple terminals)
+    pub fn for_stream_init(init_event: &response_event::StreamInit) -> Self {
+        // Make the stream ID unique by appending a local UUID, so the same request ID can never
+        // collide with another stream.
         Self(format!("{}-{}", init_event.request_id, Uuid::new_v4()))
     }
 

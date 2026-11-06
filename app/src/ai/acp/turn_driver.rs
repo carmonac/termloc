@@ -26,7 +26,6 @@ use futures::future::FusedFuture;
 use futures::stream::{FuturesOrdered, FuturesUnordered};
 use futures::{FutureExt, StreamExt, future, pin_mut, select, select_biased};
 use parking_lot::Mutex;
-use session_sharing_protocol::common::ParticipantId;
 use warp_multi_agent_api::ClientAction;
 use warp_multi_agent_api::response_event::{StreamFinished, stream_finished};
 use warpui::r#async::Timer;
@@ -78,7 +77,7 @@ pub(super) const MAX_BATCHED_FOLLOW_UPS: usize = 32;
 #[async_trait]
 pub(super) trait TurnHost: Send + Sync {
     /// Opens a request stream on the conversation, attributed to `initiator` when given.
-    async fn begin_turn(&self, initiator: Option<ParticipantId>) -> Result<ExternalHarnessTurn>;
+    async fn begin_turn(&self) -> Result<ExternalHarnessTurn>;
     async fn apply_actions(
         &self,
         stream_id: &ResponseStreamId,
@@ -270,7 +269,7 @@ async fn recv_or_pending<T>(
 pub(super) struct TurnDriver {
     pub connection: Arc<AcpConnection>,
     pub notifications: async_channel::Receiver<InboundNotification>,
-    /// Follow-up prompts injected into the conversation (e.g. by shared-session viewers).
+    /// Follow-up prompts for the conversation.
     /// `None` once the controller has unbound the conversation.
     pub follow_ups: Option<async_channel::Receiver<ExternalHarnessPrompt>>,
     /// Interrupts of the current turn. `None` once the controller has unbound the conversation.
@@ -375,11 +374,7 @@ impl TurnDriver {
         mapper: &mut AcpTurnMapper,
         interrupted: bool,
     ) -> Result<TurnOutcome> {
-        let initiator = self
-            .pending_follow_ups()
-            .front()
-            .map(|follow_up| follow_up.prompt.participant_id.clone());
-        let next = match self.host.begin_turn(initiator).await {
+        let next = match self.host.begin_turn().await {
             Ok(next) => next,
             Err(error) => {
                 self.fail_queued("the follow-up turn could not be opened")
@@ -452,7 +447,7 @@ impl TurnDriver {
             interrupted = false;
             content.extend(
                 self.attachments
-                    .prompt_content(text, prompt.attachments)
+                    .prompt_content_for_files(text, Vec::new(), &[])
                     .await,
             );
         }
@@ -783,10 +778,11 @@ impl TurnDriver {
         let attachments = self.attachments.clone();
         let session_id = self.session_id.clone();
         let text = prompt.text.clone();
-        let prompt_attachments = prompt.attachments.clone();
         Box::pin(
             async move {
-                let prompt = attachments.prompt_content(text, prompt_attachments).await;
+                let prompt = attachments
+                    .prompt_content_for_files(text, Vec::new(), &[])
+                    .await;
                 let sent = connection
                     .send_sequenced_request::<_, SteeringResponse>(
                         protocol::METHOD_SESSION_STEERING,
@@ -1077,7 +1073,7 @@ impl TurnDriver {
                             stream_finished_for(StopReason::EndTurn),
                         )
                         .await?;
-                    let next = self.host.begin_turn(None).await?;
+                    let next = self.host.begin_turn().await?;
                     mapper.start_segment(next.request_id.clone());
                     self.turn = next;
                 }

@@ -14,7 +14,6 @@ pub use input_classifier::{InputClassifierDecisionSource, InputType};
 use instant::Instant;
 use parking_lot::FairMutex;
 use serde::{Deserialize, Serialize};
-use session_sharing_protocol::common::{InputMode, InputType as ProtocolInputType};
 use settings::Setting as _;
 use warp_completer::completer::CompletionContext;
 use warp_core::features::FeatureFlag;
@@ -69,8 +68,6 @@ pub enum InputTypeAutoDetectionSource {
     AgentModePrefix,
     /// Inline code review send overrode the input mode to AI.
     InlineCodeReviewSend,
-    /// External input config update from session sharing applied.
-    SessionSharingApply,
     /// Fullscreen AgentView inline history command cycling force-locked Shell.
     FullscreenInlineHistoryCycling,
     /// Closing history suggestions restored the previously saved config.
@@ -183,17 +180,6 @@ impl InputConfig {
 
     pub fn is_shell(&self) -> bool {
         self.input_type == InputType::Shell
-    }
-}
-
-impl From<InputConfig> for InputMode {
-    fn from(config: InputConfig) -> Self {
-        let protocol_input_type = match config.input_type {
-            InputType::Shell => ProtocolInputType::Shell,
-            InputType::AI => ProtocolInputType::AI,
-        };
-
-        InputMode::new(protocol_input_type, config.is_locked)
     }
 }
 

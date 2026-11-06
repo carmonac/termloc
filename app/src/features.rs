@@ -39,14 +39,8 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::Ligatures,
         #[cfg(feature = "selectable_prompt")]
         FeatureFlag::SelectablePrompt,
-        #[cfg(feature = "viewing_shared_sessions")]
-        FeatureFlag::ViewingSharedSessions,
-        #[cfg(feature = "creating_shared_sessions")]
-        FeatureFlag::CreatingSharedSessions,
         #[cfg(feature = "agent_mode")]
         FeatureFlag::AgentMode,
-        #[cfg(feature = "shared_session_long_running_commands")]
-        FeatureFlag::SharedSessionWriteToLongRunningCommands,
         #[cfg(feature = "resize_fix")]
         FeatureFlag::ResizeFix,
         #[cfg(feature = "richtext_multiselect")]
@@ -72,8 +66,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         #[cfg(feature = "shell_selector")]
         FeatureFlag::ShellSelector,
         #[cfg(all(feature = "simulate_github_unauthed", debug_assertions))]
-        #[cfg(feature = "session_sharing_acls")]
-        FeatureFlag::SessionSharingAcls,
         #[cfg(feature = "full_screen_zen_mode")]
         FeatureFlag::FullScreenZenMode,
         #[cfg(feature = "minimalist_ui")]
@@ -118,8 +110,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::AgentModePrePlanXML,
         #[cfg(feature = "agent_onboarding")]
         FeatureFlag::AgentOnboarding,
-        #[cfg(feature = "agent_shared_sessions")]
-        FeatureFlag::AgentSharedSessions,
         #[cfg(feature = "suggested_rules")]
         FeatureFlag::SuggestedRules,
         #[cfg(feature = "suggested_agent_mode_workflows")]
@@ -422,8 +412,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::HOAOnboardingFlow,
         #[cfg(feature = "git_operations_in_code_review")]
         FeatureFlag::GitOperationsInCodeReview,
-        #[cfg(feature = "hoa_remote_control")]
-        FeatureFlag::HOARemoteControl,
         #[cfg(feature = "codex_notifications")]
         FeatureFlag::CodexNotifications,
         #[cfg(feature = "codex_plugin")]
@@ -440,8 +428,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::OscHyperlinks,
         #[cfg(feature = "terminal_lifecycle_recovery")]
         FeatureFlag::TerminalLifecycleRecovery,
-        #[cfg(feature = "ctrl_c_cancels_third_party_harness")]
-        FeatureFlag::CtrlCCancelsThirdPartyHarness,
         #[cfg(feature = "shell_widget_handoff")]
         FeatureFlag::ShellWidgetHandoff,
         #[cfg(feature = "history_search_ranking_v2")]
@@ -457,16 +443,10 @@ fn enabled_features() -> HashSet<FeatureFlag> {
             FeatureFlag::CrashReporting,
             FeatureFlag::LogExpensiveFramesInSentry,
             FeatureFlag::SshRemoteServer,
-            FeatureFlag::AgentSharedSessions,
             FeatureFlag::CloudConversations,
-            FeatureFlag::CreatingSharedSessions,
-            FeatureFlag::HOARemoteControl,
             FeatureFlag::OpenWarpLaunchModal,
-            FeatureFlag::SessionSharingAcls,
             FeatureFlag::SharedBlockTitleGeneration,
-            FeatureFlag::SharedSessionWriteToLongRunningCommands,
             FeatureFlag::SharedWithMe,
-            FeatureFlag::ViewingSharedSessions,
         ] {
             flags.remove(&flag);
         }

@@ -6,7 +6,6 @@ use pathfinder_geometry::vector::Vector2F;
 use serde::{Deserialize, Serialize};
 use sum_tree::{Cursor, SeekBias};
 use warp_core::features::FeatureFlag;
-use warpui::elements::ClippedScrollStateHandle;
 use warpui::units::{IntoLines, IntoPixels, Lines, Pixels};
 use warpui::{AppContext, ModelHandle};
 
@@ -416,7 +415,6 @@ pub struct ViewportState<'a> {
     input_mode: InputMode,
     size_info: SizeInfo,
     scroll_position: ScrollPosition,
-    horizontal_clipped_scroll_state: ClippedScrollStateHandle,
 
     /// Cached visible items to use in place of re-iterating to generate them
     visible_items: Option<Rc<Vec<VisibleItem>>>,
@@ -442,7 +440,6 @@ impl<'a> ViewportState<'a> {
         size_info: SizeInfo,
         scroll_position: ScrollPosition,
         visible_items: Option<Rc<Vec<VisibleItem>>>,
-        horizontal_clipped_scroll_state: ClippedScrollStateHandle,
         blocklist_element_size: Vector2F,
         input_size: Vector2F,
         rich_block_autoscroll_behavior: AutoscrollBehavior,
@@ -454,7 +451,6 @@ impl<'a> ViewportState<'a> {
             input_mode,
             size_info,
             scroll_position,
-            horizontal_clipped_scroll_state,
             visible_items,
             blocklist_element_size,
             input_size,
@@ -1678,9 +1674,7 @@ impl<'a> ViewportState<'a> {
             ClampingMode::ClampToGridIfWithinBlock => {
                 if total_block_height == Lines::zero()
                     || relative_coord.x() < 0.
-                    || relative_coord.x()
-                        - self.horizontal_clipped_scroll_state.scroll_start().as_f32()
-                        > self.size_info.pane_width_px().as_f32()
+                    || relative_coord.x() > self.size_info.pane_width_px().as_f32()
                     || is_coord_above_blocks
                     || is_coord_below_blocks
                 {
@@ -1937,13 +1931,6 @@ impl<'a> ViewportState<'a> {
             col: range.end.column,
         };
         (start, end)
-    }
-
-    /// Returns true if the start point <= end point after converting the selection from
-    /// block list coordinate space to viewport coordinate space, which accounts for input mode.
-    pub fn is_range_in_order_in_viewport(&self, range: &SelectionRange) -> bool {
-        let (start, end) = self.selection_as_viewport_points(range);
-        start <= end
     }
 }
 

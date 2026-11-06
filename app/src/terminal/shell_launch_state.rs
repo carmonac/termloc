@@ -7,15 +7,11 @@ use crate::terminal::shell::ShellType;
 pub enum ShellLaunchState {
     /// We are still determining the type of shell.
     DeterminingShell {
-        /// The only reason this is an Option is to because the shared session viewer does not yet
-        /// get this information!
         available_shell: Option<AvailableShell>,
         display_name: ShellName,
     },
     /// We are spawning a shell of [`ShellType`].
     ShellSpawned {
-        /// The only reason this is an Option is to because the shared session viewer does not yet
-        /// get this information!
         available_shell: Option<AvailableShell>,
         display_name: ShellName,
         shell_type: ShellType,

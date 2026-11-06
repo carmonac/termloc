@@ -60,12 +60,8 @@ pub fn should_render_ps1_prompt(terminal_model: &TerminalModel, app: &AppContext
     let is_classic_input_enabled = InputSettings::as_ref(app).is_classic_input_enabled(app);
     let session_settings = SessionSettings::as_ref(app);
 
-    // In the context of session sharing, these values may differ from the local settings i.e.
-    // if the sharer is using PS1 and the viewer is not (using Warp prompt in non-SLP mode).
-    // In this case, we still want to render the prompt on the same line (PS1 should ALWAYS be
-    // rendered on the same line).
-    // Note that the product behavior for session sharing is normally to respect the local settings
-    // for prompt cosmetics, but this is an exception!
+    // The active block's value may differ from the local settings. PS1 should ALWAYS be rendered
+    // on the same line.
     let active_block = terminal_model.block_list().active_block();
     let active_block_honor_ps1 = active_block.honor_ps1();
 

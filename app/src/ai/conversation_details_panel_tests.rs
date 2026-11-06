@@ -40,7 +40,7 @@ fn test_from_conversation_metadata_passes_harness_through() {
 #[test]
 fn test_from_conversation_uses_charged_usage_dollar_total() {
     App::test((), |mut app| async move {
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_charged_usage_for_test(Some(ChargedUsageTotals {
             input_cost_in_cents: 10.0,
             output_cost_in_cents: 12.0,
@@ -62,7 +62,7 @@ fn test_from_conversation_uses_charged_usage_dollar_total() {
 #[test]
 fn test_from_conversation_falls_back_to_the_billed_snapshot() {
     App::test((), |mut app| async move {
-        let mut conversation = AIConversation::new(false, false);
+        let mut conversation = AIConversation::new(false);
         conversation.set_billed_cost_in_cents_for_test(Some(250.0));
 
         app.update(|ctx| {

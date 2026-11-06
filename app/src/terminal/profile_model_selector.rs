@@ -1382,11 +1382,7 @@ impl ProfileModelSelector {
         let theme = appearance.theme();
         let llm_preferences = LLMPreferences::as_ref(app);
 
-        // Allow editing if the user has edit access in a shared session (i.e., not a viewer, or
-        // is an executor).
         let terminal_model = self.terminal_model.lock();
-        let has_edit_access = !terminal_model.shared_session_status().is_viewer()
-            || terminal_model.shared_session_status().is_executor();
         let is_lrc = FeatureFlag::InlineMenuHeaders.is_enabled()
             && terminal_model
                 .block_list()
@@ -1442,10 +1438,9 @@ impl ProfileModelSelector {
         }
         content = content.with_child(model_text);
 
-        // Only show chevron icon if the user can click to open the menu (i.e. has edit access)
-        // and the InlineMenuHeaders feature flag is not enabled
+        // Only show chevron icon if the InlineMenuHeaders feature flag is not enabled
         // (when enabled, clicking opens the inline model selector instead of a dropdown).
-        if has_edit_access && !FeatureFlag::InlineMenuHeaders.is_enabled() {
+        if !FeatureFlag::InlineMenuHeaders.is_enabled() {
             content = content.with_child(
                 Container::new(chip_icon(Icon::ChevronDown))
                     .with_margin_left(ICON_SPACING)
@@ -1462,7 +1457,7 @@ impl ProfileModelSelector {
             SavePosition::new(button, "profile_model_selector_model_button").finish();
 
         let hoverable = Hoverable::new(self.model_mouse_state.clone(), move |state| {
-            if state.is_hovered() && has_edit_access {
+            if state.is_hovered() {
                 let button_with_hover = Container::new(button_with_save_position)
                     .with_background(theme.surface_2())
                     .with_corner_radius(CornerRadius::with_right(Radius::Pixels(
@@ -1506,16 +1501,12 @@ impl ProfileModelSelector {
             }
         });
 
-        if has_edit_access {
-            hoverable
-                .on_click(|ctx, _app, _position| {
-                    ctx.dispatch_typed_action(ProfileModelSelectorAction::ToggleModelMenu);
-                })
-                .with_cursor(Cursor::PointingHand)
-                .finish()
-        } else {
-            hoverable.finish()
-        }
+        hoverable
+            .on_click(|ctx, _app, _position| {
+                ctx.dispatch_typed_action(ProfileModelSelectorAction::ToggleModelMenu);
+            })
+            .with_cursor(Cursor::PointingHand)
+            .finish()
     }
 
     fn render_separator(&self, app: &AppContext, visible: bool) -> Box<dyn Element> {
@@ -1816,19 +1807,10 @@ impl View for ProfileModelSelector {
         let profiles_model = AIExecutionProfilesModel::as_ref(app);
         let has_multiple_profiles = profiles_model.has_multiple_profiles();
 
-        // Check if user is a viewer in a shared session
-        let is_viewer = self
-            .terminal_model
-            .lock()
-            .shared_session_status()
-            .is_viewer();
-
         let mut compact_row = Flex::row().with_cross_axis_alignment(CrossAxisAlignment::Center);
 
-        // Only add profile button to compact layout if there are multiple profiles
-        // and the user is not a viewer (we currently don't support profiles in shared sessions).
-        let should_show_profile_section = has_multiple_profiles && !is_viewer;
-        if should_show_profile_section {
+        // Only add profile button to compact layout if there are multiple profiles.
+        if has_multiple_profiles {
             let profile_button_with_save_position = SavePosition::new(
                 ChildView::new(&self.profile_compact_button).finish(),
                 "profile_model_selector_profile_compact_button",
@@ -1848,9 +1830,8 @@ impl View for ProfileModelSelector {
 
         let mut chip_content = Flex::row().with_cross_axis_alignment(CrossAxisAlignment::Center);
 
-        // Only add profile section and separator if there are multiple profiles
-        // and the user is not a viewer
-        if should_show_profile_section {
+        // Only add profile section and separator if there are multiple profiles.
+        if has_multiple_profiles {
             // Don't show separator if either selector is hovered
             let profile_hovered = self.profile_mouse_state.lock().unwrap().is_hovered();
             let model_hovered = self.model_mouse_state.lock().unwrap().is_hovered();
@@ -1882,7 +1863,7 @@ impl View for ProfileModelSelector {
         let mut stack = Stack::new();
         stack.add_child(content);
 
-        if self.is_profile_menu_open && should_show_profile_section {
+        if self.is_profile_menu_open && has_multiple_profiles {
             let profile_menu = ChildView::new(&self.profile_dropdown).finish();
             let positioning = self.get_menu_positioning(app, true);
             stack.add_positioned_overlay_child(profile_menu, positioning);

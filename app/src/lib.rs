@@ -650,9 +650,9 @@ pub fn run() -> Result<()> {
     let args = warp_cli::Args::from_env();
 
     // Server URL overrides are only honored on internal dev channels. Release channels silently
-    // ignore `--server-root-url` / `--ws-server-url` / `--session-sharing-server-url` (and their
-    // `TERMLOC_*` env-var equivalents) so shipped builds can't be redirected away from their
-    // baked-in server URLs. See `Channel::allows_server_url_overrides`.
+    // ignore `--server-root-url` / `--ws-server-url` (and their `TERMLOC_*` env-var equivalents)
+    // so shipped builds can't be redirected away from their baked-in server URLs. See
+    // `Channel::allows_server_url_overrides`.
     if ChannelState::channel().allows_server_url_overrides() {
         if let Some(url) = args.server_root_url()
             && let Err(e) = ChannelState::override_server_root_url(url.to_owned())
@@ -664,12 +664,6 @@ pub fn run() -> Result<()> {
             && let Err(e) = ChannelState::override_ws_server_url(url.to_owned())
         {
             eprintln!("Error: Invalid websocket server URL: {e:#}");
-        }
-
-        if let Some(url) = args.session_sharing_server_url()
-            && let Err(e) = ChannelState::override_session_sharing_server_url(url.to_owned())
-        {
-            eprintln!("Error: Invalid session sharing server URL: {e:#}");
         }
     }
 
@@ -2004,9 +1998,8 @@ pub(crate) fn initialize_app(
     // Register it after `LocalShellState`: the Manager needs to know where the gcloud
     // cli lives & thus needs PATH config set by ~/.zshrc et al.
     //
-    // Registered on all targets (including wasm) so consumers such as the
-    // shared-session viewer network — which compiles and runs on wasm — can
-    // read the singleton without panicking. On wasm `iap_state` is always
+    // Registered on all targets (including wasm) so consumers can read the
+    // singleton without panicking. On wasm `iap_state` is always
     // `None`, making this an inert no-op: `IapManager::new` early-returns from
     // its refresh loop and `iap_state()` yields no proxy-auth header.
     ctx.add_singleton_model(move |ctx| {
@@ -2067,13 +2060,6 @@ pub(crate) fn initialize_app(
 
     // Add a singleton model for resizable modals whose size should be persisted through restarts.
     ctx.add_singleton_model(|_| ResizableData::default());
-
-    // Add a singleton model to maintain state of shared session across all windows.
-    ctx.add_singleton_model(terminal::shared_session::manager::Manager::new);
-
-    ctx.add_singleton_model(
-        terminal::shared_session::permissions_manager::SessionPermissionsManager::new,
-    );
 
     ctx.add_singleton_model(EnvVarCollectionManager::new);
     ctx.add_singleton_model(WorkflowManager::new);

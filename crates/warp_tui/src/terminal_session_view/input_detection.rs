@@ -4,7 +4,7 @@
 //! [`BlocklistAIInputModel`](warp::tui_export::BlocklistAIInputModel) classifier
 //! are shared with the GUI input. The coordination remains frontend-specific:
 //! GUI input detection is coupled to command decorations, parsed-token caching,
-//! shared-session edits, and GUI suggestion modes, while the TUI owns a
+//! and GUI suggestion modes, while the TUI owns a
 //! separate editor, inline menus, future lifecycle, and short-input Agent bias.
 //! Keeping those coordinators separate avoids a broad callback abstraction
 //! while preserving the classification behavior in the shared model.

@@ -1287,35 +1287,6 @@ pub struct ModelTokenUsage {
 
 impl ModelTokenUsage {
     #[allow(deprecated)]
-    fn to_proto_usage(
-        &self,
-        total_tokens: u32,
-        usage_by_category: &HashMap<TokenUsageCategory, u32>,
-    ) -> Option<(String, stream_finished::ModelTokenUsage)> {
-        if total_tokens == 0 {
-            return None;
-        }
-        Some((
-            self.model_id.clone(),
-            stream_finished::ModelTokenUsage {
-                model_id: self.model_id.clone(),
-                total_tokens: u64::from(total_tokens),
-                token_usage_by_category: usage_by_category
-                    .iter()
-                    .map(|(cat, tokens)| (cat.clone(), u64::from(*tokens)))
-                    .collect(),
-            },
-        ))
-    }
-
-    pub fn to_proto_warp_usage(&self) -> Option<(String, stream_finished::ModelTokenUsage)> {
-        self.to_proto_usage(self.warp_tokens, &self.warp_token_usage_by_category)
-    }
-
-    pub fn to_proto_byok_usage(&self) -> Option<(String, stream_finished::ModelTokenUsage)> {
-        self.to_proto_usage(self.byok_tokens, &self.byok_token_usage_by_category)
-    }
-    #[allow(deprecated)]
     pub fn to_proto_custom_endpoint_usage(
         &self,
     ) -> Option<(String, stream_finished::ModelTokenUsage)> {
@@ -1334,25 +1305,6 @@ impl ModelTokenUsage {
                     .collect(),
             },
         ))
-    }
-
-    #[allow(deprecated)]
-    pub fn to_proto_combined(&self) -> stream_finished::ModelTokenUsage {
-        stream_finished::ModelTokenUsage {
-            model_id: self.model_id.clone(),
-            total_tokens: u64::from(self.warp_tokens)
-                + u64::from(self.byok_tokens)
-                + u64::from(self.custom_endpoint_tokens),
-            token_usage_by_category: self
-                .warp_token_usage_by_category
-                .iter()
-                .chain(self.byok_token_usage_by_category.iter())
-                .chain(self.custom_endpoint_token_usage_by_category.iter())
-                .fold(HashMap::new(), |mut acc, (cat, tokens)| {
-                    *acc.entry(cat.clone()).or_insert(0) += u64::from(*tokens);
-                    acc
-                }),
-        }
     }
 }
 

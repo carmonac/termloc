@@ -55,7 +55,6 @@ const SEND_NOW_DURING_SETUP_TOOLTIP: &str = "Prompts cannot be sent until setup 
 const SEND_NOW_PENDING_LRC_TOOLTIP: &str =
     "Prompts cannot be sent until the full terminal use agent is initialized.";
 const SEND_NOW_TO_FULL_TERMINAL_USE_AGENT_TOOLTIP: &str = "Send to full terminal use agent";
-const SEND_NOW_AS_READ_ONLY_VIEWER_TOOLTIP: &str = "Read-only viewers cannot send prompts.";
 /// Suffix on rows auto-queued during an agent-requested long-running command, which fire
 /// when that command completes rather than at the end of the full response.
 const LRC_AUTO_QUEUE_ROW_SUFFIX: &str = "(queued until the command finishes)";
@@ -109,7 +108,7 @@ fn build_row_state(
             })
     });
 
-    if origin == QueuedQueryOrigin::SharedSessionInjection {
+    if origin == QueuedQueryOrigin::ExternalHarness {
         edit_button.update(ctx, |button, ctx| button.set_disabled(true, ctx));
     }
 
@@ -157,9 +156,6 @@ pub struct QueuedPromptsPanelView {
     /// because no other view reads this. Reset whenever the active conversation changes or the
     /// queue is cleared.
     collapsed: bool,
-    /// Host-pushed: whether this terminal can send prompts at all (false for read-only
-    /// shared-session viewers). Gates the send-now buttons, empty-Enter sends, and the hint.
-    can_send_prompt: bool,
     /// Host input's editor. An empty input is what makes Enter send the top queued row, so
     /// Enter-send and hint decisions read its emptiness live.
     host_editor: ViewHandle<EditorView>,
@@ -265,7 +261,6 @@ impl QueuedPromptsPanelView {
             edit_editor_is_single_logical_line: true,
             edit_editor_scroll_state: Default::default(),
             collapsed: false,
-            can_send_prompt: true,
             host_editor,
             host_editor_was_empty,
             header_mouse_state: MouseStateHandle::default(),
@@ -285,24 +280,12 @@ impl QueuedPromptsPanelView {
         self.drag_start_index = None;
     }
 
-    /// Updates whether this terminal can send prompts (false for read-only shared-session
-    /// viewers). Pushed by the host on construction and when the shared-session role changes.
-    pub fn set_can_send_prompt(&mut self, can_send_prompt: bool, ctx: &mut ViewContext<Self>) {
-        if self.can_send_prompt == can_send_prompt {
-            return;
-        }
-        self.can_send_prompt = can_send_prompt;
-        self.update_send_now_availability(ctx);
-        ctx.notify();
-    }
-
     /// True when pressing Enter in the host input should send the top queued row instead of
     /// performing its usual action: the panel is showing, prompts can be sent, the input is
     /// empty (read live from the host editor, so the decision cannot trail same-update buffer
     /// changes), and the CLI-agent rich input is closed (Enter submits to the CLI agent there).
     pub fn enter_sends_queued_prompt(&self, ctx: &AppContext) -> bool {
         self.should_render(ctx)
-            && self.can_send_prompt
             && self.host_editor.as_ref(ctx).is_empty(ctx)
             && !CLIAgentSessionsModel::as_ref(ctx).is_input_open(self.terminal_view_id)
     }
@@ -406,16 +389,13 @@ impl QueuedPromptsPanelView {
                 continue;
             };
             let disabled_for_pending_lrc = *origin == QueuedQueryOrigin::PendingLrcAutoQueue;
-            let disabled =
-                disabled_for_pending_lrc || dispatch_blocked || !self.can_send_prompt || !ready;
+            let disabled = disabled_for_pending_lrc || dispatch_blocked || !ready;
             let tooltip = if disabled_for_pending_lrc {
                 SEND_NOW_PENDING_LRC_TOOLTIP
             } else if dispatch_blocked {
                 SEND_NOW_DURING_SETUP_TOOLTIP
-            } else if !self.can_send_prompt {
-                SEND_NOW_AS_READ_ONLY_VIEWER_TOOLTIP
             } else if !ready {
-                "Downloading attachments"
+                "Sent by the external agent"
             } else if lrc_subagent_in_progress {
                 SEND_NOW_TO_FULL_TERMINAL_USE_AGENT_TOOLTIP
             } else {
@@ -481,9 +461,6 @@ impl QueuedPromptsPanelView {
                 conversation_id, ..
             }
             | QueuedQueryEvent::Removed {
-                conversation_id, ..
-            }
-            | QueuedQueryEvent::PromptReady {
                 conversation_id, ..
             }
             | QueuedQueryEvent::RowUnlocked { conversation_id }
@@ -576,7 +553,6 @@ impl QueuedPromptsPanelView {
                 self.update_send_now_availability(ctx);
             }
             QueuedQueryEvent::RowUnlocked { .. }
-            | QueuedQueryEvent::PromptReady { .. }
             | QueuedQueryEvent::DispatchStateChanged { .. } => {
                 self.update_send_now_availability(ctx);
             }
@@ -1189,7 +1165,7 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
                 Some(LRC_AUTO_QUEUE_ROW_SUFFIX)
             }
             QueuedQueryOrigin::LocalSteering => Some(LOCAL_STEERING_ROW_SUFFIX),
-            QueuedQueryOrigin::SharedSessionInjection
+            QueuedQueryOrigin::ExternalHarness
             | QueuedQueryOrigin::QueueSlashCommand
             | QueuedQueryOrigin::AutoQueueToggle
             | QueuedQueryOrigin::CompactAndSlashCommand

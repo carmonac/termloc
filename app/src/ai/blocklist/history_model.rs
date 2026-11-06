@@ -1052,12 +1052,10 @@ impl BlocklistAIHistoryModel {
         &mut self,
         terminal_surface_id: EntityId,
         is_autoexecute_override: bool,
-        is_viewing_shared_session: bool,
         is_cli_agent_transcript: bool,
         ctx: &mut ModelContext<Self>,
     ) -> AIConversationId {
-        let mut new_conversation =
-            AIConversation::new(is_viewing_shared_session, is_cli_agent_transcript);
+        let mut new_conversation = AIConversation::new(is_cli_agent_transcript);
         if is_autoexecute_override {
             new_conversation.toggle_autoexecute_override();
         }
@@ -1218,7 +1216,7 @@ impl BlocklistAIHistoryModel {
         );
 
         let new_conversation_id =
-            self.start_new_conversation(terminal_surface_id, false, false, false, ctx);
+            self.start_new_conversation(terminal_surface_id, false, false, ctx);
         for exchange_id in exchange_ids_to_transfer {
             let old_conversation = self
                 .conversations_by_id
@@ -1929,13 +1927,6 @@ impl BlocklistAIHistoryModel {
         }
     }
 
-    /// Returns true if the conversation is live for any terminal surface.
-    pub fn is_conversation_live(&self, conversation_id: AIConversationId) -> bool {
-        self.live_conversation_ids_for_terminal_surface
-            .values()
-            .any(|conversation_ids| conversation_ids.contains(&conversation_id))
-    }
-
     pub fn mark_terminal_surface_as_conversation_transcript_viewer(
         &mut self,
         terminal_surface_id: EntityId,
@@ -2101,16 +2092,6 @@ impl BlocklistAIHistoryModel {
             return;
         };
         conversation.set_is_exchange_hidden(exchange_id, is_hidden, terminal_surface_id, ctx);
-    }
-
-    pub fn set_viewing_shared_session_for_conversation(
-        &mut self,
-        conversation_id: AIConversationId,
-        is_viewing_shared_session: bool,
-    ) {
-        if let Some(conversation) = self.conversations_by_id.get_mut(&conversation_id) {
-            conversation.set_is_viewing_shared_session(is_viewing_shared_session);
-        }
     }
 
     pub fn set_driver_for_conversation(
@@ -2279,8 +2260,7 @@ impl BlocklistAIHistoryModel {
         }
 
         // A token miss is the expected outcome whenever a task references a
-        // conversation this client hasn't loaded (shared-session tasks from
-        // other users, pre-sync state).
+        // conversation this client hasn't loaded (pre-sync state).
         log::debug!(
             "No conversation found for server token: {}",
             server_token.as_str()
@@ -2570,13 +2550,6 @@ pub enum BlocklistAIHistoryEvent {
     ConversationUsageMetadataUpdated {
         conversation_id: AIConversationId,
     },
-
-    /// Emitted when a sharer-owned conversation establishes a local
-    /// shared session.
-    LocalSharedSessionEstablished {
-        conversation_id: AIConversationId,
-        session_id: session_sharing_protocol::common::SessionId,
-    },
 }
 
 impl BlocklistAIHistoryEvent {
@@ -2673,7 +2646,6 @@ impl BlocklistAIHistoryEvent {
             // terminal_surface_id.
             BlocklistAIHistoryEvent::ConversationUsageMetadataUpdated { .. } => None,
             // Conversation-scoped; subscribers resolve the owning view via conversation_id.
-            BlocklistAIHistoryEvent::LocalSharedSessionEstablished { .. } => None,
         }
     }
 }

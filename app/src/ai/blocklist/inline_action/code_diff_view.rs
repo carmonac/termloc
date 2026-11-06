@@ -268,19 +268,13 @@ pub enum CodeDiffState {
     Rejected,
     /// The changes were reverted after acceptance.
     Reverted,
-    /// The diff is being viewed in a shared session (read-only mode).
-    /// is_complete indicates whether the diff has been accepted or is still pending.
-    ViewOnly { is_complete: bool },
 }
 
 impl CodeDiffState {
     fn is_complete(&self) -> bool {
         matches!(
             self,
-            CodeDiffState::Accepted
-                | CodeDiffState::Rejected
-                | CodeDiffState::Reverted
-                | CodeDiffState::ViewOnly { is_complete: true }
+            CodeDiffState::Accepted | CodeDiffState::Rejected | CodeDiffState::Reverted
         )
     }
 
@@ -420,11 +414,6 @@ pub struct CodeDiffView {
 
 impl CodeDiffView {
     fn open_accept_split_button_menu(&mut self, ctx: &mut ViewContext<Self>) {
-        // Don't allow menu toggling in view-only mode.
-        if matches!(self.state, CodeDiffState::ViewOnly { .. }) {
-            report_error!("Attempted to toggle accept menu in view-only mode");
-            return;
-        }
         self.is_accept_split_button_menu_open = true;
         let is_passive = self.is_passive();
         if is_passive {
@@ -596,9 +585,7 @@ impl CodeDiffView {
         ctx: &mut ViewContext<Self>,
     ) -> Self {
         let is_passive = model.request_type(ctx).is_passive_code_diff();
-        let initial_state = if action_model.as_ref(ctx).is_view_only() {
-            CodeDiffState::ViewOnly { is_complete: false }
-        } else if model.is_first_action_in_output(action_id, ctx) {
+        let initial_state = if model.is_first_action_in_output(action_id, ctx) {
             CodeDiffState::WaitingForUser
         } else {
             CodeDiffState::Queued
@@ -626,12 +613,7 @@ impl CodeDiffView {
                             ctx.notify();
                         }
                         Some(status) => {
-                            if matches!(me.state, CodeDiffState::ViewOnly { .. })
-                                && status.is_success()
-                            {
-                                me.state = CodeDiffState::ViewOnly { is_complete: true };
-                                me.should_expand_when_complete = false;
-                            } else if status.is_cancelled() {
+                            if status.is_cancelled() {
                                 me.state = CodeDiffState::Rejected;
                                 me.should_expand_when_complete = false;
                             }
@@ -951,13 +933,6 @@ impl CodeDiffView {
         selection: AcceptSelection,
         ctx: &mut ViewContext<Self>,
     ) -> Result<()> {
-        if matches!(self.state, CodeDiffState::ViewOnly { .. }) {
-            report_error!("Attempted to accept diff in view-only mode");
-            return Err(anyhow::anyhow!(
-                "Attempted to accept diff in view-only mode"
-            ));
-        }
-
         match selection {
             AcceptSelection::Only => {
                 send_telemetry_from_ctx!(
@@ -1009,12 +984,6 @@ impl CodeDiffView {
 
     /// Mark the diff as rejected.
     pub fn reject(&mut self, ctx: &mut ViewContext<Self>) {
-        // Don't let users reject an old diff while in view-only mode.
-        if matches!(self.state, CodeDiffState::ViewOnly { .. }) {
-            report_error!("Attempted to reject diff in view-only mode");
-            return;
-        }
-
         for diff in &self.pending_diffs {
             diff.diff_view.update(ctx, |v, ctx| v.reject_diff(ctx));
         }
@@ -1141,12 +1110,6 @@ impl CodeDiffView {
     }
 
     pub fn expand_and_edit(&mut self, ctx: &mut ViewContext<Self>) {
-        // Don't let users edit an old diff while in view-only mode.
-        if matches!(self.state, CodeDiffState::ViewOnly { .. }) {
-            report_error!("Attempted to edit/expand diff in view-only mode");
-            return;
-        }
-
         if self.display_mode().is_inline_banner() {
             self.set_embedded_display_mode(true, ctx);
         }
@@ -1392,14 +1355,10 @@ impl CodeDiffView {
         };
 
         let icon = match self.state {
-            CodeDiffState::Accepted | CodeDiffState::ViewOnly { is_complete: true } => {
-                green_check_icon(appearance).finish()
-            }
+            CodeDiffState::Accepted => green_check_icon(appearance).finish(),
             CodeDiffState::Rejected => cancelled_icon(appearance).finish(),
             CodeDiffState::Reverted => reverted_icon(appearance).finish(),
-            CodeDiffState::Queued | CodeDiffState::ViewOnly { is_complete: false } => {
-                icons::gray_stop_icon(appearance).finish()
-            }
+            CodeDiffState::Queued => icons::gray_stop_icon(appearance).finish(),
             CodeDiffState::WaitingForUser => {
                 if self.display_mode().is_inline_banner() {
                     warpui::elements::Icon::new(
@@ -1474,22 +1433,17 @@ impl CodeDiffView {
                 appearance.ui_font_family(),
                 appearance.monospace_font_size(),
             )
-            .with_color(
-                if matches!(
-                    self.state,
-                    CodeDiffState::Queued | CodeDiffState::ViewOnly { is_complete: false }
-                ) {
-                    appearance
-                        .theme()
-                        .disabled_text_color(header_background)
-                        .into_solid()
-                } else {
-                    appearance
-                        .theme()
-                        .main_text_color(header_background)
-                        .into_solid()
-                },
-            )
+            .with_color(if matches!(self.state, CodeDiffState::Queued) {
+                appearance
+                    .theme()
+                    .disabled_text_color(header_background)
+                    .into_solid()
+            } else {
+                appearance
+                    .theme()
+                    .main_text_color(header_background)
+                    .into_solid()
+            })
             .with_selectable(false)
             .finish();
             if let Some(icon) = self.render_icon(header_background, appearance, app) {
@@ -1631,14 +1585,11 @@ impl CodeDiffView {
         if matches!(self.state, CodeDiffState::WaitingForUser) {
             right_side_row.add_child(action_buttons);
         } else {
-            // Don't show the code review button for viewers of shared sessions
-            if !matches!(self.state, CodeDiffState::ViewOnly { .. }) {
-                right_side_row.add_child(
-                    Container::new(ChildView::new(&self.code_review_button).finish())
-                        .with_margin_right(HEADER_MARGIN)
-                        .finish(),
-                );
-            }
+            right_side_row.add_child(
+                Container::new(ChildView::new(&self.code_review_button).finish())
+                    .with_margin_right(HEADER_MARGIN)
+                    .finish(),
+            );
 
             let expansion_button = if is_expanded {
                 &self.expansion_button_expanded
