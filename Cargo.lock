@@ -13455,7 +13455,6 @@ name = "warp"
 version = "0.1.0"
 dependencies = [
  "addr",
- "aha-reqwest-eventsource",
  "aho-corasick",
  "ai",
  "ai_types",
@@ -13703,7 +13702,6 @@ dependencies = [
  "warp_files",
  "warp_logging",
  "warp_multi_agent_api",
- "warp_multi_agent_client",
  "warp_ripgrep",
  "warp_search_core",
  "warp_server_auth",
@@ -14019,31 +14017,12 @@ dependencies = [
 [[package]]
 name = "warp_multi_agent_api"
 version = "0.0.0"
-source = "git+https://github.com/warpdotdev/warp-proto-apis.git?rev=8320a94875bce9e730d9bfc4abda1544279e5db3#8320a94875bce9e730d9bfc4abda1544279e5db3"
 dependencies = [
  "prost",
  "prost-reflect",
  "prost-reflect-build",
  "prost-types",
  "regex",
-]
-
-[[package]]
-name = "warp_multi_agent_client"
-version = "0.1.0"
-dependencies = [
- "aha-reqwest-eventsource",
- "anyhow",
- "base64 0.22.1",
- "cfg-if",
- "futures",
- "prost",
- "thiserror 2.0.17",
- "tracing",
- "tracing-futures",
- "warp_core",
- "warp_multi_agent_api",
- "warp_server_client",
 ]
 
 [[package]]

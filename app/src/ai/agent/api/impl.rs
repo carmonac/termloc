@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+#[cfg(target_family = "wasm")]
 use std::sync::Arc;
 
 use futures_util::StreamExt;
@@ -9,14 +10,12 @@ use super::convert_to::convert_input;
 use super::{ConvertToAPITypeError, RequestParams, ResponseStream};
 use crate::ai::agent::redaction;
 use crate::ai::blocklist::video_recording_enabled;
-use crate::server::server_api::{AIApiError, ServerApi};
-use crate::server::team_scope::RequestTeamScope;
+#[cfg(target_family = "wasm")]
+use crate::server::server_api::AIApiError;
 use crate::terminal::model::session::SessionType;
 
 pub async fn generate_multi_agent_output(
-    server_api: Arc<ServerApi>,
     mut params: RequestParams,
-    team_scope: RequestTeamScope,
     cancellation_rx: futures::channel::oneshot::Receiver<()>,
 ) -> Result<ResponseStream, ConvertToAPITypeError> {
     let supported_tools = params
@@ -140,55 +139,21 @@ pub async fn generate_multi_agent_output(
     };
 
     #[cfg(not(target_family = "wasm"))]
-    if crate::ai::local::is_enabled() {
-        let stream = crate::ai::local::run_turn(request.clone()).await;
-        return Ok(Box::pin(stream.map(Ok).take_until(cancellation_rx)));
+    {
+        let stream = crate::ai::local::run_turn(request).await;
+        Ok(Box::pin(stream.map(Ok).take_until(cancellation_rx)))
     }
-
-    let response_stream = warp_multi_agent_client::generate_multi_agent_output(
-        server_api.as_ref(),
-        &request,
-        team_scope.team_uid().map(|uid| uid.uid()),
-    )
-    .await;
-    match response_stream {
-        Ok(stream) => {
-            let output_stream = stream
-                .then(|result| async {
-                    match result {
-                        Ok(event) => Ok(event),
-                        Err(error) => Err(convert_multi_agent_client_error(error).await),
-                    }
-                })
-                .take_until(cancellation_rx);
-            Ok(Box::pin(output_stream))
-        }
-        Err(e) => {
-            let (tx, rx) = async_channel::unbounded();
-            let _ = tx
-                .send(Err(convert_multi_agent_client_error(e).await))
-                .await;
-            Ok(Box::pin(rx))
-        }
+    #[cfg(target_family = "wasm")]
+    {
+        let _ = (request, cancellation_rx);
+        let (tx, rx) = async_channel::unbounded();
+        let _ = tx
+            .send(Err(Arc::new(AIApiError::Other(anyhow::anyhow!(
+                "The agent is not available in this build"
+            )))))
+            .await;
+        Ok(Box::pin(rx))
     }
-}
-
-async fn convert_multi_agent_client_error(
-    error: warp_multi_agent_client::Error,
-) -> Arc<AIApiError> {
-    let error = match error {
-        warp_multi_agent_client::Error::Authentication(error) => AIApiError::Other(error),
-        warp_multi_agent_client::Error::Base64Decode(error) => {
-            AIApiError::Other(anyhow::Error::from(error))
-        }
-        warp_multi_agent_client::Error::ProtobufDecode(error) => {
-            AIApiError::Other(anyhow::Error::from(error))
-        }
-        warp_multi_agent_client::Error::EventSource(error) => {
-            AIApiError::from_stream_error("GenerateMultiAgentOutput", *error).await
-        }
-    };
-    Arc::new(error)
 }
 
 fn get_supported_tools(params: &RequestParams) -> Vec<api::ToolType> {

@@ -23,7 +23,7 @@ RUN apt-get update \
             # Open-source Vulkan drivers and OpenGL-related utilities from the
             # mesa project.
             mesa-vulkan-drivers mesa-utils \
-            # protoc, in order to compile warp-proto-apis crates like the MAA API.
+            # protoc, in order to compile protobuf crates like crates/warp_multi_agent_api.
             protobuf-compiler \
             # Don't ask for confirmation.
             -y

@@ -60,7 +60,6 @@ use crate::network::NetworkStatus;
 use crate::notebooks::editor::model::FileLinkResolutionContext;
 use crate::persistence::ModelEvent;
 use crate::server::server_api::AIApiError;
-use crate::server::team_scope::RequestTeamScope;
 use crate::terminal::ShellLaunchData;
 use crate::terminal::model::block::{
     BlockId, CURSOR_MARKER, formatted_terminal_contents_for_input,
@@ -2098,8 +2097,6 @@ impl BlocklistAIController {
         );
 
         let scope = self.team_context(ctx);
-        // Pinned at send, so the request keeps the team the surface was on when the user sent it.
-        let team_scope = RequestTeamScope::from_scope(&scope);
         let request_params = api::RequestParams::new(
             Some(self.terminal_surface_id),
             SessionContext::from_session(self.active_session.as_ref(ctx), ctx),
@@ -2110,9 +2107,8 @@ impl BlocklistAIController {
             ctx,
         );
 
-        let response_stream = ctx.add_model(|ctx| {
-            ResponseStream::new(request_params.clone(), recovery, team_scope, ctx)
-        });
+        let response_stream =
+            ctx.add_model(|ctx| ResponseStream::new(request_params.clone(), recovery, ctx));
         let response_stream_id = response_stream.as_ref(ctx).id().clone();
         let response_stream_clone = response_stream.clone();
         let input_contains_user_query = request_input

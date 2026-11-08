@@ -225,7 +225,6 @@ onboarding.workspace = true
 aho-corasick = "1.1.3"
 strum.workspace = true
 strum_macros.workspace = true
-reqwest-eventsource = { workspace = true }
 lasso.workspace = true
 counter = "0.6.0"
 typed-path.workspace = true
@@ -236,7 +235,6 @@ repo_metadata.workspace = true
 vim.workspace = true
 rmcp.workspace = true
 warp_ripgrep.workspace = true
-warp_multi_agent_client.workspace = true
 local_control.workspace = true
 hashbrown.workspace = true
 rustc-hash.workspace = true
@@ -644,7 +642,6 @@ agent_mode_evals = [
     "cloud_object_models/agent_mode_evals",
     "rust-embed/debug-embed",
     "warp_logging/agent_mode_evals",
-    "warp_multi_agent_client/agent_mode_evals",
 ]
 allow_ignoring_input_suggestions = []
 inline_slash_commands = ["agent_view"]
