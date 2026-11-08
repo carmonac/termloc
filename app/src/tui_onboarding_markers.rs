@@ -1,9 +1,5 @@
-use std::sync::Arc;
-use std::time::Duration;
-
 use cloud_object_models::JsonSerializer;
 use settings::{RespectUserSyncSetting, SyncToCloud};
-use warpui::r#async::Timer;
 use warpui::{Entity, ModelContext, SingletonEntity};
 
 use crate::cloud_object::CloudObjectEventEntrypoint;
@@ -12,16 +8,11 @@ use crate::server::cloud_objects::update_manager::{
     GenericStringObjectInput, UpdateManager, UpdateManagerEvent,
 };
 use crate::server::ids::ClientId;
-use crate::server::server_api::ServerApiProvider;
-use crate::server::server_api::tui_onboarding::{
-    TuiOnboardingClient, TuiOnboardingMarkersSnapshot,
-};
 use crate::settings::cloud_preferences::{CloudPreference, CloudPreferenceModel, Preference};
 use crate::workspaces::user_workspaces::UserWorkspaces;
 
 const FIRST_ZERO_STATE_STORAGE_KEY: &str = "TuiFirstZeroStateShown";
 const FIRST_CREDIT_GATE_STORAGE_KEY: &str = "TuiFirstCreditGateShown";
-const MARKER_LOAD_TIMEOUT: Duration = Duration::from_secs(3);
 
 /// Account-scoped, monotonic TUI onboarding markers stored as separate global
 /// cloud preferences so concurrent devices cannot overwrite unrelated state.
@@ -74,15 +65,11 @@ pub enum TuiOnboardingMarkersEvent {
 /// Dedicated cloud-preference model for the TUI's once-per-account surfaces.
 pub struct TuiOnboardingMarkers {
     state: TuiOnboardingMarkersState,
-    load_generation: u64,
     persist_markers: bool,
-    onboarding_client: Option<Arc<dyn TuiOnboardingClient>>,
-    load_timeout: Duration,
 }
 
 impl TuiOnboardingMarkers {
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
-        let onboarding_client = ServerApiProvider::as_ref(ctx).get_tui_onboarding_client();
         ctx.subscribe_to_model(&UpdateManager::handle(ctx), |markers, _, event, ctx| {
             let UpdateManagerEvent::CloudPreferencesUpdated { updated } = event else {
                 return;
@@ -99,46 +86,17 @@ impl TuiOnboardingMarkers {
         });
         Self {
             state: TuiOnboardingMarkersState::Loading,
-            load_generation: 0,
             persist_markers: true,
-            onboarding_client: Some(onboarding_client),
-            load_timeout: MARKER_LOAD_TIMEOUT,
         }
     }
 
-    #[cfg(test)]
-    fn new_loading_for_test(
-        onboarding_client: Arc<dyn TuiOnboardingClient>,
-        load_timeout: Duration,
-    ) -> Self {
-        Self {
-            state: TuiOnboardingMarkersState::Loading,
-            load_generation: 0,
-            persist_markers: false,
-            onboarding_client: Some(onboarding_client),
-            load_timeout,
-        }
-    }
-
-    /// Starts a fresh, account-scoped load. Terminal creation never waits for
-    /// this request; consumers keep one-time UI hidden until
-    /// [`TuiOnboardingMarkersEvent::Ready`].
+    /// Resolves with no one-time surfaces available.
     pub fn load_current_account(&mut self, ctx: &mut ModelContext<Self>) {
-        self.state = TuiOnboardingMarkersState::Loading;
-        self.load_generation = self.load_generation.wrapping_add(1);
-        ctx.emit(TuiOnboardingMarkersEvent::Loading);
-        let load_generation = self.load_generation;
-        let onboarding_client = self
-            .onboarding_client
-            .clone()
-            .expect("production TUI onboarding marker model must have an API client");
-        let load_timeout = self.load_timeout;
-        ctx.spawn(
-            load_markers_with_timeout(onboarding_client, load_timeout),
-            move |markers, result, ctx| {
-                markers.handle_load_result(load_generation, result, ctx);
-            },
-        );
+        self.state = TuiOnboardingMarkersState::Ready {
+            first_zero_state_available: false,
+            first_credit_gate_available: false,
+        };
+        ctx.emit(TuiOnboardingMarkersEvent::Ready);
         ctx.notify();
     }
 
@@ -146,7 +104,6 @@ impl TuiOnboardingMarkers {
     /// can be created for the next browser authentication flow.
     pub fn reset_for_account_transition(&mut self, ctx: &mut ModelContext<Self>) {
         self.state = TuiOnboardingMarkersState::Loading;
-        self.load_generation = self.load_generation.wrapping_add(1);
         ctx.emit(TuiOnboardingMarkersEvent::Loading);
         ctx.notify();
     }
@@ -167,54 +124,6 @@ impl TuiOnboardingMarkers {
         }
         ctx.notify();
         true
-    }
-
-    fn resolve_from_snapshot(
-        &mut self,
-        snapshot: TuiOnboardingMarkersSnapshot,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        self.state = TuiOnboardingMarkersState::Ready {
-            first_zero_state_available: !snapshot.first_zero_state_shown,
-            first_credit_gate_available: !snapshot.first_credit_gate_shown,
-        };
-        ctx.emit(TuiOnboardingMarkersEvent::Ready);
-        ctx.notify();
-    }
-    fn resolve_unavailable(&mut self, ctx: &mut ModelContext<Self>) {
-        self.state = TuiOnboardingMarkersState::Ready {
-            first_zero_state_available: false,
-            first_credit_gate_available: false,
-        };
-        ctx.emit(TuiOnboardingMarkersEvent::Ready);
-        ctx.notify();
-    }
-    fn handle_load_result(
-        &mut self,
-        load_generation: u64,
-        result: MarkerLoadResult,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        if self.load_generation != load_generation {
-            return;
-        }
-        match result {
-            MarkerLoadResult::Loaded(Ok(snapshot)) => {
-                self.resolve_from_snapshot(snapshot, ctx);
-            }
-            MarkerLoadResult::Loaded(Err(error)) => {
-                log::warn!(
-                    "Unable to load TUI onboarding markers; continuing without one-time onboarding surfaces: {error:#}"
-                );
-                self.resolve_unavailable(ctx);
-            }
-            MarkerLoadResult::TimedOut => {
-                log::warn!(
-                    "Timed out loading TUI onboarding markers; continuing without one-time onboarding surfaces"
-                );
-                self.resolve_unavailable(ctx);
-            }
-        }
     }
 
     fn take_available(&mut self, marker: TuiOnboardingMarker) -> bool {
@@ -328,10 +237,7 @@ impl TuiOnboardingMarkers {
                 first_zero_state_available,
                 first_credit_gate_available,
             },
-            load_generation: 0,
             persist_markers: false,
-            onboarding_client: None,
-            load_timeout: MARKER_LOAD_TIMEOUT,
         }
     }
 
@@ -355,25 +261,6 @@ impl Entity for TuiOnboardingMarkers {
     type Event = TuiOnboardingMarkersEvent;
 }
 impl SingletonEntity for TuiOnboardingMarkers {}
-
-enum MarkerLoadResult {
-    Loaded(anyhow::Result<TuiOnboardingMarkersSnapshot>),
-    TimedOut,
-}
-
-async fn load_markers_with_timeout(
-    onboarding_client: Arc<dyn TuiOnboardingClient>,
-    timeout: Duration,
-) -> MarkerLoadResult {
-    let load = onboarding_client.get_tui_onboarding_markers();
-    let timeout = Timer::after(timeout);
-    futures::pin_mut!(load);
-    futures::pin_mut!(timeout);
-    match futures::future::select(load, timeout).await {
-        futures::future::Either::Left((result, _)) => MarkerLoadResult::Loaded(result),
-        futures::future::Either::Right(_) => MarkerLoadResult::TimedOut,
-    }
-}
 
 #[cfg(test)]
 #[path = "tui_onboarding_markers_tests.rs"]

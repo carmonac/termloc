@@ -48,7 +48,6 @@ use warpui::AppContext;
 pub mod acp;
 pub mod execution_profiles;
 pub mod facts;
-pub(crate) mod generate_block_title;
 pub(crate) mod generate_code_review_content;
 pub(crate) mod loading;
 pub mod mcp;

@@ -1,11 +1,7 @@
 pub mod ai;
 pub mod auth;
-pub mod block;
 pub mod object;
-pub mod referral;
 pub mod team;
-#[cfg(feature = "tui")]
-pub mod tui_onboarding;
 pub mod workspace;
 
 use std::ops::Deref;
@@ -16,17 +12,13 @@ use ::http::header::CONTENT_LENGTH;
 use ai::AIClient;
 use anyhow::{Context, Result, anyhow};
 use auth::AuthClient;
-use block::BlockClient;
 use chrono::{DateTime, FixedOffset};
 use instant::Instant;
 use object::ObjectClient;
 use parking_lot::Mutex;
-use referral::ReferralsClient;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use team::TeamClient;
-#[cfg(feature = "tui")]
-use tui_onboarding::TuiOnboardingClient;
 use warp_core::context_flag::ContextFlag;
 use warp_errors::{AnyhowErrorExt, ErrorExt, register_error, report_error};
 use warp_server_client::HttpStatusError;
@@ -1035,14 +1027,6 @@ impl ServerApiProvider {
         self.auth_client.clone()
     }
 
-    pub fn get_referrals_client(&self) -> Arc<dyn ReferralsClient> {
-        self.server_api.clone()
-    }
-
-    pub fn get_block_client(&self) -> Arc<dyn BlockClient> {
-        self.server_api.clone()
-    }
-
     pub fn get_workspace_client(&self) -> Arc<dyn WorkspaceClient> {
         self.server_api.clone()
     }
@@ -1050,11 +1034,6 @@ impl ServerApiProvider {
     pub fn get_team_client(&self) -> Arc<dyn TeamClient> {
         self.server_api.clone()
     }
-    #[cfg(feature = "tui")]
-    pub fn get_tui_onboarding_client(&self) -> Arc<dyn TuiOnboardingClient> {
-        self.server_api.clone()
-    }
-
     pub fn get_ai_client(&self) -> Arc<dyn AIClient> {
         self.server_api.clone()
     }

@@ -255,13 +255,11 @@ use crate::prompt::editor_modal::{
     EditorModal as PromptEditorModal, EditorModalEvent as PromptEditorModalEvent,
 };
 use crate::quit_warning::UnsavedStateSummary;
-use crate::referral_theme_status::ReferralThemeEvent;
 use crate::remote_server::manager::RemoteServerManager;
 use crate::resource_center::{
     ResourceCenterEvent, ResourceCenterPage, ResourceCenterView, Tip, TipAction, TipsCompleted,
     mark_feature_used_and_write_to_user_defaults, skip_tips_and_write_to_user_defaults,
 };
-use crate::reward_view::{RewardEvent, RewardKind, RewardView};
 use crate::root_view::{NewWorkspaceSource, OpenLaunchConfigArg};
 use crate::search::command_palette::view::{
     Event as CommandPaletteEvent, NavigationMode, View as CommandPalette,
@@ -862,8 +860,6 @@ pub struct Workspace {
     theme_chooser_view: ViewHandle<ThemeChooser>,
     previous_theme: Option<ThemeKind>,
     background_image_animation_start_time: Instant,
-    reward_modal: ViewHandle<Modal<RewardView>>,
-    reward_modal_pending: Option<RewardKind>,
     pub(crate) current_workspace_state: WorkspaceState,
     previous_workspace_state: Option<WorkspaceState>,
     welcome_tips_view_state: WelcomeTipsViewState,
@@ -1455,38 +1451,6 @@ impl Workspace {
         modal
     }
 
-    fn build_reward_modal(ctx: &mut ViewContext<Self>) -> ViewHandle<Modal<RewardView>> {
-        let reward_view = ctx.add_typed_action_view(|_| RewardView::new());
-        ctx.subscribe_to_view(&reward_view, |me, _, event, ctx| {
-            me.handle_reward_view_event(event, ctx);
-        });
-        let modal = ctx.add_typed_action_view(|ctx| {
-            Modal::new(Some(String::new()), reward_view, ctx)
-                .with_modal_style(UiComponentStyles {
-                    width: Some(316.),
-                    height: Some(389.),
-                    ..Default::default()
-                })
-                .with_body_style(UiComponentStyles {
-                    height: Some(319.),
-                    padding: Some(Coords {
-                        // Default padding values except for the top, which is too much for the
-                        // reward modal
-                        top: 0.,
-                        bottom: 28.,
-                        left: 28.,
-                        right: 28.,
-                    }),
-                    ..Default::default()
-                })
-                .with_dismiss_on_click()
-        });
-        ctx.subscribe_to_view(&modal, |me, _, event, ctx| {
-            me.handle_reward_modal_event(event, ctx);
-        });
-        modal
-    }
-
     fn build_welcome_tips(
         tips_completed: ModelHandle<TipsCompleted>,
         ctx: &mut ViewContext<Self>,
@@ -1539,17 +1503,11 @@ impl Workspace {
     }
 
     fn build_settings_views(
-        global_resource_handles: GlobalResourceHandles,
         tips_completed: ModelHandle<TipsCompleted>,
         ctx: &mut ViewContext<Self>,
     ) -> (ViewHandle<SettingsView>, ViewHandle<ThemeChooser>) {
-        let theme_chooser_view = ctx.add_typed_action_view(|ctx| {
-            ThemeChooser::new(
-                global_resource_handles.referral_theme_status,
-                ctx,
-                tips_completed,
-            )
-        });
+        let theme_chooser_view =
+            ctx.add_typed_action_view(|ctx| ThemeChooser::new(ctx, tips_completed));
 
         ctx.subscribe_to_view(&theme_chooser_view, |me, _, event, ctx| {
             me.handle_theme_chooser_event(event, ctx);
@@ -2473,9 +2431,8 @@ impl Workspace {
             model_event_sender,
             tips_completed,
             user_default_shell_unsupported_banner_model_handle,
-            referral_theme_status,
             settings_file_error,
-        } = global_resource_handles.clone();
+        } = global_resource_handles;
 
         let server_api_provider = ServerApiProvider::as_ref(ctx);
         let server_api = server_api_provider.get();
@@ -2539,16 +2496,6 @@ impl Workspace {
             }
         });
 
-        ctx.subscribe_to_model(&referral_theme_status, |me, _, event, ctx| {
-            me.handle_referral_theme_status_event(event, ctx);
-        });
-
-        let referrals_client = ServerApiProvider::as_ref(ctx).get_referrals_client();
-        // On startup, check if the user has earned a referral theme by referring other users
-        referral_theme_status.update(ctx, |model, ctx| {
-            model.query_referral_status(referrals_client, ctx);
-        });
-
         let bindings_notifier = KeybindingChangedNotifier::handle(ctx);
         ctx.subscribe_to_model(&bindings_notifier, |me, _, event, ctx| {
             me.handle_keybinding_changed(event, ctx);
@@ -2562,11 +2509,10 @@ impl Workspace {
             ctx.notify();
         });
 
-        let reward_modal = Self::build_reward_modal(ctx);
         let (welcome_tips_view, welcome_tips_view_state) =
             Self::build_welcome_tips(tips_completed.clone(), ctx);
         let (settings_pane, theme_chooser_view) =
-            Self::build_settings_views(global_resource_handles, tips_completed.clone(), ctx);
+            Self::build_settings_views(tips_completed.clone(), ctx);
 
         let resource_center_view = Self::build_resource_center_view(ctx, tips_completed.clone());
 
@@ -2956,8 +2902,6 @@ impl Workspace {
             background_image_animation_start_time: Instant::now(),
             settings_pane,
             theme_chooser_view,
-            reward_modal,
-            reward_modal_pending: None,
             current_workspace_state: Default::default(),
             previous_workspace_state: None,
             model_event_sender,
@@ -5248,17 +5192,6 @@ impl Workspace {
         }
     }
 
-    /// Handle the close event from the reward modal
-    fn handle_reward_modal_event(&mut self, event: &ModalEvent, ctx: &mut ViewContext<Self>) {
-        match event {
-            ModalEvent::Close => {
-                self.current_workspace_state.is_reward_modal_open = false;
-                self.focus_active_tab(ctx);
-                ctx.notify();
-            }
-        }
-    }
-
     fn handle_suggested_agent_mode_workflow_modal_event(
         &mut self,
         event: &SuggestedAgentModeWorkflowModalEvent,
@@ -5286,16 +5219,6 @@ impl Workspace {
                     TerminalSessionFallbackBehavior::default(),
                     ctx,
                 );
-            }
-        }
-    }
-
-    /// Handle the call-to-action event from the reward modal view
-    fn handle_reward_view_event(&mut self, event: &RewardEvent, ctx: &mut ViewContext<Self>) {
-        match event {
-            RewardEvent::OpenThemePicker => {
-                self.current_workspace_state.is_reward_modal_open = false;
-                self.show_theme_chooser_for_active_theme(ctx);
             }
         }
     }
@@ -5800,25 +5723,6 @@ impl Workspace {
         }
         #[cfg(not(feature = "local_fs"))]
         let _ = (event, ctx);
-    }
-
-    /// Show the referral reward modal page, informing the user they have earned a theme reward
-    fn show_reward_modal(&mut self, kind: RewardKind, ctx: &mut ViewContext<Self>) {
-        // For certain contexts, we don't want to show the reward modal
-        // or side panel.
-        if !ContextFlag::ShowRewardModal.is_enabled() {
-            return;
-        }
-        self.reward_modal.update(ctx, |modal, modal_ctx| {
-            modal.body().update(modal_ctx, |view, view_ctx| {
-                view.update_reward_kind(kind, view_ctx);
-            });
-        });
-
-        ctx.focus(&self.reward_modal);
-        self.reward_modal_pending = None;
-        self.current_workspace_state.is_reward_modal_open = true;
-        ctx.notify();
     }
 
     #[cfg(not(target_family = "wasm"))]
@@ -16001,31 +15905,6 @@ impl Workspace {
         });
     }
 
-    /// Handle an event from the referral theme status model, showing the reward modal if necessary
-    fn handle_referral_theme_status_event(
-        &mut self,
-        event: &ReferralThemeEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        // A referral theme was activated, so we need to show the reward modal
-        // If the resource center is open, then we delay showing the reward modal until it closes.
-
-        // Also: We overwrite the pending reward modal kind, so that only one is ever shown
-        // This could, in theory, lead to a user activating both in the same login and only
-        // seeing one modal, however that is low impact since it the modal still takes them to
-        // the theme picker, which will show both themes anyway.
-        let kind = match event {
-            ReferralThemeEvent::SentReferralThemeActivated => RewardKind::SentReferralTheme,
-            ReferralThemeEvent::ReceivedReferralThemeActivated => RewardKind::ReceivedReferralTheme,
-        };
-
-        if self.current_workspace_state.is_resource_center_open {
-            self.reward_modal_pending = Some(kind);
-        } else {
-            self.show_reward_modal(kind, ctx);
-        }
-    }
-
     /// This listens for changes to keybindings and keeps the cached versions up-to-date in our
     /// tooltips.
     fn handle_keybinding_changed(
@@ -22949,10 +22828,6 @@ impl View for Workspace {
             .is_shared_objects_creation_denied_modal_open
         {
             stack.add_child(ChildView::new(&self.shared_objects_creation_denied_modal).finish());
-        }
-
-        if self.current_workspace_state.is_reward_modal_open {
-            stack.add_child(Clipped::new(ChildView::new(&self.reward_modal).finish()).finish());
         }
 
         if self.launch_config_save_modal.is_open() {

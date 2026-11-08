@@ -26,8 +26,8 @@ use warp_util::path::LineAndColumnArg;
 use warp_util::path::convert_wsl_to_windows_host_path;
 use warp_util::remote_path::RemotePath;
 use warpui::elements::{
-    ChildView, Clipped, CrossAxisAlignment, DispatchEventResult, Element, EventHandler, Flex,
-    MainAxisSize, ParentElement, Shrinkable, Stack,
+    ChildView, CrossAxisAlignment, DispatchEventResult, Element, EventHandler, Flex, MainAxisSize,
+    ParentElement, Shrinkable, Stack,
 };
 use warpui::keymap::{Context, EditableBinding, FixedBinding};
 use warpui::notification::NotificationSendError;
@@ -90,7 +90,7 @@ use crate::resource_center::{
 #[cfg(target_family = "wasm")]
 use crate::server::cloud_objects::update_manager::UpdateManager;
 use crate::server::ids::{ObjectUid, SyncId};
-use crate::server::server_api::{ServerApi, ServerApiProvider};
+use crate::server::server_api::ServerApi;
 use crate::session_management::SessionNavigationData;
 use crate::settings::{AISettings, DefaultSessionMode, PaneSettings};
 use crate::settings_view::SettingsSection;
@@ -121,8 +121,8 @@ use crate::terminal::view::{
     LeftPanelTargetView, SyncEvent, TerminalViewState,
 };
 use crate::terminal::{
-    MockTerminalManager, ShareBlockModal, ShareBlockModalEvent, ShellLaunchData, ShellLaunchState,
-    TerminalManager, TerminalModel, TerminalView,
+    MockTerminalManager, ShellLaunchData, ShellLaunchState, TerminalManager, TerminalModel,
+    TerminalView,
 };
 use crate::undo_close::{UndoCloseStack, UndoCloseStackEvent};
 #[cfg(target_family = "wasm")]
@@ -812,12 +812,9 @@ pub struct PaneGroup {
     server_api: Arc<ServerApi>,
 
     /// The terminal session with an open share block modal. Only terminal panes use the share block modal.
-    terminal_with_open_share_block_modal: Option<TerminalPaneId>,
-
     // We are only holding one instance of share modal view in the pane group and
     // update it with the correct terminal model and size info when triggered by
     // the context menu event.
-    share_block_modal: ViewHandle<ShareBlockModal>,
     dragged_border: Option<DraggedBorder>,
     user_default_shell_changed_banner: ViewHandle<Banner<PaneGroupAction>>,
 
@@ -2389,13 +2386,6 @@ impl PaneGroup {
             me.handle_focus_state_event(event, ctx);
         });
 
-        let block_client = ServerApiProvider::as_ref(ctx).get_block_client();
-        let share_modal =
-            ctx.add_typed_action_view(|ctx| ShareBlockModal::new(None, block_client, ctx));
-        ctx.subscribe_to_view(&share_modal, move |me, _, event, ctx| {
-            me.handle_share_block_modal_event(event, ctx);
-        });
-
         ctx.subscribe_to_model(&PaneSettings::handle(ctx), |_, _, _, ctx| {
             ctx.notify();
         });
@@ -2448,8 +2438,6 @@ impl PaneGroup {
             pane_history,
             pane_contents,
             server_api,
-            terminal_with_open_share_block_modal: None,
-            share_block_modal: share_modal,
             dragged_border: None,
             user_default_shell_changed_banner,
             active_file_model,
@@ -2831,25 +2819,6 @@ impl PaneGroup {
             }
             PaneGroupFocusEvent::InSplitPaneChanged => ctx.notify(),
             PaneGroupFocusEvent::FocusedPaneMaximizedChanged => ctx.notify(),
-        }
-    }
-
-    fn handle_share_block_modal_event(
-        &mut self,
-        event: &ShareBlockModalEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match event {
-            ShareBlockModalEvent::Close => {
-                self.focus(ctx);
-                self.terminal_with_open_share_block_modal = None;
-                ctx.notify();
-            }
-            ShareBlockModalEvent::ShowToast { message, flavor } => ctx.emit(Event::ShowToast {
-                message: message.clone(),
-                flavor: *flavor,
-                pane_id: None,
-            }),
         }
     }
 
@@ -3266,12 +3235,6 @@ impl PaneGroup {
         // Don't close a pane that doesn't exist
         if !self.pane_contents.contains_key(&pane_id) {
             return;
-        }
-
-        // Remove any share modal associated with the closing session before
-        // taking an early return for the last pane or an already-hidden pane.
-        if Some(pane_id) == self.terminal_with_open_share_block_modal.map(Into::into) {
-            self.terminal_with_open_share_block_modal = None;
         }
 
         if FeatureFlag::UndoClosedPanes.is_enabled() {
@@ -5573,7 +5536,6 @@ impl PaneGroup {
             ctx,
         );
 
-        self.terminal_with_open_share_block_modal = None;
         ctx.notify();
     }
 
@@ -5695,10 +5657,7 @@ impl View for PaneGroup {
         // "circular view reference". The per-pane views (and their backing
         // terminal/editor views) are reached via the structural parent graph
         // and `PaneView::child_view_ids`.
-        vec![
-            self.share_block_modal.id(),
-            self.user_default_shell_changed_banner.id(),
-        ]
+        vec![self.user_default_shell_changed_banner.id()]
     }
 
     fn render(&self, app: &AppContext) -> Box<dyn Element> {
@@ -5733,13 +5692,6 @@ impl View for PaneGroup {
         column.add_child(Shrinkable::new(1., main_content).finish());
 
         let mut stack = Stack::new().with_child(column.finish());
-
-        // Render the share modals on the pane group level so that their
-        // size is not restricted to within the terminal view.
-        if self.terminal_with_open_share_block_modal.is_some() {
-            stack
-                .add_child(Clipped::new(ChildView::new(&self.share_block_modal).finish()).finish());
-        }
 
         // Render the summarization cancel dialog at tab level when open.
         if let Some(terminal_pane_id) = self.terminal_with_open_summarization_dialog
