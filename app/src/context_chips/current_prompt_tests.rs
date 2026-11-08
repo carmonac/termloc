@@ -17,7 +17,6 @@ use super::{ActiveChipSurfaces, ChipUpdateStatus, CurrentPrompt, PromptContext};
 use crate::CLIAgentSessionsModel;
 use crate::ai::blocklist::agent_view::toolbar_item::AgentToolbarItemKind;
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 #[cfg(feature = "local_fs")]
 use crate::code_review::diff_state::DiffStats;
 #[cfg(feature = "local_fs")]
@@ -262,7 +261,6 @@ fn test_shell_chip_is_disabled_when_required_executable_is_missing() {
         });
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| crate::settings::manager::SettingsManager::default());
         crate::settings::InputSettings::register(&mut app);
         app.update(crate::settings::AISettings::register_and_subscribe_to_events);
@@ -410,7 +408,6 @@ fn test_disabling_chips() {
         });
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
 
         // Register required singleton models to fix the singleton model error
         app.add_singleton_model(|_| crate::settings::manager::SettingsManager::default());
@@ -612,7 +609,6 @@ fn test_cli_agent_footer_chips_require_a_visible_supported_footer() {
         });
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| crate::settings::manager::SettingsManager::default());
         crate::settings::InputSettings::register(&mut app);
         app.update(crate::settings::AISettings::register_and_subscribe_to_events);
@@ -701,7 +697,6 @@ fn test_ps1_without_active_agent_surface_runs_no_footer_generators() {
         });
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| crate::settings::manager::SettingsManager::default());
         crate::settings::InputSettings::register(&mut app);
         app.update(crate::settings::AISettings::register_and_subscribe_to_events);

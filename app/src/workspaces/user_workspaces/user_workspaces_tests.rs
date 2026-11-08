@@ -12,7 +12,6 @@ use super::*;
 use crate::ai::blocklist::is_agent_mode_autonomy_allowed;
 use crate::ai::execution_profiles::ActionPermission;
 use crate::ai::llms::{AvailableLLMs, LLMInfo, MODELS_BY_FEATURE_CACHE_KEY};
-use crate::auth::AuthManager;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::cloud_object::{CloudObject, CloudObjectGuest};
 use crate::drive::sharing::{SharingAccessLevel, Subject, UserKind};
@@ -64,7 +63,6 @@ fn initialize_app_with_auth(
     app.add_singleton_model(PrivacySettings::mock);
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
     app.add_singleton_model(|_| auth_state_provider);
-    app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(|_| {
         PublicPreferences::new(Box::<user_preferences::in_memory::InMemoryPreferences>::default())
     });

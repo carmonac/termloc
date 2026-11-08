@@ -286,22 +286,6 @@ pub struct BlocklistAIHistoryModel {
 }
 
 impl BlocklistAIHistoryModel {
-    /// Clears all stored conversation-related data in memory.
-    /// This is used when logging out to ensure no AI history persists across users.
-    #[cfg(feature = "tui")]
-    pub(crate) fn reset(&mut self) {
-        self.live_conversation_ids_for_terminal_surface.clear();
-        self.cleared_conversation_ids_for_terminal_surface.clear();
-        self.conversations_by_id.clear();
-        self.active_conversation_for_terminal_surface.clear();
-        self.conversation_transcript_viewer_terminal_surface_ids
-            .clear();
-        self.persisted_queries.clear();
-        self.prompt_history.clear();
-        self.all_conversations_metadata.clear();
-        self.server_token_to_conversation_id.clear();
-    }
-
     pub(crate) fn new(
         persisted_queries: Vec<PersistedAIInput>,
         prompt_history: Vec<(String, DateTime<Local>)>,

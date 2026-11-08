@@ -12,10 +12,14 @@ fn identifies_worker_subcommands() {
 
 #[test]
 fn global_flags_parse_without_a_subcommand() {
-    let args = Args::try_parse_from(["termloc", "--debug", "--api-key", "key"]).unwrap();
+    let args = Args::try_parse_from(["termloc", "--debug"]).unwrap();
     assert!(args.debug());
-    assert_eq!(args.api_key().map(String::as_str), Some("key"));
     assert!(args.command().is_none());
+}
+
+#[test]
+fn api_key_flag_is_rejected() {
+    assert!(Args::try_parse_from(["termloc", "--api-key", "key"]).is_err());
 }
 
 #[test]

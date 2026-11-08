@@ -9,10 +9,9 @@ use std::sync::mpsc::SyncSender;
 use warp_errors::report_error;
 #[cfg(feature = "local_tty")]
 use warpui::ModelHandle;
-use warpui::ViewContext;
 #[cfg(feature = "local_tty")]
 use warpui::geometry::vector::Vector2F;
-use warpui::{SingletonEntity, ViewHandle};
+use warpui::{SingletonEntity, ViewContext, ViewHandle};
 
 use super::TerminalView;
 #[cfg(all(feature = "local_tty", not(feature = "remote_tty")))]

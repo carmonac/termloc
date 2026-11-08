@@ -382,7 +382,6 @@ winreg.workspace = true
 ai = { workspace = true, features = ["test-util"] }
 async-process.workspace = true
 computer_use = { workspace = true, features = ["test-util"] }
-firebase.workspace = true
 jsonschema = { workspace = true, default-features = false }
 async-executor = "1.5.1"
 command = { workspace = true, features = ["test-util"] }
@@ -651,7 +650,6 @@ agent_mode_evals = [
     "rust-embed/debug-embed",
     "warp_logging/agent_mode_evals",
     "warp_multi_agent_client/agent_mode_evals",
-    "warp_server_client/agent_mode_evals",
 ]
 allow_ignoring_input_suggestions = []
 inline_slash_commands = ["agent_view"]

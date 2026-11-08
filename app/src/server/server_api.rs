@@ -1,15 +1,12 @@
 pub mod ai;
-pub mod auth;
 pub mod object;
 
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ::http::header::CONTENT_LENGTH;
 use ai::AIClient;
 use anyhow::{Context, Result, anyhow};
-use auth::AuthClient;
 use chrono::{DateTime, FixedOffset};
 use instant::Instant;
 use object::ObjectClient;
@@ -17,9 +14,9 @@ use parking_lot::Mutex;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use warp_core::context_flag::ContextFlag;
-use warp_errors::{AnyhowErrorExt, ErrorExt, register_error, report_error};
+use warp_errors::{AnyhowErrorExt, ErrorExt, register_error};
 use warp_server_client::HttpStatusError;
-use warp_server_client::auth::{AuthClientImpl, AuthEvent, EXPERIMENT_ID_HEADER};
+use warp_server_client::auth::AuthEvent;
 use warp_server_client::base_client::{
     AuthenticatedGraphqlConfig, BaseClient, GraphqlRoutingConfig, TEAM_UID_HEADER,
 };
@@ -28,7 +25,6 @@ use warp_server_client::network_logging::NetworkLogModel;
 use warpui::r#async::BoxFuture;
 use warpui::{Entity, ModelContext, SingletonEntity};
 
-use super::experiments::{ServerExperiment, ServerExperiments};
 use crate::ChannelState;
 use crate::ai::get_relevant_files::api::{GetRelevantFiles, GetRelevantFilesResponse};
 use crate::ai::predict::generate_ai_input_suggestions::GenerateAIInputSuggestionsRequest;
@@ -36,7 +32,6 @@ use crate::ai::predict::generate_am_query_suggestions::GenerateAMQuerySuggestion
 use crate::ai::predict::predict_am_queries::{PredictAMQueriesRequest, PredictAMQueriesResponse};
 use crate::ai::predict::{generate_ai_input_suggestions, generate_am_query_suggestions};
 use crate::ai::voice::transcribe::{TranscribeRequest, TranscribeResponse};
-use crate::auth::auth_manager::AuthManager;
 use crate::auth::auth_state::AuthState;
 use crate::server::cloud_objects::local_object_client::LocalObjectClient;
 use crate::server::team_scope::RequestTeamScope;
@@ -645,40 +640,6 @@ impl ServerApi {
             .with_context(|| format!("Failed to deserialize response from {url}"))
     }
 
-    /// Sends an authenticated empty POST request to /client/login, which signals to the server
-    /// that the user is logged in.
-    pub async fn notify_login(&self) {
-        match self.get_or_refresh_access_token().await {
-            Ok(auth_token) => {
-                let url = format!("{}/client/login", ChannelState::server_root_url());
-                let mut request = self.base_client.http_client().post(&url);
-                if let Some(token) = auth_token.as_bearer_token() {
-                    request = request.bearer_auth(token);
-                }
-                request = request
-                    // Set the content-length header to 0 because the request has no body.
-                    // Otherwise, the server will return a 411 error. (In other cases, setting
-                    // content-type is sufficient (elides the content-length requirement), but
-                    // since this request has no body, it makes more sense to set content-length.
-                    .header(CONTENT_LENGTH, 0)
-                    .header(EXPERIMENT_ID_HEADER, self.anonymous_id());
-
-                let response = request.send().await;
-                if let Err(err) = response {
-                    report_error!(
-                        anyhow::Error::new(err)
-                            .context("Failed to send POST request to /client/login")
-                    );
-                }
-            }
-            Err(err) => {
-                report_error!(
-                    err.context("Could not retrieve access token for notifying user login")
-                );
-            }
-        }
-    }
-
     /// Hits the /ai/generate_input_suggestions endpoint to get the predicted next action, based on past context.
     pub async fn generate_ai_input_suggestions(
         &self,
@@ -936,7 +897,6 @@ impl ServerApi {
 /// or any of its implemented trait objects.
 pub struct ServerApiProvider {
     server_api: Arc<ServerApi>,
-    auth_client: Arc<dyn AuthClient>,
 }
 
 impl ServerApiProvider {
@@ -963,14 +923,6 @@ impl ServerApiProvider {
                         // to events; it's prone to these sorts of circular reference issues.
                         ctx.dispatch_global_action("app:log_out", ());
                     }
-                    AuthEvent::NeedsReauth => {
-                        // AuthManager depends on a reference to ServerApi, so ServerApi can't easily
-                        // hold a ref to AuthManager. To get around this, we emit an event on ServerApi
-                        // and handle calling the AuthManager here instead.
-                        AuthManager::handle(ctx).update(ctx, |auth_manager, ctx| {
-                            auth_manager.set_needs_reauth(true, ctx);
-                        });
-                    }
                     AuthEvent::IapChallengeReceived => {
                         IapManager::handle(ctx)
                             .update(ctx, |manager, ctx| manager.handle_challenge(ctx));
@@ -983,33 +935,16 @@ impl ServerApiProvider {
             },
             |_, _| {},
         );
-        let server_api = Arc::new(server_api);
-        let auth_client = Arc::new(AuthClientImpl::new(server_api.base_client.clone()));
         Self {
-            server_api,
-            auth_client,
+            server_api: Arc::new(server_api),
         }
-    }
-
-    /// Handles fetching server-side experiments by updating the appropriate app state.
-    pub fn handle_experiments_fetched(
-        &self,
-        experiments: Vec<ServerExperiment>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        ServerExperiments::handle(ctx).update(ctx, |state, ctx| {
-            state.apply_latest_state(experiments, ctx);
-        });
     }
 
     /// Constructs a new SeverApiProvider for tests.
     #[cfg(any(test, all(feature = "tui", feature = "test-util")))]
     pub fn new_for_test() -> Self {
-        let server_api = Arc::new(ServerApi::new_for_test());
-        let auth_client = Arc::new(AuthClientImpl::new(server_api.base_client.clone()));
         Self {
-            server_api,
-            auth_client,
+            server_api: Arc::new(ServerApi::new_for_test()),
         }
     }
 
@@ -1017,10 +952,6 @@ impl ServerApiProvider {
     /// Prefer retrieving a specific trait object related to the methods you're calling.
     pub fn get(&self) -> Arc<ServerApi> {
         self.server_api.clone()
-    }
-
-    pub fn get_auth_client(&self) -> Arc<dyn AuthClient> {
-        self.auth_client.clone()
     }
 
     pub fn get_ai_client(&self) -> Arc<dyn AIClient> {

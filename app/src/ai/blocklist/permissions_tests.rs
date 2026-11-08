@@ -6,8 +6,9 @@ use warp_core::settings::Setting as _;
 use warp_util::path::EscapeChar;
 use warpui::{App, EntityId, ModelHandle, SingletonEntity};
 
-use super::CommandExecutionPermissionAllowedReason;
-use super::{BlocklistAIHistoryModel, BlocklistAIPermissions};
+use super::{
+    BlocklistAIHistoryModel, BlocklistAIPermissions, CommandExecutionPermissionAllowedReason,
+};
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::blocklist::permissions::{

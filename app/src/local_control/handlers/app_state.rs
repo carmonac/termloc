@@ -31,8 +31,7 @@ use crate::local_control::resolver::{
     input_target_pane_id, reject_target_families, tab_index_from_target, target_pane_group,
     target_pane_id, target_session_pane_id, target_window_id_for_target, target_workspace,
 };
-use crate::palette::PaletteMode;
-use crate::palette::PaletteSource;
+use crate::palette::{PaletteMode, PaletteSource};
 use crate::pane_group::{ActivationReason, Direction, PaneGroupAction};
 use crate::settings_view::SettingsSection;
 #[cfg(feature = "local_fs")]

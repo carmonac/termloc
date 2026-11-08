@@ -157,16 +157,6 @@ pub const STATUS: StaticCommand = StaticCommand {
     argument: None,
 };
 
-pub const LOGOUT: StaticCommand = StaticCommand {
-    name: "/logout",
-    description: "Log out of Termloc",
-    kind: SlashCommandKind::Logout,
-    supported_surfaces: SlashCommandSurfaces::TuiOnly,
-    availability: Availability::ALWAYS,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-
 pub const CREATE_DOCKER_SANDBOX: StaticCommand = StaticCommand {
     name: "/docker-sandbox",
     description: "Create a new docker sandbox terminal session",
@@ -780,7 +770,6 @@ fn all_commands_for_all_surfaces() -> Vec<StaticCommand> {
         INIT,
         UPGRADE,
         MANAGE_BILLING,
-        LOGOUT,
         MCP,
         OPEN_PROJECT_RULES,
         OPEN_MCP_SERVERS,

@@ -12,7 +12,6 @@ use super::{
 use crate::ai::artifacts::Artifact;
 use crate::ai::llms::LLMPreferences;
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 use crate::network::NetworkStatus;
 use crate::persistence::model::{AgentConversationData, ChargedUsageTotals};
 use crate::server::server_api::ServerApiProvider;
@@ -262,7 +261,6 @@ fn initialize_custom_endpoint_usage_test_app(app: &mut App) {
     app.add_singleton_model(|_| NetworkStatus::new());
     app.add_singleton_model(UserWorkspaces::default_mock);
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-    app.add_singleton_model(AuthManager::new_for_test);
 }
 
 #[allow(deprecated)]

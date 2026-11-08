@@ -213,20 +213,6 @@ fn reset_statusline_command_is_always_available_only_in_tui_mode() {
     );
 }
 #[test]
-fn logout_command_is_registered_only_for_tui_mode() {
-    assert!(
-        all_commands(settings::SettingsMode::Tui)
-            .iter()
-            .any(|command| command == &LOGOUT)
-    );
-    assert!(
-        !all_commands(settings::SettingsMode::Gui)
-            .iter()
-            .any(|command| command == &LOGOUT)
-    );
-}
-
-#[test]
 fn version_command_is_not_registered() {
     for settings_mode in [settings::SettingsMode::Gui, settings::SettingsMode::Tui] {
         assert!(

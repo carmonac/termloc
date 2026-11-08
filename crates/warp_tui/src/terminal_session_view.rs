@@ -41,7 +41,7 @@ use warp::tui_export::{
     TuiUserInfoManagerEvent, TuiZeroStateDataSource, UserTakeOverReason, UserWorkspaces,
     UserWorkspacesEvent, WAKEUP_THROTTLE_PERIOD, WarpConfig, WarpConfigUpdateEvent,
     block_context_from_terminal_model, build_slash_command_mixer, detect_possible_git_repo,
-    export_conversation_markdown, log_out_tui, maybe_build_ai_query_upsert_event,
+    export_conversation_markdown, maybe_build_ai_query_upsert_event,
     prepare_conversation_block_restoration, saved_prompt_text_for_id,
     slash_command_selection_behavior, throttle,
 };
@@ -3854,9 +3854,6 @@ impl TuiTerminalSessionView {
             }
             SlashCommandKind::Exit => {
                 ctx.terminate_app(TerminationMode::ForceTerminate, None);
-            }
-            SlashCommandKind::Logout => {
-                log_out_tui(ctx);
             }
             SlashCommandKind::ViewLogs => {
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));

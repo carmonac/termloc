@@ -252,14 +252,6 @@ pub enum AIRequestUsageModelEvent {
 }
 
 impl AIRequestUsageModel {
-    /// Clears the server-authoritative availability state, e.g. on logout.
-    #[cfg(feature = "tui")]
-    pub fn reset_server_availability(&mut self, ctx: &mut ModelContext<Self>) {
-        self.server_availability = ServerAvailabilityState::default();
-        ctx.emit(AIRequestUsageModelEvent::CreditAvailabilityUpdated);
-        ctx.notify();
-    }
-
     pub fn new(ai_client: Arc<dyn AIClient>, ctx: &mut ModelContext<Self>) -> Self {
         // Check if the user has cached request limit info from before.
         // This is only used to show the latest known value before we finish refreshing from the server below.

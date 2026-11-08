@@ -17,7 +17,6 @@ use warpui::{Entity, ModelContext, RequestState, RetryOption, SingletonEntity};
 
 use super::graphql::GraphQLError;
 use super::ids::{ClientId, HashableId, ObjectUid, ServerId, SyncId, ToServerId};
-use super::server_api::auth::UserAuthenticationError;
 use super::server_api::object::ObjectClient;
 use crate::ai::execution_profiles::CloudAIExecutionProfileModel;
 use crate::ai::facts::CloudAIFactModel;
@@ -337,17 +336,6 @@ pub struct SyncQueue {
 }
 
 impl SyncQueue {
-    // Clear the SyncQueue. This is used during Logout.
-    #[cfg(feature = "tui")]
-    pub fn clear(&mut self) {
-        self.queue.clear();
-        self.waiting_response.clear();
-        self.in_flight_bulk_create_objects.clear();
-        self.queue_dependencies.clear();
-        self.client_id_to_server.clear();
-        self.server_id_to_client_hash.clear();
-    }
-
     #[cfg(any(test, all(feature = "tui", feature = "test-util")))]
     pub fn mock(ctx: &mut ModelContext<Self>) -> Self {
         use super::server_api::ServerApiProvider;
@@ -1636,17 +1624,12 @@ impl SyncQueue {
                 }
             }
 
-            if cause.is::<UserAuthenticationError>() {
-                return true;
-            }
-
             if let Some(err) = cause.downcast_ref::<GraphQLError>() {
                 match err {
                     // This only applies to WarpDev, but if someone's IP address is blocked, there's no
                     // point in continuing to dequeue.
                     GraphQLError::StagingAccessBlocked => return true,
-                    // If the user isn't authorized, stop dequeuing. In general, this should
-                    // manifest as a UserAuthenticationError instead.
+                    // If the user isn't authorized, stop dequeuing.
                     GraphQLError::HttpError {
                         status: StatusCode::FORBIDDEN | StatusCode::UNAUTHORIZED,
                         ..

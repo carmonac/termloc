@@ -55,8 +55,7 @@ use crate::terminal::model::ansi::{self, BootstrappedValue, InitShellValue, Pree
 use crate::terminal::model::block::AgentViewVisibility;
 use crate::terminal::model::blocks::{TotalIndex, insert_block};
 use crate::terminal::model::grid::Dimensions as _;
-use crate::terminal::model::terminal_model::BlockSelectionCardinality;
-use crate::terminal::model::terminal_model::WithinBlock;
+use crate::terminal::model::terminal_model::{BlockSelectionCardinality, WithinBlock};
 use crate::terminal::session_settings::AgentToolbarChipSelection;
 use crate::terminal::view::load_ai_conversation::{
     RestoreConversationEntryBehavior, RestoredAIConversation,

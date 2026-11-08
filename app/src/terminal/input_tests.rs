@@ -30,15 +30,16 @@ use workflows::workflow::{Argument, ArgumentType, Workflow};
 use super::*;
 use crate::ai::AIRequestUsageModel;
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
-use crate::ai::agent::ImageContext;
 use crate::ai::agent::conversation::ConversationStatus;
 use crate::ai::agent::task::TaskId;
 use crate::ai::agent::{
-    AIAgentActionId, AIAgentExchange, AIAgentInput, AIAgentOutputStatus, UserQueryMode,
+    AIAgentActionId, AIAgentExchange, AIAgentInput, AIAgentOutputStatus, ImageContext,
+    UserQueryMode,
 };
 use crate::ai::agent_conversations_model::AgentConversationsModel;
-use crate::ai::blocklist::PendingAttachment;
-use crate::ai::blocklist::{AIQueryHistory, BlocklistAIPermissions, ResponseStreamId};
+use crate::ai::blocklist::{
+    AIQueryHistory, BlocklistAIPermissions, PendingAttachment, ResponseStreamId,
+};
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use crate::ai::llms::{LLMId, LLMPreferences};
 use crate::ai::mcp::gallery::MCPGalleryManager;
@@ -48,7 +49,6 @@ use crate::ai::persisted_workspace::PersistedWorkspace;
 use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::context_chips::prompt::Prompt;
 use crate::editor::{DisplayPoint, EditorAction, Point, TextStyleOperation};
@@ -385,7 +385,6 @@ pub fn initialize_app(app: &mut App) {
     app.add_singleton_model(AgentNotificationsModel::new);
     app.add_singleton_model(BlocklistAIPermissions::new);
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-    app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(LLMPreferences::new);
     app.add_singleton_model(DirectoryWatcher::new);
     app.add_singleton_model(|_| DetectedRepositories::default());
@@ -432,7 +431,7 @@ pub fn initialize_app(app: &mut App) {
     app.update(experiments::init);
     AltScreenReporting::register(app);
     app.add_singleton_model(|_| RestoredAgentConversations::new_seeded(vec![]));
-    app.add_singleton_model(OneTimeModalModel::new);
+    app.add_singleton_model(|_| OneTimeModalModel::default());
     app.add_singleton_model(|_| WorkspaceRegistry::new());
     app.add_singleton_model(|_| ToastStack);
     app.add_singleton_model(AgentConversationsModel::new);

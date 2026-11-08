@@ -38,8 +38,6 @@ pub struct WarpServerConfig {
     #[serde(default)]
     /// The URL for the RTC server, which serves real-time updates for Warp Drive objects.
     pub rtc_server_url: Cow<'static, str>,
-    /// The API key to use when making requests to Firebase Authentication endpoints.
-    pub firebase_auth_api_key: Cow<'static, str>,
     /// Configuration for GCP Identity-Aware Proxy authentication, present only on
     /// staging builds. [`None`] on production builds.
     #[serde(default)]
@@ -52,7 +50,6 @@ impl WarpServerConfig {
         Self {
             server_root_url: DISABLED_SERVER_URL.into(),
             rtc_server_url: "ws://127.0.0.1:9/graphql/v2".into(),
-            firebase_auth_api_key: "".into(),
             iap_config: None,
         }
     }

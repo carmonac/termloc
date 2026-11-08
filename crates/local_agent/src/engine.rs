@@ -15,11 +15,10 @@ use warp_multi_agent_api::response_event::stream_finished::{self, Reason};
 use warp_multi_agent_api::{InputContext, Message, Request, ResponseEvent, Task};
 
 use crate::events::{self, AGENT_OUTPUT_TEXT_PATH, AGENT_REASONING_TEXT_PATH, TurnEvents};
-use crate::history;
 use crate::ollama::{ChatBackend, ChatMessage, ChatOptions, ChatRequest, ChatToolCall};
 use crate::oneshot::{OneShot, QuickModel};
-use crate::prompt;
 use crate::tools::{self, Toolbox};
+use crate::{history, prompt};
 
 const KEEP_ALIVE: &str = "30m";
 /// How many times a model may retry after producing an unusable tool call in one turn.

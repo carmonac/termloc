@@ -17,19 +17,11 @@ use crate::test_fixtures::{add_test_semantic_selection, add_test_terminal_sessio
 #[test]
 fn parses_resume_server_token() {
     let token = uuid::Uuid::new_v4().to_string();
-    let args = TuiArgs::try_parse_from([
-        "warp",
-        "--resume",
-        token.as_str(),
-        "--auto-approve",
-        "--api-key",
-        "test-api-key",
-    ])
-    .expect("TUI launch arguments should parse together");
+    let args = TuiArgs::try_parse_from(["warp", "--resume", token.as_str(), "--auto-approve"])
+        .expect("TUI launch arguments should parse together");
 
     assert_eq!(args.resume.as_deref(), Some(token.as_str()));
     assert!(args.auto_approve);
-    assert_eq!(args.api_key.as_deref(), Some("test-api-key"));
     assert_eq!(
         parse_resume_token(token.clone())
             .expect("UUID token should validate")
@@ -98,7 +90,6 @@ fn accepts_startup_without_resume() {
 
     assert_eq!(args.resume, None);
     assert!(!args.auto_approve);
-    assert_eq!(args.api_key, None);
 }
 
 #[test]

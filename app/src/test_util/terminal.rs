@@ -29,7 +29,6 @@ use crate::ai::persisted_workspace::PersistedWorkspace;
 use crate::ai::restored_conversations::RestoredAgentConversations;
 use crate::ai::skills::SkillManager;
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::code_review::git_repo_model::GitRepoModels;
 use crate::context_chips::prompt::Prompt;
@@ -108,7 +107,6 @@ pub fn initialize_app_for_terminal_view(app: &mut App) {
     app.add_singleton_model(TerminalKeybindings::new);
     app.add_singleton_model(|_| ActiveSession::default());
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-    app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(LLMPreferences::new);
     app.add_singleton_model(|ctx| AITipModel::new_for_agent_tips(ctx));
     app.add_singleton_model(DirectoryWatcher::new);
@@ -150,7 +148,7 @@ pub fn initialize_app_for_terminal_view(app: &mut App) {
     app.add_singleton_model(SystemInfo::new);
 
     app.add_singleton_model(|_| RestoredAgentConversations::new_seeded(vec![]));
-    app.add_singleton_model(OneTimeModalModel::new);
+    app.add_singleton_model(|_| OneTimeModalModel::default());
     app.add_singleton_model(|_| WorkspaceRegistry::new());
     app.add_singleton_model(|_| IgnoredSuggestionsModel::new(vec![]));
     app.add_singleton_model(AIDocumentModel::new);

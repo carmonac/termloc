@@ -1,4 +1,3 @@
-use enum_iterator::all;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -6,6 +5,7 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use ::settings::{Setting, SettingSection, ToggleableSetting};
+use enum_iterator::all;
 use warp_core::ui::theme::color::internal_colors;
 use warp_errors::{report_error, report_if_error};
 use warp_util::path::user_friendly_path;

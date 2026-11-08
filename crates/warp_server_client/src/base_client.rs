@@ -1,16 +1,14 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::{Context as _, Result};
+use anyhow::{Context as _, Result, bail};
 use futures::StreamExt as _;
 use instant::Duration;
 use warp_graphql::client::RequestOptions;
 use warp_server_auth::auth_state::AuthState;
-use warp_server_auth::credentials::AuthToken;
-#[cfg(feature = "agent_mode_evals")]
-use warp_server_auth::credentials::Credentials;
+use warp_server_auth::credentials::{AuthToken, Credentials};
 
-use crate::auth::{AuthEvent, AuthSession, UserUid};
+use crate::auth::{AuthEvent, UserUid};
 
 /// Header carrying the request-local team scope for an operation whose team is inferred
 /// from the current window rather than named explicitly in the request body. See
@@ -18,14 +16,6 @@ use crate::auth::{AuthEvent, AuthSession, UserUid};
 /// a header that disagrees with the request body or an existing resource; adding this header
 /// is not itself proof of membership.
 pub const TEAM_UID_HEADER: &str = "X-Warp-Team-Uid";
-
-/// IDs in the staging database that were created specifically for evals.
-///
-/// Keep this list in sync with `script/populate_agent_mode_eval_user.sql` in warp-server.
-#[cfg(feature = "agent_mode_evals")]
-const EVAL_USER_IDS: [i32; 11] = [
-    2162, 2164, 2165, 2166, 2167, 2168, 2169, 2172, 2173, 2174, 2175,
-];
 
 /// Provides GraphQL path routing that applies independently of authentication.
 #[derive(Clone, Debug, Default)]
@@ -45,7 +35,6 @@ pub struct BaseClient {
     external_client: Arc<http_client::Client>,
     auth_state: Arc<AuthState>,
     event_sender: async_channel::Sender<AuthEvent>,
-    auth_session: Arc<AuthSession>,
     graphql_routing: GraphqlRoutingConfig,
     authenticated_graphql: AuthenticatedGraphqlConfig,
     iap_token_provider: Option<Arc<dyn http_client::iap::IapTokenProvider>>,
@@ -69,37 +58,11 @@ impl BaseClient {
                 true
             }
         });
-        // We generate one random user ID per client so evals can run in parallel.
-        #[cfg(feature = "agent_mode_evals")]
-        let eval_user_id = {
-            use rand::Rng as _;
-
-            Some(EVAL_USER_IDS[rand::thread_rng().gen_range(0..EVAL_USER_IDS.len())])
-        };
-        #[cfg(feature = "agent_mode_evals")]
-        if let Some(eval_user_id) = eval_user_id {
-            // Set a deterministic per-user API key so all requests — including
-            // REST endpoints like the SSE event stream — carry a real
-            // Authorization header. The key format mirrors what SeedEvalAPIKeys()
-            // inserts in warp-server at eval startup:
-            // wk-1.<user_id as 64-char zero-padded lowercase hex>.
-            let eval_key = format!("wk-1.{eval_user_id:0>64x}");
-            auth_state.set_credentials(Some(Credentials::ApiKey {
-                key: eval_key,
-                owner_type: None,
-            }));
-        }
-        let auth_session = Arc::new(AuthSession::new(
-            client.clone(),
-            auth_state.clone(),
-            event_sender.clone(),
-        ));
         Self {
             client,
             external_client,
             auth_state,
             event_sender,
-            auth_session,
             graphql_routing,
             authenticated_graphql,
             iap_token_provider,
@@ -134,10 +97,6 @@ impl BaseClient {
         self.client.clone()
     }
 
-    pub fn auth_session(&self) -> Arc<AuthSession> {
-        self.auth_session.clone()
-    }
-
     pub fn anonymous_id(&self) -> String {
         self.auth_state.anonymous_id()
     }
@@ -156,11 +115,23 @@ impl BaseClient {
     }
 
     pub fn allowed_to_refresh_token(&self) -> bool {
-        self.auth_session.allowed_to_refresh_token()
+        self.auth_state
+            .credentials()
+            .is_none_or(|credentials| !credentials.is_externally_managed())
     }
 
     pub async fn get_or_refresh_access_token(&self) -> Result<AuthToken> {
-        self.auth_session.get_or_refresh_access_token().await
+        if cfg!(feature = "skip_login") {
+            bail!("skip_login enabled; failing all authenticated requests");
+        }
+        let Some(credentials) = self.auth_state.credentials() else {
+            bail!("missing authentication credentials");
+        };
+        match credentials {
+            Credentials::Bearer(token) => Ok(AuthToken::Bearer(token)),
+            Credentials::Local => bail!("local-only builds have no server to authenticate with"),
+            Credentials::Test => Ok(AuthToken::NoAuth),
+        }
     }
 
     /// Returns a sender for asynchronous work that emits auth events without borrowing this client.

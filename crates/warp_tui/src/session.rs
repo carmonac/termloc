@@ -2,8 +2,7 @@
 //!
 //! [`run`] boots the real headless Warp app via [`warp::run_tui`]. Once shared
 //! initialization is done, the mount built here starts the TUI driver and
-//! creates the first terminal session once browser authentication starts, while
-//! allowing authentication to complete in the background.
+//! creates the first terminal session.
 
 use std::path::PathBuf;
 
@@ -14,7 +13,6 @@ use warp::settings::{TuiThemeSettings, TuiZeroStateSettings, TuiZeroStateSetting
 #[cfg(feature = "voice_input")]
 use warp::settings::{TuiVoiceSettings, TuiVoiceSettingsChangedEvent};
 use warp::tui_export::{AIConversationAutoexecuteMode, Appearance, ServerConversationToken};
-use warp::{TuiLoginEvent, TuiLoginModel, TuiLoginPhase};
 use warp_core::channel::ChannelState;
 use warp_core::settings::Setting as _;
 use warp_errors::report_error;
@@ -23,7 +21,6 @@ use warpui_core::platform::{TerminationMode, WindowStyle};
 use warpui_core::runtime::{TuiDriverStartupError, TuiFocusPolicy, spawn_tui_driver};
 use warpui_core::{AddWindowOptions, AppContext, ModelHandle, ViewHandle};
 
-use crate::clipboard::copy_to_clipboard;
 use crate::resume::TuiExitSummaryHandle;
 use crate::root_view::RootTuiView;
 use crate::session_registry::{TuiSessions, TuiSessionsEvent};
@@ -54,10 +51,6 @@ struct TuiArgs {
     /// Enable auto-approve by default for new conversations.
     #[arg(long)]
     auto_approve: bool,
-
-    /// API key for non-interactive authentication.
-    #[arg(long, env = "TERMLOC_API_KEY")]
-    api_key: Option<String>,
 }
 
 /// One-shot commands available on the standalone TUI binaries. The full app
@@ -114,17 +107,14 @@ pub fn run() -> Result<()> {
     };
     let exit_summary = TuiExitSummaryHandle::default();
     let exit_summary_for_app = exit_summary.clone();
-    let result = warp::run_tui(
-        args.api_key,
-        Box::new(move |ctx| {
-            init(
-                resume_token,
-                default_autoexecute_mode,
-                exit_summary_for_app,
-                ctx,
-            )
-        }),
-    );
+    let result = warp::run_tui(Box::new(move |ctx| {
+        init(
+            resume_token,
+            default_autoexecute_mode,
+            exit_summary_for_app,
+            ctx,
+        )
+    }));
     if result.is_ok()
         && let Some(token) = exit_summary.token()
     {
@@ -221,31 +211,10 @@ fn init(
             });
             root.update(ctx, |_, ctx| {
                 ctx.subscribe_to_model(&sessions, |_, _, event, ctx| match event {
-                    TuiSessionsEvent::SessionRemoved(_) => ctx.notify(),
                     TuiSessionsEvent::FocusChanged(_) => ctx.notify(),
                 });
             });
-            let sessions_for_login = sessions.clone();
-            let root_for_login = root.clone();
-            let login_model = TuiLoginModel::handle(ctx);
-            ctx.subscribe_to_model(&login_model, move |_, event, ctx| match event {
-                TuiLoginEvent::PhaseChanged => {
-                    root_for_login.update(ctx, |root, ctx| {
-                        root.handle_login_phase_changed(ctx, copy_to_clipboard);
-                    });
-                }
-                TuiLoginEvent::LoggedIn => {
-                    ensure_terminal_session(&sessions_for_login, &root_for_login, ctx)
-                }
-                TuiLoginEvent::LoggedOut => {
-                    root_for_login.update(ctx, |root, ctx| root.show_auth(ctx));
-                    sessions_for_login.update(ctx, |sessions, ctx| sessions.clear(ctx));
-                }
-            });
-            if matches!(TuiLoginModel::as_ref(ctx).phase(), TuiLoginPhase::LoggedIn) {
-                // Already authenticated at mount: create the first session now.
-                ensure_terminal_session(&sessions, &root, ctx);
-            }
+            ensure_terminal_session(&sessions, &root, ctx);
         }
         Err(error) => handle_tui_driver_startup_error(error, ctx),
     }
@@ -298,7 +267,7 @@ fn ensure_terminal_session(
             );
         });
     }
-    root.update(ctx, |root, ctx| root.show_terminal(ctx));
+    root.update(ctx, |_, ctx| ctx.notify());
 }
 
 #[cfg(test)]

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use ai_types::AmbientAgentTaskId;
 use chrono::Utc;
 use warp_multi_agent_api as api;
 
@@ -12,7 +13,6 @@ use crate::ai::agent::{AIAgentInput, UserQueryMode};
 use crate::cloud_object::{Revision, ServerMetadata, ServerPermissions};
 use crate::persistence::model::ConversationUsageMetadata;
 use crate::server::ids::ServerId;
-use ai_types::AmbientAgentTaskId;
 
 #[test]
 fn terminal_busy_restores_as_recoverable_error() {

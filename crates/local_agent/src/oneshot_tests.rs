@@ -1,9 +1,8 @@
 use std::sync::Mutex;
 
-use futures::FutureExt as _;
 use futures::executor::block_on;
 use futures::future::BoxFuture;
-use futures::stream;
+use futures::{FutureExt as _, stream};
 
 use super::*;
 use crate::ollama::{ChatChunk, ChatStream};

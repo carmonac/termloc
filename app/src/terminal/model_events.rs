@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_channel::Receiver;
+use warp_terminal::ImageProtocol;
 use warpui::{Entity, ModelContext, ModelHandle, SingletonEntity};
 
 use super::event::{BootstrappedEvent, SshLoginStatus};
@@ -20,7 +21,6 @@ use crate::terminal::event::{
 };
 use crate::terminal::model::session::Sessions;
 use crate::terminal::shell::ShellType;
-use warp_terminal::ImageProtocol;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SshRemoteServerSupport {
     Enabled,

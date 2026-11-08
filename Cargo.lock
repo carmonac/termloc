@@ -4271,14 +4271,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9844ddc3a6e533d62bba727eb6c28b5d360921d5175e9ff0f1e621a5c590a4d5"
 
 [[package]]
-name = "firebase"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "serde",
-]
-
-[[package]]
 name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13708,7 +13700,6 @@ dependencies = [
  "env_logger",
  "event-listener",
  "field_mask",
- "firebase",
  "float-cmp",
  "freedesktop-desktop-entry",
  "futures",
@@ -14325,14 +14316,10 @@ dependencies = [
  "log",
  "parking_lot",
  "serde",
- "serde_json",
- "thiserror 2.0.17",
  "uuid",
  "warp_core",
- "warp_errors",
  "warp_graphql",
  "warpui_core",
- "warpui_extras",
 ]
 
 [[package]]
@@ -14342,7 +14329,6 @@ dependencies = [
  "aha-reqwest-eventsource",
  "anyhow",
  "async-channel",
- "async-trait",
  "base64 0.22.1",
  "bincode",
  "blocking",
@@ -14357,7 +14343,6 @@ dependencies = [
  "cynic",
  "derivative",
  "diesel",
- "firebase",
  "futures",
  "http",
  "http_client",
@@ -14365,12 +14350,8 @@ dependencies = [
  "itertools 0.14.0",
  "lasso",
  "log",
- "mockall",
  "mockito",
- "oauth2",
- "parking_lot",
  "pathfinder_geometry",
- "rand 0.8.6",
  "reqwest",
  "schemars 1.0.4",
  "serde",

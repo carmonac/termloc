@@ -1,8 +1,8 @@
-use ai_types::AmbientAgentTaskId;
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use ai_types::AmbientAgentTaskId;
 use chrono::{DateTime, Local, Utc};
 use itertools::Itertools;
 use warpui::{App, EntityId, ModelHandle};

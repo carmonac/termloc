@@ -7,7 +7,7 @@ publish.workspace = true
 license.workspace = true
 
 [features]
-agent_mode_evals = ["warp_server_client/agent_mode_evals"]
+agent_mode_evals = []
 
 [dependencies]
 anyhow.workspace = true

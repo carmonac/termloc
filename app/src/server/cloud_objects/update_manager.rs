@@ -1092,16 +1092,6 @@ impl UpdateManager {
         self.has_initial_load.is_set()
     }
 
-    /// Reset the initial-load condition so that subsequent callers of
-    /// [`initial_load_complete`](Self::initial_load_complete) will block until
-    /// the next load finishes. Call this when the user identity changes (e.g.
-    /// after signup/login) to prevent stale cloud data from a previous session
-    /// being used.
-    pub fn reset_initial_load(&self) {
-        log::info!("Resetting initial_load_complete condition for fresh cloud object fetch");
-        self.has_initial_load.reset();
-    }
-
     pub fn received_message_from_server(
         &mut self,
         message: ObjectUpdateMessage,

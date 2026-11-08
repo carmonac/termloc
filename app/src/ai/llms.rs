@@ -571,12 +571,6 @@ pub struct LLMPreferences {
 }
 
 impl LLMPreferences {
-    #[cfg(feature = "tui")]
-    pub(crate) fn reset_session_overrides(&mut self) {
-        self.base_llm_for_terminal_view.clear();
-        self.computer_use_llm_for_terminal_view.clear();
-    }
-
     pub fn new(
         #[cfg_attr(not(feature = "agent_mode_evals"), allow(unused_variables))]
         ctx: &mut ModelContext<Self>,
@@ -1229,6 +1223,7 @@ impl LLMPreferences {
         }
     }
 
+    #[cfg(test)]
     pub fn update_feature_model_choices(
         &mut self,
         choices_result: Result<ModelsByFeature, anyhow::Error>,

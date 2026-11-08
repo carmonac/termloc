@@ -14,7 +14,6 @@
 use warpui::{AppContext, Entity, ModelContext, SingletonEntity};
 
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 
 /// Plain, dependency-free snapshot of the current user and organization as
@@ -41,16 +40,13 @@ pub enum TuiUserInfoManagerEvent {
 
 /// Singleton model exposing [`TuiUserInfoSnapshot`] to the `warp_tui` front-end.
 ///
-/// It subscribes to [`AuthManager`] and [`UserWorkspaces`] so it emits an event
-/// whenever the underlying auth or workspace state changes; the snapshot
+/// It subscribes to [`UserWorkspaces`] so it emits an event whenever the
+/// underlying workspace state changes; the snapshot
 /// itself is recomputed live on read.
 pub struct TuiUserInfoManager;
 
 impl TuiUserInfoManager {
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
-        ctx.subscribe_to_model(&AuthManager::handle(ctx), |me, _, _, ctx| {
-            me.refresh(ctx);
-        });
         ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), |me, _, _, ctx| {
             me.refresh(ctx);
         });
@@ -73,7 +69,7 @@ impl TuiUserInfoManager {
             .current_workspace()
             .map(|workspace| workspace.name.clone());
         TuiUserInfoSnapshot {
-            is_logged_in: super::has_validated_identity(auth),
+            is_logged_in: auth.is_logged_in() && auth.user_id().is_some(),
             username: auth.username_for_display(),
             email: auth.user_email(),
             user_id: auth.user_id().map(|uid| uid.as_string()),

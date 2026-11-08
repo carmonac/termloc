@@ -38,7 +38,6 @@ pub fn main() -> Result<()> {
             ),
             logfile_name: "warp_integration.log".into(),
             server_config: WarpServerConfig {
-                firebase_auth_api_key: "".into(),
                 iap_config: None,
                 // Use an IP in the IANA testing range, with the TCP discard port, to
                 // black-hole server traffic.

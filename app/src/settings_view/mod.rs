@@ -1118,7 +1118,7 @@ impl SettingsView {
 
         // Warp Drive page
         let warp_drive_page_handle =
-            ctx.add_typed_action_view(warp_drive_page::WarpDriveSettingsPageView::new);
+            ctx.add_typed_action_view(|_| warp_drive_page::WarpDriveSettingsPageView::new());
 
         // MCP Servers page
         let mcp_servers_page_handle = ctx.add_typed_action_view(MCPServersSettingsPageView::new);

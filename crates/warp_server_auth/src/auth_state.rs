@@ -1,13 +1,9 @@
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
-use anyhow::anyhow;
 use chrono::{DateTime, Duration, Utc};
 use parking_lot::RwLock;
 use uuid::Uuid;
 use warp_core::channel::{Channel, ChannelState};
-use warp_errors::report_error;
-use warp_graphql::object_permissions::OwnerType;
 use warpui_core::{AppContext, Entity, SingletonEntity};
 
 use super::UserUid;
@@ -15,22 +11,9 @@ use super::anonymous_id::get_or_create_anonymous_id;
 use super::credentials::Credentials;
 #[cfg(any(not(target_family = "wasm"), test, feature = "test-util"))]
 use super::user::UserMetadata;
-use super::user::persistence::PersistedUser;
-use super::user::{
-    AnonymousUserType, FirebaseAuthTokens, PersonalObjectLimits, PrincipalType, User,
-};
+use super::user::{AnonymousUserType, PersonalObjectLimits, PrincipalType, User};
 
 const ANONYMOUS_USER_NOTIFICATION_BLOCK_TIMER: Duration = Duration::days(7);
-
-/// Describes what persistence action to take based on the current auth state.
-pub enum PersistAction {
-    /// The user has Firebase credentials and should be persisted to secure storage.
-    Persist(Box<PersistedUser>),
-    /// The user has been logged out and should be removed from secure storage.
-    Remove,
-    /// No persistence action is needed (e.g. API key or test credentials).
-    DoNothing,
-}
 
 /// AuthState holds information about the currently-logged in user.
 /// If you need to access AuthState, you can use the AuthStateProvider singleton model.
@@ -41,10 +24,6 @@ pub struct AuthState {
     /// An anonymous UUID. Can be used to consistently identify an anonymous user who is not logged in.
     anonymous_id: Uuid,
 
-    /// State that indicates whether the current user's refresh token has been
-    /// invalidated, meaning a reauth is required.
-    needs_reauth: AtomicBool,
-
     /// The current authentication credentials.
     credentials: RwLock<Option<Credentials>>,
 }
@@ -54,7 +33,6 @@ impl AuthState {
         Self {
             user: RwLock::new(None),
             anonymous_id: get_or_create_anonymous_id(ctx),
-            needs_reauth: AtomicBool::new(false),
             credentials: RwLock::new(None),
         }
     }
@@ -65,17 +43,7 @@ impl AuthState {
         feature = "test-util"
     ))]
     fn test_credentials() -> Credentials {
-        #[cfg(any(test, feature = "integration_tests", feature = "skip_login"))]
-        {
-            Credentials::Test
-        }
-        #[cfg(all(
-            feature = "test-util",
-            not(any(test, feature = "integration_tests", feature = "skip_login"))
-        ))]
-        {
-            Credentials::SessionCookie
-        }
+        Credentials::Test
     }
 
     #[cfg(any(test, feature = "integration_tests", feature = "test-util"))]
@@ -83,7 +51,6 @@ impl AuthState {
         Self {
             user: RwLock::new(Some(User::test())),
             anonymous_id: Uuid::new_v4(),
-            needs_reauth: AtomicBool::new(false),
             credentials: RwLock::new(Some(Self::test_credentials())),
         }
     }
@@ -92,7 +59,6 @@ impl AuthState {
         Self {
             user: RwLock::new(None),
             anonymous_id: Uuid::new_v4(),
-            needs_reauth: AtomicBool::new(false),
             credentials: RwLock::new(None),
         }
     }
@@ -106,7 +72,6 @@ impl AuthState {
                 ..User::test()
             })),
             anonymous_id: Uuid::new_v4(),
-            needs_reauth: AtomicBool::new(false),
             credentials: RwLock::new(Some(Self::test_credentials())),
         }
     }
@@ -114,8 +79,6 @@ impl AuthState {
     /// Creates and initializes auth state. Checks, in order:
     /// 1. Test user (test/integration/skip_login builds)
     /// 2. Built-in user (local-only builds)
-    /// 3. WARP_USER_SECRET environment variable
-    /// 4. Persisted user from secure storage
     #[cfg_attr(target_family = "wasm", allow(dead_code))]
     pub fn initialize(ctx: &AppContext) -> Self {
         let state = Self::new(ctx);
@@ -138,58 +101,6 @@ impl AuthState {
             return state;
         }
 
-        // Try WARP_USER_SECRET environment variable.
-        if let Some(persisted) = option_env!("WARP_USER_SECRET")
-            .and_then(|s| serde_json::from_str::<PersistedUser>(s).ok())
-        {
-            state.apply_persisted_user(persisted);
-            return state;
-        }
-
-        // Try reading from secure storage.
-        match PersistedUser::from_secure_storage(ctx) {
-            Ok(persisted) => {
-                if persisted.auth_tokens.refresh_token.is_empty() {
-                    log::warn!(
-                        "Found persisted user with empty refresh token; clearing secure storage entry"
-                    );
-                    let _ = PersistedUser::remove_from_secure_storage(ctx).map_err(|err| {
-                        log::warn!("Unable to clear invalid user from secure storage: {err:?}");
-                    });
-                } else {
-                    state.apply_persisted_user(persisted);
-                }
-            }
-            Err(err) => {
-                log::info!("Unable to read user from secure storage: {err:?}");
-            }
-        }
-
-        state
-    }
-
-    /// Creates auth state for a client that must validate an explicit credential
-    /// before making it available to shared authenticated clients.
-    ///
-    /// This installs neither the pending credential nor persisted identity. The
-    /// credential remains outside [`AuthState`] until its user fetch succeeds,
-    /// so failed validation leaves the client fully logged out. Persisted state
-    /// is skipped because an explicit credential takes precedence over secure
-    /// storage.
-    pub fn initialize_for_credential_validation(ctx: &AppContext) -> Self {
-        let state = Self::new(ctx);
-
-        if Self::should_use_test_user() {
-            state.set_user(Some(User::test()));
-            #[cfg(any(
-                test,
-                feature = "integration_tests",
-                feature = "skip_login",
-                feature = "test-util"
-            ))]
-            state.set_credentials(Some(Self::test_credentials()));
-        }
-
         state
     }
 
@@ -198,74 +109,7 @@ impl AuthState {
             || ChannelState::channel() == Channel::Integration
     }
 
-    /// Determines the appropriate persistence action based on the current auth state.
-    pub fn persist_action(&self) -> PersistAction {
-        let user = self.user.read().clone();
-        let credentials = self.credentials.read().clone();
-
-        match (user, credentials) {
-            (Some(user), Some(Credentials::Firebase(firebase_tokens))) => {
-                let anonymous_user_type = user.anonymous_user_type();
-                let linked_at = user.linked_at();
-                let personal_object_limits = user.personal_object_limits();
-
-                #[allow(deprecated)]
-                let persisted = PersistedUser {
-                    auth_tokens: firebase_tokens,
-                    refresh_token: String::new(),
-                    local_id: user.local_id,
-                    metadata: user.metadata,
-                    is_onboarded: user.is_onboarded,
-                    needs_sso_link: user.needs_sso_link,
-                    anonymous_user_type,
-                    linked_at,
-                    personal_object_limits,
-                    is_on_work_domain: user.is_on_work_domain,
-                };
-                PersistAction::Persist(Box::new(persisted))
-            }
-            // Remove persisted auth state if it is unset in-memory.
-            (None, None) => PersistAction::Remove,
-            // Do not persist if using API keys, session cookies, or test credentials.
-            (Some(_), Some(Credentials::ApiKey { .. })) => PersistAction::DoNothing,
-            (Some(_), Some(Credentials::Bearer(_))) => PersistAction::DoNothing,
-            (Some(_), Some(Credentials::SessionCookie | Credentials::Local)) => {
-                PersistAction::DoNothing
-            }
-            #[cfg(any(test, feature = "integration_tests", feature = "skip_login"))]
-            (Some(_), Some(Credentials::Test)) => PersistAction::DoNothing,
-            // Credentials without a user, or user without credentials - transient states
-            // during initialization or refresh; no persistence action needed.
-            (None, Some(_)) | (Some(_), None) => PersistAction::DoNothing,
-        }
-    }
-
-    /// Applies a deserialized PersistedUser, splitting it into User and Credentials.
-    fn apply_persisted_user(&self, persisted: PersistedUser) {
-        let user = User {
-            is_onboarded: persisted.is_onboarded,
-            local_id: persisted.local_id,
-            metadata: persisted.metadata,
-            needs_sso_link: persisted.needs_sso_link,
-            anonymous_user_type: persisted.anonymous_user_type,
-            is_on_work_domain: persisted.is_on_work_domain,
-            linked_at: persisted.linked_at,
-            personal_object_limits: persisted.personal_object_limits,
-            principal_type: PrincipalType::default(),
-            global_skills: Vec::new(),
-        };
-        *self.user.write() = Some(user);
-
-        if persisted.auth_tokens.refresh_token.is_empty() {
-            log::warn!("Skipping credentials update due to empty refresh token");
-            return;
-        }
-        *self.credentials.write() = Some(Credentials::Firebase(persisted.auth_tokens));
-    }
-
-    /// Sets the user. This should only be called by the AuthManager, to ensure
-    /// side-effects are handled properly (e.g. notifying other models, persisting
-    /// the user to secure storage, etc.).
+    /// Sets the user.
     pub fn set_user(&self, user: Option<User>) {
         *self.user.write() = user;
     }
@@ -336,19 +180,6 @@ impl AuthState {
                     global_skills: Vec::new(),
                 });
             }
-        }
-    }
-
-    /// Updates the Firebase auth tokens within the current credentials.
-    /// Reports an error if the current credentials are not Firebase.
-    pub fn update_firebase_tokens(&self, new_auth_tokens: FirebaseAuthTokens) {
-        let mut write_lock = self.credentials.write();
-        if let Some(Credentials::Firebase(tokens)) = write_lock.as_mut() {
-            *tokens = new_auth_tokens;
-        } else {
-            report_error!(anyhow!(
-                "Tried to update Firebase tokens without Firebase credentials"
-            ));
         }
     }
 
@@ -501,19 +332,6 @@ impl AuthState {
         self.anonymous_id.to_string()
     }
 
-    /// Returns whether a reauth is required for the current user given the state
-    /// of their refresh token.
-    pub fn needs_reauth(&self) -> bool {
-        self.needs_reauth.load(Ordering::Relaxed)
-    }
-
-    /// Sets whether a reauth is required for the current user.
-    /// Returns whether or not the reauth state was changed from false to true.
-    pub fn set_needs_reauth(&self, new_needs_reauth: bool) -> bool {
-        let prev_needs_reauth = self.needs_reauth.swap(new_needs_reauth, Ordering::Relaxed);
-        !prev_needs_reauth && new_needs_reauth
-    }
-
     /// Returns whether or not the renotification block to encourage anonymous users to sign up
     /// has expired.
     pub fn anonymous_user_renotification_block_expired(
@@ -534,20 +352,6 @@ impl AuthState {
         self.user.read().as_ref().map(|user| user.is_on_work_domain)
     }
 
-    /// Returns whether the current user is authenticated via API key.
-    pub fn is_api_key_authenticated(&self) -> bool {
-        matches!(
-            self.credentials.read().as_ref(),
-            Some(Credentials::ApiKey { .. })
-        )
-    }
-
-    /// Returns the API key if using API key authentication.
-    pub fn api_key(&self) -> Option<String> {
-        let credentials = self.credentials.read();
-        credentials.as_ref()?.as_api_key().map(|s| s.to_owned())
-    }
-
     /// Returns the type of principal (user or service account).
     pub fn principal_type(&self) -> Option<PrincipalType> {
         self.user.read().as_ref().map(|user| user.principal_type)
@@ -565,11 +369,6 @@ impl AuthState {
             .as_ref()
             .map(|user| user.global_skills.clone())
             .unwrap_or_default()
-    }
-
-    /// Returns the owner type of the currently-authenticated API key.
-    pub fn api_key_owner_type(&self) -> Option<OwnerType> {
-        self.credentials.read().as_ref()?.api_key_owner_type()
     }
 }
 

@@ -1,6 +1,6 @@
 ---
 name: tui-verify-change
-description: Verify a change to Warp's headless TUI front-end (crates/warp_tui) by running it — locally via ./script/run-tui, or in a headless cloud runner via a TERMLOC_API_KEY dogfood build — and reading the rendered screen back (under tmux when it's installed, otherwise directly). Use whenever you change TUI UI, rendering, input, or behavior and need to confirm the real on-screen result.
+description: Verify a change to Warp's headless TUI front-end (crates/warp_tui) by running it via ./script/run-tui and reading the rendered screen back (under tmux when it's installed, otherwise directly). Use whenever you change TUI UI, rendering, input, or behavior and need to confirm the real on-screen result.
 ---
 
 # tui-verify-change
@@ -31,7 +31,7 @@ it in.
 
 - You changed anything a TUI user sees or interacts with: an element/layout in
   `crates/warpui_core/src/elements/tui`, a TUI view/screen in `crates/warp_tui`
-  (transcript, input, zero state, login placeholder, etc.), TUI keybindings, or
+  (transcript, input, zero state, etc.), TUI keybindings, or
   TUI rendering/behavior.
 - You want to confirm the *actual* rendered result, not just that it compiles or
   a unit test passes.
@@ -39,35 +39,12 @@ it in.
 If your change is GUI-only (`app/`, WarpUI pixel `Element`/`View`), this is the
 wrong skill — use the GUI verification path instead.
 
-## Local vs cloud verification (pick your context first)
+## Signed-in state
 
-*How* you build, run, and log in depends on **where you're running**. Decide this
-up front — it determines whether you use `./script/run-tui` or the `TERMLOC_API_KEY`
-path below.
-
-- **Local context** — you're working in a local dev checkout, typically
-  alongside the user. Just run **`./script/run-tui`** directly: it builds
-  `warp_tui` and runs it, selecting the internal `local` channel when the
-  `warp-channel-config` generator is available and falling back to
-  `termloc-tui` otherwise. **Do not reach for `TERMLOC_API_KEY`** here — it's
-  generally **not set** in a local environment, and you don't need it: a local
-  build reaches the authenticated state through the normal interactive
-  device-auth login flow (or you're already signed in on this machine). The
-  non-interactive `TERMLOC_API_KEY` login below is a *cloud-runner* affordance, not
-  a local one, so don't let a missing key block you locally.
-- **Cloud context** — you're a headless cloud agent (e.g. the factory-client
-  runner) with no browser for device-auth, so reaching a **signed-in** surface
-  relies on the non-interactive `TERMLOC_API_KEY` already in the environment. That
-  does **not** mean bypassing `./script/run-tui`: when the `warp-channel-config`
-  generator is available, `./script/run-tui` selects the internal `local`
-  binary; otherwise it falls back to `termloc-tui`. Both accept the inherited
-  `TERMLOC_API_KEY`, so prefer the maintained runner unless you need a specific
-  binary or profile. In the cloud, the inherited key signs you in without the
-  browser device-auth flow.
-
-The logged-**out** surface (the `Sign in to continue` placeholder and any pure
-element/layout) needs neither login path — a plain OSS build is enough in either
-context.
+termloc has no login: the TUI starts signed in as the built-in local user and goes
+straight to `Starting terminal…` and then the **zero state**. Run
+**`./script/run-tui`** (or the `termloc-tui` binary) the same way locally and in a
+headless runner.
 
 ## Step 1 — Build the TUI
 
@@ -86,67 +63,6 @@ CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin termloc-tui
 - Fix all compile errors before running (see `fix-errors`). The first build of
   this tree takes a while; **incremental rebuilds after a one-line change are
   fast (~10s)**, so the edit → rebuild → re-capture loop below is quick.
-
-### Logged-in vs logged-out (important)
-
-The OSS build starts **logged out** and stops at a `Sign in to continue`
-placeholder (it drives a device-authorization login flow that needs a browser).
-The login-gated root has three pre-session states you may see:
-
-- `AwaitingLogin` → a centered placeholder that reads `Sign in to continue`,
-  then `Opening your browser…` (or, once the device code is known, `Open <uri> in
-  your browser` and `and enter code: <code>`). It does **not** show a Ctrl-C hint.
-- `LoggedIn` → briefly `Starting terminal…`, then the **zero state** (`Warp
-  Agent` + version, a "What's new" list, and the project context section) with the
-  input view.
-- `Failed` → `Login failed: <message>` followed by `Press Ctrl-C to exit.`
-
-(Exact strings live in `crates/warp_tui/src/ui.rs` — verify against it if you're
-asserting on placeholder text.)
-
-So: if your change is on the **login placeholder** or a pure element/layout, the
-logged-out OSS build is enough. If your change is in the **live terminal /
-transcript / input** surface, you must reach the authenticated state (see the
-next section), or your change will sit behind the login gate and you'll only ever
-see `Sign in to continue`.
-
-### Logging in non-interactively (`TERMLOC_API_KEY`) — cloud context
-
-**This is the cloud path.** In a local checkout, skip it: run `./script/run-tui`
-and log in interactively (see **Local vs cloud verification** above), since
-`TERMLOC_API_KEY` usually isn't set locally. Use the flow here when you're a
-headless cloud runner where the key *is* set and there's no browser for
-device-auth.
-
-You can reach the authenticated (`LoggedIn`) state headlessly — no browser, no
-device-auth flow — by launching any TUI channel binary with a `TERMLOC_API_KEY` in
-the environment. This is the fast way to verify live terminal/transcript/input
-changes.
-
-Key constraints:
-
-- **All channels are supported.** API-key login works with `termloc-tui` as
-  well as the Preview, Dev, Local, and Stable binaries.
-- **The key must already be in the environment.** In a sandbox where
-  `TERMLOC_API_KEY` is set, a freshly started `tmux` server inherits it. Never echo,
-  print, or inline the secret value in a command — just rely on the inherited
-  environment variable. (`--api-key <key>` on the command line also works but
-  would expose the secret, so prefer the env var.)
-
-```bash
-cd <warp-repo-root>
-CARGO_BUILD_JOBS=2 cargo build -p warp_tui --bin termloc-tui
-tmux kill-session -t tuicheck 2>/dev/null
-# TERMLOC_API_KEY is inherited from the environment by the new tmux server.
-tmux new-session -d -s tuicheck -x 120 -y 40 './target/debug/termloc-tui'
-sleep 20                                      # login + session start
-tmux capture-pane -t tuicheck -p              # expect the logged-in zero state
-```
-
-When it works you'll see the **zero state** (`Warp Agent` + input view + model
-selector) instead of `Sign in to continue`, and you can `send-keys` a real prompt
-and read the agent's reply back with `capture-pane`. (This login path was added
-in warpdotdev/warp#13583.)
 
 ## Step 2 — Run under tmux and read the frame back
 
@@ -210,9 +126,7 @@ is identical whether or not tmux drove the run.
 
 Because incremental rebuilds are ~10s, iterate tightly: edit the TUI code →
 `cargo build -p warp_tui --bin termloc-tui` → `tmux kill-session` + restart the
-session → `capture-pane` and compare. Verified before/after example: changing the
-login placeholder string and rebuilding flips the captured line from
-`Sign in to continue` to the new text, visible directly in `capture-pane` output.
+session → `capture-pane` and compare.
 
 ## Step 3 — Check the captured frame against your change
 
@@ -228,7 +142,7 @@ if the expected text isn't in the capture, the change isn't rendering.
 - **If it exits (code 101) right after the first frame instead of staying up:**
   don't assume it's a terminal/stdin problem — **check the TUI log first**:
   `tail -40 ~/.local/state/warp-terminal-tui/warp-cli/warp-tui.log`. One cause seen in
-  the headless OSS/logged-out sandbox build is a debug-only binding-validation
+  the headless sandbox build is a debug-only binding-validation
   panic: `crates/warpui_core/src/keymap/matcher.rs` (`validate_bindings`, gated on
   `#[cfg(debug_assertions)]`) panics with `Bindings failed validation` when a
   *keystroke* binding matches a TUI keymap context without being TUI-owned (it was
@@ -261,10 +175,9 @@ if the expected text isn't in the capture, the change isn't rendering.
 - **Startup probe.** On launch the TUI emits terminal probes (OSC `10`/`11` +
   a device-attributes query) to pick a theme; a normal tmux pane answers them.
   Give it ~0.5–1s (a `sleep`) before the first capture.
-- **Quitting.** Ctrl-C is `tmux send-keys -t tuicheck C-c`. On the login
-  placeholder one Ctrl-C exits; in a live session it's press-again-to-exit (first
-  press cancels/clears input and arms a ~1s window; a second within the window
-  exits). Always `tmux kill-session` at the end so a stray session doesn't linger.
+- **Quitting.** Ctrl-C is `tmux send-keys -t tuicheck C-c`. In a live session it's
+  press-again-to-exit (first press cancels/clears input and arms a ~1s window; a
+  second within the window exits). Always `tmux kill-session` at the end so a stray session doesn't linger.
 
 ## Step 4 — Capture screenshots and video (asciinema + agg)
 
@@ -306,16 +219,12 @@ tmux new-session -d -s tuicap -x 120 -y 40 \
 sleep 1                                     # let it draw + answer the theme probe
 # ...drive the interaction you want to show, e.g.:
 # tmux send-keys -t tuicap "hello" Enter && sleep 3
-# Quit the TUI so asciinema finalizes the cast. The logged-out placeholder exits on one
-# Ctrl-C, but a live/logged-in session needs a SECOND press within its ~1s window (see
-# "Quitting" under Pitfalls) — so send two; the extra press is a harmless no-op if it
-# already exited (the session is gone, hence 2>/dev/null).
+# Quit the TUI so asciinema finalizes the cast. A live session needs a SECOND Ctrl-C
+# within its ~1s window (see "Quitting" under Pitfalls) — so send two; the extra press
+# is a harmless no-op if it already exited (the session is gone, hence 2>/dev/null).
 tmux send-keys -t tuicap C-c && sleep 0.5 && tmux send-keys -t tuicap C-c 2>/dev/null
 sleep 1
 ```
-
-For a **logged-in** capture, build/run `warp-tui-dev` with `TERMLOC_API_KEY` per
-Step 1 instead of `termloc-tui`.
 
 **Render the video (MP4).** Match the format Warp's `computer_use` screen
 recording uses — an **H.264 / yuv420p MP4** with `+faststart` (see
@@ -357,8 +266,8 @@ Capture pitfalls:
   bare `asciinema rec` in a non-interactive runner shell errors out.
 - **Don't take the still from the first or last video frame.** The first frame
   is the blank terminal *before* the TUI draws, and once you quit the TUI the alt
-  screen is restored — so the final frames show the normal terminal (e.g. the
-  OSS `TERMLOC_API_KEY ... IGNORED` startup warning), **not** the TUI surface.
+  screen is restored — so the final frames show the normal terminal, **not** the
+  TUI surface.
   Extract a mid-recording timestamp (when the surface is up), or stop recording
   while the surface is still displayed so the last frame *is* the surface.
 - **Keep it short.** A few seconds at 120x40 renders to tens of KB; downstream

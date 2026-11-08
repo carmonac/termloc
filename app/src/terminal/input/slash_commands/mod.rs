@@ -998,7 +998,6 @@ impl Input {
             | SlashCommandKind::Theme
             | SlashCommandKind::VimMode
             | SlashCommandKind::Exit
-            | SlashCommandKind::Logout
             | SlashCommandKind::Clear
             | SlashCommandKind::Team
             | SlashCommandKind::Status => {

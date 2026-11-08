@@ -15,7 +15,6 @@ use super::*;
 use crate::ai::blocklist::AIQueryHistoryOutputStatus;
 use crate::appearance::Appearance;
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 use crate::search::ai_queries::fuzzy_match::FuzzyMatchAIQueryResults;
 use crate::search::command_search::ai_queries::AIQuerySearchResultItem;
 use crate::search::command_search::history::{
@@ -143,7 +142,6 @@ impl<T: SearchItem<Action = CommandSearchItemAction> + Clone + 'static> SyncData
 fn initialize_app(app: &mut App) {
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-    app.add_singleton_model(AuthManager::new_for_test);
 }
 
 #[test]

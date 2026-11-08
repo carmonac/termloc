@@ -295,13 +295,6 @@ impl Entity for AgentConversationsModel {
 impl SingletonEntity for AgentConversationsModel {}
 
 impl AgentConversationsModel {
-    /// Clears all stored conversation and task data in memory.
-    /// This is used when logging out to ensure no conversation history persists across users.
-    #[cfg(feature = "tui")]
-    pub(crate) fn reset(&mut self) {
-        self.conversations.clear();
-    }
-
     pub fn new(ctx: &mut ModelContext<Self>) -> Self {
         // If FF not enabled, return an empty model and don't sync any conversations.
         if !FeatureFlag::AgentManagementView.is_enabled() {

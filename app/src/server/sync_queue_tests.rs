@@ -6,7 +6,6 @@ use anyhow::anyhow;
 use chrono::{DateTime, Duration, Utc};
 use cloud_object_client::MockObjectClient;
 use cloud_objects::cloud_object::ServerPermissions;
-use firebase::FirebaseError;
 use itertools::Itertools;
 use warpui::{App, Entity, ModelHandle, SingletonEntity};
 
@@ -26,7 +25,6 @@ use crate::notebooks::{CloudNotebookModel, NotebookId};
 use crate::server::cloud_objects::update_manager::InitiatedBy;
 use crate::server::ids::{ClientId, HashableId, ServerId, ServerIdAndType, SyncId};
 use crate::server::server_api::ServerApiProvider;
-use crate::server::server_api::auth::UserAuthenticationError;
 use crate::server::sync_queue::{
     CreationFailureReason, GenericStringObjectToCreate, QueueItemId, SerializedModel,
     SyncQueueEvent,
@@ -536,11 +534,11 @@ fn test_no_dequeue_after_intransient_failure() {
             .times(failure_attempts)
             .returning(move |_| {
                 // This is one of the types of errors that won't cause us to keep dequeueing;
-                // if Firebase rejects the user once, they'll likely reject requests for other queue items.
-                Err(UserAuthenticationError::DeniedAccessToken(FirebaseError {
-                    code: 401,
-                    message: "Unauthenticated".to_string(),
-                })
+                // if the server rejects the user once, it'll likely reject other queue items.
+                Err(warp_graphql::client::GraphQLError::HttpError {
+                    status: http::StatusCode::UNAUTHORIZED,
+                    body: String::new(),
+                }
                 .into())
             });
 

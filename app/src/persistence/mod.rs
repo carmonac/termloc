@@ -48,7 +48,6 @@ use crate::ai::blocklist::PersistedAIInput;
 use crate::ai::mcp::TemplatableMCPServerInstallation;
 use crate::ai::persisted_workspace::EnablementState;
 use crate::app_state::AppState;
-use crate::auth::auth_manager::PersistedCurrentUserInformation;
 use crate::cloud_object::model::actions::ObjectAction;
 use crate::cloud_object::model::generic_string_model::CloudStringObject;
 use crate::cloud_object::{
@@ -179,35 +178,6 @@ pub fn initialize(
             sqlite::initialize(ctx, scope, data_scope)
         } else {
             (None, None)
-        }
-    }
-}
-
-// TODO: Implement per user scoping of sqlite.
-#[cfg(feature = "tui")]
-#[cfg_attr(not(feature = "local_fs"), allow(unused_variables))]
-pub fn remove(sender: &Option<SyncSender<ModelEvent>>) {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "local_fs")] {
-            if let Some(sender) = sender.clone() {
-                sqlite::remove(sender);
-            }
-        } else {
-            log::info!("Local filesystem persistence is not enabled.");
-        }
-    }
-}
-
-// Reconstruct sqlite database as part of Logout v0.
-#[cfg_attr(not(feature = "local_fs"), allow(unused_variables))]
-pub fn reconstruct(sender: &Option<SyncSender<ModelEvent>>) {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "local_fs")] {
-            if let Some(sender) = sender.clone() {
-                sqlite::reconstruct(sender);
-            }
-        } else {
-            log::info!("Local filesystem persistence is not enabled.");
         }
     }
 }
@@ -405,12 +375,6 @@ pub enum ModelEvent {
     SaveExperiments {
         experiments: Vec<ServerExperiment>,
     },
-    // `PauseAndRemoveDatabase` and `ReconstructAndResume` are used to pause and resume the writer thread.
-    // These are employed as part of Logout v0 to ensure that the writer thread
-    // does not continue writing to the DB after the user has logged out and the DB is deleted.
-    PauseAndRemoveDatabase,
-    #[cfg(feature = "local_fs")]
-    ReconstructAndResume,
     InsertObjectAction {
         object_action: ObjectAction,
     },
@@ -440,9 +404,6 @@ pub enum ModelEvent {
         conversation_ids: Vec<String>,
     },
 
-    UpsertCurrentUserInformation {
-        user_information: PersistedCurrentUserInformation,
-    },
     UpsertCodebaseIndexMetadata {
         index_metadata: Box<CodeWorkspaceMetadata>,
     },

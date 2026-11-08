@@ -16,7 +16,6 @@ use super::{
     SettingsSection, ToggleSettingActionPair, ToggleState, flags,
 };
 use crate::appearance::Appearance;
-use crate::auth::auth_manager::{AuthManager, AuthManagerEvent};
 use crate::drive::settings::WarpDriveSettings;
 
 #[derive(Debug, Clone)]
@@ -50,12 +49,7 @@ pub struct WarpDriveSettingsPageView {
 }
 
 impl WarpDriveSettingsPageView {
-    pub fn new(ctx: &mut ViewContext<Self>) -> Self {
-        ctx.subscribe_to_model(&AuthManager::handle(ctx), |_, _, event, ctx| {
-            if matches!(event, AuthManagerEvent::AuthComplete) {
-                ctx.notify();
-            }
-        });
+    pub fn new() -> Self {
         Self {
             page: PageType::new_uncategorized(
                 vec![Box::new(WarpDriveToggleWidget::default())],

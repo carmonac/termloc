@@ -1827,11 +1827,6 @@ impl CloudModel {
         self.time_of_next_force_refresh = Some(next_refresh_time);
         next_refresh_time
     }
-
-    pub fn reset(&mut self) {
-        self.objects_by_id = HashMap::new();
-        self.time_of_next_force_refresh = None;
-    }
 }
 
 impl Entity for CloudModel {

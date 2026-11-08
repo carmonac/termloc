@@ -51,8 +51,6 @@ impl TuiSession {
 /// Events emitted as the session set or focus changes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum TuiSessionsEvent {
-    /// A session was removed from the container.
-    SessionRemoved(TuiSessionId),
     /// The focused session changed to this id.
     FocusChanged(TuiSessionId),
 }
@@ -240,20 +238,6 @@ impl TuiSessions {
         Ok(())
     }
 
-    /// Removes every retained session without focusing an intermediate fallback.
-    pub(crate) fn clear(&mut self, ctx: &mut ModelContext<Self>) {
-        let removed_ids = self
-            .sessions
-            .iter()
-            .map(|session| session.id)
-            .collect::<Vec<_>>();
-        self.focused_session_id = None;
-        self.sessions.clear();
-        for id in removed_ids {
-            ctx.emit(TuiSessionsEvent::SessionRemoved(id));
-        }
-        ctx.notify();
-    }
     /// Focuses a registered session. Returns whether focus changed.
     pub(crate) fn focus_session(&mut self, id: TuiSessionId, ctx: &mut ModelContext<Self>) -> bool {
         if self.focused_session_id == Some(id) || self.session(id).is_none() {

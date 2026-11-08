@@ -190,7 +190,6 @@ use crate::app_state::{
 };
 use crate::appearance::{Appearance, AppearanceManager};
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::{AuthManager, AuthManagerEvent};
 use crate::auth::auth_state::AuthState;
 use crate::banner::BannerState;
 use crate::channel::{Channel, ChannelState};
@@ -236,8 +235,7 @@ use crate::network::{NetworkStatus, NetworkStatusEvent};
 use crate::notebooks::CloudNotebook;
 use crate::notebooks::manager::{NotebookManager, NotebookSource};
 use crate::notification::NotificationContext;
-use crate::palette::PaletteMode;
-use crate::palette::PaletteSource;
+use crate::palette::{PaletteMode, PaletteSource};
 #[cfg(feature = "local_fs")]
 use crate::pane_group::FilePane;
 use crate::pane_group::pane::ActionOrigin;
@@ -2478,9 +2476,6 @@ impl Workspace {
         ctx.subscribe_to_view(&ctrl_tab_palette, |me, _, event, ctx| {
             me.handle_palette_event(event, ctx);
         });
-
-        let auth_manager = AuthManager::handle(ctx);
-        ctx.subscribe_to_model(&auth_manager, Self::handle_auth_manager_event);
 
         // Handle theme updates when there is a cloud update to themes while the picker is open.
         ctx.subscribe_to_model(&ThemeSettings::handle(ctx), |me, _, _, ctx| {
@@ -10055,29 +10050,6 @@ impl Workspace {
         ctx: &mut ViewContext<Self>,
     ) {
         ctx.notify();
-    }
-
-    fn handle_auth_manager_event(
-        &mut self,
-        _handle: ModelHandle<AuthManager>,
-        event: &AuthManagerEvent,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        match event {
-            AuthManagerEvent::AuthComplete => {
-                // This workspace can survive an anonymous user signing up from
-                // inside the app. Refresh the cached auth state and recompute
-                // effective toolbelt availability so onboarding preferences
-                // (for example, Warp Drive and conversation history) take
-                // effect without requiring an off/on toggle.
-                self.auth_state = AuthStateProvider::as_ref(ctx).get().clone();
-                self.update_left_panel_available_views(ctx);
-                ctx.notify();
-            }
-            _ => {
-                ctx.notify();
-            }
-        }
     }
 
     pub fn toggle_block_snackbar(&mut self, ctx: &mut ViewContext<Self>) {

@@ -143,7 +143,6 @@ use ai::execution_profiles::editor::ExecutionProfileEditorManager;
 use ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use ai::metadata_project_rules::read_project_rule_contents;
 use ai::persisted_workspace::PersistedWorkspace;
-use auth::auth_manager::AuthManager;
 use auth::auth_state::{AuthState, AuthStateProvider};
 use code::editor_management::CodeManager;
 use code::opened_files::OpenedFilesModel;
@@ -248,8 +247,7 @@ use crate::notebooks::CloudNotebook;
 use crate::notebooks::editor::keys::NotebookKeybindings;
 use crate::notebooks::manager::NotebookManager;
 use crate::notification::NotificationContext;
-use crate::palette::PaletteMode;
-use crate::palette::PaletteSource;
+use crate::palette::{PaletteMode, PaletteSource};
 use crate::persistence::PersistenceWriter;
 use crate::projects::ProjectManagementModel;
 use crate::root_view::{
@@ -275,8 +273,6 @@ use crate::terminal::cli_agent_sessions::CLIAgentSessionsModel;
 use crate::terminal::keys::TerminalKeybindings;
 use crate::terminal::resizable_data::ResizableData;
 use crate::terminal::{AudibleBell, CustomSecretRegexUpdater, History};
-#[cfg(feature = "tui")]
-pub use crate::tui::{TuiLoginEvent, TuiLoginModel, TuiLoginPhase, log_out_tui};
 use crate::undo_close::UndoCloseStack;
 use crate::user_config::WarpConfig;
 use crate::util::bindings::is_binding_cross_platform;
@@ -317,11 +313,7 @@ fn daemon_codebase_index_snapshot_storage(launch_mode: &LaunchMode) -> Option<Sn
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum LaunchMode {
     /// Run the regular GUI application.
-    App {
-        args: warp_cli::AppArgs,
-        /// API key for server authentication, if provided via `--api-key` or `TERMLOC_API_KEY`.
-        api_key: Option<String>,
-    },
+    App { args: warp_cli::AppArgs },
 
     /// Run a test - this may be an integration test or an eval.
     Test {
@@ -352,16 +344,7 @@ pub(crate) enum LaunchMode {
 #[cfg_attr(not(feature = "tui"), allow(dead_code))]
 enum TuiEntryPoint {
     /// Build the root TUI view, initialize login, and start the TUI driver.
-    Interactive {
-        mount: TuiMountFn,
-        /// API key for non-interactive Warp authentication.
-        api_key: Option<String>,
-    },
-}
-
-enum AuthInitialization {
-    Persisted,
-    PendingApiKey(String),
+    Interactive { mount: TuiMountFn },
 }
 
 impl LaunchMode {
@@ -372,25 +355,6 @@ impl LaunchMode {
             | LaunchMode::RemoteServerProxy
             | LaunchMode::RemoteServerDaemon { .. }
             | LaunchMode::Tui { .. } => Cow::Owned(warp_cli::AppArgs::default()),
-        }
-    }
-
-    fn api_key(&self) -> Option<String> {
-        match self {
-            LaunchMode::App { api_key, .. }
-            | LaunchMode::Tui {
-                entrypoint: TuiEntryPoint::Interactive { api_key, .. },
-            } => api_key.clone(),
-            LaunchMode::Test { .. }
-            | LaunchMode::RemoteServerProxy
-            | LaunchMode::RemoteServerDaemon { .. } => None,
-        }
-    }
-
-    fn auth_initialization(&self) -> AuthInitialization {
-        match self.api_key() {
-            Some(api_key) => AuthInitialization::PendingApiKey(api_key),
-            None => AuthInitialization::Persisted,
         }
     }
 
@@ -677,10 +641,8 @@ pub fn run() -> Result<()> {
         return Ok(());
     }
 
-    let api_key = args.api_key().cloned();
     run_internal(LaunchMode::App {
         args: args.into_app_args(),
-        api_key,
     })
 }
 
@@ -768,9 +730,9 @@ pub fn run_integration_test(driver: TestDriver) -> Result<()> {
 /// view plus the window/driver bootstrap), so `warp` never has to depend on
 /// `warp_tui`.
 #[cfg(feature = "tui")]
-pub fn run_tui(api_key: Option<String>, mount: TuiMountFn) -> Result<()> {
+pub fn run_tui(mount: TuiMountFn) -> Result<()> {
     run_internal(LaunchMode::Tui {
-        entrypoint: TuiEntryPoint::Interactive { mount, api_key },
+        entrypoint: TuiEntryPoint::Interactive { mount },
     })
 }
 
@@ -1125,7 +1087,7 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
         match launch_mode {
             #[cfg(feature = "tui")]
             LaunchMode::Tui { entrypoint } => match entrypoint {
-                TuiEntryPoint::Interactive { mount, .. } => crate::tui::init(mount, ctx),
+                TuiEntryPoint::Interactive { mount } => crate::tui::init(mount, ctx),
             },
             #[cfg(not(feature = "tui"))]
             LaunchMode::Tui { .. } => {
@@ -1138,92 +1100,6 @@ fn run_internal(mut launch_mode: LaunchMode) -> Result<()> {
 
 pub struct UpdateQuakeModeEventArg {
     active_window_id: Option<WindowId>,
-}
-
-#[derive(Clone)]
-enum StartupUserAuthentication {
-    RefreshUser,
-    ApiKey(String),
-}
-
-impl StartupUserAuthentication {
-    fn start(self, ctx: &mut AppContext) {
-        AuthManager::handle(ctx).update(ctx, |auth_manager, ctx| match self {
-            Self::RefreshUser => auth_manager.refresh_user(ctx),
-            Self::ApiKey(api_key) => auth_manager.authenticate_api_key(api_key, ctx),
-        });
-    }
-}
-
-/// Whether startup user authentication should proceed without blocking on IAP.
-///
-/// The TUI front-end must not stall its startup waiting for a staging IAP token
-/// the server may not even require, so it authenticates immediately and lets IAP
-/// resolve out of band (see [`authenticate_user_after_iap_access`]). Every other
-/// front-end keeps the blocking behavior. IAP config only exists on staging
-/// builds, so this never affects production.
-fn startup_auth_is_non_blocking(launch_mode: &LaunchMode) -> bool {
-    matches!(launch_mode, LaunchMode::Tui { .. })
-}
-
-fn authenticate_user_after_iap_access(
-    authentication: StartupUserAuthentication,
-    non_blocking: bool,
-    ctx: &mut AppContext,
-) {
-    let iap_manager = IapManager::handle(ctx);
-    if !iap_manager.as_ref(ctx).is_enabled() || iap_manager.as_ref(ctx).has_valid_token() {
-        authentication.start(ctx);
-        return;
-    }
-
-    if non_blocking {
-        // Don't stall startup waiting for an IAP token the server may not even
-        // require. Authenticate immediately; if the server DOES enforce IAP, this
-        // first attempt hits an IAP challenge, which notifies `IapManager` to mint
-        // a token (`observe_iap_challenge` -> `handle_challenge`). Once a valid
-        // token lands we retry auth so login still recovers — unless the
-        // optimistic attempt already established a session.
-        authentication.clone().start(ctx);
-        let mut pending_authentication = Some(authentication);
-        ctx.subscribe_to_model(&iap_manager, move |iap_manager, event, ctx| match event {
-            IapManagerEvent::StateChanged => {
-                if !iap_manager.as_ref(ctx).has_valid_token() {
-                    return;
-                }
-                if AuthStateProvider::as_ref(ctx).get().user_id().is_some() {
-                    pending_authentication = None;
-                    return;
-                }
-                if let Some(authentication) = pending_authentication.take() {
-                    authentication.start(ctx);
-                }
-            }
-            IapManagerEvent::AccessUnavailable | IapManagerEvent::RefreshFailed { .. } => {}
-        });
-        iap_manager.update(ctx, |manager, ctx| manager.ensure_access(ctx));
-        return;
-    }
-
-    let mut pending_authentication = Some(authentication);
-    ctx.subscribe_to_model(&iap_manager, move |iap_manager, event, ctx| match event {
-        IapManagerEvent::StateChanged => {
-            if !iap_manager.as_ref(ctx).has_valid_token() {
-                return;
-            }
-            if let Some(authentication) = pending_authentication.take() {
-                authentication.start(ctx);
-            }
-        }
-        IapManagerEvent::AccessUnavailable => {
-            report_error!("Staging IAP access unavailable before startup user authentication");
-        }
-        IapManagerEvent::RefreshFailed {
-            message: _,
-            is_first_failure_of_streak: _,
-        } => {}
-    });
-    iap_manager.update(ctx, |manager, ctx| manager.ensure_access(ctx));
 }
 
 #[::tracing::instrument(skip_all)]
@@ -1273,14 +1149,7 @@ pub(crate) fn initialize_app(
         ctx.set_zoom_factor(WindowSettings::as_ref(ctx).zoom_level.as_zoom_factor());
     }
 
-    let (auth_state, pending_api_key) = match launch_mode.auth_initialization() {
-        AuthInitialization::Persisted => (AuthState::initialize(ctx), None),
-        AuthInitialization::PendingApiKey(api_key) => (
-            AuthState::initialize_for_credential_validation(ctx),
-            Some(api_key),
-        ),
-    };
-    let auth_state = Arc::new(auth_state);
+    let auth_state = Arc::new(AuthState::initialize(ctx));
 
     // NetworkLogModel must be registered before ServerApiProvider so that
     // `NetworkLogModel::install_on_clients` can reach it when forwarding items
@@ -1305,14 +1174,6 @@ pub(crate) fn initialize_app(
     let ai_client = server_api_provider.as_ref(ctx).get_ai_client();
 
     ctx.add_singleton_model(|_ctx| AuthStateProvider::new(auth_state.clone()));
-
-    ctx.add_singleton_model(|ctx| {
-        AuthManager::new(
-            server_api.clone(),
-            server_api_provider.as_ref(ctx).get_auth_client(),
-            ctx,
-        )
-    });
 
     ctx.add_singleton_model(|_ctx| GPUState::new());
 
@@ -1720,7 +1581,7 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(UndoCloseStack::new);
     ctx.add_singleton_model(|_| ToastStack);
     ctx.add_singleton_model(|_| GlobalCodeReviewModel);
-    ctx.add_singleton_model(workspace::OneTimeModalModel::new);
+    ctx.add_singleton_model(|_| workspace::OneTimeModalModel::default());
     ctx.add_singleton_model(
         workspace::bonus_grant_notification_model::BonusGrantNotificationModel::new,
     );
@@ -1966,18 +1827,10 @@ pub(crate) fn initialize_app(
         };
     });
 
-    // Interactive clients gate startup user authentication on IAP here, since the request itself
-    // calls the IAP-gated warp-server — except the TUI, which authenticates immediately and
-    // resolves IAP out of band (see `startup_auth_is_non_blocking`).
-    let startup_authentication = pending_api_key
-        .map(StartupUserAuthentication::ApiKey)
-        .or_else(|| user_is_logged_in.then_some(StartupUserAuthentication::RefreshUser));
-    if let Some(authentication) = startup_authentication {
-        authenticate_user_after_iap_access(
-            authentication,
-            startup_auth_is_non_blocking(launch_mode),
-            ctx,
-        );
+    if ChannelState::is_local_only() {
+        TeamTesterStatus::handle(ctx).update(ctx, |model, ctx| {
+            model.initiate_data_pollers(false, ctx);
+        });
     }
 
     // Add a singleton model that holds the current prompt configuration.

@@ -8,10 +8,9 @@ use std::fmt;
 use std::net::IpAddr;
 use std::sync::{Mutex, OnceLock, RwLock};
 
-use http::Uri;
-
 #[cfg(not(target_family = "wasm"))]
 pub use guard::build_client;
+use http::Uri;
 
 /// Browsers decide where wasm builds may connect.
 #[cfg(target_family = "wasm")]

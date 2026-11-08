@@ -4,7 +4,6 @@ use super::*;
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use crate::ai::mcp::TemplatableMCPServerManager;
 use crate::auth::AuthStateProvider;
-use crate::auth::auth_manager::AuthManager;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::network::NetworkStatus;
 use crate::server::cloud_objects::update_manager::UpdateManager;
@@ -194,7 +193,6 @@ fn active_models_fall_back_to_usable_choice_when_default_disabled() {
         initialize_settings_for_tests(&mut app);
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| NetworkStatus::new());
         app.add_singleton_model(UserWorkspaces::default_mock);
         app.add_singleton_model(CloudModel::mock);
@@ -307,7 +305,6 @@ fn active_models_use_default_when_usable() {
         initialize_settings_for_tests(&mut app);
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| NetworkStatus::new());
         app.add_singleton_model(UserWorkspaces::default_mock);
         app.add_singleton_model(CloudModel::mock);
@@ -362,7 +359,6 @@ fn team_catalog_hydration_preserves_shared_profile_and_resolves_against_active_t
         initialize_settings_for_tests(&mut app);
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| NetworkStatus::new());
         app.add_singleton_model(CloudModel::mock);
         app.add_singleton_model(TeamTesterStatus::mock);
@@ -473,7 +469,6 @@ fn reconcile_clears_unavailable_base_model_preference() {
         initialize_settings_for_tests(&mut app);
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| NetworkStatus::new());
         app.add_singleton_model(UserWorkspaces::default_mock);
         app.add_singleton_model(CloudModel::mock);
@@ -524,7 +519,6 @@ fn reconcile_clears_requires_upgrade_base_model_preference() {
         initialize_settings_for_tests(&mut app);
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| NetworkStatus::new());
         app.add_singleton_model(UserWorkspaces::default_mock);
         app.add_singleton_model(CloudModel::mock);
@@ -599,7 +593,6 @@ fn with_computer_use_test_context(f: impl FnOnce(&mut App) + 'static) {
         initialize_settings_for_tests(&mut app);
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
         app.add_singleton_model(|_| AuthStateProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
         app.add_singleton_model(|_| NetworkStatus::new());
         app.add_singleton_model(UserWorkspaces::default_mock);
         app.add_singleton_model(CloudModel::mock);
@@ -612,7 +605,6 @@ fn with_computer_use_test_context(f: impl FnOnce(&mut App) + 'static) {
                 &LaunchMode::Tui {
                     entrypoint: TuiEntryPoint::Interactive {
                         mount: Box::new(|_| {}),
-                        api_key: None,
                     },
                 },
                 ctx,

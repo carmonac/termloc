@@ -15,7 +15,6 @@ use crate::ai::execution_profiles::{
 };
 use crate::ai::llms::LLMId;
 use crate::ai::mcp::TemplatableMCPServerManager;
-use crate::auth::auth_manager::{AuthManager, AuthManagerEvent};
 use crate::auth::user::{TEST_USER_UID, User};
 use crate::auth::{AuthStateProvider, UserUid};
 use crate::cloud_object::model::actions::ObjectActions;
@@ -153,7 +152,6 @@ fn tui_missing_collection_seeds_agent_decides_for_execute_commands() {
                 &LaunchMode::Tui {
                     entrypoint: TuiEntryPoint::Interactive {
                         mount: Box::new(|_| {}),
-                        api_key: None,
                     },
                 },
                 ctx,
@@ -190,7 +188,6 @@ fn tui_default_denylist_overrides_agent_decides_command_execution() {
                 &LaunchMode::Tui {
                     entrypoint: TuiEntryPoint::Interactive {
                         mount: Box::new(|_| {}),
-                        api_key: None,
                     },
                 },
                 ctx,
@@ -262,7 +259,6 @@ fn tui_explicit_collection_preserves_execute_commands() {
                 &LaunchMode::Tui {
                     entrypoint: TuiEntryPoint::Interactive {
                         mount: Box::new(|_| {}),
-                        api_key: None,
                     },
                 },
                 ctx,
@@ -515,78 +511,20 @@ fn materialized_pending_profile_is_rekeyed_after_server_id_arrives() {
 }
 
 #[test]
-fn migration_retries_after_auth_completes() {
+fn login_waits_for_cloud_initial_load_before_migrating() {
     let _guard = FeatureFlag::FileBackedExecutionProfiles.override_enabled(true);
 
     App::test((), |mut app| async move {
         install_singletons(&mut app, AuthStateProvider::new_logged_out_for_test());
         app.add_singleton_model(|_| ServerApiProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
-
-        let server_id = ServerId::from(504);
-        let legacy_profile = owned_legacy_profile(
-            SyncId::ServerId(server_id),
-            server_id,
-            AIExecutionProfile {
-                name: "Migrated after auth".to_string(),
-                read_files: ActionPermission::AlwaysAllow,
-                ..Default::default()
-            },
-        );
-        CloudModel::handle(&app).update(&mut app, |cloud_model, ctx| {
-            cloud_model.upsert_from_server_object(legacy_profile, ctx);
-        });
-
-        let _profile_model = app.add_singleton_model(|ctx| {
-            AIExecutionProfilesModel::new(&LaunchMode::new_for_unit_test(), ctx)
-        });
-        complete_cloud_initial_load(&mut app);
-        app.read(|ctx| {
-            assert!(
-                !AISettings::as_ref(ctx)
-                    .execution_profiles
-                    .is_value_explicitly_set()
-            );
-        });
-
-        AuthManager::handle(&app).update(&mut app, |_auth_manager, ctx| {
-            AuthStateProvider::as_ref(ctx)
-                .get()
-                .set_user(Some(User::test()));
-            ctx.emit(AuthManagerEvent::AuthComplete);
-        });
-
-        let migrated_key = ExecutionProfileId::from_legacy_server_id(server_id);
-        app.read(|ctx| {
-            assert_eq!(
-                AISettings::as_ref(ctx)
-                    .execution_profiles
-                    .value()
-                    .profile(&migrated_key)
-                    .map(|profile| profile.read_files),
-                Some(ActionPermission::AlwaysAllow)
-            );
-        });
-    });
-}
-
-#[test]
-fn auth_completion_waits_for_cloud_initial_load_before_migrating() {
-    let _guard = FeatureFlag::FileBackedExecutionProfiles.override_enabled(true);
-
-    App::test((), |mut app| async move {
-        install_singletons(&mut app, AuthStateProvider::new_logged_out_for_test());
-        app.add_singleton_model(|_| ServerApiProvider::new_for_test());
-        app.add_singleton_model(AuthManager::new_for_test);
 
         let profile_model = app.add_singleton_model(|ctx| {
             AIExecutionProfilesModel::new(&LaunchMode::new_for_unit_test(), ctx)
         });
-        AuthManager::handle(&app).update(&mut app, |_auth_manager, ctx| {
+        app.read(|ctx| {
             AuthStateProvider::as_ref(ctx)
                 .get()
                 .set_user(Some(User::test()));
-            ctx.emit(AuthManagerEvent::AuthComplete);
         });
 
         app.read(|ctx| {

@@ -175,7 +175,7 @@ pub use crate::tui::{
     TuiMcpManager, TuiMcpManagerEvent, TuiMcpServerId, TuiMcpServerSnapshot, TuiMcpServerSource,
     TuiMcpServerStatus, TuiMcpSnapshot, TuiMcpSyncedTemplateProvenance, TuiMcpTemplateVariable,
     TuiMcpTransport, TuiMcpVariableValue, TuiUserInfoManager, TuiUserInfoManagerEvent,
-    TuiUserInfoSnapshot, log_out_tui,
+    TuiUserInfoSnapshot,
 };
 pub use crate::tui_onboarding_markers::{
     TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent,

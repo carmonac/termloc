@@ -176,15 +176,6 @@ impl ChannelState {
         CHANNEL_STATE.lock().config.logfile_name.clone()
     }
 
-    pub fn firebase_api_key() -> Cow<'static, str> {
-        CHANNEL_STATE
-            .lock()
-            .config
-            .server_config
-            .firebase_auth_api_key
-            .clone()
-    }
-
     pub fn iap_config() -> Option<IapConfig> {
         CHANNEL_STATE.lock().config.server_config.iap_config.clone()
     }
