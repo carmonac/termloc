@@ -14,7 +14,9 @@ use super::team::{DiscoverableTeam, Team};
 use super::team::{MembershipRole, TeamVisibility};
 use super::workspace::{AdminEnablementSetting, EnterpriseSecretRegex, Workspace, WorkspaceUid};
 use crate::ai::llms::{AvailableLLMs, MODELS_BY_FEATURE_CACHE_KEY, ModelsByFeature};
-use crate::auth::{AuthStateProvider, UserUid};
+use crate::auth::AuthStateProvider;
+#[cfg(test)]
+use crate::auth::UserUid;
 use crate::channel::ChannelState;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::cloud_object::{Owner, Space};
@@ -32,8 +34,6 @@ pub use team_workspace_settings::TeamContextForOperation;
 #[cfg(test)]
 pub(crate) use team_workspace_settings::TeamlessScopeForTest;
 pub use team_workspace_settings::{ResolvedTeamScope, TeamContext, TeamContextResolver, TeamScope};
-
-const STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX: &str = "/upgrade";
 
 #[derive(Debug)]
 pub enum UserWorkspacesEvent {
@@ -144,39 +144,6 @@ impl UserWorkspaces {
         self.workspaceless_models_by_feature = Some(models);
     }
 
-    pub fn upgrade_link(user_id: UserUid) -> String {
-        format!(
-            "{}{}/{}/{}",
-            ChannelState::server_root_url(),
-            STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX,
-            "user",
-            user_id.as_str()
-        )
-    }
-
-    // TODO(isaiah): make me private in favour for upgrade_link_for_scope being the public facing api
-    pub fn upgrade_link_for_team(team_uid: ServerId) -> String {
-        format!(
-            "{}{}/{}",
-            ChannelState::server_root_url(),
-            STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX,
-            team_uid
-        )
-    }
-
-    pub fn warp_agent_cli_upgrade_link(user_id: Option<UserUid>) -> String {
-        let upgrade_link = user_id.map_or_else(
-            || {
-                format!(
-                    "{}{}",
-                    ChannelState::server_root_url().trim_end_matches('/'),
-                    STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX
-                )
-            },
-            Self::upgrade_link,
-        );
-        format!("{upgrade_link}?source=warp-agent-cli")
-    }
     pub fn team_from_uid(&self, team_uid: ServerId) -> Option<&Team> {
         self.current_workspace()
             .and_then(|w| w.teams.iter().find(|t| t.uid == team_uid))

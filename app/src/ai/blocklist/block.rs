@@ -437,9 +437,6 @@ pub(super) struct AIBlockStateHandles {
 
     /// Mouse state handle for the debug ID copy button
     debug_copy_button_handle: MouseStateHandle,
-    /// Mouse state handle for the submit issue button
-
-    /// Mouse state handle for the Subscribe button shown on the out-of-credits error
 
     /// Mouse state handle for AI document created block
     ai_document_handle: MouseStateHandle,

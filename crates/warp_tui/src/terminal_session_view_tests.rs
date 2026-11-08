@@ -77,7 +77,7 @@ use super::{
     SESSION_COMPOSER_SHORTCUTS_ACTIVE_FLAG, VOICE_INPUT_BINDING_NAME, VOICE_USAGE_HINT,
     voice_argument_is_empty, voice_command_argument,
 };
-use crate::agent_block::{TuiAIBlock, upgrade_url};
+use crate::agent_block::TuiAIBlock;
 use crate::editor_element::TuiEditorAction;
 use crate::inline_menu::MAX_INLINE_MENU_ROWS;
 use crate::input::view::TuiInputAction;
@@ -181,50 +181,6 @@ fn mcp_menu_footer_replaces_status_with_controls() {
                 ],
             );
         });
-    });
-}
-
-#[test]
-fn out_of_credits_ctrl_o_binding_opens_upgrade() {
-    App::test((), |mut app| async move {
-        app.update(crate::keybindings::init);
-        app.read(|ctx| {
-            let ctrl_o = Trigger::Keystrokes(vec![Keystroke::parse("ctrl-o").unwrap()]);
-            assert!(
-                ctx.get_key_bindings().any(|binding| {
-                    *binding.trigger == ctrl_o
-                        && binding.name.is_empty()
-                        && binding.group == Some(TUI_BINDING_GROUP)
-                }),
-                "out-of-credits ctrl-o binding should be registered"
-            );
-        });
-
-        let fixture = focus_test_fixture(&mut app);
-        let (view, _) = add_focus_test_session(&mut app, &fixture, true);
-        let expected_upgrade_url = app.read(upgrade_url);
-        app.read(|ctx| {
-            let ctrl_o = Trigger::Keystrokes(vec![Keystroke::parse("ctrl-o").unwrap()]);
-            let input_view_id = view.as_ref(ctx).input_view.id();
-            assert!(
-                !ctx.key_bindings_for_view(fixture.window_id, input_view_id)
-                    .iter()
-                    .any(|binding| *binding.trigger == ctrl_o),
-                "ctrl-o should not be active without an out-of-credits failure"
-            );
-        });
-        let opened_urls = Rc::new(RefCell::new(Vec::new()));
-        let opened_urls_for_callback = opened_urls.clone();
-        app.update(|ctx| {
-            ctx.set_before_open_url(move |url, _| {
-                opened_urls_for_callback.borrow_mut().push(url.to_owned());
-                url.to_owned()
-            });
-        });
-        view.update(&mut app, |view, ctx| {
-            view.handle_action(&TuiTerminalSessionAction::OpenUpgradeUrl, ctx);
-        });
-        assert_eq!(opened_urls.borrow().as_slice(), &[expected_upgrade_url]);
     });
 }
 
@@ -3712,7 +3668,7 @@ fn first_zero_state_stays_hidden_while_markers_load_and_reconciles_without_repla
 
         app.update(|ctx| {
             TuiOnboardingMarkers::handle(ctx).update(ctx, |markers, ctx| {
-                markers.set_ready_for_test(false, false, ctx);
+                markers.set_ready_for_test(false, ctx);
             });
         });
         app.read(|ctx| {
@@ -3750,7 +3706,7 @@ fn dismissed_pending_zero_state_stays_hidden_but_consumes_ready_marker() {
         });
         app.update(|ctx| {
             TuiOnboardingMarkers::handle(ctx).update(ctx, |markers, ctx| {
-                markers.set_ready_for_test(true, false, ctx);
+                markers.set_ready_for_test(true, ctx);
             });
         });
 
@@ -3802,7 +3758,7 @@ fn background_session_does_not_receive_first_run_onboarding() {
         });
         app.update(|ctx| {
             TuiOnboardingMarkers::handle(ctx).update(ctx, |markers, ctx| {
-                markers.set_ready_for_test(true, false, ctx);
+                markers.set_ready_for_test(true, ctx);
             });
         });
         app.read(|ctx| {
@@ -4267,25 +4223,6 @@ fn clear_slash_command_clears_shell_commands_from_transcript() {
                 "/clear should leave only the active prompt block"
             );
         });
-    });
-}
-
-#[test]
-fn footer_does_not_render_credit_actions() {
-    App::test((), |mut app| async move {
-        let fixture = focus_test_fixture(&mut app);
-        let (view, _) = add_focus_test_session(&mut app, &fixture, true);
-
-        let lines = render_session(&mut app, &view, 80, 40);
-        assert!(
-            lines.iter().all(|line| {
-                !line.contains("Out of credits")
-                    && !line.contains("Compare plans")
-                    && !line.contains("Use your own API keys")
-            }),
-            "credit actions belong to the failed transcript block:\n{}",
-            lines.join("\n")
-        );
     });
 }
 

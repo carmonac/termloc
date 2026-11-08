@@ -202,30 +202,6 @@ fn test_window_team_assignment_inherits_from_source_or_default_team() {
 }
 
 #[test]
-fn warp_agent_cli_upgrade_link_is_channel_aware_and_user_bound() {
-    let user_uid = UserUid::new("user-123");
-
-    assert_eq!(
-        UserWorkspaces::warp_agent_cli_upgrade_link(Some(user_uid)),
-        format!(
-            "{}{STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX}/user/{user_uid}?source=warp-agent-cli",
-            ChannelState::server_root_url(),
-        )
-    );
-}
-
-#[test]
-fn warp_agent_cli_upgrade_link_uses_channel_aware_fallback_without_a_user() {
-    assert_eq!(
-        UserWorkspaces::warp_agent_cli_upgrade_link(None),
-        format!(
-            "{}{STRIPE_SUBSCRIPTION_INTERVAL_PAGE_PREFIX}?source=warp-agent-cli",
-            ChannelState::server_root_url().trim_end_matches('/'),
-        )
-    );
-}
-
-#[test]
 fn test_every_departed_team_window_falls_back_when_team_is_removed() {
     let first_team = team_for_test();
     let mut removed_team = team_for_test();

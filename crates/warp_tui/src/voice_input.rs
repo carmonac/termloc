@@ -308,7 +308,6 @@ impl TuiVoiceInputModel {
             Ok(text) => ctx.emit(TuiVoiceInputEvent::Completed(text)),
             Err(error) => {
                 let hint = match error {
-                    TranscribeError::QuotaLimit => "Voice input limit reached",
                     TranscribeError::ServerOverloaded => "Voice transcription is unavailable",
                     _ => "Failed to transcribe voice input",
                 };

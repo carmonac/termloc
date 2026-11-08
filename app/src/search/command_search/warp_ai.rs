@@ -229,7 +229,6 @@ impl DataSourceRunError for GenerateCommandsFromNaturalLanguageError {
         match self {
             Self::BadPrompt => "No results found. Please try again with a more specific query.",
             Self::AiProviderError => "Something went wrong. Please try again.",
-            Self::RateLimited => "Looks like you're out of AI credits. Please try again later.",
             Self::Other => "Something went wrong. Please try again.",
         }
         .to_string()

@@ -6,10 +6,9 @@ use warpui::elements::{
     ConstrainedBox, Container, CrossAxisAlignment, Flex, ParentElement, SavePosition, Shrinkable,
     Text,
 };
-use warpui::fonts::{Properties, Style};
 use warpui::{Action, Element};
 
-use crate::ai::llms::{DisableReason, LLMId, LLMInfo, model_leading_icon};
+use crate::ai::llms::{LLMId, LLMInfo, model_leading_icon};
 use crate::menu::{MenuItem, MenuItemFields, MenuTooltipPosition};
 
 pub fn is_auto(llm: &LLMInfo) -> bool {
@@ -151,11 +150,6 @@ fn make_item_fields<A: Action + Clone>(
         item = item
             .with_tooltip(reason.tooltip_text())
             .with_tooltip_position(MenuTooltipPosition::Above);
-
-        if matches!(reason, DisableReason::RequiresUpgrade) {
-            item =
-                item.with_right_side_label("disabled", Properties::default().style(Style::Italic));
-        }
     }
 
     with_cost_and_profile_info(item, llm, model_id_to_add_profile_default_label_to).into_item()

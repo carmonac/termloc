@@ -1461,17 +1461,12 @@ impl AgentInputFooter {
                     }
                 }
             }
-            Err(e) => match e {
-                TranscribeError::QuotaLimit => {
-                    self.show_cli_voice_error_toast("Voice input limit reached", ctx);
-                }
-                _ => {
-                    report_error!(
-                        anyhow::Error::new(e).context("Failed to transcribe CLI voice input")
-                    );
-                    self.show_cli_voice_error_toast("Failed to transcribe voice input", ctx);
-                }
-            },
+            Err(e) => {
+                report_error!(
+                    anyhow::Error::new(e).context("Failed to transcribe CLI voice input")
+                );
+                self.show_cli_voice_error_toast("Failed to transcribe voice input", ctx);
+            }
         }
 
         self.cli_transcription_handle = None;

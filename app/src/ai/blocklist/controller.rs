@@ -2904,21 +2904,10 @@ impl BlocklistAIController {
                     );
                 });
             }
-            Some(warp_multi_agent_api::response_event::stream_finished::Reason::QuotaLimit(_)) => {
-                history_model.update(ctx, |history_model, ctx| {
-                    history_model.mark_response_stream_completed_with_error(
-                        RenderableAIError::QuotaLimit {
-                            user_display_message: None,
-                        },
-                        /*recovery_pending*/ false,
-                        stream_id,
-                        conversation_id,
-                        self.terminal_surface_id,
-                        ctx,
-                    );
-                });
-            }
-            Some(warp_multi_agent_api::response_event::stream_finished::Reason::LlmUnavailable(_)) => {
+            Some(
+                warp_multi_agent_api::response_event::stream_finished::Reason::QuotaLimit(_)
+                | warp_multi_agent_api::response_event::stream_finished::Reason::LlmUnavailable(_),
+            ) => {
                 let error_message = "The LLM is currently unavailable.";
                 history_model.update(ctx, |history_model, ctx| {
                     history_model.mark_response_stream_completed_with_error(

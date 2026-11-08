@@ -100,7 +100,7 @@ pub(crate) fn add_test_action_model_and_events(
     ModelHandle<ModelEventDispatcher>,
 ) {
     if !app.read(|ctx| ctx.has_singleton_model::<TuiOnboardingMarkers>()) {
-        app.add_singleton_model(|_| TuiOnboardingMarkers::new_ready_for_test(false, false));
+        app.add_singleton_model(|_| TuiOnboardingMarkers::new_ready_for_test(false));
     }
     if !app.read(|ctx| ctx.has_singleton_model::<Appearance>()) {
         app.add_singleton_model(|_| Appearance::mock());

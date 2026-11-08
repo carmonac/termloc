@@ -104,6 +104,5 @@ impl From<local_agent::oneshot::GeneratedCommand> for AIGeneratedCommand {
 pub enum GenerateCommandsFromNaturalLanguageError {
     BadPrompt,
     AiProviderError,
-    RateLimited,
     Other,
 }

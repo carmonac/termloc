@@ -36,9 +36,9 @@ pub struct LLMUsageMetadata {
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DisableReason {
     AdminDisabled,
-    OutOfRequests,
     ProviderOutage,
-    RequiresUpgrade,
+    /// Also absorbs plan-related reasons stored by older versions.
+    #[serde(other)]
     Unavailable,
 }
 
@@ -47,11 +47,9 @@ impl DisableReason {
     pub fn tooltip_text(&self) -> &'static str {
         match self {
             DisableReason::AdminDisabled => "This model has been disabled by your team admin.",
-            DisableReason::OutOfRequests => "Please upgrade your plan to make more requests.",
             DisableReason::ProviderOutage => {
                 "This model is temporarily unavailable due to a provider outage."
             }
-            DisableReason::RequiresUpgrade => "Please upgrade your plan to access this model.",
             DisableReason::Unavailable => "This model is unavailable.",
         }
     }
@@ -59,14 +57,12 @@ impl DisableReason {
     /// Returns `true` when this disable reason means the user cannot use the model
     /// and we should clear their stored preference.
     ///
-    /// `OutOfRequests` and `ProviderOutage` are transient and expected to
-    /// resolve without user action, so we preserve the selection.
+    /// `ProviderOutage` is transient and expected to resolve without user action, so we preserve
+    /// the selection.
     fn should_clear_preference(&self) -> bool {
         match self {
-            DisableReason::AdminDisabled
-            | DisableReason::RequiresUpgrade
-            | DisableReason::Unavailable => true,
-            DisableReason::OutOfRequests | DisableReason::ProviderOutage => false,
+            DisableReason::AdminDisabled | DisableReason::Unavailable => true,
+            DisableReason::ProviderOutage => false,
         }
     }
 }

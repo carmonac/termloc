@@ -68,9 +68,7 @@ pub use crate::ai::blocklist::history_model::{
     ConversationStatusUpdate, FORK_PREFIX, ForkConversationError,
 };
 pub use crate::ai::blocklist::inline_action::code_diff_view::convert_file_edits_to_file_diffs;
-pub use crate::ai::blocklist::view_util::{
-    FailedOutputPresentation, OUT_OF_CREDITS_SUBSCRIBE_LABEL, failed_output_presentation,
-};
+pub use crate::ai::blocklist::view_util::{FailedOutputPresentation, failed_output_presentation};
 pub use crate::ai::blocklist::{
     AIActionStatus, AskUserQuestionExecutor, AttachmentType, BlocklistAIActionEvent,
     BlocklistAIActionModel, BlocklistAIContextEvent, BlocklistAIContextModel,

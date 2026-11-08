@@ -12,7 +12,6 @@ fn markers_are_unavailable_until_initial_load_resolves() {
 
     assert!(!markers.is_ready());
     assert!(!markers.take_available(TuiOnboardingMarker::FirstZeroState));
-    assert!(!markers.take_available(TuiOnboardingMarker::FirstCreditGate));
 }
 
 #[test]
@@ -25,13 +24,11 @@ fn absent_or_false_cloud_markers_are_available_and_true_markers_are_consumed() {
 }
 
 #[test]
-fn marker_consumption_is_monotonic_and_independent() {
-    let mut markers = TuiOnboardingMarkers::new_ready_for_test(true, true);
+fn marker_consumption_is_monotonic() {
+    let mut markers = TuiOnboardingMarkers::new_ready_for_test(true);
 
     assert!(markers.take_available(TuiOnboardingMarker::FirstZeroState));
     assert!(!markers.take_available(TuiOnboardingMarker::FirstZeroState));
-    assert!(markers.take_available(TuiOnboardingMarker::FirstCreditGate));
-    assert!(!markers.take_available(TuiOnboardingMarker::FirstCreditGate));
 }
 
 #[test]

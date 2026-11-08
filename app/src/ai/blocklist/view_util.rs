@@ -23,8 +23,6 @@ const PROVIDER_BUTTON_ICON_SIZE: f32 = 14.;
 const PROVIDER_BUTTON_ICON_TEXT_GAP: f32 = 8.;
 const ERROR_APOLOGY_TEXT: &str = "I'm sorry, I couldn't complete that request.";
 const INTERNAL_WARP_ERROR: &str = "Internal Termloc error.";
-#[cfg(feature = "tui")]
-pub const OUT_OF_CREDITS_SUBSCRIBE_LABEL: &str = "Subscribe";
 /// Text to use as a label throughout the app for user interactions that will attach selected
 /// block(s) or text selections to a new AI query.
 pub static ATTACH_AS_AGENT_MODE_CONTEXT_TEXT: LazyLock<&'static str> =
@@ -50,8 +48,7 @@ pub fn ai_brand_color(theme: &WarpTheme) -> ColorU {
         .into()
 }
 
-/// Returns the color to be used for error UI throughout Agent Mode (like the "request limit
-/// exceeded" chip).
+/// Returns the color to be used for error UI throughout Agent Mode.
 pub fn error_color(theme: &WarpTheme) -> ColorU {
     AnsiColorIdentifier::Red
         .to_ansi_color(&theme.terminal_colors().normal)
@@ -61,7 +58,6 @@ pub fn error_color(theme: &WarpTheme) -> ColorU {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FailedOutputPresentation {
     Message(String),
-    OutOfCredits { message: String },
     ContextWindowExceeded { message: String },
 }
 
@@ -75,22 +71,6 @@ pub fn failed_output_presentation(error: &RenderableAIError) -> Option<FailedOut
     }
 
     Some(match error {
-        RenderableAIError::QuotaLimit {
-            user_display_message,
-        } => {
-            if let Some(message) = user_display_message {
-                FailedOutputPresentation::OutOfCredits {
-                    message: format!("{ERROR_APOLOGY_TEXT}\n\n{message}"),
-                }
-            } else {
-                FailedOutputPresentation::Message(format!(
-                    "{ERROR_APOLOGY_TEXT}\n\nYou've reached your credit limit."
-                ))
-            }
-        }
-        RenderableAIError::ServerOverloaded => FailedOutputPresentation::Message(
-            "Termloc is currently overloaded. Please try again later.".to_string(),
-        ),
         RenderableAIError::InternalWarpError => FailedOutputPresentation::Message(format!(
             "{ERROR_APOLOGY_TEXT}\n\n{INTERNAL_WARP_ERROR}"
         )),

@@ -49,8 +49,6 @@ pub enum GeneratedCommandMetadataError {
     BadCommand,
     /// Request to OpenAI failed
     AiProviderError,
-    /// User is over rate limit.
-    RateLimited,
     Other,
 }
 
@@ -61,7 +59,6 @@ impl GeneratedCommandMetadataError {
                 "Failed to generate metadata. Please try again with a different command."
             }
             Self::AiProviderError => "Something went wrong. Please try again.",
-            Self::RateLimited => "Looks like you're out of AI credits. Please try again later.",
             Self::Other => "Something went wrong. Please try again.",
         }
         .to_string()

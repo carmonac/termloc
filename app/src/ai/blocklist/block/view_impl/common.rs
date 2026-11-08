@@ -3070,8 +3070,7 @@ pub fn render_failed_output(props: FailedOutputProps, app: &AppContext) -> Box<d
     };
 
     let error_text = match presentation {
-        FailedOutputPresentation::Message(message)
-        | FailedOutputPresentation::OutOfCredits { message } => message,
+        FailedOutputPresentation::Message(message) => message,
         FailedOutputPresentation::ContextWindowExceeded { message } => {
             // This is rendered in a different way, like a failed action.
             return RenderableAction::new(message.as_str(), app)
