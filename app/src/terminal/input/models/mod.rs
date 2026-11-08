@@ -1,5 +1,5 @@
 mod data_source;
-mod model_spec_scores;
+pub(crate) mod model_spec_scores;
 mod view;
 
 pub use data_source::{

@@ -637,8 +637,7 @@ fn local_models_report_the_ollama_provider() {
         supports_vision: true,
         supports_thinking: false,
         supports_embedding: false,
-        context_length: None,
-        size: 0,
+        ..Default::default()
     });
     assert_eq!(info.provider, LLMProvider::Ollama);
     assert_eq!(info.provider.display_name(), "Ollama");

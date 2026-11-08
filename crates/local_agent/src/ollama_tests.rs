@@ -50,6 +50,7 @@ fn model_details_expose_capabilities_and_context() {
     let details: ShowResponse = serde_json::from_value(serde_json::json!({
         "capabilities": ["completion", "tools"],
         "model_info": { "general.architecture": "qwen3", "qwen3.context_length": 40960 },
+        "details": { "parameter_size": "8.2B", "quantization_level": "Q4_K_M" },
     }))
     .unwrap();
 
@@ -58,6 +59,8 @@ fn model_details_expose_capabilities_and_context() {
     assert!(model.supports_tools);
     assert!(!model.supports_vision);
     assert_eq!(model.context_length, Some(40_960));
+    assert_eq!(model.parameter_size.as_deref(), Some("8.2B"));
+    assert_eq!(model.quantization.as_deref(), Some("Q4_K_M"));
 }
 
 #[test]
@@ -71,4 +74,5 @@ fn reads_the_embedding_capability() {
 
     assert!(model.supports_embedding);
     assert!(!model.supports_tools);
+    assert_eq!(model.parameter_size, None);
 }

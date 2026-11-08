@@ -82,7 +82,7 @@ pub struct ChatChunk {
 }
 
 /// A model installed in Ollama.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct LocalModel {
     pub name: String,
     pub supports_tools: bool,
@@ -93,6 +93,10 @@ pub struct LocalModel {
     pub context_length: Option<u32>,
     /// Size on disk in bytes.
     pub size: u64,
+    /// Parameter count as Ollama labels it, such as `8.2B`.
+    pub parameter_size: Option<String>,
+    /// Quantization as Ollama labels it, such as `Q4_K_M`.
+    pub quantization: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -114,6 +118,16 @@ struct ShowResponse {
     capabilities: Vec<String>,
     #[serde(default)]
     model_info: serde_json::Map<String, Value>,
+    #[serde(default)]
+    details: ShowDetails,
+}
+
+#[derive(Default, Deserialize)]
+struct ShowDetails {
+    #[serde(default)]
+    parameter_size: Option<String>,
+    #[serde(default)]
+    quantization_level: Option<String>,
 }
 
 impl ShowResponse {
@@ -125,6 +139,7 @@ impl ShowResponse {
             .and_then(|(_, value)| value.as_u64())
             .and_then(|length| u32::try_from(length).ok());
         let supports = |capability: &str| self.capabilities.iter().any(|c| c == capability);
+        let label = |value: Option<String>| value.filter(|value| !value.is_empty());
         LocalModel {
             supports_tools: supports("tools"),
             supports_vision: supports("vision"),
@@ -132,6 +147,8 @@ impl ShowResponse {
             supports_embedding: supports("embedding"),
             context_length,
             size,
+            parameter_size: label(self.details.parameter_size),
+            quantization: label(self.details.quantization_level),
             name,
         }
     }

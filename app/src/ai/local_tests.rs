@@ -8,7 +8,7 @@ fn model(name: &str, supports_tools: bool, context_length: Option<u32>) -> Local
         supports_thinking: false,
         supports_embedding: false,
         context_length,
-        size: 0,
+        ..Default::default()
     }
 }
 

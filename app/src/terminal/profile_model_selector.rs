@@ -49,6 +49,8 @@ use crate::context_chips::spacing;
 use crate::menu::{Event as MenuEvent, Menu, MenuItem, MenuItemFields};
 use crate::settings_view::SettingsSection;
 use crate::terminal::TerminalModel;
+#[cfg(not(target_family = "wasm"))]
+use crate::terminal::input::models::model_spec_scores;
 use crate::terminal::input::{MenuPositioning, MenuPositioningProvider};
 use crate::ui_components::icons::Icon;
 use crate::view_components::action_button::{ActionButton, ActionButtonTheme, ButtonSize};
@@ -1650,20 +1652,45 @@ impl ProfileModelSelector {
 
     // Renders entire modal for a given model spec
     fn render_model_spec(&self, spec: &LLMSpec, app: &AppContext) -> Box<dyn Element> {
-        let appearance = Appearance::as_ref(app);
-        let theme = appearance.theme();
+        let theme = Appearance::as_ref(app).theme();
         let header = self.render_model_spec_header(
             "Model Specs".to_string(),
             "Termloc’s benchmarks for how well a model performs in our harness, the rate at which it consumes credits, and task speed.".to_string(),
             app,
         );
         let spec = self.render_all_model_spec_values(spec, internal_colors::neutral_3(theme), app);
+        self.render_model_card(header, spec, app)
+    }
 
+    #[cfg(not(target_family = "wasm"))]
+    fn render_local_model_card(
+        &self,
+        model: &local_agent::LocalModel,
+        app: &AppContext,
+    ) -> Box<dyn Element> {
+        let header = self.render_model_spec_header(
+            model_spec_scores::LOCAL_MODEL_DETAILS_TITLE.to_string(),
+            model_spec_scores::LOCAL_MODEL_DETAILS_DESCRIPTION.to_string(),
+            app,
+        );
+        let details = Container::new(model_spec_scores::render_local_model_details(model, app))
+            .with_margin_top(12.)
+            .finish();
+        self.render_model_card(header, details, app)
+    }
+
+    fn render_model_card(
+        &self,
+        header: Box<dyn Element>,
+        body: Box<dyn Element>,
+        app: &AppContext,
+    ) -> Box<dyn Element> {
+        let theme = Appearance::as_ref(app).theme();
         ConstrainedBox::new(
             Container::new(
                 Flex::column()
                     .with_child(header)
-                    .with_child(Container::new(spec).with_horizontal_padding(16.).finish())
+                    .with_child(Container::new(body).with_horizontal_padding(16.).finish())
                     .finish(),
             )
             .with_padding_bottom(12.)
@@ -1894,9 +1921,16 @@ impl View for ProfileModelSelector {
                         .cloned();
                     Some(self.render_sidecar_spec_panel(&kind, &sidecar_spec, app))
                 } else {
-                    info.spec
+                    let spec_card = info
+                        .spec
                         .as_ref()
-                        .map(|spec| self.render_model_spec(spec, app))
+                        .map(|spec| self.render_model_spec(spec, app));
+                    #[cfg(not(target_family = "wasm"))]
+                    let spec_card = spec_card.or_else(|| {
+                        model_spec_scores::installed_local_model(&info.id, app)
+                            .map(|model| self.render_local_model_card(&model, app))
+                    });
+                    spec_card
                 };
 
                 if let Some(model_spec_sidecar) = model_spec_sidecar {

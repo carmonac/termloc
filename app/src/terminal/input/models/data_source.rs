@@ -12,6 +12,11 @@ use warpui::platform::OperatingSystem;
 use warpui::text_layout::ClipConfig;
 use warpui::{AppContext, Element, Entity, EntityId, SingletonEntity as _};
 
+#[cfg(not(target_family = "wasm"))]
+use super::model_spec_scores::{
+    LOCAL_MODEL_DETAILS_DESCRIPTION, LOCAL_MODEL_DETAILS_TITLE, installed_local_model,
+    render_local_model_details,
+};
 use super::model_spec_scores::{
     MODEL_SPECS_DESCRIPTION, MODEL_SPECS_TITLE, ModelSpecScoresLayout, REASONING_LEVEL_DESCRIPTION,
     REASONING_LEVEL_TITLE, render_model_spec_header, render_model_spec_scores,
@@ -416,6 +421,25 @@ impl SearchItem for ModelSearchItem {
 
         let appearance = crate::appearance::Appearance::as_ref(app);
         let theme = appearance.theme();
+
+        #[cfg(not(target_family = "wasm"))]
+        if self.spec.is_none()
+            && let Some(model) = installed_local_model(&self.id, app)
+        {
+            let header = render_model_spec_header(
+                LOCAL_MODEL_DETAILS_TITLE,
+                LOCAL_MODEL_DETAILS_DESCRIPTION,
+                app,
+            );
+            let column = Flex::column()
+                .with_child(Container::new(header).with_margin_bottom(12.).finish())
+                .with_child(render_local_model_details(&model, app));
+            return Some(
+                ConstrainedBox::new(column.finish())
+                    .with_width(model_specs_width(app))
+                    .finish(),
+            );
+        }
 
         let (title, description) = if self.reasoning_level.is_some() {
             (REASONING_LEVEL_TITLE, REASONING_LEVEL_DESCRIPTION)
