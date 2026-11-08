@@ -115,7 +115,16 @@ pub trait SecureStorage {
 
     /// Removes the value stored at the given key, if any.
     fn remove_value(&self, key: &str) -> Result<(), Error>;
+
+    /// Returns a reader that can run on another thread, for backends whose reads can block until
+    /// the user unlocks the store. Callers fall back to [`Self::read_value`] when this is `None`.
+    fn background_reader(&self) -> Option<BackgroundReader> {
+        None
+    }
 }
+
+/// Reads the value stored at the given key from any thread.
+pub type BackgroundReader = Box<dyn Fn(&str) -> Result<String, Error> + Send>;
 
 impl warpui_core::Entity for Model {
     type Event = ();

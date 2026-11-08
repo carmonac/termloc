@@ -2,6 +2,7 @@ use futures_util::stream::AbortHandle;
 use mcp::oauth::CallbackResult;
 use url::Url;
 use uuid::Uuid;
+use warpui::App;
 
 use super::{SpawnedServerInfo, TemplatableMCPServerManager};
 
@@ -138,4 +139,31 @@ fn reconnect_completion_notifies_all_waiters() {
             .pending_reconnections
             .contains_key(&installation_uuid)
     );
+}
+
+#[test]
+fn credential_work_waits_for_stored_credentials() {
+    App::test((), |mut app| async move {
+        app.update(|ctx| warpui_extras::secure_storage::register_noop("test", ctx));
+        let manager = app.add_model(|_| TemplatableMCPServerManager {
+            credentials_loading: true,
+            ..Default::default()
+        });
+
+        manager.update(&mut app, |manager, ctx| {
+            manager.purge_file_based_server_credentials(&vec![1], ctx);
+            assert_eq!(manager.after_credentials_load.len(), 1);
+
+            manager.after_credentials_load.push(Box::new(|manager, _| {
+                assert!(!manager.credentials_loading);
+                manager
+                    .runtime_environment
+                    .insert("RAN_AFTER_LOAD".into(), "true".into());
+            }));
+            manager.finish_loading_credentials(Default::default(), ctx);
+
+            assert!(manager.after_credentials_load.is_empty());
+            assert!(manager.runtime_environment.contains_key("RAN_AFTER_LOAD"));
+        });
+    });
 }

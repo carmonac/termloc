@@ -453,8 +453,14 @@ pub fn load_credentials_from_secure_storage<T: DeserializeOwned + Default>(
     app: &mut warpui::AppContext,
     key: &str,
 ) -> T {
-    app.secure_storage()
-        .read_value(key)
+    parse_stored_credentials(app.secure_storage().read_value(key))
+}
+
+/// Parses the result of reading credentials from secure storage, falling back to the default.
+pub fn parse_stored_credentials<T: DeserializeOwned + Default>(
+    stored: Result<String, warpui_extras::secure_storage::Error>,
+) -> T {
+    stored
         .inspect_err(|err| {
             if !matches!(err, warpui_extras::secure_storage::Error::NotFound) {
                 log::warn!("Failed to read MCP credentials from secure storage: {err:#}");

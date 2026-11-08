@@ -41,6 +41,13 @@ impl super::SecureStorage for SecureStorage {
         item.delete();
         Ok(())
     }
+
+    fn background_reader(&self) -> Option<super::BackgroundReader> {
+        let storage = Self::new(&self.service_name);
+        Some(Box::new(move |key| {
+            super::SecureStorage::read_value(&storage, key)
+        }))
+    }
 }
 
 impl SecureStorage {

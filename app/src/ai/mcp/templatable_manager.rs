@@ -35,6 +35,14 @@ use crate::ai::mcp::{StaticEnvVar, TransportType};
 type ReconnectResultSender =
     tokio::sync::oneshot::Sender<Result<rmcp::Peer<rmcp::RoleClient>, String>>;
 
+#[cfg(not(target_family = "wasm"))]
+type CredentialAction = Box<
+    dyn FnOnce(
+        &mut TemplatableMCPServerManager,
+        &mut warpui::ModelContext<TemplatableMCPServerManager>,
+    ),
+>;
+
 /// Singleton model to manage state of MCP server lifecycles and panes across multiple windows
 /// (where only one MCP server pane can exist per window).
 ///
@@ -66,6 +74,12 @@ pub struct TemplatableMCPServerManager {
     /// Cached credentials for file-based servers, keyed by installation hash.
     #[cfg(not(target_family = "wasm"))]
     file_based_server_credentials: oauth::FileBasedPersistedCredentialsMap,
+    /// Whether secure storage is still being read off the main thread.
+    #[cfg(not(target_family = "wasm"))]
+    credentials_loading: bool,
+    /// Work that needs the stored credentials, run once they have loaded.
+    #[cfg(not(target_family = "wasm"))]
+    after_credentials_load: Vec<CredentialAction>,
     #[cfg(not(target_family = "wasm"))]
     database_connection: Option<Arc<Mutex<SqliteConnection>>>,
     /// Error messages for failed servers, keyed by installation UUID.
