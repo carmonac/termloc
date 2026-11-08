@@ -32,8 +32,6 @@ use crate::server::experiments::ServerExperiments;
 use crate::server::ids::ServerId;
 use crate::server::server_api::ServerApiProvider;
 use crate::server::sync_queue::SyncQueue;
-#[cfg(feature = "voice_input")]
-use crate::server::voice_transcriber::ServerVoiceTranscriber;
 use crate::settings::manager::SettingsManager;
 use crate::settings::{
     AISettings, PrivacySettings, TuiVoiceSettings, init_and_register_user_preferences,
@@ -339,11 +337,7 @@ pub fn register_tui_session_view_test_singletons(app: &mut warpui::App) {
     #[cfg(feature = "voice_input")]
     {
         app.add_singleton_model(voice_input::VoiceInput::new);
-        app.add_singleton_model(|ctx| {
-            VoiceTranscriber::new(Arc::new(ServerVoiceTranscriber::new(
-                ServerApiProvider::as_ref(ctx).get(),
-            )))
-        });
+        app.add_singleton_model(|_| VoiceTranscriber::disabled());
     }
     app.add_singleton_model(|_| {
         crate::ai::document::ai_document_model::AIDocumentModel::new_for_test()

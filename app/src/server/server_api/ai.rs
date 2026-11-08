@@ -1,18 +1,16 @@
-use anyhow::{Context as _, anyhow};
+use anyhow::anyhow;
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::{DateTime, Utc};
+use local_agent::oneshot::{ChangeContext, ChangeText};
 #[cfg(test)]
 use mockall::automock;
-use warp_core::channel::ChannelState;
 use warp_multi_agent_api::ConversationData;
-use warp_server_client::PresignedDownloadResponse;
 
 use super::ServerApi;
 use crate::ai::agent::api::ServerConversationToken;
 use crate::ai::agent::conversation::ServerAIConversationMetadata;
 use crate::ai::generate_code_review_content::api::{
-    GenerateCodeReviewContentRequest, GenerateCodeReviewContentResponse,
+    GenerateCodeReviewContentRequest, GenerateCodeReviewContentResponse, OutputType,
 };
 use crate::ai::request_usage_model::RequestLimitInfo;
 use crate::ai::{AICreditAvailability, RequestUsageInfo};
@@ -23,13 +21,6 @@ use crate::ai_assistant::{AIGeneratedCommand, GenerateCommandsFromNaturalLanguag
 use crate::drive::workflows::ai_assist::{GeneratedCommandMetadata, GeneratedCommandMetadataError};
 use crate::terminal::model::block::SerializedBlock;
 
-/// Request body for `POST /agent/conversations/{conversation_id}/fork`.
-#[derive(Debug, Clone, serde::Serialize)]
-pub(crate) struct ForkConversationRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    title: Option<String>,
-}
-
 /// Response body for `POST /agent/conversations/{conversation_id}/fork`. The returned id is sent
 /// on the subsequent `POST /agent/runs` request under `conversation_id` (resume semantics).
 #[derive(Debug, Clone, serde::Deserialize)]
@@ -37,148 +28,10 @@ pub struct ForkConversationResponse {
     pub forked_conversation_id: String,
 }
 
-/// Request body for `POST /agent/conversations/{conversation_id}/rename`.
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct RenameConversationRequest {
-    pub title: String,
-}
-
 /// Response body for `POST /agent/conversations/{conversation_id}/rename`.
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct RenameConversationResponse {
     pub title: String,
-}
-
-/// Response from the artifact endpoint.
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-#[serde(tag = "artifact_type")]
-pub enum ArtifactDownloadResponse {
-    #[serde(rename = "SCREENSHOT")]
-    Screenshot {
-        #[serde(flatten)]
-        common: ArtifactDownloadCommonFields,
-        data: ScreenshotArtifactResponseData,
-    },
-    #[serde(rename = "FILE")]
-    File {
-        #[serde(flatten)]
-        common: ArtifactDownloadCommonFields,
-        data: FileArtifactResponseData,
-    },
-}
-
-impl ArtifactDownloadResponse {
-    fn common(&self) -> &ArtifactDownloadCommonFields {
-        match self {
-            ArtifactDownloadResponse::Screenshot { common, .. }
-            | ArtifactDownloadResponse::File { common, .. } => common,
-        }
-    }
-
-    pub fn artifact_uid(&self) -> &str {
-        &self.common().artifact_uid
-    }
-
-    pub fn artifact_type(&self) -> &'static str {
-        match self {
-            ArtifactDownloadResponse::Screenshot { .. } => "SCREENSHOT",
-            ArtifactDownloadResponse::File { .. } => "FILE",
-        }
-    }
-
-    pub fn created_at(&self) -> DateTime<Utc> {
-        self.common().created_at
-    }
-
-    pub fn download_url(&self) -> &str {
-        match self {
-            ArtifactDownloadResponse::Screenshot { data, .. } => &data.download_url,
-            ArtifactDownloadResponse::File { data, .. } => &data.download_url,
-        }
-    }
-
-    pub fn expires_at(&self) -> DateTime<Utc> {
-        match self {
-            ArtifactDownloadResponse::Screenshot { data, .. } => data.expires_at,
-            ArtifactDownloadResponse::File { data, .. } => data.expires_at,
-        }
-    }
-
-    pub fn content_type(&self) -> &str {
-        match self {
-            ArtifactDownloadResponse::Screenshot { data, .. } => &data.content_type,
-            ArtifactDownloadResponse::File { data, .. } => &data.content_type,
-        }
-    }
-
-    pub fn filepath(&self) -> Option<&str> {
-        match self {
-            ArtifactDownloadResponse::Screenshot { .. } => None,
-            ArtifactDownloadResponse::File { data, .. } => Some(&data.filepath),
-        }
-    }
-
-    pub fn filename(&self) -> Option<&str> {
-        match self {
-            ArtifactDownloadResponse::Screenshot { .. } => None,
-            ArtifactDownloadResponse::File { data, .. } => Some(&data.filename),
-        }
-    }
-
-    pub fn description(&self) -> Option<&str> {
-        match self {
-            ArtifactDownloadResponse::Screenshot { data, .. } => data.description.as_deref(),
-            ArtifactDownloadResponse::File { data, .. } => data.description.as_deref(),
-        }
-    }
-
-    pub fn size_bytes(&self) -> Option<i64> {
-        match self {
-            ArtifactDownloadResponse::Screenshot { .. } => None,
-            ArtifactDownloadResponse::File { data, .. } => data.size_bytes,
-        }
-    }
-}
-
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct ArtifactDownloadCommonFields {
-    pub artifact_uid: String,
-    pub created_at: DateTime<Utc>,
-}
-
-/// Screenshot-specific data from the artifact endpoint.
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct ScreenshotArtifactResponseData {
-    pub download_url: String,
-    pub expires_at: DateTime<Utc>,
-    pub content_type: String,
-    pub description: Option<String>,
-}
-
-/// File-specific data from the artifact endpoint.
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct FileArtifactResponseData {
-    pub download_url: String,
-    pub expires_at: DateTime<Utc>,
-    pub content_type: String,
-    pub filepath: String,
-    pub filename: String,
-    pub description: Option<String>,
-    pub size_bytes: Option<i64>,
-}
-
-pub(crate) fn build_fork_conversation_url(conversation_id: &str) -> String {
-    format!(
-        "agent/conversations/{}/fork",
-        urlencoding::encode(conversation_id)
-    )
-}
-
-pub(crate) fn build_rename_conversation_url(conversation_id: &str) -> String {
-    format!(
-        "agent/conversations/{}/rename",
-        urlencoding::encode(conversation_id)
-    )
 }
 
 async fn local_commands_from_natural_language(
@@ -300,11 +153,6 @@ pub trait AIClient: 'static + Send + Sync {
         server_conversation_token: String,
     ) -> anyhow::Result<(), anyhow::Error>;
 
-    async fn get_artifact_download(
-        &self,
-        artifact_uid: &str,
-    ) -> anyhow::Result<ArtifactDownloadResponse, anyhow::Error>;
-
     /// Downloads the bytes of a computer-use screenshot stored in Warp-managed
     /// object storage. Requires view access to the conversation.
     async fn download_stored_screenshot(
@@ -393,102 +241,57 @@ impl AIClient for ServerApi {
 
     async fn fork_conversation(
         &self,
-        conversation_id: String,
-        title: Option<String>,
+        _conversation_id: String,
+        _title: Option<String>,
     ) -> anyhow::Result<ForkConversationResponse, anyhow::Error> {
-        let request = ForkConversationRequest { title };
-        let response: ForkConversationResponse = self
-            .post_public_api(&build_fork_conversation_url(&conversation_id), &request)
-            .await?;
-        Ok(response)
+        Err(cloud_conversations_unavailable())
     }
 
     async fn rename_conversation(
         &self,
-        conversation_id: String,
-        title: String,
+        _conversation_id: String,
+        _title: String,
     ) -> anyhow::Result<RenameConversationResponse, anyhow::Error> {
-        let request = RenameConversationRequest { title };
-        let response: RenameConversationResponse = self
-            .post_public_api(&build_rename_conversation_url(&conversation_id), &request)
-            .await?;
-        Ok(response)
+        Err(cloud_conversations_unavailable())
     }
 
     async fn get_block_snapshot(
         &self,
-        server_conversation_token: ServerConversationToken,
+        _server_conversation_token: ServerConversationToken,
     ) -> anyhow::Result<SerializedBlock, anyhow::Error> {
-        let conversation_id = server_conversation_token.as_str();
-        // Make sure to use `SerializedBlock::from_json` to correctly handle the serialized
-        // command and output grid contents.
-        let response = self
-            .get_public_api_response(&format!(
-                "agent/conversations/{conversation_id}/block-snapshot?redirect=false"
-            ))
-            .await?;
-        let download = response
-            .json::<PresignedDownloadResponse>()
-            .await
-            .map_err(reqwest::Error::without_url)
-            .context("Failed to decode block snapshot download URL")?;
-        let json_bytes = self.base_client.download_presigned(&download.url).await?;
-        SerializedBlock::from_json(&json_bytes)
-    }
-
-    async fn get_artifact_download(
-        &self,
-        artifact_uid: &str,
-    ) -> anyhow::Result<ArtifactDownloadResponse, anyhow::Error> {
-        let response: ArtifactDownloadResponse = self
-            .get_public_api(&format!("agent/artifacts/{artifact_uid}"))
-            .await?;
-        Ok(response)
+        Err(cloud_conversations_unavailable())
     }
 
     async fn download_stored_screenshot(
         &self,
-        conversation_id: &str,
-        screenshot_uid: &str,
+        _conversation_id: &str,
+        _screenshot_uid: &str,
     ) -> anyhow::Result<Bytes, anyhow::Error> {
-        // The endpoint redirects to a short-lived signed URL, which the HTTP
-        // client follows transparently. Strip that URL from body-read errors so
-        // it cannot leak into logs or Sentry breadcrumbs.
-        let response = self
-            .get_public_api_response(&format!(
-                "agent/conversations/{}/screenshots/{}/download",
-                urlencoding::encode(conversation_id),
-                urlencoding::encode(screenshot_uid)
-            ))
-            .await?;
-        response
-            .bytes()
-            .await
-            .map_err(|error| anyhow::Error::new(error.without_url()))
+        Err(cloud_conversations_unavailable())
     }
 
     async fn generate_code_review_content(
         &self,
         request: GenerateCodeReviewContentRequest,
     ) -> Result<GenerateCodeReviewContentResponse, anyhow::Error> {
-        let auth_token = self.get_or_refresh_access_token().await?;
-        let request_builder = self.base_client.http_client().post(format!(
-            "{}/ai/generate_code_review_content",
-            ChannelState::server_root_url()
-        ));
-        let response = if let Some(token) = auth_token.as_bearer_token() {
-            request_builder.bearer_auth(token)
-        } else {
-            request_builder
-        }
-        .json(&request)
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
-        Ok(response)
+        let kind = match request.output_type {
+            OutputType::CommitMessage => ChangeText::CommitMessage,
+            OutputType::PrTitle => ChangeText::PrTitle,
+            OutputType::PrDescription => ChangeText::PrDescription,
+        };
+        let changes = ChangeContext {
+            diff: request.diff,
+            branch_name: request.branch_name,
+            commit_messages: request.commit_messages,
+        };
+        let client = crate::ai::local::one_shot().await?;
+        let content = client.change_text(kind, &changes).await?;
+        Ok(GenerateCodeReviewContentResponse { content })
     }
+}
+
+fn cloud_conversations_unavailable() -> anyhow::Error {
+    anyhow!("Cloud conversations aren't available")
 }
 
 #[cfg(test)]

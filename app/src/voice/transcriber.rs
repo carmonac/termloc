@@ -38,10 +38,9 @@ pub struct VoiceTranscriber {
 }
 
 impl VoiceTranscriber {
-    pub fn new(transcriber: Arc<dyn Transcriber>) -> Self {
-        Self {
-            transcriber: Some(transcriber),
-        }
+    /// A transcriber with no backend, so voice input is disabled.
+    pub fn disabled() -> Self {
+        Self { transcriber: None }
     }
 
     /// Returns the transcriber if one is set.

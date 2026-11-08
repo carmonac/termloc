@@ -10,7 +10,6 @@ use repo_metadata::RepoMetadataModel;
 use repo_metadata::repositories::DetectedRepositories;
 use repo_metadata::watcher::DirectoryWatcher;
 use warp_core::features::FeatureFlag;
-use warp_server_client::iap::IapManager;
 use warpui::platform::{WindowBounds, WindowStyle};
 use warpui::windowing::WindowManager;
 use warpui::windowing::state::ApplicationStage;
@@ -77,15 +76,6 @@ fn initialize_app_with_history(app: &mut App, conversations: Vec<AgentConversati
     initialize_settings_for_tests(app);
 
     app.add_singleton_model(|_ctx| ServerApiProvider::new_for_test());
-    // Disabled (`None`) IapManager so code that reads the singleton doesn't panic in tests; it is
-    // an inert no-op.
-    app.add_singleton_model(|ctx| {
-        IapManager::new(
-            None,
-            Box::new(|_| futures::FutureExt::boxed(futures::future::ready(None::<String>))),
-            ctx,
-        )
-    });
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
     app.add_singleton_model(|_ctx| PtySpawner::new_for_test());
     app.add_singleton_model(|_| NetworkStatus::new());

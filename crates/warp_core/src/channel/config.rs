@@ -21,15 +21,6 @@ pub struct ChannelConfig {
     pub mcp_static_config: Option<McpStaticConfig>,
 }
 
-/// Configuration for GCP Identity-Aware Proxy authentication, present only on staging builds.
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct IapConfig {
-    /// The IAP OAuth2 client ID used as the audience for identity tokens.
-    pub audiences: Cow<'static, str>,
-    /// The service account email to impersonate when acquiring IAP credentials.
-    pub service_account_email: Cow<'static, str>,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 pub struct WarpServerConfig {
     /// The root URL for the standard server pool.
@@ -38,10 +29,6 @@ pub struct WarpServerConfig {
     #[serde(default)]
     /// The URL for the RTC server, which serves real-time updates for Warp Drive objects.
     pub rtc_server_url: Cow<'static, str>,
-    /// Configuration for GCP Identity-Aware Proxy authentication, present only on
-    /// staging builds. [`None`] on production builds.
-    #[serde(default)]
-    pub iap_config: Option<IapConfig>,
 }
 
 impl WarpServerConfig {
@@ -50,7 +37,6 @@ impl WarpServerConfig {
         Self {
             server_root_url: DISABLED_SERVER_URL.into(),
             rtc_server_url: "ws://127.0.0.1:9/graphql/v2".into(),
-            iap_config: None,
         }
     }
 }

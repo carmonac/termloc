@@ -139,6 +139,35 @@ fn answers_include_the_transcript() {
     assert_eq!(roles, ["system", "user", "assistant", "user"]);
 }
 
+#[test]
+fn change_text_sends_the_branch_commits_and_diff() {
+    let (client, backend) = one_shot("Fix the login test", false);
+    let changes = ChangeContext {
+        diff: "+fixed".to_owned(),
+        branch_name: "fix-login".to_owned(),
+        commit_messages: vec!["Fix login".to_owned()],
+    };
+
+    let message = block_on(client.change_text(ChangeText::CommitMessage, &changes)).unwrap();
+
+    assert_eq!(message, "Fix the login test");
+    let requests = backend.requests.lock().unwrap();
+    let prompt = &requests[0].messages[1].content;
+    assert!(prompt.contains("Branch: fix-login"));
+    assert!(prompt.contains("Fix login"));
+    assert!(prompt.contains("+fixed"));
+}
+
+#[test]
+fn pr_titles_keep_only_the_first_line() {
+    let (client, _) = one_shot("\"Fix the login test\"\n\nMore text", false);
+
+    let title =
+        block_on(client.change_text(ChangeText::PrTitle, &ChangeContext::default())).unwrap();
+
+    assert_eq!(title, "Fix the login test");
+}
+
 /// Needs a running Ollama. Run with `LOCAL_AGENT_TEST_MODEL=<model> cargo test -p local_agent
 /// live_quick_requests -- --ignored --nocapture`.
 #[test]

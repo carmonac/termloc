@@ -13,8 +13,6 @@ pub enum AuthEvent {
     StagingAccessBlocked,
     /// The user's account has been disabled.
     UserAccountDisabled,
-    /// An Identity-Aware Proxy challenge was received.
-    IapChallengeReceived,
 }
 
 impl fmt::Debug for AuthEvent {
@@ -22,7 +20,6 @@ impl fmt::Debug for AuthEvent {
         match self {
             Self::StagingAccessBlocked => f.write_str("StagingAccessBlocked"),
             Self::UserAccountDisabled => f.write_str("UserAccountDisabled"),
-            Self::IapChallengeReceived => f.write_str("IapChallengeReceived"),
         }
     }
 }

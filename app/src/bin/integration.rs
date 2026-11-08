@@ -31,7 +31,6 @@ pub fn main() -> Result<()> {
                 // black-hole server traffic.
                 server_root_url: "http://192.0.2.0:9".into(),
                 rtc_server_url: "ws://192.0.2.0:9/graphql/v2".into(),
-                iap_config: None,
             },
             mcp_static_config: None,
         },

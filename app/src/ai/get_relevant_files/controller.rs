@@ -8,7 +8,6 @@ use ai::index::full_source_code_embedding::manager::{
 };
 use ai::index::locations::CodeContextLocation;
 use anyhow::{Context as _, anyhow};
-use futures_util::stream::AbortHandle;
 use instant::Instant;
 use warp_core::features::FeatureFlag;
 use warp_errors::report_error;
@@ -16,10 +15,7 @@ use warpui::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity};
 
 use crate::ai::agent::{AIAgentActionId, SearchCodebaseResult};
 use crate::ai::blocklist::SessionContext;
-use crate::ai::get_relevant_files::api::{FileContext as FileContextRequest, GetRelevantFiles};
 use crate::ai::outline::{OutlineStatus, RepoOutlines};
-use crate::server::server_api::{AIApiError, ServerApiProvider};
-use crate::server::team_scope::RequestTeamScope;
 #[path = "remote_search.rs"]
 mod remote_search;
 
@@ -68,13 +64,8 @@ pub enum GetRelevantFilesError {
     Missing,
 }
 
-/// This enum allows us to use both the existing structure for outline-based indexing
-/// and the new full source code indexing manager/model.
+/// An in-flight full source code retrieval.
 enum RequestHandle {
-    /// Used with outline-based indexing.
-    AbortHandle(AbortHandle),
-
-    /// Used with full source code indexing.
     RetrievalID {
         repo_path: PathBuf,
         retrieval_id: RetrievalID,
@@ -85,7 +76,6 @@ enum RequestHandle {
 impl RequestHandle {
     fn abort(&mut self, ctx: &mut AppContext) {
         match self {
-            RequestHandle::AbortHandle(abort_handle) => abort_handle.abort(),
             RequestHandle::RetrievalID {
                 repo_path,
                 retrieval_id,
@@ -129,7 +119,6 @@ impl GetRelevantFilesController {
         self.pending_requests
             .iter()
             .find_map(|(action_id, request_handle)| match request_handle {
-                RequestHandle::AbortHandle(_) => None,
                 RequestHandle::RetrievalID {
                     retrieval_id,
                     start_time,
@@ -190,21 +179,15 @@ impl GetRelevantFilesController {
         query: String,
         partial_path_segments: Option<&Vec<String>>,
         action_id: AIAgentActionId,
-        team_scope: RequestTeamScope,
         ctx: &mut ModelContext<Self>,
     ) -> Result<(), GetRelevantFilesError> {
         // Cancel any previous request for this action before dispatching to either the local or
         // remote implementation.
         self.cancel_request_for_action(&action_id, ctx);
         match target {
-            GetRelevantFilesRequestTarget::Local { directory } => self.send_local_request(
-                &directory,
-                query,
-                partial_path_segments,
-                action_id,
-                team_scope,
-                ctx,
-            ),
+            GetRelevantFilesRequestTarget::Local { directory } => {
+                self.send_local_request(&directory, query, partial_path_segments, action_id, ctx)
+            }
             GetRelevantFilesRequestTarget::Remote {
                 session_context,
                 requested_codebase_path,
@@ -225,10 +208,9 @@ impl GetRelevantFilesController {
         query: String,
         partial_path_segments: Option<&Vec<String>>,
         action_id: AIAgentActionId,
-        team_scope: RequestTeamScope,
         ctx: &mut ModelContext<Self>,
     ) -> Result<(), GetRelevantFilesError> {
-        const MINIMUM_FILE_COUNT_FOR_API_CALL: usize = 2;
+        const MINIMUM_FILE_COUNT_TO_RANK: usize = 2;
 
         if FeatureFlag::FullSourceCodeEmbedding.is_enabled() {
             let codebase_mgr = CodebaseIndexManager::handle(ctx);
@@ -260,11 +242,9 @@ impl GetRelevantFilesController {
         }
 
         match RepoOutlines::as_ref(ctx).get_outline(directory) {
-            Some((OutlineStatus::Complete(outline), base_path)) => {
-                let server_api = ServerApiProvider::as_ref(ctx).get();
-
+            Some((OutlineStatus::Complete(outline), _)) => {
                 let file_outlines = outline.to_file_symbols(partial_path_segments);
-                if file_outlines.len() < MINIMUM_FILE_COUNT_FOR_API_CALL {
+                if file_outlines.len() < MINIMUM_FILE_COUNT_TO_RANK {
                     ctx.emit(GetRelevantFilesControllerEvent::Success {
                         action_id,
                         result: GetRelevantFilesControllerResult::Locations(Arc::new(
@@ -276,58 +256,11 @@ impl GetRelevantFilesController {
                                 .collect(),
                         )),
                     });
+                    Ok(())
                 } else {
-                    let outline_request = GetRelevantFiles {
-                        query,
-                        files: file_outlines
-                            .into_iter()
-                            .map(|outline| FileContextRequest {
-                                path: outline.path,
-                                symbols: outline.symbols,
-                            })
-                            .collect(),
-                    };
-                    let action_id_clone = action_id.clone();
-                    let request_abort_handle = ctx
-                        .spawn(
-                            async move {
-                                let response = server_api
-                                    .get_relevant_files(&outline_request, team_scope)
-                                    .await?;
-                                Ok(Arc::new(
-                                    response
-                                        .relevant_file_paths
-                                        .into_iter()
-                                        .filter_map(|path| {
-                                            let file_path = base_path.join(path);
-                                            // Validate the returned file paths.
-                                            if file_path.exists() {
-                                                Some(CodeContextLocation::WholeFile(file_path))
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                        .collect(),
-                                ))
-                            },
-                            move |me,
-                                  relevant_file_paths: Result<
-                                Arc<HashSet<CodeContextLocation>>,
-                                AIApiError,
-                            >,
-                                  ctx| {
-                                me.handle_relevant_file_paths_result(
-                                    relevant_file_paths.map_err(|e| anyhow!(e)),
-                                    action_id_clone,
-                                    ctx,
-                                )
-                            },
-                        )
-                        .abort_handle();
-                    self.pending_requests
-                        .insert(action_id, RequestHandle::AbortHandle(request_abort_handle));
+                    // Without a code search model there is nothing to rank the outline's files.
+                    Err(GetRelevantFilesError::CreateFailed)
                 }
-                Ok(())
             }
             Some((OutlineStatus::Pending, _)) => Err(GetRelevantFilesError::Pending),
             Some((OutlineStatus::Failed, _)) => Err(GetRelevantFilesError::CreateFailed),

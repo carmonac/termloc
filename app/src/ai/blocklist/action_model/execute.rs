@@ -77,7 +77,6 @@ use crate::ai::blocklist::action_model::recording_controller::RecordingControlle
 use crate::ai::get_relevant_files::controller::GetRelevantFilesController;
 #[cfg(feature = "local_fs")]
 use crate::ai::{agent::AnyFileContent, paths::host_native_absolute_path};
-use crate::server::team_scope::RequestTeamScope;
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::terminal::model::session::command_executor::shell_quote_arg;
 use crate::terminal::model::session::{ExecuteCommandOptions, Session};
@@ -571,15 +570,10 @@ impl BlocklistAIActionExecutor {
                 .read_files_executor
                 .update(ctx, |executor, ctx| executor.execute(input, ctx))
                 .into(),
-            AIAgentActionType::SearchCodebase(..) => {
-                let team_context_resolver = self.team_context_resolver.clone();
-                self.search_codebase_executor
-                    .update(ctx, |executor, ctx| {
-                        let team_scope = RequestTeamScope::from_scope(&team_context_resolver(ctx));
-                        executor.execute(input, team_scope, ctx)
-                    })
-                    .into()
-            }
+            AIAgentActionType::SearchCodebase(..) => self
+                .search_codebase_executor
+                .update(ctx, |executor, ctx| executor.execute(input, ctx))
+                .into(),
             AIAgentActionType::Grep { .. } => self
                 .grep_executor
                 .update(ctx, |executor, ctx| executor.execute(input, ctx))

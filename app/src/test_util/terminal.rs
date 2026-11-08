@@ -6,7 +6,6 @@ use repo_metadata::RepoMetadataModel;
 use repo_metadata::repositories::DetectedRepositories;
 use repo_metadata::watcher::DirectoryWatcher;
 use warp_core::ui::appearance::Appearance;
-use warp_server_client::iap::IapManager;
 use warpui::platform::WindowStyle;
 use warpui::{App, SingletonEntity, ViewHandle, WindowId};
 use watcher::HomeDirectoryWatcher;
@@ -62,15 +61,6 @@ pub fn initialize_app_for_terminal_view(app: &mut App) {
     initialize_history_persistence_for_tests(app);
 
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
-    // Register a disabled `IapManager` (no IAP state) so code paths that read
-    // the singleton don't panic in tests. With `None` state it is an inert no-op.
-    app.add_singleton_model(|ctx| {
-        IapManager::new(
-            None,
-            Box::new(|_| futures::FutureExt::boxed(futures::future::ready(None::<String>))),
-            ctx,
-        )
-    });
     app.add_singleton_model(|_| NetworkStatus::new());
     app.add_singleton_model(|_| SystemStats::new());
     app.add_singleton_model(|_| Prompt::mock());

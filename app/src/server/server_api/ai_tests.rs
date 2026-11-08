@@ -1,106 +1,6 @@
-use futures::executor::block_on;
-use mockito::{Matcher, Server};
-use serde_json::json;
-
-use super::super::ServerApi;
-use super::{
-    AIClient, ArtifactDownloadResponse, ForkConversationResponse, build_fork_conversation_url,
-};
+use super::ForkConversationResponse;
 use crate::ai::artifacts::Artifact;
 use crate::notebooks::NotebookId;
-
-#[test]
-fn block_snapshot_resolves_url_before_deserializing_storage_bytes() {
-    let block =
-        super::SerializedBlock::new_for_test(b"command".to_vec(), b"\x1b[32moutput".to_vec());
-    let mut storage = Server::new();
-    let storage_request = storage
-        .mock("GET", "/block_snapshot.json")
-        .match_query(Matcher::Exact("X-Amz-Signature=test%2Bsignature".into()))
-        .match_header("x-warp-os-category", Matcher::Missing)
-        .with_status(200)
-        .with_body(block.to_json().unwrap())
-        .create();
-    let api_request = {
-        let mut server = warp_core::channel::ChannelState::mock_server();
-        server.mock("GET", "/api/v1/agent/conversations/test-block-download/block-snapshot")
-            .match_query(Matcher::UrlEncoded("redirect".into(), "false".into()))
-            .with_status(200)
-            .with_body(json!({"url": format!("{}/block_snapshot.json?X-Amz-Signature=test%2Bsignature", storage.url())}).to_string())
-            .create()
-    };
-    let result = block_on(ServerApi::new_for_test().get_block_snapshot(
-        super::ServerConversationToken::new("test-block-download".into()),
-    ))
-    .unwrap();
-    assert_eq!(result.stylized_command, block.stylized_command);
-    assert_eq!(result.stylized_output, block.stylized_output);
-    api_request.assert();
-    storage_request.assert();
-}
-
-#[test]
-fn test_deserialize_file_artifact_download_response() {
-    let json = r#"{
-        "artifact_uid": "artifact-123",
-        "artifact_type": "FILE",
-        "created_at": "2024-01-15T10:30:00Z",
-        "data": {
-            "download_url": "https://storage.example.com/report.txt",
-            "expires_at": "2024-01-15T11:30:00Z",
-            "content_type": "text/plain",
-            "filepath": "outputs/report.txt",
-            "filename": "report.txt",
-            "description": "daily summary",
-            "size_bytes": 42
-        }
-    }"#;
-
-    let artifact: ArtifactDownloadResponse = serde_json::from_str(json).unwrap();
-
-    let ArtifactDownloadResponse::File { common, data } = artifact else {
-        panic!("expected File artifact download response");
-    };
-    assert_eq!(common.artifact_uid, "artifact-123");
-    assert_eq!(common.created_at.to_rfc3339(), "2024-01-15T10:30:00+00:00");
-    assert_eq!(data.download_url, "https://storage.example.com/report.txt");
-    assert_eq!(data.expires_at.to_rfc3339(), "2024-01-15T11:30:00+00:00");
-    assert_eq!(data.content_type, "text/plain");
-    assert_eq!(data.filepath, "outputs/report.txt");
-    assert_eq!(data.filename, "report.txt");
-    assert_eq!(data.description.as_deref(), Some("daily summary"));
-    assert_eq!(data.size_bytes, Some(42));
-}
-
-#[test]
-fn test_deserialize_screenshot_artifact_download_response() {
-    let json = r#"{
-        "artifact_uid": "screenshot-123",
-        "artifact_type": "SCREENSHOT",
-        "created_at": "2024-01-15T10:30:00Z",
-        "data": {
-            "download_url": "https://storage.example.com/screenshot.png",
-            "expires_at": "2024-01-15T11:30:00Z",
-            "content_type": "image/png",
-            "description": "dashboard screenshot"
-        }
-    }"#;
-
-    let artifact: ArtifactDownloadResponse = serde_json::from_str(json).unwrap();
-
-    let ArtifactDownloadResponse::Screenshot { common, data } = artifact else {
-        panic!("expected Screenshot artifact download response");
-    };
-    assert_eq!(common.artifact_uid, "screenshot-123");
-    assert_eq!(common.created_at.to_rfc3339(), "2024-01-15T10:30:00+00:00");
-    assert_eq!(
-        data.download_url,
-        "https://storage.example.com/screenshot.png"
-    );
-    assert_eq!(data.expires_at.to_rfc3339(), "2024-01-15T11:30:00+00:00");
-    assert_eq!(data.content_type, "image/png");
-    assert_eq!(data.description.as_deref(), Some("dashboard screenshot"));
-}
 
 #[test]
 fn test_deserialize_plan_artifact() {
@@ -361,22 +261,6 @@ fn test_artifact_vec_serialize_deserialize_roundtrip() {
     let deserialized: Vec<Artifact> = serde_json::from_str(&serialized).unwrap();
 
     assert_eq!(original, deserialized);
-}
-
-#[test]
-fn build_fork_conversation_url_routes_to_conversation_fork() {
-    assert_eq!(
-        build_fork_conversation_url("550e8400-e29b-41d4-a716-446655440000"),
-        "agent/conversations/550e8400-e29b-41d4-a716-446655440000/fork"
-    );
-}
-
-#[test]
-fn build_fork_conversation_url_escapes_path_param() {
-    assert_eq!(
-        build_fork_conversation_url("conversation/with spaces"),
-        "agent/conversations/conversation%2Fwith%20spaces/fork"
-    );
 }
 
 #[test]

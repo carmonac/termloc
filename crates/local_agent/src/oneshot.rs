@@ -29,6 +29,32 @@ code blocks.";
 const TITLE_PROMPT: &str = "Write a title of at most six words for a conversation that starts \
 with the user's message. Reply with the title only, in the user's language, without quotes.";
 
+const COMMIT_MESSAGE_PROMPT: &str = "Write a git commit message for the diff. Use a short summary \
+line in the imperative mood, then a blank line and a brief explanation if the change needs one. Reply \
+with the message only.";
+
+const PR_TITLE_PROMPT: &str = "Write a pull request title of at most ten words for the diff. Reply \
+with the title only, without quotes.";
+
+const PR_DESCRIPTION_PROMPT: &str = "Write a pull request description for the diff in Markdown: a \
+short summary followed by the main changes as a list. Reply with the description only.";
+
+/// The text to write about a set of changes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ChangeText {
+    CommitMessage,
+    PrTitle,
+    PrDescription,
+}
+
+/// The changes to write about.
+#[derive(Clone, Debug, Default)]
+pub struct ChangeContext {
+    pub diff: String,
+    pub branch_name: String,
+    pub commit_messages: Vec<String>,
+}
+
 /// The model used for requests that need a quick answer.
 #[derive(Clone, Debug)]
 pub struct QuickModel {
@@ -154,6 +180,26 @@ impl OneShot {
         self.send(messages).await
     }
 
+    /// Writes a commit message, pull request title or pull request description for `changes`.
+    pub async fn change_text(
+        &self,
+        kind: ChangeText,
+        changes: &ChangeContext,
+    ) -> anyhow::Result<String> {
+        let system = match kind {
+            ChangeText::CommitMessage => COMMIT_MESSAGE_PROMPT,
+            ChangeText::PrTitle => PR_TITLE_PROMPT,
+            ChangeText::PrDescription => PR_DESCRIPTION_PROMPT,
+        };
+        let reply = self.complete(system, &change_prompt(changes)).await?;
+        match kind {
+            ChangeText::PrTitle => first_line(&reply)
+                .map(|title| title.trim_matches(['"', '\'']).to_owned())
+                .ok_or_else(|| anyhow!("the model returned no title")),
+            ChangeText::CommitMessage | ChangeText::PrDescription => Ok(reply),
+        }
+    }
+
     pub async fn title(&self, first_message: &str) -> anyhow::Result<String> {
         let reply = self.complete(TITLE_PROMPT, first_message).await?;
         first_line(&reply)
@@ -214,6 +260,21 @@ fn next_command_prompt(context: &NextCommandContext) -> String {
     if let Some(prefix) = &context.prefix {
         prompt.push_str(&format!("The command starts with: {prefix}\n"));
     }
+    prompt
+}
+
+fn change_prompt(changes: &ChangeContext) -> String {
+    let mut prompt = String::new();
+    if !changes.branch_name.is_empty() {
+        prompt.push_str(&format!("Branch: {}\n", changes.branch_name));
+    }
+    if !changes.commit_messages.is_empty() {
+        prompt.push_str(&format!(
+            "Commits:\n{}\n",
+            changes.commit_messages.join("\n")
+        ));
+    }
+    prompt.push_str(&format!("Diff:\n{}", changes.diff));
     prompt
 }
 

@@ -3,11 +3,11 @@ use std::collections::HashSet;
 
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
-use url::{Origin, ParseError, Url};
+use url::{Origin, Url};
 
 use super::Channel;
 use crate::AppId;
-use crate::channel::config::{ChannelConfig, IapConfig, McpOAuthProviderConfig, WarpServerConfig};
+use crate::channel::config::{ChannelConfig, McpOAuthProviderConfig, WarpServerConfig};
 use crate::features::FeatureFlag;
 
 lazy_static! {
@@ -98,22 +98,6 @@ impl ChannelState {
         cfg!(debug_assertions) || matches!(Self::channel(), Channel::Local | Channel::Dev)
     }
 
-    pub fn override_server_root_url(url: impl Into<Cow<'static, str>>) -> Result<(), ParseError> {
-        let url = url.into();
-        Url::parse(&url)?;
-        let mut channel_state = CHANNEL_STATE.lock();
-        channel_state.config.server_config.server_root_url = url;
-        channel_state.config.server_config.iap_config = None;
-        Ok(())
-    }
-
-    pub fn override_ws_server_url(url: impl Into<Cow<'static, str>>) -> Result<(), ParseError> {
-        let url = url.into();
-        Url::parse(&url)?;
-        CHANNEL_STATE.lock().config.server_config.rtc_server_url = url;
-        Ok(())
-    }
-
     pub fn uses_staging_server() -> bool {
         let Ok(url) = Url::parse(Self::server_root_url().as_ref()) else {
             return false;
@@ -176,10 +160,6 @@ impl ChannelState {
         CHANNEL_STATE.lock().config.logfile_name.clone()
     }
 
-    pub fn iap_config() -> Option<IapConfig> {
-        CHANNEL_STATE.lock().config.server_config.iap_config.clone()
-    }
-
     pub fn ws_server_url() -> Cow<'static, str> {
         CHANNEL_STATE
             .lock()
@@ -195,8 +175,7 @@ impl ChannelState {
     /// Derived from [`ws_server_url`] by rewriting the scheme (`wss`→`https`,
     /// `ws`→`http`) and stripping the path. Falls back to [`server_root_url`]
     /// when the WS URL cannot be parsed or uses an unexpected scheme — this
-    /// keeps override paths (e.g. `TERMLOC_WS_SERVER_URL=...`) working without a
-    /// separate override for the HTTP variant.
+    /// keeps an unusual WS URL from producing an invalid HTTP origin.
     pub fn rtc_http_url() -> Cow<'static, str> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "test-util")] {
