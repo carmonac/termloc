@@ -542,6 +542,12 @@ impl SettingsPageMeta for MCPServersSettingsPageView {
         SettingsSection::AgentMCPServers
     }
 
+    fn on_page_selected(&mut self, _allow_steal_focus: bool, ctx: &mut ViewContext<Self>) {
+        TemplatableMCPServerManager::handle(ctx).update(ctx, |manager, ctx| {
+            manager.load_credentials_if_needed(ctx);
+        });
+    }
+
     fn should_render(&self, _ctx: &AppContext) -> bool {
         true
     }

@@ -282,6 +282,8 @@ impl TemplatableMCPServerManager {
         false
     }
 
+    pub fn load_credentials_if_needed(&mut self, _ctx: &mut ModelContext<Self>) {}
+
     pub fn spawn_ephemeral_server(
         &mut self,
         _installation: TemplatableMCPServerInstallation,

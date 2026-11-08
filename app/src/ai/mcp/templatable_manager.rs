@@ -35,6 +35,19 @@ use crate::ai::mcp::{StaticEnvVar, TransportType};
 type ReconnectResultSender =
     tokio::sync::oneshot::Sender<Result<rmcp::Peer<rmcp::RoleClient>, String>>;
 
+/// Whether the stored MCP credentials have been read from secure storage.
+#[cfg(not(target_family = "wasm"))]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum CredentialsState {
+    /// Not read yet. Reading the macOS keychain can show a password prompt, so it's deferred until
+    /// something needs the credentials.
+    #[default]
+    NotLoaded,
+    /// Being read off the main thread.
+    Loading,
+    Loaded,
+}
+
 #[cfg(not(target_family = "wasm"))]
 type CredentialAction = Box<
     dyn FnOnce(
@@ -74,9 +87,8 @@ pub struct TemplatableMCPServerManager {
     /// Cached credentials for file-based servers, keyed by installation hash.
     #[cfg(not(target_family = "wasm"))]
     file_based_server_credentials: oauth::FileBasedPersistedCredentialsMap,
-    /// Whether secure storage is still being read off the main thread.
     #[cfg(not(target_family = "wasm"))]
-    credentials_loading: bool,
+    credentials_state: CredentialsState,
     /// Work that needs the stored credentials, run once they have loaded.
     #[cfg(not(target_family = "wasm"))]
     after_credentials_load: Vec<CredentialAction>,

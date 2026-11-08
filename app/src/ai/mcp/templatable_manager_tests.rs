@@ -4,7 +4,7 @@ use url::Url;
 use uuid::Uuid;
 use warpui::App;
 
-use super::{SpawnedServerInfo, TemplatableMCPServerManager};
+use super::{CredentialsState, SpawnedServerInfo, TemplatableMCPServerManager};
 
 #[test]
 fn prewarmed_mcp_spawn_uses_current_key_without_persisting_it() {
@@ -146,7 +146,7 @@ fn credential_work_waits_for_stored_credentials() {
     App::test((), |mut app| async move {
         app.update(|ctx| warpui_extras::secure_storage::register_noop("test", ctx));
         let manager = app.add_model(|_| TemplatableMCPServerManager {
-            credentials_loading: true,
+            credentials_state: CredentialsState::Loading,
             ..Default::default()
         });
 
@@ -155,7 +155,7 @@ fn credential_work_waits_for_stored_credentials() {
             assert_eq!(manager.after_credentials_load.len(), 1);
 
             manager.after_credentials_load.push(Box::new(|manager, _| {
-                assert!(!manager.credentials_loading);
+                assert_eq!(manager.credentials_state, CredentialsState::Loaded);
                 manager
                     .runtime_environment
                     .insert("RAN_AFTER_LOAD".into(), "true".into());
@@ -164,6 +164,41 @@ fn credential_work_waits_for_stored_credentials() {
 
             assert!(manager.after_credentials_load.is_empty());
             assert!(manager.runtime_environment.contains_key("RAN_AFTER_LOAD"));
+        });
+    });
+}
+
+#[test]
+fn credentials_are_read_only_when_needed() {
+    App::test((), |mut app| async move {
+        app.update(|ctx| warpui_extras::secure_storage::register_noop("test", ctx));
+        let manager = app.add_model(|_| TemplatableMCPServerManager::default());
+
+        manager.update(&mut app, |manager, ctx| {
+            assert_eq!(manager.credentials_state, CredentialsState::NotLoaded);
+
+            manager.purge_file_based_server_credentials(&vec![], ctx);
+            assert_eq!(manager.credentials_state, CredentialsState::NotLoaded);
+
+            manager.purge_file_based_server_credentials(&vec![1], ctx);
+            assert_eq!(manager.credentials_state, CredentialsState::Loaded);
+            assert!(manager.after_credentials_load.is_empty());
+        });
+    });
+}
+
+#[test]
+fn load_credentials_if_needed_marks_credentials_loaded() {
+    App::test((), |mut app| async move {
+        app.update(|ctx| warpui_extras::secure_storage::register_noop("test", ctx));
+        let manager = app.add_model(|_| TemplatableMCPServerManager::default());
+
+        manager.update(&mut app, |manager, ctx| {
+            manager.load_credentials_if_needed(ctx);
+            assert_eq!(manager.credentials_state, CredentialsState::Loaded);
+
+            manager.load_credentials_if_needed(ctx);
+            assert_eq!(manager.credentials_state, CredentialsState::Loaded);
         });
     });
 }
