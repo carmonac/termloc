@@ -1,8 +1,5 @@
-use std::fmt::Display;
-use std::future::Future;
 use std::time::Duration;
 
-use anyhow::Result;
 use warpui::{RetryOption, duration_with_jitter};
 
 /// Common duration for a periodic poll. In our app, we generally have the following to update the same data:
@@ -67,65 +64,3 @@ pub(crate) fn backoff_after_attempts(attempts_made: usize) -> Duration {
     let delay = INITIAL_BACKOFF.mul_f32(BACKOFF_FACTOR.powi(exponent));
     duration_with_jitter(delay, BACKOFF_JITTER)
 }
-
-/// Generalized retry function that gives callers control over retry classification and backoff.
-///
-/// The retry loop calls `attempt_fn` until:
-/// * It succeeds
-/// * It returns a non-retryable error, according to `retryable_fn`
-/// * Attempts are exhausted due to `backoff_fn` returning `None`
-///
-/// `retryable_fn` classifies errors as retryable or not. It should return `true` if the failure
-/// can be retried, `false` if it should abort the operation.
-///
-/// `backoff_fn` returns the backoff delay to use after N attempts.
-pub(crate) async fn with_retry<T, E, F, S, B, R, Fut, SF>(
-    operation: &str,
-    mut attempt_fn: F,
-    mut retryable_fn: R,
-    mut sleep_fn: S,
-    mut backoff_fn: B,
-) -> Result<T, E>
-where
-    F: FnMut() -> Fut,
-    E: Display,
-    R: FnMut(&E) -> bool,
-    B: FnMut(usize) -> Option<Duration>,
-    S: FnMut(Duration) -> SF,
-    Fut: Future<Output = Result<T, E>>,
-    SF: Future<Output = ()>,
-{
-    let mut attempt = 1usize;
-    loop {
-        match attempt_fn().await {
-            Ok(value) => break Ok(value),
-            Err(err) if retryable_fn(&err) => {
-                let delay = backoff_fn(attempt - 1);
-                log::warn!(
-                    "{operation}: transient error on attempt {attempt}, {}: {err:#}",
-                    if delay.is_some() {
-                        "retrying"
-                    } else {
-                        "retries exhausted"
-                    }
-                );
-
-                match delay {
-                    Some(delay) => {
-                        sleep_fn(delay).await;
-                        attempt += 1;
-                    }
-                    None => break Err(err),
-                }
-            }
-            Err(err) => {
-                log::warn!("{operation}: fatal error on attempt {attempt}: {err:#}");
-                break Err(err);
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-#[path = "retry_strategies_tests.rs"]
-mod tests;

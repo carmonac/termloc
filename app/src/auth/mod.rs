@@ -49,8 +49,6 @@ use crate::settings::{
 #[cfg(feature = "tui")]
 use crate::workflows::manager::WorkflowManager;
 #[cfg(feature = "tui")]
-use crate::workspaces::update_manager::TeamUpdateManager;
-#[cfg(feature = "tui")]
 use crate::{GlobalResourceHandlesProvider, persistence};
 
 /// Returns the configured Warp web logout URL.
@@ -136,9 +134,6 @@ pub fn log_out(app: &mut AppContext) {
     // Stop the cloud object and workspace metadata polling loops that were started on login.
     UpdateManager::handle(app).update(app, |manager, _| {
         manager.stop_polling_for_updated_objects();
-    });
-    TeamUpdateManager::handle(app).update(app, |manager, _| {
-        manager.stop_polling_for_workspace_metadata_updates();
     });
     remove_cloud_persisted_settings(app);
 

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use warpui::App;
 
 use super::*;
@@ -11,8 +9,6 @@ use crate::cloud_object::model::persistence::CloudModel;
 use crate::network::NetworkStatus;
 use crate::server::cloud_objects::update_manager::UpdateManager;
 use crate::server::server_api::ServerApiProvider;
-use crate::server::server_api::team::MockTeamClient;
-use crate::server::server_api::workspace::MockWorkspaceClient;
 use crate::server::sync_queue::SyncQueue;
 use crate::settings::PrivacySettings;
 use crate::terminal::input::models::query_model_picker_choices;
@@ -419,14 +415,7 @@ fn team_catalog_hydration_preserves_shared_profile_and_resolves_against_active_t
             Some(disabled_models.clone()),
         );
         let refreshed_workspace = workspace.clone();
-        app.add_singleton_model(|ctx| {
-            UserWorkspaces::mock(
-                Arc::new(MockTeamClient::new()),
-                Arc::new(MockWorkspaceClient::new()),
-                vec![workspace],
-                ctx,
-            )
-        });
+        app.add_singleton_model(|ctx| UserWorkspaces::mock(vec![workspace], ctx));
         let profiles_model = app.add_singleton_model(|ctx| {
             AIExecutionProfilesModel::new(&LaunchMode::new_for_unit_test(), ctx)
         });

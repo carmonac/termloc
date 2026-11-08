@@ -10,7 +10,6 @@ mod app_services;
 mod app_state;
 mod auth;
 mod banner;
-mod billing;
 mod chip_configurator;
 mod cloud_object;
 mod code;
@@ -52,7 +51,6 @@ mod platform;
 mod prefix;
 #[cfg(target_os = "macos")]
 mod preview_config_migration;
-mod pricing;
 mod profiling;
 mod projects;
 mod prompt;
@@ -1463,22 +1461,11 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(|ctx| AIRequestUsageModel::new(ai_client, ctx));
 
     ctx.add_singleton_model(|ctx| {
-        UserWorkspaces::new(
-            server_api_provider.as_ref(ctx).get_team_client(),
-            server_api_provider.as_ref(ctx).get_workspace_client(),
-            cached_workspaces,
-            current_workspace_uid,
-            ctx,
-        )
+        UserWorkspaces::new(cached_workspaces, current_workspace_uid, ctx)
     });
 
     ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), |_, event, ctx| {
-        if matches!(
-            event,
-            UserWorkspacesEvent::CurrentWorkspaceChanged
-                | UserWorkspacesEvent::AiOveragesUpdated
-                | UserWorkspacesEvent::PurchaseAddonCreditsSuccess
-        ) {
+        if matches!(event, UserWorkspacesEvent::CurrentWorkspaceChanged) {
             AIRequestUsageModel::handle(ctx).update(ctx, |usage_model, ctx| {
                 usage_model.request_availability_refresh(ctx);
             });
@@ -1499,7 +1486,6 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(|_| RecordingController::new());
     ctx.add_singleton_model(|_| ExecutionProfileEditorManager::default());
     ctx.add_singleton_model(|_| NetworkLogPaneManager::default());
-    ctx.add_singleton_model(|_| pricing::PricingInfoModel::new());
 
     #[cfg(target_os = "macos")]
     if launch_mode.is_gui() {
@@ -1703,7 +1689,6 @@ pub(crate) fn initialize_app(
     prompt::editor_modal::init(ctx);
     ai::blocklist::agent_view::editor::init(ctx);
     undo_close::init(ctx);
-    billing::shared_objects_creation_denied_modal::init(ctx);
     tab_configs::new_worktree_modal::init(ctx);
     tab_configs::params_modal::init(ctx);
     ai::blocklist::init(ctx);
@@ -1850,13 +1835,7 @@ pub(crate) fn initialize_app(
     // and before the UpdateManager models because they rely on the TeamTester model.
     ctx.add_singleton_model(TeamTesterStatus::new);
 
-    ctx.add_singleton_model(|ctx| {
-        TeamUpdateManager::new(
-            server_api_provider.as_ref(ctx).get_team_client(),
-            persistence_writer.sender(),
-            ctx,
-        )
-    });
+    ctx.add_singleton_model(|_| TeamUpdateManager::new(persistence_writer.sender()));
 
     ctx.add_singleton_model(|ctx| {
         UpdateManager::new(

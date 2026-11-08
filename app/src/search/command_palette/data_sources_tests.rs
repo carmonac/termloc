@@ -23,8 +23,6 @@ use crate::server::cloud_objects::update_manager::UpdateManager;
 use crate::server::ids::SyncId::{self};
 use crate::server::ids::{ObjectUid, ServerId};
 use crate::server::server_api::ServerApiProvider;
-use crate::server::server_api::team::MockTeamClient;
-use crate::server::server_api::workspace::MockWorkspaceClient;
 use crate::server::sync_queue::SyncQueue;
 use crate::settings::{AISettings, PrivacySettings};
 use crate::system::SystemStats;
@@ -136,16 +134,7 @@ fn initialize_app(app: &mut App, workspaces: Vec<Workspace>) {
     // Add the necessary singleton models to the App
     app.add_singleton_model(|_| NetworkStatus::new());
     app.add_singleton_model(|_| SystemStats::new());
-    let mock_team_client = Arc::new(MockTeamClient::new());
-    let mock_workspace_client = Arc::new(MockWorkspaceClient::new());
-    app.add_singleton_model(|ctx| {
-        UserWorkspaces::mock(
-            mock_team_client.clone(),
-            mock_workspace_client.clone(),
-            workspaces,
-            ctx,
-        )
-    });
+    app.add_singleton_model(|ctx| UserWorkspaces::mock(workspaces, ctx));
     app.add_singleton_model(TeamTesterStatus::new);
     // `update_workspaces` pushes enterprise settings into PrivacySettings.
     app.add_singleton_model(PrivacySettings::mock);

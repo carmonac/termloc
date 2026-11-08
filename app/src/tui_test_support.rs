@@ -249,15 +249,7 @@ pub fn register_tui_input_mode_test_settings(ctx: &mut AppContext) {
     ctx.add_singleton_model(|_| ServerApiProvider::new_for_test());
     ctx.add_singleton_model(|_| AuthStateProvider::new_for_test());
     AISettings::register_and_subscribe_to_events(ctx);
-    ctx.add_singleton_model(|ctx| {
-        let provider = ServerApiProvider::as_ref(ctx);
-        UserWorkspaces::mock(
-            provider.get_team_client(),
-            provider.get_workspace_client(),
-            Vec::new(),
-            ctx,
-        )
-    });
+    ctx.add_singleton_model(|ctx| UserWorkspaces::mock(Vec::new(), ctx));
 }
 
 pub fn set_tui_default_team_admin_for_test(ctx: &mut AppContext) {
@@ -332,13 +324,7 @@ pub fn register_tui_session_view_test_singletons(app: &mut warpui::App) {
     app.add_singleton_model(AuthManager::new_for_test);
     app.add_singleton_model(|_| TuiOnboardingMarkers::new_ready_for_test(false, false));
     app.add_singleton_model(PrivacySettings::mock);
-    app.add_singleton_model(|ctx| {
-        let (team_client, workspace_client) = {
-            let provider = ServerApiProvider::as_ref(ctx);
-            (provider.get_team_client(), provider.get_workspace_client())
-        };
-        UserWorkspaces::mock(team_client, workspace_client, vec![], ctx)
-    });
+    app.add_singleton_model(|ctx| UserWorkspaces::mock(vec![], ctx));
     app.add_singleton_model(SyncQueue::mock);
     app.add_singleton_model(CloudModel::mock);
     app.add_singleton_model(|_| crate::appearance::Appearance::mock());

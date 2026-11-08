@@ -1,6 +1,5 @@
 use std::fs;
 use std::path::Path;
-use std::sync::Arc;
 
 use ai::diff_validation::DiffDelta;
 use line_ending::LineEnding;
@@ -15,8 +14,6 @@ use crate::AuthStateProvider;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::code::editor::view::CodeEditorRenderOptions;
 use crate::notebooks::editor::keys::NotebookKeybindings;
-use crate::server::server_api::team::MockTeamClient;
-use crate::server::server_api::workspace::MockWorkspaceClient;
 use crate::settings_view::keybindings::KeybindingChangedNotifier;
 use crate::test_util::settings::initialize_settings_for_tests;
 use crate::vim_registers::VimRegisters;
@@ -35,14 +32,7 @@ fn add_diff(app: &mut App, path: &Path, base: &str, diff: DiffType) -> ViewHandl
     app.add_singleton_model(|_| ActiveSession::default());
     app.add_singleton_model(NotebookKeybindings::new);
     app.add_singleton_model(FileModel::new);
-    app.add_singleton_model(|ctx| {
-        UserWorkspaces::mock(
-            Arc::new(MockTeamClient::new()),
-            Arc::new(MockWorkspaceClient::new()),
-            vec![],
-            ctx,
-        )
-    });
+    app.add_singleton_model(|ctx| UserWorkspaces::mock(vec![], ctx));
     let (_, view) = app.add_window(WindowStyle::NotStealFocus, |ctx| {
         let editor = ctx.add_typed_action_view(|ctx| {
             let editor = CodeEditorView::new(

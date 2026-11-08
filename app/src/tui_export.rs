@@ -197,7 +197,6 @@ pub use crate::util::repo_detection::{RepoDetectionSessionType, detect_possible_
 pub use crate::util::time_format::format_elapsed_seconds;
 #[cfg(feature = "voice_input")]
 pub use crate::voice::transcriber::{Transcriber, VoiceTranscriber};
-pub use crate::workspaces::update_manager::TeamUpdateManager;
 pub use crate::workspaces::user_workspaces::{
     ResolvedTeamScope, TeamContext, TeamContextForOperation, TeamContextResolver, TeamScope,
     UserWorkspaces, UserWorkspacesEvent,

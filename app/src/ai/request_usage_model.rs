@@ -17,7 +17,6 @@ use crate::ai::agent::AIAgentExchangeId;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::credit_availability::AICreditAvailability;
 use crate::auth::AuthStateProvider;
-use crate::pricing::PricingInfoModel;
 use crate::server::server_api::ai::AIClient;
 use crate::settings::AISettings;
 use crate::workspaces::user_workspaces::UserWorkspaces;
@@ -533,26 +532,12 @@ impl AIRequestUsageModel {
             .is_some_and(|w| w.billing_metadata.is_enterprise_pay_as_you_go_enabled());
         let is_enterprise_auto_reload_enabled = current_workspace
             .is_some_and(|w| w.billing_metadata.is_enterprise_auto_reload_enabled());
-        let is_self_serve_auto_reload_enabled = current_workspace.is_some_and(|workspace| {
-            workspace
-                .billing_metadata
-                .is_purchase_add_on_credits_policy_enabled()
-                && workspace
-                    .settings
-                    .addon_credits_settings
-                    .auto_reload_enabled
-                && PricingInfoModel::as_ref(ctx)
-                    .addon_credits_options()
-                    .and_then(|options| workspace.get_auto_reload_price_cents(options))
-                    .is_some_and(|price| !workspace.would_addon_purchase_reach_limit(price))
-        });
 
         has_base_plan_ai_requests
             || (user_bonus_credits || workspace_and_team_bonus_credits)
             || workspace_has_overages
             || is_payg_enabled
             || is_enterprise_auto_reload_enabled
-            || is_self_serve_auto_reload_enabled
     }
 
     /// Returns the number of indices the user's tier allows them to create and the number of files

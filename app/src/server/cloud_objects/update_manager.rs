@@ -78,7 +78,6 @@ use crate::workflows::workflow::Workflow;
 use crate::workflows::workflow_enum::{CloudWorkflowEnum, CloudWorkflowEnumModel, WorkflowEnum};
 use crate::workflows::{CloudWorkflowModel, WorkflowId};
 use crate::workspaces::team_tester::{TeamTesterStatus, TeamTesterStatusEvent};
-use crate::workspaces::update_manager::TeamUpdateManager;
 use crate::workspaces::user_profiles::{UserProfileWithUID, UserProfiles};
 use crate::workspaces::user_workspaces::UserWorkspaces;
 
@@ -1000,10 +999,6 @@ impl UpdateManager {
     }
 
     fn handle_team_memberships_changed(&mut self, ctx: &mut ModelContext<UpdateManager>) {
-        // Immediately check for updates in workspace metadata
-        TeamUpdateManager::handle(ctx).update(ctx, |manager, ctx| {
-            std::mem::drop(manager.refresh_workspace_metadata(ctx));
-        });
         self.refresh_updated_objects(ctx);
     }
 

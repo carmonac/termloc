@@ -26,12 +26,8 @@ use warp_graphql::billing::{
     UsageVisibilityPolicy as GqlUsageVisibilityPolicy, WarpAiPolicy as GqlWarpAiPolicy,
 };
 use warp_graphql::queries::get_conversation_usage as gql_usage;
-use warp_graphql::queries::get_workspaces_metadata_for_user::User as GqlUser;
 use warp_graphql::subscriptions::get_warp_drive_updates::WarpDriveUpdate;
-use warp_graphql::user::{
-    DiscoverableTeamData as GqlDiscoverableTeamData,
-    DiscoverableWorkspaceData as GqlDiscoverableWorkspaceData,
-};
+use warp_graphql::user::DiscoverableTeamData as GqlDiscoverableTeamData;
 use warp_graphql::workspace::{
     AddonCreditsSettings as GqlAddonCreditsSettings,
     AdminEnablementSetting as GqlAdminEnablementSetting, AiAutonomyValue as GqlAiAutonomyValue,
@@ -51,10 +47,7 @@ use warp_graphql::workspace::{
     WriteToPtyAutonomyValue as GqlWriteToPtyAutonomyValue,
 };
 
-use super::team::{
-    DiscoverableTeam, DiscoverableWorkspace, MembershipRole, Team, TeamMember, TeamVisibility,
-};
-use super::user_workspaces::WorkspacesMetadataResponse;
+use super::team::{DiscoverableTeam, MembershipRole, Team, TeamMember, TeamVisibility};
 use super::workspace::{
     AIAutonomyPolicy, AddonCreditsSettings, AdminEnablementSetting, AiAutonomySettings,
     AiPermissionsSettings, BillingCycleUsageData, BillingCycleUsageEntry, BillingCycleUsageSummary,
@@ -77,9 +70,7 @@ use crate::ai::execution_profiles::{
 use crate::ai::llms::ModelsByFeature;
 use crate::ai::{BonusGrant, BonusGrantScope};
 use crate::auth::UserUid;
-use crate::convert_to_server_experiment;
 use crate::server::cloud_objects::listener::ObjectUpdateMessage;
-use crate::server::experiments::ServerExperiment;
 use crate::server::graphql::schema::object_action_history_from_gql;
 use crate::server::ids::ServerId;
 use crate::settings::AgentModeCommandExecutionPredicate;
@@ -87,7 +78,7 @@ use crate::workspaces::workspace::{
     AiOverages, BonusGrantsPurchased, ByoApiKeyPolicy, ByoEndpointPolicy, ChargeUnit,
     CodebaseContextPolicy, EnterpriseCreditsAutoReloadPolicy, EnterprisePayAsYouGoPolicy,
     ManagedByokByoePolicy, MultiAdminPolicy, NativeWorkspacesPolicy, PurchaseAddOnCreditsPolicy,
-    UsageBasedPricingSettings, UserTier, WorkspaceUid,
+    UsageBasedPricingSettings, WorkspaceUid,
 };
 
 pub const PLACEHOLDER_WORKSPACE_UID: &str = "NOT_A_REAL_WORKSPACE_UID";
@@ -101,46 +92,6 @@ impl From<GqlTeamMember> for TeamMember {
             is_disabled: gql_team_member.is_disabled,
         }
     }
-}
-
-impl From<GqlDiscoverableWorkspaceData> for DiscoverableWorkspace {
-    fn from(gql_workspace: GqlDiscoverableWorkspaceData) -> Self {
-        Self {
-            workspace_uid: gql_workspace.workspace_uid.into_inner().into(),
-            name: gql_workspace.name,
-            open_teams: gql_workspace
-                .open_teams
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            member_count: i64::from(gql_workspace.member_count),
-        }
-    }
-}
-
-/// Narrows a workspace to the teams the authenticated user actually belongs to.
-///
-/// The server hands workspace admins every team in the workspace so admin
-/// surfaces can manage them, but a team the user is not a member of is not one
-/// they can operate as in the client. Filtering here keeps every consumer of
-/// `Workspace::teams` (team switcher, team spaces, warp drive teams, ...)
-/// scoped to real memberships.
-///
-/// Service accounts are never recorded as a human `TeamMember` (that list only tracks
-/// user-role memberships), so this membership check cannot recognize them and would strip
-/// every team out from under any service account. Skip it in that case and trust the server
-/// to have already scoped `teams` to the service account's own team.
-fn retain_authenticated_teams(
-    workspace: &mut Workspace,
-    user_uid: UserUid,
-    is_service_account: bool,
-) {
-    if is_service_account {
-        return;
-    }
-    workspace
-        .teams
-        .retain(|team| team.members.iter().any(|member| member.uid == user_uid));
 }
 
 impl From<GqlManagedByokByoePolicy> for ManagedByokByoePolicy {
@@ -1469,65 +1420,6 @@ impl From<GqlWorkspace> for Workspace {
             total_requests_used_since_last_refresh: gql_workspace
                 .total_requests_used_since_last_refresh,
         }
-    }
-}
-
-/// Converts the `GetWorkspacesMetadataForUser` response into [`WorkspacesMetadataResponse`].
-///
-/// `is_service_account` controls whether [`retain_authenticated_teams`] filters each
-/// workspace's teams down to the caller's own human memberships; see that function's doc
-/// comment for why service accounts must skip it.
-pub fn workspaces_metadata_response_from_gql(
-    gql_user: GqlUser,
-    is_service_account: bool,
-) -> WorkspacesMetadataResponse {
-    let user_uid = UserUid::new(&gql_user.profile.uid);
-
-    let workspaces: Vec<Workspace> = gql_user
-        .workspaces
-        .clone()
-        .into_iter()
-        .filter(|gql_workspace| {
-            // TODO(skambashi): REV-717: Clean up this code once every user always has
-            // a workspace, and the server no longer returns a placeholder workspace.
-            gql_workspace.uid != PLACEHOLDER_WORKSPACE_UID.into()
-        })
-        .map(|gql_workspace| {
-            let mut workspace = gql_workspace.into();
-            retain_authenticated_teams(&mut workspace, user_uid, is_service_account);
-            workspace
-        })
-        .collect();
-
-    let joinable_teams = gql_user
-        .discoverable_teams
-        .clone()
-        .into_iter()
-        .map(|gql_joinable_team| gql_joinable_team.into())
-        .collect();
-
-    let experiments = gql_user
-        .experiments
-        .and_then(|experiments| convert_to_server_experiment!(experiments));
-
-    let user_tier = gql_user
-        .billing_metadata
-        .map(|billing_metadata| UserTier {
-            purchase_policy: billing_metadata
-                .tier
-                .purchase_add_on_credits_policy
-                .map(Into::into),
-            charge_unit: billing_metadata.tier.charge_unit.into(),
-        })
-        .unwrap_or_default();
-
-    // TODO(skambashi) refactor to return back workspaces, and not teams
-    WorkspacesMetadataResponse {
-        workspaces,
-        joinable_teams,
-        experiments,
-        ai_credit_availability: Some(gql_user.ai_credit_availability.into()),
-        user_tier,
     }
 }
 

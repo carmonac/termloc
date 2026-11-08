@@ -1,21 +1,14 @@
-use std::sync::Arc;
-
 use chrono::Duration;
-use warp_core::features::FeatureFlag;
-use warp_graphql::billing::{AddonCreditsOption, OveragesPricing, PricingInfo};
 use warpui::{App, ModelHandle};
 
 use super::*;
 use crate::ai::credit_availability::{AICreditAvailability, AICreditDenialReason, AICreditSource};
 use crate::auth::AuthStateProvider;
-use crate::pricing::PricingInfoModel;
 use crate::server::server_api::ServerApiProvider;
-use crate::server::server_api::team::MockTeamClient;
-use crate::server::server_api::workspace::MockWorkspaceClient;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::{
     AiOverages, CustomerType, EnterpriseCreditsAutoReloadPolicy, EnterprisePayAsYouGoPolicy,
-    PurchaseAddOnCreditsPolicy, Workspace, WorkspaceUid,
+    Workspace, WorkspaceUid,
 };
 
 fn create_test_workspace() -> (WorkspaceUid, Workspace) {
@@ -26,14 +19,7 @@ fn create_test_workspace() -> (WorkspaceUid, Workspace) {
 }
 
 fn add_user_workspaces_with_workspace(app: &mut App, workspace: Workspace) {
-    app.add_singleton_model(|ctx| {
-        UserWorkspaces::mock(
-            Arc::new(MockTeamClient::new()),
-            Arc::new(MockWorkspaceClient::new()),
-            vec![workspace],
-            ctx,
-        )
-    });
+    app.add_singleton_model(|ctx| UserWorkspaces::mock(vec![workspace], ctx));
 }
 
 fn add_request_usage_model(app: &mut App) -> ModelHandle<AIRequestUsageModel> {
@@ -60,57 +46,9 @@ fn add_request_usage_model_without_auth(app: &mut App) -> ModelHandle<AIRequestU
     app.update(|ctx| {
         warpui_extras::secure_storage::register_noop("test", ctx);
     });
-    app.add_singleton_model(|_| PricingInfoModel::new());
     app.add_singleton_model(|ctx| {
         AIRequestUsageModel::new_for_test(ServerApiProvider::as_ref(ctx).get_ai_client(), ctx)
     })
-}
-
-fn set_addon_credits_pricing_info(app: &mut App) {
-    PricingInfoModel::handle(app).update(app, |model, ctx| {
-        model.update_pricing_info(
-            PricingInfo {
-                plans: vec![],
-                overages: OveragesPricing {
-                    price_per_request_usd_cents: 1,
-                },
-                addon_credits_options: vec![AddonCreditsOption {
-                    credits: 1000,
-                    price_usd_cents: 1000,
-                    usage_cents: None,
-                }],
-                promotion_message: None,
-            },
-            ctx,
-        );
-    });
-}
-
-fn standard_purchase_policy() -> PurchaseAddOnCreditsPolicy {
-    PurchaseAddOnCreditsPolicy {
-        enabled: true,
-        premium_enabled: false,
-        price_premium_bps: 0,
-    }
-}
-
-fn premium_purchase_policy() -> PurchaseAddOnCreditsPolicy {
-    PurchaseAddOnCreditsPolicy {
-        enabled: false,
-        premium_enabled: true,
-        price_premium_bps: 1000,
-    }
-}
-
-fn enable_auto_reload(workspace: &mut Workspace) {
-    workspace
-        .settings
-        .addon_credits_settings
-        .auto_reload_enabled = true;
-    workspace
-        .settings
-        .addon_credits_settings
-        .selected_auto_reload_credit_denomination = Some(1000);
 }
 
 #[test]
@@ -541,150 +479,6 @@ fn test_has_any_ai_remaining_false_with_enterprise_auto_reload_policy_on_non_ent
             assert!(
                 !model.has_any_ai_remaining(ctx),
                 "expected has_any_ai_remaining to be false when enterprise auto-reload policy is enabled for a non-enterprise workspace",
-            );
-        });
-    });
-}
-
-#[test]
-fn test_has_any_ai_remaining_true_with_self_serve_auto_reload() {
-    App::test((), |mut app| async move {
-        let (_uid, mut workspace) = create_test_workspace();
-        workspace
-            .billing_metadata
-            .tier
-            .purchase_add_on_credits_policy = Some(standard_purchase_policy());
-        enable_auto_reload(&mut workspace);
-
-        add_user_workspaces_with_workspace(&mut app, workspace);
-        let request_usage_model = add_request_usage_model(&mut app);
-        set_addon_credits_pricing_info(&mut app);
-
-        request_usage_model.update(&mut app, |model, ctx| {
-            model.request_limit_info = RequestLimitInfo::new_for_test(10, 10);
-            model.bonus_grants.clear();
-
-            assert!(
-                model.has_any_ai_remaining(ctx),
-                "expected has_any_ai_remaining to be true when self-serve auto-reload is enabled",
-            );
-        });
-    });
-}
-
-#[test]
-fn test_has_any_ai_remaining_true_with_premium_auto_reload() {
-    App::test((), |mut app| async move {
-        let (_uid, mut workspace) = create_test_workspace();
-        workspace
-            .billing_metadata
-            .tier
-            .purchase_add_on_credits_policy = Some(premium_purchase_policy());
-        enable_auto_reload(&mut workspace);
-
-        add_user_workspaces_with_workspace(&mut app, workspace);
-        let request_usage_model = add_request_usage_model(&mut app);
-        set_addon_credits_pricing_info(&mut app);
-
-        request_usage_model.update(&mut app, |model, ctx| {
-            model.request_limit_info = RequestLimitInfo::new_for_test(10, 10);
-            model.bonus_grants.clear();
-
-            assert!(
-                model.has_any_ai_remaining(ctx),
-                "expected has_any_ai_remaining to be true when premium-plan auto-reload is enabled",
-            );
-        });
-    });
-}
-
-#[test]
-fn test_has_any_ai_remaining_false_when_premium_auto_reload_would_exceed_limit() {
-    App::test((), |mut app| async move {
-        let (_uid, mut workspace) = create_test_workspace();
-        workspace
-            .billing_metadata
-            .tier
-            .purchase_add_on_credits_policy = Some(premium_purchase_policy());
-        enable_auto_reload(&mut workspace);
-        // The reload's list price is $10.00 but the premium price is $11.00;
-        // a $10.50 monthly limit only blocks the reload when the premium
-        // surcharge is included in the check.
-        workspace
-            .settings
-            .addon_credits_settings
-            .max_monthly_spend_cents = Some(1050);
-
-        add_user_workspaces_with_workspace(&mut app, workspace);
-        let request_usage_model = add_request_usage_model(&mut app);
-        set_addon_credits_pricing_info(&mut app);
-
-        request_usage_model.update(&mut app, |model, ctx| {
-            model.request_limit_info = RequestLimitInfo::new_for_test(10, 10);
-            model.bonus_grants.clear();
-
-            assert!(
-                !model.has_any_ai_remaining(ctx),
-                "expected has_any_ai_remaining to be false when the premium-priced reload would exceed the monthly spend limit",
-            );
-        });
-    });
-}
-
-#[test]
-fn test_has_any_ai_remaining_true_with_self_serve_auto_reload_and_billing_v2_disabled() {
-    App::test((), |mut app| async move {
-        let _guard = FeatureFlag::BillingAndUsagePageV2.override_enabled(false);
-
-        let (_uid, mut workspace) = create_test_workspace();
-        workspace
-            .billing_metadata
-            .tier
-            .purchase_add_on_credits_policy = Some(standard_purchase_policy());
-        enable_auto_reload(&mut workspace);
-
-        add_user_workspaces_with_workspace(&mut app, workspace);
-        let request_usage_model = add_request_usage_model(&mut app);
-        set_addon_credits_pricing_info(&mut app);
-
-        request_usage_model.update(&mut app, |model, ctx| {
-            model.request_limit_info = RequestLimitInfo::new_for_test(10, 10);
-            model.bonus_grants.clear();
-
-            assert!(
-                model.has_any_ai_remaining(ctx),
-                "expected has_any_ai_remaining to be true when self-serve auto-reload is enabled without Billing and Usage V2",
-            );
-        });
-    });
-}
-
-#[test]
-fn test_has_any_ai_remaining_false_with_add_on_credits_policy_when_purchase_would_exceed_limit() {
-    App::test((), |mut app| async move {
-        let (_uid, mut workspace) = create_test_workspace();
-        workspace
-            .billing_metadata
-            .tier
-            .purchase_add_on_credits_policy = Some(standard_purchase_policy());
-        enable_auto_reload(&mut workspace);
-        workspace
-            .settings
-            .addon_credits_settings
-            .max_monthly_spend_cents = Some(1000);
-        workspace.bonus_grants_purchased_this_month.cents_spent = 500;
-
-        add_user_workspaces_with_workspace(&mut app, workspace);
-        let request_usage_model = add_request_usage_model(&mut app);
-        set_addon_credits_pricing_info(&mut app);
-
-        request_usage_model.update(&mut app, |model, ctx| {
-            model.request_limit_info = RequestLimitInfo::new_for_test(10, 10);
-            model.bonus_grants.clear();
-
-            assert!(
-                !model.has_any_ai_remaining(ctx),
-                "expected has_any_ai_remaining to be false when add-on credit purchase would exceed the monthly spend limit",
             );
         });
     });
