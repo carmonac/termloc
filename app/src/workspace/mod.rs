@@ -1433,7 +1433,8 @@ fn add_overflow_menu_items_as_editable_binding(app: &mut AppContext) {
             "View Termloc logs",
             WorkspaceAction::ViewLogs,
         )
-        .with_context_predicate(id!("Workspace")),
+        .with_context_predicate(id!("Workspace"))
+        .with_custom_action(CustomAction::ViewLogs),
     ]);
 }
 

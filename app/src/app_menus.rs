@@ -158,6 +158,8 @@ fn make_new_app_menu(ctx: &AppContext) -> Menu {
         MenuItem::Separator,
         updateable_custom_item_without_checkmark(CustomAction::ShowAppearance, ctx),
         MenuItem::Separator,
+        updateable_custom_item_without_checkmark(CustomAction::ViewLogs, ctx),
+        MenuItem::Separator,
     ];
 
     menu_items.push(MenuItem::Custom(CustomMenuItem::new_with_submenu(
