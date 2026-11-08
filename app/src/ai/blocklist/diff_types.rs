@@ -7,7 +7,6 @@
 use std::ops::Range;
 
 use ai::diff_validation::{DiffDelta, DiffType};
-use warp_core::HostId;
 
 /// The base content and file path for a diff.
 #[derive(Clone)]
@@ -70,11 +69,10 @@ fn line_count(content: &str) -> usize {
     content.lines().count()
 }
 
-/// Whether a code diff targets the local filesystem or a remote host.
+/// The filesystem a code diff targets.
 #[derive(Clone, Debug)]
 pub enum DiffSessionType {
     Local,
-    Remote(HostId),
 }
 
 /// Derives the 1-indexed changed line ranges described by a diff's deltas.

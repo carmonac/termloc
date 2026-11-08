@@ -64,7 +64,6 @@ onboarding = { path = "crates/onboarding" }
 persistence = { path = "crates/persistence" }
 prevent_sleep = { path = "crates/prevent_sleep" }
 regex_dfas = { path = "crates/regex_dfas" }
-remote_server = { path = "crates/remote_server" }
 repo_metadata = { path = "crates/repo_metadata" }
 secret_redaction = { path = "crates/secret_redaction" }
 settings = { path = "crates/settings" }

@@ -520,7 +520,7 @@ pub enum Event {
     },
     /// Dirty the workspace so the tab indicator shows.
     MaximizePaneToggled,
-    /// A remote server resolved the repo root for a session in this pane group.
+    /// The repo root for a remote session in this pane group was resolved.
     RemoteRepoNavigated {
         remote_path: RemotePath,
     },

@@ -306,18 +306,11 @@ pub(super) fn init_db(scope: &PersistenceScope) -> Result<SqliteConnection> {
             "Encountered an error while creating parent directories for sqlite database: {err:#}"
         );
     }
-    if matches!(scope, PersistenceScope::RemoteServerDaemon { .. }) {
-        ensure_owner_only_dir(db_parent)?;
-    }
-
     if matches!(scope, PersistenceScope::App) {
         migrate_old_sqlite_into_secure_container_if_needed(&db_path);
     }
 
     let conn = setup_database(&db_path)?;
-    if matches!(scope, PersistenceScope::RemoteServerDaemon { .. }) {
-        ensure_owner_only_file(&db_path)?;
-    }
     Ok(conn)
 }
 
@@ -396,9 +389,6 @@ pub fn database_file_path_for_scope(scope: &PersistenceScope) -> PathBuf {
     match scope {
         PersistenceScope::App => app_database_file_path(),
         PersistenceScope::Tui => tui_database_file_path(),
-        PersistenceScope::RemoteServerDaemon { identity_key } => {
-            remote_server_daemon_database_file_path(identity_key)
-        }
     }
 }
 
@@ -420,43 +410,6 @@ fn app_database_file_path() -> PathBuf {
 
 fn tui_database_file_path() -> PathBuf {
     warp_core::paths::tui_state_dir().join(TERMLOC_SQLITE_FILE_NAME)
-}
-
-fn remote_server_daemon_database_file_path(identity_key: &str) -> PathBuf {
-    let data_dir = remote_server::setup::remote_server_daemon_data_dir(identity_key);
-    let expanded_data_dir = shellexpand::tilde(&data_dir).into_owned();
-    PathBuf::from(expanded_data_dir).join(TERMLOC_SQLITE_FILE_NAME)
-}
-
-#[cfg(unix)]
-fn ensure_owner_only_dir(path: &Path) -> Result<()> {
-    use std::fs::Permissions;
-    use std::os::unix::fs::PermissionsExt;
-
-    std::fs::set_permissions(path, Permissions::from_mode(0o700))
-        .with_context(|| format!("setting permissions on directory {}", path.display()))
-}
-
-#[cfg(not(unix))]
-fn ensure_owner_only_dir(_path: &Path) -> Result<()> {
-    Ok(())
-}
-
-#[cfg(unix)]
-fn ensure_owner_only_file(path: &Path) -> Result<()> {
-    use std::fs::Permissions;
-    use std::os::unix::fs::PermissionsExt;
-
-    if path.exists() {
-        std::fs::set_permissions(path, Permissions::from_mode(0o600))
-            .with_context(|| format!("setting permissions on file {}", path.display()))?;
-    }
-    Ok(())
-}
-
-#[cfg(not(unix))]
-fn ensure_owner_only_file(_path: &Path) -> Result<()> {
-    Ok(())
 }
 
 fn start_writer(conn: SqliteConnection, database_path: PathBuf) -> Result<WriterHandles> {
@@ -2349,31 +2302,6 @@ fn read_sqlite_data(
     current_user_id: Option<UserUid>,
     data_scope: PersistedDataScope,
 ) -> Result<PersistedData, Error> {
-    if matches!(data_scope, PersistedDataScope::CodebaseIndicesOnly) {
-        return Ok(PersistedData {
-            app_state: None,
-            cloud_objects: Default::default(),
-            workspaces: Default::default(),
-            current_workspace_uid: None,
-            command_history: Default::default(),
-            user_profiles: Default::default(),
-            time_of_next_force_object_refresh: None,
-            object_actions: Default::default(),
-            experiments: Default::default(),
-            ai_queries: Default::default(),
-            nld_prompts: Default::default(),
-            codebase_indices: get_all_codebase_index_metadata(conn)?,
-            workspace_language_servers: Default::default(),
-            multi_agent_conversations: Default::default(),
-            projects: Default::default(),
-            project_rules: Default::default(),
-            ignored_suggestions: Default::default(),
-            mcp_server_installations: Default::default(),
-            mcp_servers_to_restore: Default::default(),
-            conversation_summary_backfills: Default::default(),
-        });
-    }
-
     let app_state = if data_scope.session_restoration() {
         use schema::windows::dsl::*;
 
@@ -2722,15 +2650,11 @@ fn read_sqlite_data(
         Vec::new()
     };
 
-    let user_profiles = if data_scope.user_profiles() {
-        schema::user_profiles::dsl::user_profiles
-            .load_iter::<model::UserProfile, DefaultLoadingMode>(conn)?
-            .filter_map(|user_profile| user_profile.ok())
-            .map(user_profile_from_persistence)
-            .collect()
-    } else {
-        Vec::new()
-    };
+    let user_profiles = schema::user_profiles::dsl::user_profiles
+        .load_iter::<model::UserProfile, DefaultLoadingMode>(conn)?
+        .filter_map(|user_profile| user_profile.ok())
+        .map(user_profile_from_persistence)
+        .collect();
 
     let object_actions: Vec<ObjectAction> = if data_scope.gui_only_data() {
         schema::object_actions::dsl::object_actions

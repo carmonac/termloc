@@ -13,7 +13,6 @@ use crate::context_chips::prompt_type::PromptType;
 use crate::pane_group::TerminalViewResources;
 use crate::persistence::ModelEvent;
 use crate::terminal::view::ConversationRestorationInNewPaneType;
-use crate::terminal::writeable_pty::terminal_manager_util::wire_up_remote_server_controller_with_view;
 use crate::terminal::{TerminalManager as TerminalManagerTrait, TerminalModel, TerminalView};
 
 /// Configuration for constructing the GUI terminal surface.
@@ -128,12 +127,6 @@ pub(crate) fn create_terminal_view_surface(
                     .block_list_mut()
                     .append_session_restoration_separator_to_block_list(is_historical);
             }
-
-            wire_up_remote_server_controller_with_view(
-                &terminal_manager.remote_server_controller(),
-                view,
-                ctx,
-            );
 
             wire_up_agent_view_with_terminal_view(view, ctx);
         },

@@ -192,7 +192,7 @@ pub fn add_tui_history_test_models(
     });
 
     let (executor_command_tx, _executor_command_rx) = async_channel::unbounded();
-    let sessions = ctx.add_model(|ctx| Sessions::new(executor_command_tx, ctx));
+    let sessions = ctx.add_model(|_| Sessions::new(executor_command_tx));
     let (model_events_tx, model_events_rx) = async_channel::unbounded();
     let model_events =
         ctx.add_model(|ctx| ModelEventDispatcher::new(model_events_rx, sessions.clone(), ctx));

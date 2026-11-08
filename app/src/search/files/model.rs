@@ -106,9 +106,7 @@ impl FileSearchModel {
     /// Fetches files and folders from the current working directory (non-recursive).
     ///
     /// For local sessions this reads the filesystem directly via `std::fs::read_dir`.
-    /// For remote sessions it queries the `RepoMetadataModel`, which receives
-    /// lazy-loaded first-level snapshots from the remote server on every
-    /// `NavigatedToDirectory`.
+    /// For remote sessions it queries the `RepoMetadataModel`.
     #[cfg(feature = "local_fs")]
     pub fn get_folder_contents(&self, app: &AppContext) -> Vec<FileSearchResult> {
         let active_window_id = app.windows().state().active_window;

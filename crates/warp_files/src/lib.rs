@@ -18,14 +18,11 @@ use futures::future::BoxFuture;
 use futures::io::{AsyncBufReadExt, BufReader};
 use futures::{FutureExt, StreamExt};
 use notify_debouncer_full::notify::{RecursiveMode, WatchFilter};
-use remote_server::manager::RemoteServerManager;
 use repo_metadata::repositories::DetectedRepositories;
 use repo_metadata::repository::{RepositorySubscriber, SubscriberId};
 use repo_metadata::{CanonicalizedPath, Repository, RepositoryUpdate, RepositoryWatchMode};
-use warp_core::HostId;
 use warp_util::content_version::ContentVersion;
 use warp_util::file::{FileId, FileLoadError, FileSaveError};
-use warp_util::standardized_path::StandardizedPath;
 use warpui_core::r#async::SpawnedFutureHandle;
 use warpui_core::{Entity, ModelContext, ModelHandle, SingletonEntity};
 use watcher::{BulkFilesystemWatcher, BulkFilesystemWatcherEvent};
@@ -102,40 +99,26 @@ impl WatcherType {
 }
 
 /// Per-file backing store.
-/// Remote files dispatch host-scoped requests through a
-/// [`RemoteServerManager`] `HostRequestHandle`.
 enum FileBackend {
     Local(LocalFile),
-    Remote {
-        /// Identifies the remote host. A `HostRequestHandle` is resolved from
-        /// [`RemoteServerManager`] at call time, which naturally handles
-        /// disconnect (the request fails) without holding an `Arc` alive
-        /// per file.
-        host_id: HostId,
-        /// Platform-aware path on the remote host.
-        path: StandardizedPath,
-    },
 }
 
 impl FileBackend {
     fn as_local(&self) -> Option<&LocalFile> {
         match self {
             FileBackend::Local(f) => Some(f),
-            FileBackend::Remote { .. } => None,
         }
     }
 
     fn version(&self) -> Option<ContentVersion> {
         match self {
             FileBackend::Local(f) => f.version,
-            FileBackend::Remote { .. } => None,
         }
     }
 
     fn set_version(&mut self, version: ContentVersion) {
         match self {
             FileBackend::Local(f) => f.version = Some(version),
-            FileBackend::Remote { .. } => {}
         }
     }
 }
@@ -211,11 +194,6 @@ impl FileState {
         self.files.insert(file_id, FileBackend::Local(local_file));
     }
 
-    fn insert_remote(&mut self, file_id: FileId, host_id: HostId, path: StandardizedPath) {
-        self.files
-            .insert(file_id, FileBackend::Remote { host_id, path });
-    }
-
     /// Removes a file and returns the backend along with whether the local path
     /// is still referenced (always `false` for remote files).
     fn remove(&mut self, file_id: FileId) -> Option<(FileBackend, bool)> {
@@ -239,7 +217,6 @@ impl FileState {
                     false
                 }
             }
-            FileBackend::Remote { .. } => false,
         };
         Some((backend, path_still_used))
     }
@@ -261,12 +238,9 @@ impl FileState {
     }
 
     fn local_iter_mut(&mut self) -> impl Iterator<Item = (&FileId, &mut LocalFile)> {
-        self.files
-            .iter_mut()
-            .filter_map(|(id, backend)| match backend {
-                FileBackend::Local(f) => Some((id, f)),
-                FileBackend::Remote { .. } => None,
-            })
+        self.files.iter_mut().map(|(id, backend)| match backend {
+            FileBackend::Local(f) => (id, f),
+        })
     }
 }
 
@@ -378,16 +352,6 @@ impl FileModel {
         self.file_state
             .get_local(file_id)
             .and_then(|file| file.entry_path.clone())
-    }
-
-    /// Register a remote file path and return a `FileId`.
-    ///
-    /// The returned `FileId` can be used with `save()` and `delete()` which
-    /// will dispatch to the remote backend via `RemoteServerClient`.
-    pub fn register_remote_file(&mut self, host_id: HostId, path: StandardizedPath) -> FileId {
-        let file_id = FileId::new();
-        self.file_state.insert_remote(file_id, host_id, path);
-        file_id
     }
 
     /// Register a file path and immediately return a FileId without loading the file.
@@ -727,7 +691,6 @@ impl FileModel {
                 }
             }
         }
-        // Remote files have no watcher to clean up.
     }
 
     /// Saves the file's content, returning a future that resolves with the
@@ -786,33 +749,6 @@ impl FileModel {
                     },
                 );
             }
-            FileBackend::Remote { host_id, path } => {
-                let handle = RemoteServerManager::as_ref(ctx).host_request_handle(host_id);
-                let path = path.as_str().to_string();
-                ctx.spawn(
-                    async move { handle.write_file(path, content).await },
-                    move |me, result, ctx| {
-                        let result =
-                            result.map_err(|e| Arc::new(FileSaveError::RemoteError(e.to_string())));
-                        match &result {
-                            Ok(()) => {
-                                me.set_version(file_id, version);
-                                ctx.emit(FileModelEvent::FileSaved {
-                                    id: file_id,
-                                    version,
-                                });
-                            }
-                            Err(err) => {
-                                ctx.emit(FileModelEvent::FailedToSave {
-                                    id: file_id,
-                                    error: err.clone(),
-                                });
-                            }
-                        }
-                        let _ = tx.send(result);
-                    },
-                );
-            }
         }
 
         Ok(async move { rx.await.unwrap_or(Ok(())) }.boxed())
@@ -829,126 +765,78 @@ impl FileModel {
         version: ContentVersion,
         ctx: &mut ModelContext<Self>,
     ) -> Result<SaveFuture, FileSaveError> {
-        let backend = self
-            .file_state
-            .get(file_id)
+        let file_path = self
+            .entry_path(file_id)
             .ok_or(FileSaveError::NoFilePath(file_id))?;
-        if let FileBackend::Remote { host_id, path } = backend {
-            let new_path = new_path.to_str().ok_or_else(|| {
-                FileSaveError::RemoteError("Invalid UTF-8 move target".to_owned())
-            })?;
-            let new_path = StandardizedPath::try_new(new_path)
-                .map_err(|error| FileSaveError::RemoteError(error.to_string()))?;
-            if &new_path == path {
-                return self.save(file_id, content, version, ctx);
-            }
-            let handle = RemoteServerManager::as_ref(ctx).host_request_handle(host_id);
-            let path = path.to_string();
-            let new_path = new_path.to_string();
-            let (tx, rx) = oneshot::channel();
-            ctx.spawn(
-                async move { handle.rename_file(path, new_path, content).await },
-                move |me, result, ctx| {
-                    let result = result
-                        .map_err(|error| Arc::new(FileSaveError::RemoteError(error.to_string())));
-                    match &result {
-                        Ok(()) => {
-                            me.set_version(file_id, version);
-                            ctx.emit(FileModelEvent::FileSaved {
-                                id: file_id,
-                                version,
-                            });
-                        }
-                        Err(error) => ctx.emit(FileModelEvent::FailedToSave {
-                            id: file_id,
-                            error: error.clone(),
-                        }),
-                    }
-                    let _ = tx.send(result);
-                },
-            );
-            Ok(async move {
-                rx.await.unwrap_or_else(|_| {
-                    Err(Arc::new(FileSaveError::Other(
-                        "Remote move completion was cancelled".to_owned(),
-                    )))
-                })
-            }
-            .boxed())
-        } else {
-            let file_path = self
-                .entry_path(file_id)
-                .ok_or(FileSaveError::NoFilePath(file_id))?;
-            if new_path == file_path {
-                return self.save(file_id, content, version, ctx);
-            }
-
-            let (tx, rx) = oneshot::channel();
-            ctx.spawn(
-                async move {
-                    // Make sure the file we're renaming exists.
-                    if let Err(err) = async_fs::metadata(&file_path).await {
-                        return Err(FileSaveError::IOError {
-                            error: err,
-                            path: file_path,
-                        });
-                    }
-
-                    match same_file::is_same_file(&file_path, &new_path) {
-                        Ok(true) => {
-                            return Err(FileSaveError::Other(format!(
-                                "Cannot move {file_path:?} to {new_path:?}: both entries refer to the same file"
-                            )));
-                        }
-                        Ok(false) => {}
-                        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
-                        Err(error) => return Err(FileSaveError::IOError { error, path: new_path }),
-                    }
-
-                    // Make sure the components of the path we're moving to exists.
-                    if let Err(err) = Self::ensure_parent_directories(&new_path).await {
-                        return Err(FileSaveError::IOError {
-                            error: err,
-                            path: new_path,
-                        });
-                    }
-
-                    // Write the updated contents to the old path first.
-                    async_fs::write(&file_path, content).await.map_err(|err| {
-                        FileSaveError::IOError {
-                            error: err,
-                            path: file_path.clone(),
-                        }
-                    })?;
-
-                    // Now rename.
-                    async_fs::rename(&file_path, &new_path)
-                        .await
-                        .map_err(|error| FileSaveError::Other(format!(
-                            "Saved content at {file_path:?}, but failed to rename to {new_path:?}: {error}"
-                        )))
-                },
-                move |me, write_result: Result<(), FileSaveError>, ctx| {
-                    let result = write_result.map_err(Arc::new);
-                    match &result {
-                        Ok(()) => {
-                            me.set_version(file_id, version);
-                            ctx.emit(FileModelEvent::FileSaved {
-                                id: file_id,
-                                version,
-                            })
-                        }
-                        Err(err) => ctx.emit(FileModelEvent::FailedToSave {
-                            id: file_id,
-                            error: err.clone(),
-                        }),
-                    };
-                    let _ = tx.send(result);
-                },
-            );
-
-            Ok(async move { rx.await.unwrap_or(Ok(())) }.boxed())
+        if new_path == file_path {
+            return self.save(file_id, content, version, ctx);
         }
+
+        let (tx, rx) = oneshot::channel();
+        ctx.spawn(
+            async move {
+                // Make sure the file we're renaming exists.
+                if let Err(err) = async_fs::metadata(&file_path).await {
+                    return Err(FileSaveError::IOError {
+                        error: err,
+                        path: file_path,
+                    });
+                }
+
+                match same_file::is_same_file(&file_path, &new_path) {
+                    Ok(true) => {
+                        return Err(FileSaveError::Other(format!(
+                            "Cannot move {file_path:?} to {new_path:?}: both entries refer to the same file"
+                        )));
+                    }
+                    Ok(false) => {}
+                    Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                    Err(error) => return Err(FileSaveError::IOError { error, path: new_path }),
+                }
+
+                // Make sure the components of the path we're moving to exists.
+                if let Err(err) = Self::ensure_parent_directories(&new_path).await {
+                    return Err(FileSaveError::IOError {
+                        error: err,
+                        path: new_path,
+                    });
+                }
+
+                // Write the updated contents to the old path first.
+                async_fs::write(&file_path, content).await.map_err(|err| {
+                    FileSaveError::IOError {
+                        error: err,
+                        path: file_path.clone(),
+                    }
+                })?;
+
+                // Now rename.
+                async_fs::rename(&file_path, &new_path)
+                    .await
+                    .map_err(|error| FileSaveError::Other(format!(
+                        "Saved content at {file_path:?}, but failed to rename to {new_path:?}: {error}"
+                    )))
+            },
+            move |me, write_result: Result<(), FileSaveError>, ctx| {
+                let result = write_result.map_err(Arc::new);
+                match &result {
+                    Ok(()) => {
+                        me.set_version(file_id, version);
+                        ctx.emit(FileModelEvent::FileSaved {
+                            id: file_id,
+                            version,
+                        })
+                    }
+                    Err(err) => ctx.emit(FileModelEvent::FailedToSave {
+                        id: file_id,
+                        error: err.clone(),
+                    }),
+                };
+                let _ = tx.send(result);
+            },
+        );
+
+        Ok(async move { rx.await.unwrap_or(Ok(())) }.boxed())
     }
 
     /// Deletes the specified file, returning a future that resolves with the
@@ -995,33 +883,6 @@ impl FileModel {
                                 error: err.clone(),
                             }),
                         };
-                        let _ = tx.send(result);
-                    },
-                );
-            }
-            FileBackend::Remote { host_id, path } => {
-                let handle = RemoteServerManager::as_ref(ctx).host_request_handle(host_id);
-                let path = path.as_str().to_string();
-                ctx.spawn(
-                    async move { handle.delete_file(path).await },
-                    move |me, result, ctx| {
-                        let result =
-                            result.map_err(|e| Arc::new(FileSaveError::RemoteError(e.to_string())));
-                        match &result {
-                            Ok(()) => {
-                                me.set_version(file_id, version);
-                                ctx.emit(FileModelEvent::FileSaved {
-                                    id: file_id,
-                                    version,
-                                });
-                            }
-                            Err(err) => {
-                                ctx.emit(FileModelEvent::FailedToSave {
-                                    id: file_id,
-                                    error: err.clone(),
-                                });
-                            }
-                        }
                         let _ = tx.send(result);
                     },
                 );

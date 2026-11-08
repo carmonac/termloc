@@ -20,8 +20,8 @@ use crate::ui_components::icons::Icon;
 
 const BANNER_TITLE: &str = "Tmux SSH shell integration has been deprecated";
 
-const BANNER_BODY: &str = "Termloc now connects to remote sessions using the SSH extension, which is \
-    more robust than the tmux-based flow. The tmux option has been removed.";
+const BANNER_BODY: &str =
+    "The tmux-based SSH integration has been removed. Termloc uses its SSH wrapper instead.";
 
 #[derive(Clone, Debug)]
 pub enum SshTmuxDeprecationBannerAction {

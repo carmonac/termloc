@@ -318,7 +318,7 @@ impl CodeReviewState {
         update_dropdown: bool,
         ctx: &mut ViewContext<RightPanelView>,
     ) {
-        if repo_path.is_remote() && !FeatureFlag::RemoteCodeReview.is_enabled() {
+        if repo_path.is_remote() {
             return;
         }
         if self.selected_repo_path.as_ref() == Some(&repo_path) {
@@ -337,12 +337,8 @@ impl CodeReviewState {
     }
 
     #[cfg_attr(not(feature = "local_fs"), allow(dead_code))]
-    fn get_repo_display_name(
-        &self,
-        repo_path: &LocalOrRemotePath,
-        ctx: &AppContext,
-    ) -> Option<String> {
-        let name = display_name_with_host(repo_path, ctx);
+    fn get_repo_display_name(&self, repo_path: &LocalOrRemotePath) -> Option<String> {
+        let name = display_name_with_host(repo_path);
         (!name.is_empty()).then_some(name)
     }
 
@@ -355,7 +351,7 @@ impl CodeReviewState {
                 .iter()
                 .map(|repo_path| {
                     let display_name = self
-                        .get_repo_display_name(repo_path, ctx)
+                        .get_repo_display_name(repo_path)
                         .unwrap_or_else(|| "Unknown".to_string());
                     DropdownItem::new(
                         display_name,
@@ -370,7 +366,7 @@ impl CodeReviewState {
             let selected_display_name = self
                 .selected_repo_path
                 .as_ref()
-                .and_then(|selected| self.get_repo_display_name(selected, ctx));
+                .and_then(|selected| self.get_repo_display_name(selected));
 
             (items, selected_display_name)
         };
@@ -708,7 +704,7 @@ impl RightPanelView {
         else {
             return;
         };
-        if repo_path.is_remote() && !FeatureFlag::RemoteCodeReview.is_enabled() {
+        if repo_path.is_remote() {
             return;
         }
         let pane_group_id = active_pane_group.id();
@@ -868,11 +864,7 @@ impl RightPanelView {
         };
 
         let selected_repo_path = state.selected_repo_path.as_ref().filter(|repo_path| {
-            if repo_path.is_remote() {
-                FeatureFlag::RemoteCodeReview.is_enabled()
-            } else {
-                state.available_repos.contains(repo_path)
-            }
+            !repo_path.is_remote() && state.available_repos.contains(repo_path)
         });
 
         let Some(selected_repo_path) = selected_repo_path else {
@@ -963,7 +955,7 @@ impl RightPanelView {
         let diff_stats = crv.loaded_diff_stats();
 
         let repo_path_element = repo_path.map(|repo_path| {
-            let display_path = display_path_with_host(repo_path, true, app);
+            let display_path = display_path_with_host(repo_path, true);
             Container::new(
                 Text::new_inline(
                     format!("{display_path}:"),
@@ -1197,16 +1189,13 @@ impl RightPanelView {
         ctx: &mut ViewContext<Self>,
     ) -> Option<ViewHandle<CodeReviewView>> {
         // Early check: if pane group has no active repositories, don't create a view.
-        // Remote repos require the RemoteCodeReview feature flag; local repos go
-        // through the active-repos check.
-        let has_active_repos = if repo_path.is_remote() {
-            FeatureFlag::RemoteCodeReview.is_enabled()
-        } else {
-            self.working_directories_model
+        // Remote repos have no code review backend.
+        let has_active_repos = !repo_path.is_remote()
+            && self
+                .working_directories_model
                 .as_ref(ctx)
                 .most_recent_repositories_for_pane_group(pane_group_id)
-                .is_some_and(|mut repos| repos.any(|r| &r == repo_path))
-        };
+                .is_some_and(|mut repos| repos.any(|r| &r == repo_path));
 
         if !has_active_repos {
             return None;
@@ -1682,7 +1671,7 @@ impl RightPanelView {
         repo_path: &LocalOrRemotePath,
         ctx: &mut ViewContext<Self>,
     ) {
-        if repo_path.is_remote() && !FeatureFlag::RemoteCodeReview.is_enabled() {
+        if repo_path.is_remote() {
             return;
         }
         let Some(pane_group) = &self.active_pane_group else {
@@ -1707,14 +1696,8 @@ impl RightPanelView {
                 });
             }
         } else {
-            // Prefer the pane group's active session so the diff request rides
-            // the connection actually showing the review; the manager falls
-            // back to any connected session for the host when unavailable.
-            let preferred_session = pane_group
-                .read(ctx, |pg, ctx| pg.active_session_view(ctx))
-                .and_then(|tv| tv.as_ref(ctx).active_block_session_id());
             let diff_state_model = self.working_directories_model.update(ctx, |model, ctx| {
-                model.get_or_create_diff_state_model(repo_path.clone(), preferred_session, ctx)
+                model.get_or_create_diff_state_model(repo_path.clone(), ctx)
             });
 
             let Some(diff_state_model) = diff_state_model else {

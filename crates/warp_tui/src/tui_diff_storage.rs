@@ -115,11 +115,6 @@ fn register_file(
 ) -> Result<FileId, FileSaveError> {
     match session_type {
         DiffSessionType::Local => Ok(file_model.register_file_path(Path::new(path), false, ctx)),
-        DiffSessionType::Remote(host_id) => {
-            let standardized = StandardizedPath::try_new(path)
-                .map_err(|_| FileSaveError::RemoteError(format!("Invalid remote path: {path}")))?;
-            Ok(file_model.register_remote_file(host_id.clone(), standardized))
-        }
     }
 }
 

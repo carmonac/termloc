@@ -164,16 +164,6 @@ impl SkillManager {
         skills
     }
 
-    /// Returns the parsed home skills currently cached by the local watcher.
-    pub fn home_skills(&self) -> impl Iterator<Item = &ParsedSkill> + '_ {
-        dirs::home_dir()
-            .map(LocalOrRemotePath::Local)
-            .into_iter()
-            .filter_map(|home_dir| self.directory_skills.get(&home_dir))
-            .flatten()
-            .filter_map(|path| self.skills_by_path.get(path))
-    }
-
     /// Returns true if the skill (or any of its provider-path variants) exists in
     /// a folder matching one of the given `providers`. This handles the deduplication
     /// edge case where a skill is present in multiple provider folders (e.g. both
@@ -296,62 +286,6 @@ impl SkillManager {
             .active_skill(id, &SkillPathOrigin::Local, ctx)
     }
 
-    pub(super) fn set_remote_bundled_skill(
-        &mut self,
-        host_id: HostId,
-        bundled_skill: BundledSkill,
-    ) {
-        self.bundled_skills.insert_remote(host_id, bundled_skill);
-    }
-
-    pub(super) fn remove_remote_bundled_skill(&mut self, host_id: &HostId) {
-        self.bundled_skills.remove_remote(host_id);
-    }
-
-    pub(crate) fn replace_remote_agent_context(
-        &mut self,
-        host_id: HostId,
-        bundled_skills: Option<BundledSkill>,
-        home_skills: Option<(LocalOrRemotePath, Vec<ParsedSkill>)>,
-    ) {
-        match bundled_skills {
-            Some(bundled_skills) => {
-                self.set_remote_bundled_skill(host_id.clone(), bundled_skills);
-            }
-            None => self.remove_remote_bundled_skill(&host_id),
-        }
-        match home_skills {
-            Some((home_dir, skills)) => {
-                self.set_remote_home_skills(host_id, home_dir, skills);
-            }
-            None => self.remove_remote_home_skills(&host_id),
-        }
-    }
-
-    pub(crate) fn remove_remote_agent_context(&mut self, host_id: &HostId) {
-        self.remove_remote_bundled_skill(host_id);
-        self.remove_remote_home_skills(host_id);
-    }
-
-    /// Replaces the home skills published by one remote host.
-    pub(crate) fn set_remote_home_skills(
-        &mut self,
-        host_id: HostId,
-        home_dir: LocalOrRemotePath,
-        skills: Vec<ParsedSkill>,
-    ) {
-        self.remove_remote_home_skills(&host_id);
-        self.remote_home_directories.insert(host_id, home_dir);
-        self.handle_skills_added(skills);
-    }
-
-    pub(crate) fn remove_remote_home_skills(&mut self, host_id: &HostId) {
-        let Some(home_dir) = self.remote_home_directories.remove(host_id) else {
-            return;
-        };
-        self.remove_skills_for_directory(&home_dir);
-    }
-
     fn home_directory_for_origin(
         &self,
         path_origin: &SkillPathOrigin,
@@ -381,15 +315,6 @@ impl SkillManager {
                 .as_remote()
                 .and_then(|remote| self.bundled_skills.remote_skill_by_path(remote))
         })
-    }
-
-    fn remove_skills_for_directory(&mut self, directory: &LocalOrRemotePath) {
-        let Some(skill_paths) = self.directory_skills.remove(directory) else {
-            return;
-        };
-        for skill_path in skill_paths {
-            self.remove_skill_by_path(&skill_path);
-        }
     }
 
     fn remove_skill_by_path(&mut self, skill_path: &LocalOrRemotePath) {
@@ -511,18 +436,6 @@ impl SkillManager {
     ) {
         self.bundled_skills
             .insert_local_for_testing(id, skill, activation);
-    }
-
-    #[cfg(test)]
-    pub fn add_remote_bundled_skill_for_testing(
-        &mut self,
-        host_id: HostId,
-        id: impl Into<String>,
-        skill: ParsedSkill,
-        activation: BundledSkillActivation,
-    ) {
-        self.bundled_skills
-            .insert_remote_for_testing(host_id, id, skill, activation);
     }
 }
 impl Entity for SkillManager {

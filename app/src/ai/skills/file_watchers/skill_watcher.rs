@@ -15,7 +15,7 @@ use repo_metadata::{
     RepositoryWatchMode,
 };
 use warp_util::local_or_remote_path::LocalOrRemotePath;
-use warpui::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity};
+use warpui::{Entity, ModelContext, ModelHandle, SingletonEntity};
 use watcher::{BulkFilesystemWatcherEvent, HomeDirectoryWatcher, HomeDirectoryWatcherEvent};
 
 use super::subscribers::{
@@ -24,9 +24,6 @@ use super::subscribers::{
 use super::utils::{
     find_local_project_skill_files_on_filesystem, find_project_skill_files_in_tree,
     is_home_provider_path, is_home_skill_directory, is_skill_file, read_skills_from_directories,
-};
-use crate::ai::remote_context_files::{
-    REMOTE_CONTEXT_MAX_BATCH_BYTES, REMOTE_CONTEXT_MAX_FILE_BYTES, read_remote_text_file_contents,
 };
 use crate::warp_managed_paths_watcher::{
     WarpManagedPathsWatcher, WarpManagedPathsWatcherEvent, filter_repository_update_by_prefix,
@@ -346,7 +343,7 @@ impl SkillWatcher {
         if skill_paths.is_empty() {
             return;
         }
-        let Some(read_skill_contents) = read_project_skill_contents(skill_paths, ctx) else {
+        let Some(read_skill_contents) = read_project_skill_contents(skill_paths) else {
             return;
         };
 
@@ -391,7 +388,7 @@ impl SkillWatcher {
         if skill_paths.is_empty() {
             return;
         }
-        let Some(read_skill_contents) = read_project_skill_contents(skill_paths, ctx) else {
+        let Some(read_skill_contents) = read_project_skill_contents(skill_paths) else {
             return;
         };
 
@@ -1032,18 +1029,12 @@ impl SkillWatcher {
 
 fn read_project_skill_contents(
     skill_paths: Vec<LocalOrRemotePath>,
-    ctx: &AppContext,
 ) -> Option<ProjectSkillContentsFuture> {
     match skill_paths.first()? {
         LocalOrRemotePath::Local(_) => Some(Box::pin(async move {
             Ok(read_local_project_skill_contents(skill_paths))
         })),
-        LocalOrRemotePath::Remote(_) => Some(read_remote_text_file_contents(
-            skill_paths,
-            Some(REMOTE_CONTEXT_MAX_FILE_BYTES),
-            Some(REMOTE_CONTEXT_MAX_BATCH_BYTES),
-            ctx,
-        )),
+        LocalOrRemotePath::Remote(_) => None,
     }
 }
 

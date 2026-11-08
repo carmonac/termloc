@@ -2,8 +2,6 @@
 mod bootstrap_file;
 pub mod command_history;
 pub mod pty_controller;
-#[cfg(not(target_family = "wasm"))]
-pub mod remote_server_controller;
 pub mod terminal_manager_util;
 pub(crate) mod terminal_surface;
 

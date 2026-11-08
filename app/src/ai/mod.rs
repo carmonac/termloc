@@ -32,9 +32,6 @@ pub(crate) mod local;
 pub(crate) mod metadata_project_rules;
 pub(crate) mod persisted_workspace;
 pub(crate) mod predict;
-#[cfg(all(not(target_family = "wasm"), feature = "local_fs"))]
-pub(crate) mod remote_agent_context;
-pub(crate) mod remote_context_files;
 pub mod request_usage_model;
 pub(crate) mod restored_conversations;
 pub(crate) mod skills;

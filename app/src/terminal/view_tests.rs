@@ -5151,26 +5151,6 @@ fn test_control_master_banner_permanent_dismissal_persists() {
 
 // Regression test for GH#3548 / GH#6093: once the banner has been permanently
 // dismissed it must not reopen on subsequent sessions.
-#[test]
-fn test_control_master_banner_suppressed_does_not_reopen() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        let terminal =
-            MockTerminalManager::create_new_terminal_view_window_for_test(&mut app, None);
-
-        terminal.update(&mut app, |view, _ctx| {
-            // With no remote server and no prior dismissal, the banner may open.
-            view.control_master_error_banner_suppressed = false;
-            assert!(view.should_open_control_master_banner(/* has_remote_server */ false));
-            // A remote server makes the CTA irrelevant, so it stays closed.
-            assert!(!view.should_open_control_master_banner(/* has_remote_server */ true));
-
-            // Once permanently dismissed it must never reopen, even without a remote server.
-            view.control_master_error_banner_suppressed = true;
-            assert!(!view.should_open_control_master_banner(false));
-        });
-    })
-}
 
 #[test]
 fn test_bash_vim_banner_already_shown() {

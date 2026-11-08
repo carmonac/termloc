@@ -2657,9 +2657,6 @@ impl ansi::Handler for TerminalModel {
             "Received ExitShell hook from shell for session_id: {:?}",
             data.session_id
         );
-        self.event_proxy.send_app_event(Event::ExitShell {
-            session_id: data.session_id,
-        });
     }
 
     fn init_shell(&mut self, data: InitShellValue) {

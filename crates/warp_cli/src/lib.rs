@@ -49,15 +49,6 @@ pub fn is_worker_invocation(arg: &str) -> bool {
         })
 }
 
-/// Hidden worker args used to scope remote-server proxy/daemon sockets by
-/// Warp identity without exposing credentials.
-#[derive(Debug, Clone, Default, clap::Args)]
-pub struct RemoteServerIdentityArgs {
-    /// Non-secret identity partition key for the remote-server daemon.
-    #[arg(long = "identity-key", hide = true)]
-    pub identity_key: String,
-}
-
 /// Normal argument parser for the shared Warp executable across all channels.
 ///
 /// Warp Control uses its separate [`local_control::ControlArgs`] parser, selected before this
@@ -199,20 +190,6 @@ pub enum WorkerCommand {
         /// Socket name for the minidump server.
         socket_name: std::path::PathBuf,
     },
-
-    /// Run the remote development server proxy over SSH stdio.
-    /// Ensures the daemon is running, then bridges its stdin/stdout
-    /// to the daemon via a Unix domain socket.
-    #[cfg(not(target_family = "wasm"))]
-    #[clap(hide = true)]
-    RemoteServerProxy(RemoteServerIdentityArgs),
-
-    /// Run the long-lived remote development server daemon.
-    /// Listens on a Unix domain socket and accepts multiple concurrent
-    /// connections from proxy processes.
-    #[cfg(not(target_family = "wasm"))]
-    #[clap(hide = true)]
-    RemoteServerDaemon(RemoteServerIdentityArgs),
 
     /// Connect an Agent Client Protocol agent's stdin/stdout to the loopback socket the ACP
     /// client is listening on. Run from a terminal session so the agent inherits its shell state.

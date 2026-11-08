@@ -41,9 +41,7 @@ pub use action_model::{
     BlocklistAIActionEvent, BlocklistAIActionModel, ShellCommandExecutor, ShellCommandExecutorEvent,
 };
 #[cfg_attr(target_family = "wasm", allow(unused_imports))]
-pub(crate) use action_model::{
-    FileReadResult, ReadFileContextResult, apply_edits, read_local_file_context,
-};
+pub(crate) use action_model::{FileReadResult, apply_edits, read_local_file_context};
 #[cfg(any(test, feature = "integration_tests"))]
 pub(crate) use block::model::testing::FakeAIBlockModel;
 pub(crate) use block::{AIBlock, AIBlockEvent, init, model};

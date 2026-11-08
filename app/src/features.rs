@@ -116,8 +116,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::PredictAMQueries,
         #[cfg(feature = "full_source_code_embedding")]
         FeatureFlag::FullSourceCodeEmbedding,
-        #[cfg(feature = "remote_codebase_indexing")]
-        FeatureFlag::RemoteCodebaseIndexing,
         #[cfg(feature = "use_tantivy_search")]
         FeatureFlag::UseTantivySearch,
         #[cfg(feature = "grep_tool")]
@@ -412,8 +410,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
         FeatureFlag::CodexPlugin,
         #[cfg(feature = "trim_trailing_blank_lines")]
         FeatureFlag::TrimTrailingBlankLines,
-        #[cfg(feature = "remote_code_review")]
-        FeatureFlag::RemoteCodeReview,
         #[cfg(feature = "nld_prompt_history_match")]
         FeatureFlag::NldPromptHistoryMatch,
         #[cfg(feature = "prompt_cache_expiry_warning")]
@@ -436,7 +432,6 @@ fn enabled_features() -> HashSet<FeatureFlag> {
             FeatureFlag::CocoaSentry,
             FeatureFlag::CrashReporting,
             FeatureFlag::LogExpensiveFramesInSentry,
-            FeatureFlag::SshRemoteServer,
             FeatureFlag::CloudConversations,
             FeatureFlag::OpenWarpLaunchModal,
             FeatureFlag::SharedBlockTitleGeneration,

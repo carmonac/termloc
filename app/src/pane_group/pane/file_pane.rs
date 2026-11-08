@@ -38,8 +38,7 @@ impl FilePane {
 
     /// Create a new file notebook pane for the given path and optional target session. If `path`
     /// is `None`, the pane is created but left empty. For local paths without a target session,
-    /// the pane waits for a local session to become active. Remote paths are loaded directly
-    /// via the remote server.
+    /// the pane waits for a local session to become active. Remote paths fail to load.
     pub fn new<V: View>(
         path: Option<LocalOrRemotePath>,
         target_session: Option<Arc<Session>>,

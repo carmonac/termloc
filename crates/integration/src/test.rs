@@ -22,7 +22,6 @@ mod osc8_hyperlinks;
 mod pane_restoration;
 #[cfg(target_os = "macos")]
 mod preview_config_migration;
-mod remote_server;
 mod rich_input_ctrl_enter;
 mod rules;
 mod secrets;
@@ -73,7 +72,6 @@ use pathfinder_geometry::rect::RectF;
 use pathfinder_geometry::vector::Vector2F;
 #[cfg(target_os = "macos")]
 pub use preview_config_migration::*;
-pub use remote_server::*;
 pub use rich_input_ctrl_enter::*;
 pub use rules::*;
 use rust_embed::RustEmbed;

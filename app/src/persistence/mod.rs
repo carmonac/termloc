@@ -73,9 +73,6 @@ pub enum PersistenceScope {
     /// version skew can never migrate a shared database out from under the
     /// older binary. Cloud sync is the cross-front-end sharing mechanism.
     Tui,
-    RemoteServerDaemon {
-        identity_key: String,
-    },
 }
 
 /// The [`PersistenceScope`] this process's persistence was initialized with.
@@ -111,8 +108,6 @@ pub enum PersistedDataScope {
     /// and agent/conversation state, but no GUI session restoration or pending
     /// object actions.
     TuiFrontend,
-    /// The remote server daemon: only codebase index metadata.
-    CodebaseIndicesOnly,
 }
 
 impl PersistedDataScope {
@@ -127,11 +122,6 @@ impl PersistedDataScope {
             self,
             PersistedDataScope::Full | PersistedDataScope::TuiFrontend
         )
-    }
-
-    /// User profiles used to identify cloud-object creators in both interactive frontends.
-    fn user_profiles(self) -> bool {
-        self != PersistedDataScope::CodebaseIndicesOnly
     }
 
     /// Pending object actions, which only the GUI consumes.

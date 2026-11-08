@@ -64,15 +64,12 @@ impl AIExecutionProfileInfo {
 }
 
 /// Enables file-backed profiles for every TUI build and for flagged GUI builds.
-///
-/// CLI and remote-server modes retain their dedicated in-memory behavior.
 fn file_backed_execution_profiles_enabled(launch_mode: &LaunchMode) -> bool {
     match launch_mode {
         LaunchMode::Tui { .. } => true,
         LaunchMode::App { .. } | LaunchMode::Test { .. } => {
             FeatureFlag::FileBackedExecutionProfiles.is_enabled()
         }
-        LaunchMode::RemoteServerProxy | LaunchMode::RemoteServerDaemon { .. } => false,
     }
 }
 
@@ -352,14 +349,6 @@ impl AIExecutionProfilesModel {
                                 },
                             }
                         }
-                        // RemoteServerProxy and RemoteServerDaemon don't use AI
-                        // execution profiles. They never reach this code path
-                        // since they don't go through initialize_app, but handle
-                        // exhaustively.
-                        LaunchMode::RemoteServerProxy | LaunchMode::RemoteServerDaemon { .. } => DefaultProfileState::Unsynced {
-                            id: ExecutionProfileId::new(),
-                            profile: super::create_default_from_legacy_settings(ctx),
-                        },
                         // Settings-backed TUI initialization is handled before the
                         // legacy cloud-object branch.
                         LaunchMode::Tui { .. } => unreachable!("TUI profiles use settings"),

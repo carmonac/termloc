@@ -29,7 +29,6 @@ use warp_editor::render::element::VerticalExpansionBehavior;
 use warp_errors::report_error;
 use warp_util::file::FileSaveError;
 use warp_util::local_or_remote_path::LocalOrRemotePath;
-use warp_util::remote_path::RemotePath;
 use warp_util::standardized_path::StandardizedPath;
 use warpui::elements::new_scrollable::{ScrollableAppearance, SingleAxisConfig};
 use warpui::elements::{
@@ -2242,10 +2241,6 @@ impl CodeDiffView {
     fn location_for_standardized_path(&self, path: &StandardizedPath) -> Option<LocalOrRemotePath> {
         match &self.diff_session_type {
             DiffSessionType::Local => path.to_local_path().map(LocalOrRemotePath::Local),
-            DiffSessionType::Remote(host_id) => Some(LocalOrRemotePath::Remote(RemotePath {
-                host_id: host_id.clone(),
-                path: path.clone(),
-            })),
         }
     }
 }

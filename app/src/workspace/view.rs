@@ -250,7 +250,6 @@ use crate::prompt::editor_modal::{
     EditorModal as PromptEditorModal, EditorModalEvent as PromptEditorModalEvent,
 };
 use crate::quit_warning::UnsavedStateSummary;
-use crate::remote_server::manager::RemoteServerManager;
 use crate::resource_center::{
     ResourceCenterEvent, ResourceCenterPage, ResourceCenterView, Tip, TipAction, TipsCompleted,
     mark_feature_used_and_write_to_user_defaults, skip_tips_and_write_to_user_defaults,
@@ -8285,19 +8284,17 @@ impl Workspace {
                 Some((context.repo_path.clone(), context.diff_state_model.clone()))
             } else {
                 let active_pane_group = self.active_tab_pane_group().clone();
-                // Read repo_path and preferred session from the pane group (immutable context).
+                // Read repo_path from the pane group (immutable context).
                 let read_result = active_pane_group.read(ctx, |pane_group, ctx| {
-                    pane_group.active_session_view(ctx).map(|terminal_view| {
-                        let repo_path = terminal_view.as_ref(ctx).current_repo_path().cloned();
-                        let preferred_session = terminal_view.as_ref(ctx).active_block_session_id();
-                        (repo_path, preferred_session)
-                    })
+                    pane_group
+                        .active_session_view(ctx)
+                        .map(|terminal_view| terminal_view.as_ref(ctx).current_repo_path().cloned())
                 });
                 // Resolve DiffStateModel outside the read closure (needs mutable context).
-                read_result.and_then(|(repo_path, preferred_session)| {
+                read_result.and_then(|repo_path| {
                     let diff_state_model = repo_path.as_ref().and_then(|rp| {
                         self.working_directories_model.update(ctx, |model, ctx| {
-                            model.get_or_create_diff_state_model(rp.clone(), preferred_session, ctx)
+                            model.get_or_create_diff_state_model(rp.clone(), ctx)
                         })
                     })?;
                     Some((repo_path, diff_state_model))
@@ -8334,13 +8331,9 @@ impl Workspace {
         }
 
         let repo_location = panel_context.repo_path.clone();
-        let preferred_session = panel_context
-            .terminal_view
-            .upgrade(ctx)
-            .and_then(|tv| tv.as_ref(ctx).active_block_session_id());
         let diff_state_model = repo_location.as_ref().and_then(|rp| {
             self.working_directories_model.update(ctx, |model, ctx| {
-                model.get_or_create_diff_state_model(rp.clone(), preferred_session, ctx)
+                model.get_or_create_diff_state_model(rp.clone(), ctx)
             })
         });
         let Some(diff_state_model) = diff_state_model else {
@@ -8429,28 +8422,24 @@ impl Workspace {
         let target_open_state =
             pane_group_handle.read(ctx, |pane_group, _| !pane_group.right_panel_open);
 
-        // Read repo_path and preferred session from pane group (immutable context).
+        // Read repo_path from pane group (immutable context).
         let read_result = pane_group_handle.read(ctx, |pane_group, ctx| {
-            pane_group.active_session_view(ctx).map(|terminal_view| {
-                let repo_path = terminal_view.as_ref(ctx).current_repo_path().cloned();
-                let preferred_session = terminal_view.as_ref(ctx).active_block_session_id();
-                (repo_path, preferred_session)
-            })
+            pane_group
+                .active_session_view(ctx)
+                .map(|terminal_view| terminal_view.as_ref(ctx).current_repo_path().cloned())
         });
         // Resolve DiffStateModel outside the read closure (needs mutable context).
-        let context = read_result.and_then(
-            |(repo_path, preferred_session): (Option<LocalOrRemotePath>, Option<SessionId>)| {
-                let diff_state_model = repo_path.as_ref().and_then(|rp| {
-                    self.working_directories_model.update(ctx, |model, ctx| {
-                        model.get_or_create_diff_state_model(rp.clone(), preferred_session, ctx)
-                    })
-                })?;
-                Some(CodeReviewPaneContext {
-                    repo_path,
-                    diff_state_model,
+        let context = read_result.and_then(|repo_path: Option<LocalOrRemotePath>| {
+            let diff_state_model = repo_path.as_ref().and_then(|rp| {
+                self.working_directories_model.update(ctx, |model, ctx| {
+                    model.get_or_create_diff_state_model(rp.clone(), ctx)
                 })
-            },
-        );
+            })?;
+            Some(CodeReviewPaneContext {
+                repo_path,
+                diff_state_model,
+            })
+        });
 
         self.update_right_panel_open_state(
             RightPanelUpdateParams {
@@ -14571,7 +14560,6 @@ impl Workspace {
                     path_if_local,
                     is_local,
                     is_wsl_session,
-                    session_id,
                     has_pending_ssh,
                 ) = terminal_handle.read(ctx, |terminal, ctx| {
                     let active_session_id = terminal.active_block_session_id();
@@ -14588,7 +14576,6 @@ impl Workspace {
                         path_if_local,
                         is_local,
                         is_wsl_session,
-                        active_session_id,
                         has_pending_ssh,
                     )
                 });
@@ -14614,21 +14601,10 @@ impl Workspace {
                 let is_remote = matches!(is_local, Some(false));
                 let is_unsupported_session = is_wsl_session;
 
-                // Check whether this remote session has an active remote server
-                // connection (or is in the process of connecting). This is only
-                // true for Auto SSH Warpification (mode 1) sessions where
-                // `connect_session` was called at `InitShell` time.
-                let has_remote_server = is_remote
-                    && FeatureFlag::SshRemoteServer.is_enabled()
-                    && session_id.is_some_and(|sid| {
-                        RemoteServerManager::as_ref(ctx).is_session_potentially_active(sid)
-                    });
-
                 let enablement = CodingPanelEnablementState::from_session_env(
                     file_tree_and_global_search_are_enabled,
                     is_remote,
                     is_unsupported_session,
-                    has_remote_server,
                 );
 
                 // When an SSH command is running (pending host set + block
@@ -14663,7 +14639,6 @@ impl Workspace {
             _ => {
                 let enablement = CodingPanelEnablementState::from_session_env(
                     file_tree_and_global_search_are_enabled,
-                    false,
                     false,
                     false,
                 );
@@ -20698,21 +20673,13 @@ impl TypedActionView for Workspace {
                         pane_group
                             .terminal_view_from_pane_id(locator.pane_id, ctx)
                             .map(|terminal_view| {
-                                let repo_path =
-                                    terminal_view.as_ref(ctx).current_repo_path().cloned();
-                                let preferred_session =
-                                    terminal_view.as_ref(ctx).active_block_session_id();
-                                (repo_path, preferred_session)
+                                terminal_view.as_ref(ctx).current_repo_path().cloned()
                             })
                     });
-                    if let Some((repo_path, preferred_session)) = read_result {
+                    if let Some(repo_path) = read_result {
                         let diff_state_model = repo_path.as_ref().and_then(|rp| {
                             self.working_directories_model.update(ctx, |model, ctx| {
-                                model.get_or_create_diff_state_model(
-                                    rp.clone(),
-                                    preferred_session,
-                                    ctx,
-                                )
+                                model.get_or_create_diff_state_model(rp.clone(), ctx)
                             })
                         });
                         if let Some(diff_state_model) = diff_state_model {

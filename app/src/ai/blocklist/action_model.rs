@@ -24,8 +24,8 @@ use std::sync::Arc;
 
 pub use execute::{
     AskUserQuestionExecutor, NewConversationDecision, PromptSuggestionExecutor,
-    ReadFileContextResult, RequestFileEditsExecutor, ShellCommandExecutor,
-    ShellCommandExecutorEvent, read_local_file_context,
+    RequestFileEditsExecutor, ShellCommandExecutor, ShellCommandExecutorEvent,
+    read_local_file_context,
 };
 pub(crate) use execute::{FileReadResult, apply_edits, coerce_integer_args};
 use futures::future::{BoxFuture, join_all};

@@ -232,7 +232,6 @@ typed-path.workspace = true
 urlencoding = "2.1.3"
 mime_guess = "2.0"
 warp_multi_agent_api.workspace = true
-remote_server.workspace = true
 repo_metadata.workspace = true
 vim.workspace = true
 rmcp.workspace = true
@@ -592,9 +591,7 @@ default = [
     "pending_user_query_indicator",
     "queue_slash_command",
     "queued_prompts_v2",
-    "remote_codebase_indexing",
     "billing_and_usage_page_v2",
-    "remote_code_review",
     "git_operations_in_code_review",
     "terminal_lifecycle_recovery",
     "file_backed_execution_profiles",
@@ -709,7 +706,6 @@ pprof_cpu_profiling = ["dep:pprof"]
 predict_am_queries = []
 record_app_active_events = []
 recording_mode = []
-remote_codebase_indexing = ["full_source_code_embedding"]
 
 # This feature should only be enabled when building a release bundle with
 # the bundle script, and can be used to conditionally enable functionality
@@ -808,7 +804,6 @@ allow_opening_file_links_using_editor_env = []
 undo_closed_panes = []
 revert_diff_hunk = []
 code_review_save_changes = []
-remote_code_review = []
 file_tree = []
 code_launch_modal = []
 diff_set_as_context = []
