@@ -8,15 +8,14 @@ use chrono::{DateTime, Utc};
 #[cfg(test)]
 pub use cloud_object_client::GetCloudObjectResponse;
 pub use cloud_object_client::InitialLoadResponse;
+use cloud_objects::drive::sharing::AccessLevel;
 use futures::channel::oneshot::{self, Receiver};
 use futures::stream::AbortHandle;
 use lazy_static::lazy_static;
 use regex::Regex;
 use warp_core::channel::ChannelState;
+use warp_core::server_timestamp::ServerTimestamp;
 use warp_errors::report_error;
-use warp_graphql::mcp_gallery_template::MCPGalleryTemplate;
-use warp_graphql::object_permissions::AccessLevel;
-use warp_graphql::scalars::time::ServerTimestamp;
 use warp_util::sync::Condition;
 use warpui::r#async::{FutureId, Timer};
 use warpui::{
@@ -129,7 +128,6 @@ pub struct ObjectOperationResult {
 pub enum UpdateManagerEvent {
     ObjectOperationComplete { result: ObjectOperationResult },
     CloudPreferencesUpdated { updated: Vec<Preference> },
-    MCPGalleryUpdated { templates: Vec<MCPGalleryTemplate> },
 }
 
 /// An enum for choosing the behavior of the fetch_single_cloud_object function.
@@ -982,12 +980,6 @@ impl UpdateManager {
         if is_first_load {
             CloudModel::handle(ctx).update(ctx, |_, ctx| {
                 ctx.emit(CloudModelEvent::InitialLoadCompleted);
-            });
-        }
-
-        if !response.mcp_gallery.is_empty() {
-            ctx.emit(UpdateManagerEvent::MCPGalleryUpdated {
-                templates: response.mcp_gallery,
             });
         }
 
@@ -3617,14 +3609,13 @@ impl UpdateManager {
                     // First, update the local view of metadata.
                     me.store_metadata_update(server_id, metadata, ctx, |_| {});
 
-                    // If we successfully took access from another user, update the in memory editor
-                    // and emit an event so we know to switch into edit mode.
+                    // The request succeeded, so the current user holds edit access even if the
+                    // returned metadata doesn't name an editor.
+                    me.set_notebook_current_editor(&notebook_id, Some(user_uid.as_string()), ctx);
+
+                    // If we took access from another user, emit an event so we know to switch into
+                    // edit mode.
                     if !optimistically_grant_access {
-                        me.set_notebook_current_editor(
-                            &notebook_id,
-                            Some(user_uid.as_string()),
-                            ctx,
-                        );
                         ctx.emit(UpdateManagerEvent::ObjectOperationComplete {
                             result: ObjectOperationResult {
                                 success_type: OperationSuccessType::Success,

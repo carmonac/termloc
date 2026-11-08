@@ -1,4 +1,4 @@
-use warp_graphql::scalars::time::ServerTimestamp;
+use warp_core::server_timestamp::ServerTimestamp;
 
 use super::{
     CloudObjectEventEntrypoint, GenericStringObjectFormat, GenericStringObjectUniqueKey, Owner,

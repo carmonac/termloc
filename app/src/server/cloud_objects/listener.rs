@@ -125,9 +125,10 @@ impl Listener {
 
     #[cfg(test)]
     pub fn mock(ctx: &mut ModelContext<Self>) -> Self {
-        use crate::server::server_api::ServerApiProvider;
-
-        Self::new(ServerApiProvider::new_for_test().get(), ctx)
+        Self::new(
+            std::sync::Arc::new(super::local_object_client::LocalObjectClient),
+            ctx,
+        )
     }
 
     fn is_part_of_some_team(&self, ctx: &ModelContext<Self>) -> bool {

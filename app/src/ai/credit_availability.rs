@@ -2,11 +2,6 @@
 //! (`User.aiCreditAvailability`). The server evaluates the same credit
 //! waterfall used to authorize AI requests, so these values are the source of
 //! truth for whether the user can start an interactive AI request.
-use warp_graphql::ai::{
-    AICreditAvailability as GqlAICreditAvailability,
-    AICreditAvailabilityDenialReason as GqlAICreditAvailabilityDenialReason,
-    AICreditAvailabilitySource as GqlAICreditAvailabilitySource,
-};
 
 /// Stable, client-safe reason the server reports when no inference access
 /// exists. `None` is reported when the user is available.
@@ -63,53 +58,3 @@ impl AICreditAvailability {
         }
     }
 }
-
-impl From<GqlAICreditAvailabilityDenialReason> for AICreditDenialReason {
-    fn from(reason: GqlAICreditAvailabilityDenialReason) -> Self {
-        match reason {
-            GqlAICreditAvailabilityDenialReason::None => Self::None,
-            GqlAICreditAvailabilityDenialReason::OutOfCredits => Self::OutOfCredits,
-            GqlAICreditAvailabilityDenialReason::Delinquent => Self::Delinquent,
-            GqlAICreditAvailabilityDenialReason::EnterpriseTeamSpendLimitHit => {
-                Self::EnterpriseTeamSpendLimitHit
-            }
-            GqlAICreditAvailabilityDenialReason::EnterprisePerUserSpendLimitHit => {
-                Self::EnterprisePerUserSpendLimitHit
-            }
-            GqlAICreditAvailabilityDenialReason::EnterprisePerUnassignedUserSpendLimitHit => {
-                Self::EnterprisePerUnassignedUserSpendLimitHit
-            }
-            GqlAICreditAvailabilityDenialReason::EnterpriseWorkspaceSpendLimitHit => {
-                Self::EnterpriseWorkspaceSpendLimitHit
-            }
-            GqlAICreditAvailabilityDenialReason::Other(_) => Self::Unknown,
-        }
-    }
-}
-
-impl From<GqlAICreditAvailabilitySource> for AICreditSource {
-    fn from(source: GqlAICreditAvailabilitySource) -> Self {
-        match source {
-            GqlAICreditAvailabilitySource::BaseLimit => Self::BaseLimit,
-            GqlAICreditAvailabilitySource::BonusGrant => Self::BonusGrant,
-            GqlAICreditAvailabilitySource::Payg => Self::Payg,
-            GqlAICreditAvailabilitySource::Overage => Self::Overage,
-            GqlAICreditAvailabilitySource::AmbientBonusGrant => Self::AmbientBonusGrant,
-            GqlAICreditAvailabilitySource::Other(_) => Self::Unknown,
-        }
-    }
-}
-
-impl From<GqlAICreditAvailability> for AICreditAvailability {
-    fn from(availability: GqlAICreditAvailability) -> Self {
-        Self {
-            available: availability.available,
-            denial_reason: availability.denial_reason.into(),
-            credit_source: availability.credit_source.map(Into::into),
-        }
-    }
-}
-
-#[cfg(test)]
-#[path = "credit_availability_tests.rs"]
-mod tests;

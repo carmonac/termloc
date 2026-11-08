@@ -1,10 +1,10 @@
 use chrono::Utc;
-use warp_graphql::billing::BonusGrantType;
 
 use super::BonusGrantNotificationModel;
 use crate::ai::request_usage_model::{BonusGrant, BonusGrantScope};
 use crate::server::ids::ServerId;
 use crate::settings::UsageDisplayUnit;
+use crate::workspaces::billing_types::BonusGrantType;
 use crate::workspaces::workspace::WorkspaceUid;
 
 fn grant(scope: BonusGrantScope, usage_cents_granted: Option<f64>) -> BonusGrant {

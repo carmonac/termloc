@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
-use warp_graphql::object_permissions::AccessLevel;
 
 use crate::auth::UserUid;
 use crate::cloud_object::Owner;
@@ -72,6 +71,14 @@ impl FromStr for SharingAccessLevel {
             _ => Err(anyhow::anyhow!("unknown access level {value}")),
         }
     }
+}
+
+/// Access level a guest holds on a shared object.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AccessLevel {
+    Editor,
+    Full,
+    Viewer,
 }
 
 impl From<AccessLevel> for SharingAccessLevel {

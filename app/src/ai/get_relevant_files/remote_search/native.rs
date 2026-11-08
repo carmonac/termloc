@@ -30,7 +30,6 @@ use crate::ai::get_relevant_files::controller::GetRelevantFilesController;
 use crate::remote_server::codebase_index_model::{
     RemoteCodebaseIndexModel, RemoteCodebaseSearchAvailability, RemoteCodebaseSearchContext,
 };
-use crate::server::server_api::{ServerApi, ServerApiProvider};
 
 pub(super) enum RemoteSearchRequest {
     Pending(futures_util::stream::AbortHandle),
@@ -86,7 +85,7 @@ pub(super) fn send_request(
                     );
                 }
             }
-            let store_client = ServerApiProvider::as_ref(ctx).get();
+            let store_client = crate::ai::local::embedding_store();
             let abort_handle = ctx
                 .spawn(
                     async move {
@@ -126,7 +125,7 @@ async fn execute_remote_codebase_search(
     partial_paths: Option<Vec<String>>,
     search_context: RemoteCodebaseSearchContext,
     handle: remote_server::manager::HostRequestHandle,
-    store_client: Arc<ServerApi>,
+    store_client: Arc<dyn StoreClient>,
 ) -> Result<SearchCodebaseResult, anyhow::Error> {
     let root_hash = search_context.root_hash;
     let root_hash_string = root_hash.to_string();

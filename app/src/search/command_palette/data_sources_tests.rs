@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use chrono::Utc;
 use cloud_object_client::MockObjectClient;
+use cloud_objects::drive::sharing::AccessLevel;
 use settings::manager::SettingsManager;
-use warp_graphql::object_permissions::AccessLevel;
 use warpui::{App, SingletonEntity, WindowId};
 
 use super::*;

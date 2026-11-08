@@ -4,9 +4,9 @@ use serde_json::json;
 
 use super::super::ServerApi;
 use super::{
-    AIClient, Artifact, ArtifactDownloadResponse, ForkConversationResponse,
-    build_fork_conversation_url,
+    AIClient, ArtifactDownloadResponse, ForkConversationResponse, build_fork_conversation_url,
 };
+use crate::ai::artifacts::Artifact;
 use crate::notebooks::NotebookId;
 
 #[test]

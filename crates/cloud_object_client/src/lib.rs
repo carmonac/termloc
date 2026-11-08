@@ -6,14 +6,12 @@ use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 pub use cloud_object_models::*;
 pub use cloud_objects::cloud_object::*;
-use cloud_objects::drive::sharing::SharingAccessLevel;
+use cloud_objects::drive::sharing::{AccessLevel, SharingAccessLevel};
 use cloud_objects::ids::{
     FolderId, GenericStringObjectId, HashedSqliteId, ObjectUid, ServerId, SyncId,
 };
 #[cfg(any(test, feature = "test-util"))]
 use mockall::automock;
-use warp_graphql::mcp_gallery_template::MCPGalleryTemplate;
-use warp_graphql::object_permissions::AccessLevel;
 
 /// Identifies a guest to remove from an object.
 #[derive(Clone, Debug)]
@@ -118,7 +116,6 @@ pub struct InitialLoadResponse {
     pub deleted_generic_string_objects: Vec<GenericStringObjectId>,
     pub user_profiles: Vec<UserProfileWithUID>,
     pub action_histories: Vec<ObjectActionHistory>,
-    pub mcp_gallery: Vec<MCPGalleryTemplate>,
 }
 
 pub struct GetCloudObjectResponse {

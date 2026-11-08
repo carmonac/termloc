@@ -1,7 +1,7 @@
 use chrono::Utc;
 use settings::schema::SettingSchemaEntry;
 use settings::{Setting, SettingSurfaces, SettingsMode};
-use warp_graphql::scalars::time::ServerTimestamp;
+use warp_core::server_timestamp::ServerTimestamp;
 use warpui::{App, SingletonEntity};
 
 use super::*;

@@ -6,7 +6,6 @@ use uuid::Uuid;
 use warpui::{Entity, ModelContext, SingletonEntity};
 
 use crate::ai::mcp::file_based_manager::FileBasedMCPServerScope;
-use crate::ai::mcp::gallery::MCPGalleryManagerEvent;
 use crate::ai::mcp::parsing::resolve_json;
 use crate::ai::mcp::templatable_manager::TemplatableMCPServerManagerEvent;
 use crate::ai::mcp::{
@@ -222,12 +221,6 @@ impl TuiMcpManager {
                     | TemplatableMCPServerManagerEvent::LegacyServerConverted => {}
                 }
                 me.refresh(ctx);
-            },
-        );
-        ctx.subscribe_to_model(
-            &MCPGalleryManager::handle(ctx),
-            |me, _, event, ctx| match event {
-                MCPGalleryManagerEvent::ItemsRefreshed => me.refresh(ctx),
             },
         );
 

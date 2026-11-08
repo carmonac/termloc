@@ -150,10 +150,6 @@ impl WebSocket {
             }
         }
     }
-
-    pub async fn into_graphql_client_builder(self) -> graphql_ws_client::ClientBuilder {
-        self.0.into_graphql_client_builder().await
-    }
 }
 
 /// If `err` originated from a websocket handshake that received a non-101 HTTP

@@ -10,9 +10,9 @@ use chrono::{DateTime, Utc};
 use cloud_object_client::{
     GetCloudObjectResponse, InitialLoadResponse, ObjectPermissionUpdateResult,
 };
+use cloud_objects::drive::sharing::AccessLevel;
 use uuid::Uuid;
-use warp_graphql::object_permissions::AccessLevel;
-use warp_graphql::scalars::time::ServerTimestamp;
+use warp_core::server_timestamp::ServerTimestamp;
 
 use crate::cloud_object::model::actions::{
     ObjectAction, ObjectActionHistory, ObjectActionSubtype, ObjectActionType,

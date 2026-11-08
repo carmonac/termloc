@@ -7,15 +7,13 @@ use chrono::{DateTime, Utc};
 // Re-exported from cloud_objects.
 pub use cloud_objects::cloud_object::SerializedModel;
 use derivative::Derivative;
-use http::StatusCode;
 use lazy_static::lazy_static;
 use uuid::Uuid;
+use warp_core::server_timestamp::ServerTimestamp;
 use warp_errors::report_error;
-use warp_graphql::scalars::time::ServerTimestamp;
 use warpui::r#async::FutureId;
 use warpui::{Entity, ModelContext, RequestState, RetryOption, SingletonEntity};
 
-use super::graphql::GraphQLError;
 use super::ids::{ClientId, HashableId, ObjectUid, ServerId, SyncId, ToServerId};
 use super::server_api::object::ObjectClient;
 use crate::ai::execution_profiles::CloudAIExecutionProfileModel;
@@ -338,11 +336,9 @@ pub struct SyncQueue {
 impl SyncQueue {
     #[cfg(any(test, all(feature = "tui", feature = "test-util")))]
     pub fn mock(ctx: &mut ModelContext<Self>) -> Self {
-        use super::server_api::ServerApiProvider;
-
         Self::new(
             Default::default(),
-            ServerApiProvider::new_for_test().get(),
+            Arc::new(super::cloud_objects::local_object_client::LocalObjectClient),
             ctx,
         )
     }
@@ -998,7 +994,7 @@ impl SyncQueue {
                                     // initiated_by values currently do not propagate through the sync queue for bulk create operations, but can be added in the future
                                     me.handle_creation_failure_response(object.id.to_string(), dequeued_item_id, InitiatedBy::User, ctx);
                                 }
-                                me.maybe_dequeue_on_error(e, ctx);
+                                me.dequeue(ctx);
                             }
                         },
                     );
@@ -1088,7 +1084,7 @@ impl SyncQueue {
                         queue_item_id,
                         ctx,
                     );
-                    me.maybe_dequeue_on_error(e, ctx);
+                    me.dequeue(ctx);
                 }
             },
         );
@@ -1307,7 +1303,7 @@ impl SyncQueue {
                         initiated_by,
                         ctx,
                     );
-                    me.maybe_dequeue_on_error(e, ctx);
+                    me.dequeue(ctx);
                 }
             },
         );
@@ -1415,7 +1411,7 @@ impl SyncQueue {
                         queue_item_id,
                         ctx,
                     );
-                    me.maybe_dequeue_on_error(e, ctx);
+                    me.dequeue(ctx);
                 }
             },
         );
@@ -1607,43 +1603,6 @@ impl SyncQueue {
             uid,
             action_timestamp: timestamp,
         })
-    }
-
-    /// Conditionally dequeue the next item, depending on the reason for failure.
-    fn maybe_dequeue_on_error(&mut self, error: anyhow::Error, ctx: &mut ModelContext<Self>) {
-        // Check if the underlying cause is a persistent error (i.e. one where we expect other
-        // queue items to fail as well).
-        // At some point, a generic "is retryable" policy for errors would be useful.
-        let persistent_error = error.chain().any(|cause| {
-            #[cfg(not(target_family = "wasm"))]
-            if let Some(err) = cause.downcast_ref::<reqwest::Error>() {
-                // This is adapted from the implementation of `ErrorExt` for `anyhow::Error`.
-                // If the server is unavailable, stop dequeueing.
-                if err.is_connect() {
-                    return true;
-                }
-            }
-
-            if let Some(err) = cause.downcast_ref::<GraphQLError>() {
-                match err {
-                    // This only applies to WarpDev, but if someone's IP address is blocked, there's no
-                    // point in continuing to dequeue.
-                    GraphQLError::StagingAccessBlocked => return true,
-                    // If the user isn't authorized, stop dequeuing.
-                    GraphQLError::HttpError {
-                        status: StatusCode::FORBIDDEN | StatusCode::UNAUTHORIZED,
-                        ..
-                    } => return true,
-                    _ => (),
-                }
-            }
-
-            false
-        });
-
-        if !persistent_error {
-            self.dequeue(ctx);
-        }
     }
 
     fn creation_dependency_for_id(

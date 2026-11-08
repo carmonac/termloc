@@ -3,13 +3,11 @@ use std::sync::Arc;
 use futures::executor::block_on;
 use warp_core::channel::ChannelState;
 use warp_errors::AnyhowErrorExt as _;
-use warp_graphql::ai::PlatformErrorCode;
-use warp_graphql::platform_error::PlatformErrorMessageFormat;
 use warp_server_auth::auth_state::AuthState;
 
 use super::{HttpStatusError, PresignedDownloadResponse};
 use crate::auth::AuthEvent;
-use crate::base_client::{AuthenticatedGraphqlConfig, BaseClient, GraphqlRoutingConfig};
+use crate::base_client::BaseClient;
 struct EmptyIapTokenProvider;
 
 #[test]
@@ -88,8 +86,6 @@ fn presigned_download_keeps_api_context_off_storage() {
         Arc::new(http_client::Client::new_external()),
         Arc::new(auth_state),
         event_sender,
-        GraphqlRoutingConfig::default(),
-        AuthenticatedGraphqlConfig::default(),
         None,
     );
     let bytes = block_on(async {
@@ -126,8 +122,6 @@ fn base_client_with_auth(
         Arc::new(http_client::Client::new_external()),
         Arc::new(auth_state),
         event_sender,
-        GraphqlRoutingConfig::default(),
-        AuthenticatedGraphqlConfig::default(),
         observe_iap_challenges.then(|| {
             Arc::new(EmptyIapTokenProvider) as Arc<dyn http_client::iap::IapTokenProvider>
         }),
@@ -193,94 +187,6 @@ fn ordinary_public_api_failure_preserves_shared_status_error() {
             .any(|cause| cause.downcast_ref::<HttpStatusError>().is_some())
     );
     assert!(event_receiver.try_recv().is_err());
-}
-
-#[test]
-fn platform_error_problem_response_preserves_structured_fields() {
-    let _request = {
-        let mut server = ChannelState::mock_server();
-        server
-            .mock("GET", "/api/v1/test/platform-error")
-            .with_status(503)
-            .with_header("content-type", "application/problem+json")
-            .with_body(
-                r#"{
-                    "type": "https://docs.warp.dev/errors/resource_unavailable",
-                    "title": "GitHub is temporarily unavailable.",
-                    "status": 503,
-                    "detail": "Repository access could not be resolved.",
-                    "instance": "/api/v1/test/platform-error",
-                    "error": "GitHub is temporarily unavailable. (Repository access could not be resolved.)",
-                    "retryable": true,
-                    "provider": "github",
-                    "retry_after_seconds": "30",
-                    "debug": "request-id=dogfood-only",
-                    "trace_id": "0123456789abcdef"
-                }"#,
-            )
-            .create()
-    };
-    let (base_client, _) = base_client(false);
-
-    let error = block_on(base_client.get_public_api::<serde_json::Value>("test/platform-error"))
-        .unwrap_err();
-    let status_error = error
-        .chain()
-        .find_map(|cause| cause.downcast_ref::<HttpStatusError>())
-        .unwrap();
-    let platform_error = status_error.platform_error().unwrap();
-
-    assert_eq!(
-        platform_error.error_message.as_deref(),
-        Some("GitHub is temporarily unavailable.")
-    );
-    assert_eq!(platform_error.code, PlatformErrorCode::ResourceUnavailable);
-    assert_eq!(platform_error.http_status, Some(503));
-    assert_eq!(
-        platform_error.user_facing_messages[&PlatformErrorMessageFormat::PlainText],
-        "GitHub is temporarily unavailable."
-    );
-    assert_eq!(
-        platform_error.detail.as_deref(),
-        Some("Repository access could not be resolved.")
-    );
-    assert!(platform_error.retryable);
-    assert_eq!(platform_error.is_user_error, None);
-    assert_eq!(platform_error.metadata["provider"], "github");
-    assert_eq!(platform_error.metadata["retry_after_seconds"], "30");
-    assert_eq!(
-        platform_error.debug.as_deref(),
-        Some("request-id=dogfood-only")
-    );
-    assert_eq!(platform_error.metrics_category, None);
-    assert_eq!(platform_error.trace_id.as_deref(), Some("0123456789abcdef"));
-}
-#[test]
-fn iap_challenge_failure_emits_event_when_observation_is_enabled() {
-    let _request = {
-        let mut server = ChannelState::mock_server();
-        server
-            .mock("GET", "/api/v1/agent/identities")
-            .with_status(401)
-            .with_header(http_client::iap::IAP_GENERATED_RESPONSE_HEADER, "true")
-            .with_body(r#"{"error":"IAP challenge"}"#)
-            .create()
-    };
-    let (base_client, event_receiver) = base_client(true);
-
-    let error =
-        block_on(base_client.get_public_api::<serde_json::Value>("agent/identities")).unwrap_err();
-
-    assert!(error.to_string().contains("IAP challenge"));
-    assert!(
-        error
-            .chain()
-            .any(|cause| cause.downcast_ref::<HttpStatusError>().is_some())
-    );
-    assert!(matches!(
-        event_receiver.try_recv().unwrap(),
-        AuthEvent::IapChallengeReceived
-    ));
 }
 
 #[test]

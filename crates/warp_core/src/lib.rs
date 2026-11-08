@@ -14,6 +14,7 @@ pub mod paths;
 pub mod platform;
 pub mod safe_log;
 pub mod semantic_selection;
+pub mod server_timestamp;
 pub use settings;
 // Re-export settings macros for backward compatibility
 pub use settings::{

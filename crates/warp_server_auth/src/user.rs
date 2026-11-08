@@ -1,6 +1,5 @@
-use anyhow::{Result, anyhow};
 use serde::{Deserialize, Serialize};
-use warp_graphql::scalars::time::ServerTimestamp;
+use warp_core::server_timestamp::ServerTimestamp;
 
 use super::UserUid;
 pub use super::user_uid::{TEST_USER_EMAIL, TEST_USER_UID};
@@ -23,54 +22,11 @@ pub enum PrincipalType {
     ServiceAccount,
 }
 
-impl From<warp_graphql::queries::get_user::PrincipalType> for PrincipalType {
-    fn from(value: warp_graphql::queries::get_user::PrincipalType) -> Self {
-        use warp_graphql::queries::get_user::PrincipalType as GqlPrincipalType;
-        match value {
-            GqlPrincipalType::User => PrincipalType::User,
-            GqlPrincipalType::ServiceAccount => PrincipalType::ServiceAccount,
-        }
-    }
-}
-
-impl TryFrom<warp_graphql::mutations::create_anonymous_user::AnonymousUserType>
-    for AnonymousUserType
-{
-    type Error = anyhow::Error;
-    fn try_from(
-        value: warp_graphql::mutations::create_anonymous_user::AnonymousUserType,
-    ) -> Result<Self, Self::Error> {
-        match value {
-            warp_graphql::mutations::create_anonymous_user::AnonymousUserType::NativeClientAnonymousUser => Ok(AnonymousUserType::NativeClientAnonymousUser),
-            warp_graphql::mutations::create_anonymous_user::AnonymousUserType::NativeClientAnonymousUserFeatureGated => Ok(AnonymousUserType::NativeClientAnonymousUserFeatureGated),
-            warp_graphql::mutations::create_anonymous_user::AnonymousUserType::WebClientAnonymousUser => Ok(AnonymousUserType::WebClientAnonymousUser),
-            warp_graphql::mutations::create_anonymous_user::AnonymousUserType::Other(_) => {
-                Err(anyhow!("could not convert unknown anonymous user type"))
-            },
-        }
-    }
-}
-
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct PersonalObjectLimits {
     pub env_var_limit: usize,
     pub notebook_limit: usize,
     pub workflow_limit: usize,
-}
-
-impl TryFrom<warp_graphql::queries::get_user::AnonymousUserPersonalObjectLimits>
-    for PersonalObjectLimits
-{
-    type Error = anyhow::Error;
-    fn try_from(
-        value: warp_graphql::queries::get_user::AnonymousUserPersonalObjectLimits,
-    ) -> Result<Self, Self::Error> {
-        Ok(Self {
-            env_var_limit: value.env_var_limit as usize,
-            notebook_limit: value.notebook_limit as usize,
-            workflow_limit: value.workflow_limit as usize,
-        })
-    }
 }
 
 /// The in-memory representation of a logged-in User.

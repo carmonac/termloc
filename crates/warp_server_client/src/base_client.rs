@@ -1,10 +1,7 @@
-use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::{Context as _, Result, bail};
+use anyhow::{Result, bail};
 use futures::StreamExt as _;
-use instant::Duration;
-use warp_graphql::client::RequestOptions;
 use warp_server_auth::auth_state::AuthState;
 use warp_server_auth::credentials::{AuthToken, Credentials};
 
@@ -17,26 +14,12 @@ use crate::auth::{AuthEvent, UserUid};
 /// is not itself proof of membership.
 pub const TEAM_UID_HEADER: &str = "X-Warp-Team-Uid";
 
-/// Provides GraphQL path routing that applies independently of authentication.
-#[derive(Clone, Debug, Default)]
-pub struct GraphqlRoutingConfig {
-    pub path_prefix: Option<String>,
-}
-
-/// Provides headers added only to session-authenticated GraphQL operations.
-#[derive(Clone, Debug, Default)]
-pub struct AuthenticatedGraphqlConfig {
-    pub headers: HashMap<String, String>,
-}
-
 /// Owns shared transport, authentication, and authenticated request decoration.
 pub struct BaseClient {
     client: Arc<http_client::Client>,
     external_client: Arc<http_client::Client>,
     auth_state: Arc<AuthState>,
     event_sender: async_channel::Sender<AuthEvent>,
-    graphql_routing: GraphqlRoutingConfig,
-    authenticated_graphql: AuthenticatedGraphqlConfig,
     iap_token_provider: Option<Arc<dyn http_client::iap::IapTokenProvider>>,
 }
 
@@ -46,40 +29,15 @@ impl BaseClient {
         external_client: Arc<http_client::Client>,
         auth_state: Arc<AuthState>,
         event_sender: async_channel::Sender<AuthEvent>,
-        graphql_routing: GraphqlRoutingConfig,
-        mut authenticated_graphql: AuthenticatedGraphqlConfig,
         iap_token_provider: Option<Arc<dyn http_client::iap::IapTokenProvider>>,
     ) -> Self {
-        authenticated_graphql.headers.retain(|name, _| {
-            if Self::is_reserved_authenticated_graphql_header(name) {
-                log::warn!("Ignoring reserved authenticated GraphQL header configuration: {name}");
-                false
-            } else {
-                true
-            }
-        });
         Self {
             client,
             external_client,
             auth_state,
             event_sender,
-            graphql_routing,
-            authenticated_graphql,
             iap_token_provider,
         }
-    }
-
-    /// Returns whether authenticated GraphQL decoration would override BaseClient-owned headers.
-    fn is_reserved_authenticated_graphql_header(name: &str) -> bool {
-        [
-            http::header::AUTHORIZATION.as_str(),
-            http::header::CONTENT_TYPE.as_str(),
-            http::header::CONTENT_LENGTH.as_str(),
-            http_client::iap::IAP_PROXY_AUTH_HEADER,
-            TEAM_UID_HEADER,
-        ]
-        .iter()
-        .any(|reserved| name.eq_ignore_ascii_case(reserved))
     }
 
     /// Returns the shared HTTP client for request construction.
@@ -144,34 +102,6 @@ impl BaseClient {
         event: AuthEvent,
     ) -> Result<(), async_channel::TrySendError<AuthEvent>> {
         self.event_sender.try_send(event)
-    }
-
-    pub fn is_auth_refresh_allowed(&self) -> bool {
-        self.allowed_to_refresh_token()
-    }
-
-    /// Returns GraphQL options for bootstrap or explicit-token operations.
-    pub fn graphql_request_options_with_token(&self, auth_token: Option<String>) -> RequestOptions {
-        RequestOptions {
-            auth_token,
-            path_prefix: self.graphql_routing.path_prefix.clone(),
-            ..RequestOptions::default()
-        }
-    }
-
-    /// Returns GraphQL options for a session-authenticated operation.
-    pub async fn graphql_request_options(
-        &self,
-        timeout: Option<Duration>,
-    ) -> Result<RequestOptions> {
-        let auth_token = self
-            .get_or_refresh_access_token()
-            .await
-            .context("Failed to get access token for GraphQL request")?;
-        let mut options = self.graphql_request_options_with_token(auth_token.bearer_token());
-        options.timeout = timeout;
-        options.headers = self.authenticated_graphql.headers.clone();
-        Ok(options)
     }
 
     /// Notifies the application when an enabled IAP-backed request receives an IAP challenge.

@@ -12,14 +12,11 @@ skip_login = []
 test-util = []
 
 [dependencies]
-anyhow.workspace = true
 chrono.workspace = true
-cynic.workspace = true
 lasso.workspace = true
 log.workspace = true
 parking_lot.workspace = true
 serde.workspace = true
 uuid.workspace = true
 warp_core.workspace = true
-warp_graphql.workspace = true
 warpui_core.workspace = true

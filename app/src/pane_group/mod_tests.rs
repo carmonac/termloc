@@ -148,7 +148,7 @@ fn initialize_app_with_history(app: &mut App, conversations: Vec<AgentConversati
     app.update(experiments::init);
     AltScreenReporting::register(app);
     app.add_singleton_model(|ctx| {
-        CodebaseIndexManager::new_for_test(ServerApiProvider::as_ref(ctx).get(), ctx)
+        CodebaseIndexManager::new_for_test(crate::ai::local::embedding_store(), ctx)
     });
     app.add_singleton_model(|ctx| PersistedWorkspace::new(vec![], HashMap::new(), None, ctx));
     app.add_singleton_model(|_| ProjectContextModel::default());

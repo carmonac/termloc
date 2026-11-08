@@ -7,13 +7,7 @@ use lazy_static::lazy_static;
 use pathfinder_color::ColorU;
 use serde::{Deserialize, Serialize};
 use warp_core::command::ExitCode;
-use warp_graphql::ai::{
-    RequestLimitInfo as RequestLimitInfoGraphql,
-    RequestLimitRefreshDuration as RequestLimitRefreshDurationGraphql,
-};
-use warp_graphql::mutations::generate_commands::{GenerateCommandsFailureType, GeneratedCommand};
 
-use crate::ai::{RequestLimitInfo, RequestLimitRefreshDuration};
 use crate::terminal::model::terminal_model::BlockIndex;
 use crate::workflows::workflow::{Argument, Workflow};
 
@@ -95,23 +89,6 @@ impl From<AIGeneratedCommand> for Workflow {
     }
 }
 
-impl From<GeneratedCommand> for AIGeneratedCommand {
-    fn from(value: GeneratedCommand) -> Self {
-        AIGeneratedCommand {
-            command: value.command,
-            description: value.description,
-            parameters: value
-                .parameters
-                .into_iter()
-                .map(|p| AIGeneratedCommandParameter {
-                    id: p.id,
-                    description: p.description,
-                })
-                .collect_vec(),
-        }
-    }
-}
-
 #[cfg(not(target_family = "wasm"))]
 impl From<local_agent::oneshot::GeneratedCommand> for AIGeneratedCommand {
     fn from(value: local_agent::oneshot::GeneratedCommand) -> Self {
@@ -129,49 +106,4 @@ pub enum GenerateCommandsFromNaturalLanguageError {
     AiProviderError,
     RateLimited,
     Other,
-}
-
-impl From<GenerateCommandsFailureType> for GenerateCommandsFromNaturalLanguageError {
-    fn from(value: GenerateCommandsFailureType) -> Self {
-        match value {
-            GenerateCommandsFailureType::BadPrompt => Self::BadPrompt,
-            GenerateCommandsFailureType::AiProviderError => Self::AiProviderError,
-            GenerateCommandsFailureType::RateLimited => Self::RateLimited,
-            GenerateCommandsFailureType::Other => Self::Other,
-        }
-    }
-}
-
-impl From<RequestLimitRefreshDurationGraphql> for RequestLimitRefreshDuration {
-    fn from(value: RequestLimitRefreshDurationGraphql) -> Self {
-        match value {
-            RequestLimitRefreshDurationGraphql::Monthly => RequestLimitRefreshDuration::Monthly,
-            RequestLimitRefreshDurationGraphql::Weekly => RequestLimitRefreshDuration::Weekly,
-            RequestLimitRefreshDurationGraphql::EveryTwoWeeks => {
-                RequestLimitRefreshDuration::EveryTwoWeeks
-            }
-        }
-    }
-}
-
-impl From<RequestLimitInfoGraphql> for RequestLimitInfo {
-    fn from(value: RequestLimitInfoGraphql) -> Self {
-        RequestLimitInfo {
-            is_unlimited: value.is_unlimited,
-            limit: value.request_limit as usize,
-            num_requests_used_since_refresh: value.requests_used_since_last_refresh as usize,
-            included_usage_cents: value.included_usage_cents,
-            usage_cents_used_since_last_refresh: value.usage_cents_used_since_last_refresh,
-            next_refresh_time: value.next_refresh_time,
-            request_limit_refresh_duration: value.request_limit_refresh_duration.into(),
-            is_unlimited_voice: value.is_unlimited_voice,
-            voice_request_limit: value.voice_request_limit as usize,
-            voice_requests_used_since_last_refresh: value.voice_requests_used_since_last_refresh
-                as usize,
-            is_unlimited_codebase_indices: value.is_unlimited_codebase_indices,
-            max_codebase_indices: value.max_codebase_indices as usize,
-            max_files_per_repo: value.max_files_per_repo as usize,
-            embedding_generation_batch_size: value.embedding_generation_batch_size as usize,
-        }
-    }
 }

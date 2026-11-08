@@ -1,6 +1,16 @@
-use warp_graphql::queries::get_updated_cloud_objects::UpdatedObjectInput;
+use warp_core::server_timestamp::ServerTimestamp;
 
 use super::RevisionAndLastEditor;
+
+/// The timestamps a client holds for one object, used to fetch only what changed.
+#[derive(Debug, Clone)]
+pub struct UpdatedObjectInput {
+    pub actions_ts: Option<ServerTimestamp>,
+    pub metadata_ts: Option<ServerTimestamp>,
+    pub permissions_ts: Option<ServerTimestamp>,
+    pub revision_ts: ServerTimestamp,
+    pub uid: String,
+}
 
 /// Result of attempting to update a cloud object.
 #[derive(Debug)]

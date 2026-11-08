@@ -99,7 +99,7 @@ pub(crate) fn initialize_app(app: &mut App) {
     app.add_singleton_model(TeamTesterStatus::mock);
     app.add_singleton_model(TeamUpdateManager::mock);
     app.add_singleton_model(UpdateManager::mock);
-    app.add_singleton_model(MCPGalleryManager::new);
+    app.add_singleton_model(|_| MCPGalleryManager::default());
     app.add_singleton_model(CloudViewModel::mock);
     app.add_singleton_model(Listener::mock);
     app.add_singleton_model(|_| Appearance::mock());
@@ -205,7 +205,7 @@ pub(crate) fn initialize_app(app: &mut App) {
         crate::workspace::bonus_grant_notification_model::BonusGrantNotificationModel::new,
     );
     app.add_singleton_model(|ctx| {
-        CodebaseIndexManager::new_for_test(ServerApiProvider::as_ref(ctx).get(), ctx)
+        CodebaseIndexManager::new_for_test(crate::ai::local::embedding_store(), ctx)
     });
     app.add_singleton_model(|ctx| PersistedWorkspace::new(vec![], HashMap::new(), None, ctx));
     app.add_singleton_model(|_| ProjectContextModel::default());

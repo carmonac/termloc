@@ -3,7 +3,6 @@ pub mod object;
 
 use std::ops::Deref;
 use std::sync::Arc;
-use std::time::Duration;
 
 use ai::AIClient;
 use anyhow::{Context, Result, anyhow};
@@ -17,12 +16,9 @@ use warp_core::context_flag::ContextFlag;
 use warp_errors::{AnyhowErrorExt, ErrorExt, register_error};
 use warp_server_client::HttpStatusError;
 use warp_server_client::auth::AuthEvent;
-use warp_server_client::base_client::{
-    AuthenticatedGraphqlConfig, BaseClient, GraphqlRoutingConfig, TEAM_UID_HEADER,
-};
+use warp_server_client::base_client::{BaseClient, TEAM_UID_HEADER};
 use warp_server_client::iap::{IapManager, IapState};
 use warp_server_client::network_logging::NetworkLogModel;
-use warpui::r#async::BoxFuture;
 use warpui::{Entity, ModelContext, SingletonEntity};
 
 use crate::ChannelState;
@@ -448,20 +444,11 @@ impl ServerApi {
         event_sender: async_channel::Sender<AuthEvent>,
         iap_token_provider: Option<Arc<dyn http_client::iap::IapTokenProvider>>,
     ) -> Self {
-        let graphql_routing = GraphqlRoutingConfig {
-            #[cfg(feature = "agent_mode_evals")]
-            path_prefix: Some("/agent-mode-evals".to_string()),
-            #[cfg(not(feature = "agent_mode_evals"))]
-            path_prefix: None,
-        };
-        let authenticated_graphql = AuthenticatedGraphqlConfig::default();
         let base_client = Arc::new(BaseClient::new(
             client,
             external_client,
             auth_state,
             event_sender,
-            graphql_routing,
-            authenticated_graphql,
             iap_token_provider,
         ));
 
@@ -501,21 +488,6 @@ impl ServerApi {
             auth_state,
             event_sender,
             None,
-        )
-    }
-
-    pub fn send_graphql_request<'a, QF, O: warp_graphql::client::Operation<QF> + Send + 'a>(
-        &'a self,
-        operation: O,
-        timeout: Option<Duration>,
-    ) -> BoxFuture<'a, Result<QF>>
-    where
-        QF: 'a,
-    {
-        warp_server_client::graphql_helpers::send_graphql_request(
-            &self.base_client,
-            operation,
-            timeout,
         )
     }
 
@@ -959,10 +931,7 @@ impl ServerApiProvider {
     }
 
     pub fn get_cloud_objects_client(&self) -> Arc<dyn ObjectClient> {
-        if ChannelState::is_local_only() {
-            return Arc::new(LocalObjectClient);
-        }
-        self.server_api.clone()
+        Arc::new(LocalObjectClient)
     }
 
     /// Returns the shared HTTP client. This client is wired into network logging

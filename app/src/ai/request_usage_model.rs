@@ -6,10 +6,9 @@ use futures::channel::oneshot::{self, Receiver};
 use instant::Instant;
 use serde::{Deserialize, Serialize};
 use warp_core::channel::ChannelState;
+use warp_core::server_timestamp::ServerTimestamp;
 use warp_core::user_preferences::GetUserPreferences as _;
 use warp_errors::report_error;
-pub use warp_graphql::billing::BonusGrantType;
-use warp_graphql::scalars::time::ServerTimestamp;
 use warpui::{AppContext, Entity, ModelContext, SingletonEntity};
 
 use crate::BlocklistAIHistoryModel;
@@ -19,6 +18,7 @@ use crate::ai::credit_availability::AICreditAvailability;
 use crate::auth::AuthStateProvider;
 use crate::server::server_api::ai::AIClient;
 use crate::settings::AISettings;
+pub use crate::workspaces::billing_types::BonusGrantType;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::WorkspaceUid;
 

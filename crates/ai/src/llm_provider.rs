@@ -25,18 +25,6 @@ impl LLMProvider {
     }
 }
 
-impl From<warp_graphql::queries::get_feature_model_choices::LlmProvider> for LLMProvider {
-    fn from(_: warp_graphql::queries::get_feature_model_choices::LlmProvider) -> Self {
-        Self::Unknown
-    }
-}
-
-impl From<warp_graphql::workspace::LlmProvider> for LLMProvider {
-    fn from(_: warp_graphql::workspace::LlmProvider) -> Self {
-        Self::Unknown
-    }
-}
-
 #[cfg(test)]
 #[path = "llm_provider_tests.rs"]
 mod tests;

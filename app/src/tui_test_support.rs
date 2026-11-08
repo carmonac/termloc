@@ -357,7 +357,7 @@ pub fn register_tui_session_view_test_singletons(app: &mut warpui::App) {
     app.add_singleton_model(|_| ActiveAgentViewsModel::new());
     app.add_singleton_model(|_| GitRepoModels::new());
     app.add_singleton_model(|ctx| {
-        CodebaseIndexManager::new_for_test(ServerApiProvider::as_ref(ctx).get(), ctx)
+        CodebaseIndexManager::new_for_test(crate::ai::local::embedding_store(), ctx)
     });
     app.add_singleton_model(AgentConversationsModel::new);
     let global_resources = crate::GlobalResourceHandles::mock(app);

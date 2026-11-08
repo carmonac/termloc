@@ -1,8 +1,5 @@
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use warp_graphql::mutations::generate_metadata_for_command::{
-    GenerateMetadataForCommandFailureType, GenerateMetadataForCommandSuccess,
-};
 use warpui::{SingletonEntity, ViewContext};
 
 use super::arguments::ArgumentsState;
@@ -25,25 +22,6 @@ pub struct GeneratedArgument {
     pub name: String,
     pub description: String,
     pub default_value: String,
-}
-
-impl From<GenerateMetadataForCommandSuccess> for GeneratedCommandMetadata {
-    fn from(value: GenerateMetadataForCommandSuccess) -> Self {
-        GeneratedCommandMetadata {
-            command: value.parameterized_command,
-            title: value.title,
-            description: value.description,
-            arguments: value
-                .parameters
-                .into_iter()
-                .map(|p| GeneratedArgument {
-                    name: p.name,
-                    description: p.description,
-                    default_value: p.value,
-                })
-                .collect_vec(),
-        }
-    }
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -88,17 +66,6 @@ impl GeneratedCommandMetadataError {
             Self::Other => "Something went wrong. Please try again.",
         }
         .to_string()
-    }
-}
-
-impl From<GenerateMetadataForCommandFailureType> for GeneratedCommandMetadataError {
-    fn from(value: GenerateMetadataForCommandFailureType) -> Self {
-        match value {
-            GenerateMetadataForCommandFailureType::BadCommand => Self::BadCommand,
-            GenerateMetadataForCommandFailureType::AiProviderError => Self::AiProviderError,
-            GenerateMetadataForCommandFailureType::RateLimited => Self::RateLimited,
-            GenerateMetadataForCommandFailureType::Other => Self::Other,
-        }
     }
 }
 

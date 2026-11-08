@@ -14,7 +14,7 @@ use crate::ai::llms::LLMInfo;
 use crate::ai::llms::ModelsByFeature;
 use crate::server::ids::ServerId;
 use crate::settings::AgentModeCommandExecutionPredicate;
-use crate::workspaces::gql_convert::ToAgentModeCommandExecutionPredicates;
+use crate::workspaces::conversions::ToAgentModeCommandExecutionPredicates;
 use crate::workspaces::team::Team;
 use crate::workspaces::workspace::{AdminEnablementSetting, AiAutonomySettings, Workspace};
 

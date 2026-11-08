@@ -1743,9 +1743,7 @@ pub(crate) fn initialize_app(
         )
     });
 
-    // MCPGalleryManager subscribes to UpdateManager so that it can be notified when gallery items are updated.
-    // The registration of this singleton must be after UpdateManager is registered.
-    ctx.add_singleton_model(MCPGalleryManager::new);
+    ctx.add_singleton_model(|_| MCPGalleryManager::default());
 
     // SkillManager is used to cache SKILL.md files for all active terminal views and their working directories
     ctx.add_singleton_model(SkillManager::new);
@@ -1898,16 +1896,7 @@ pub(crate) fn initialize_app(
         };
 
         let codebase_limits = AIRequestUsageModel::as_ref(ctx).codebase_context_limits();
-        #[cfg(not(target_family = "wasm"))]
-        let store_client: Arc<
-            dyn ::ai::index::full_source_code_embedding::store_client::StoreClient,
-        > = if crate::ai::local::is_enabled() {
-            crate::ai::local::embedding_store()
-        } else {
-            server_api_provider.as_ref(ctx).get()
-        };
-        #[cfg(target_family = "wasm")]
-        let store_client = server_api_provider.as_ref(ctx).get();
+        let store_client = crate::ai::local::embedding_store();
         let mut codebase_index_config = CodebaseIndexManagerConfig::new(
             indices_to_restore,
             codebase_limits.max_indices_allowed,

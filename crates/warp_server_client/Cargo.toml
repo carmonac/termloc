@@ -25,7 +25,6 @@ cloud_object_client.workspace = true
 cloud_object_models.workspace = true
 cloud_objects.workspace = true
 command.workspace = true
-cynic.workspace = true
 derivative.workspace = true
 futures.workspace = true
 http.workspace = true
@@ -46,7 +45,6 @@ url.workspace = true
 uuid.workspace = true
 warp_core.workspace = true
 warp_errors.workspace = true
-warp_graphql.workspace = true
 warp_server_auth.workspace = true
 warpui_core.workspace = true
 

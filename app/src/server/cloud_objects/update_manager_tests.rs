@@ -5,12 +5,12 @@ use std::time::Duration;
 use chrono::{DateTime, Utc};
 use cloud_object_client::MockObjectClient;
 use cloud_object_models::JsonSerializer;
+use cloud_objects::drive::sharing::AccessLevel;
 use futures_lite::future;
 use settings::{RespectUserSyncSetting, SyncToCloud};
 use warp_core::channel::ChannelState;
 use warp_core::features::FeatureFlag;
-use warp_graphql::object_permissions::AccessLevel;
-use warp_graphql::scalars::time::ServerTimestamp;
+use warp_core::server_timestamp::ServerTimestamp;
 use warpui::{App, ModelHandle, SingletonEntity};
 
 use super::{GetCloudObjectResponse, InitialLoadResponse, UpdateManager};
@@ -2703,7 +2703,6 @@ fn test_pending_metadata_update_with_polling() {
             updated_generic_string_objects,
             deleted_generic_string_objects: Default::default(),
             action_histories: Default::default(),
-            mcp_gallery: Default::default(),
         };
         receive_initial_load_or_polling_update(
             &mut app,
@@ -2820,7 +2819,6 @@ fn test_metadata_update_with_polling_no_pending() {
             updated_generic_string_objects: Default::default(),
             deleted_generic_string_objects: Default::default(),
             action_histories: Default::default(),
-            mcp_gallery: Default::default(),
         };
         receive_initial_load_or_polling_update(
             &mut app,
@@ -3356,7 +3354,6 @@ fn test_report_initial_load() {
                 updated_generic_string_objects: Default::default(),
                 deleted_generic_string_objects: Default::default(),
                 action_histories: Default::default(),
-                mcp_gallery: Default::default(),
             },
         );
 
@@ -4121,7 +4118,6 @@ fn test_accepts_new_metadata_with_force_refresh() {
             updated_generic_string_objects: Default::default(),
             deleted_generic_string_objects: Default::default(),
             action_histories: Default::default(),
-            mcp_gallery: Default::default(),
         };
 
         // Force a sync for all objects
@@ -5056,7 +5052,6 @@ fn test_object_action_histories_with_initial_load() {
             updated_generic_string_objects: Default::default(),
             deleted_generic_string_objects: Default::default(),
             action_histories: server_action_histories,
-            mcp_gallery: Default::default(),
         };
         receive_initial_load_or_polling_update(
             &mut app,

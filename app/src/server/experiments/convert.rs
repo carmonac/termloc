@@ -3,7 +3,6 @@
 use std::fmt::{Display, Formatter};
 
 use anyhow::{Ok, Result};
-use warp_graphql::experiment::Experiment;
 
 use super::ServerExperiment;
 
@@ -59,40 +58,6 @@ impl ServerExperiment {
             "MACOS_RUNNERS_EXPERIMENT" => Ok(Self::MacosRunnersExperiment),
             s => Err(anyhow::anyhow!(
                 "String doesn't match any server experiment variant {s}"
-            )),
-        }
-    }
-}
-
-impl TryFrom<Experiment> for ServerExperiment {
-    type Error = anyhow::Error;
-
-    fn try_from(value: Experiment) -> Result<Self, Self::Error> {
-        match value {
-            Experiment::BuildPlanAutoReloadControl => Ok(Self::BuildPlanAutoReloadControl),
-            Experiment::BuildPlanAutoReloadBannerToggle => {
-                Ok(Self::BuildPlanAutoReloadBannerToggle)
-            }
-            Experiment::BuildPlanAutoReloadPostPurchaseModal => {
-                Ok(Self::BuildPlanAutoReloadPostPurchaseModal)
-            }
-            Experiment::DisableAgentModeExperiment => Ok(Self::DisableAgentModeExperiment),
-            Experiment::EnvVarsEarlyAccessExperiment => Ok(Self::EnvVarsEarlyAccessExperiment),
-            Experiment::AgentModeAnalyticsExperiment => Ok(Self::AgentModeAnalyticsExperiment),
-            Experiment::WindowsLaunchExperiment => Ok(Self::WindowsLaunchExperiment),
-            Experiment::CodebaseContextControl => Ok(Self::CodebaseContextControl),
-            Experiment::CodebaseContextExperiment => Ok(Self::CodebaseContextExperiment),
-            Experiment::SuggestedCodeDiffsControl => Ok(Self::SuggestedCodeDiffsControl),
-            Experiment::SuggestedCodeDiffsExperiment => Ok(Self::SuggestedCodeDiffsExperiment),
-            Experiment::PromptSuggestionsViaMaaControl => Ok(Self::PromptSuggestionsViaMaaControl),
-            Experiment::PromptSuggestionsViaMaaOob => {
-                Ok(Self::PromptSuggestionsViaMaaOutOfBandExperiment)
-            }
-            Experiment::MacosRunnersControl => Ok(Self::MacosRunnersControl),
-            Experiment::MacosRunnersExperiment => Ok(Self::MacosRunnersExperiment),
-            // Experiments that we no longer support on the client.
-            e => Err(anyhow::anyhow!(
-                "Server-side enabled experiment '{e:?}' is no longer supported by the client."
             )),
         }
     }

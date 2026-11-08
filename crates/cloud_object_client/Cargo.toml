@@ -18,7 +18,6 @@ serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 warp_core.workspace = true
-warp_graphql.workspace = true
 
 [features]
 test-util = ["dep:mockall", "cloud_object_models/test-util", "cloud_objects/test-util"]

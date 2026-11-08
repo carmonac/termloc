@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
+use cloud_objects::drive::sharing::AccessLevel;
 use settings::Setting as _;
 use warp_core::features::FeatureFlag;
-use warp_graphql::object_permissions::AccessLevel;
 use warp_util::path::EscapeChar;
 use warpui::{App, EntityId, SingletonEntity};
 

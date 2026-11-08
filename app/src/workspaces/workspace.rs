@@ -5,15 +5,15 @@ use chrono::Utc;
 use ordered_float::OrderedFloat;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use warp_graphql::billing::{
+
+use super::billing_types::{
     AddonCreditAutoReloadStatus, AddonCreditsOption, ServiceAgreement, ServiceAgreementType,
 };
-pub use warp_graphql::billing::{
+pub use super::billing_types::{
     AiCreditsUsageAndCostSubjectType, AiCreditsUsageAndCostType, AiCreditsUsageBucket,
     AiCreditsUsageSource,
 };
-
-use super::gql_convert::{ToAgentModeCommandExecutionPredicates, ToPathBufs};
+use super::conversions::{ToAgentModeCommandExecutionPredicates, ToPathBufs};
 use super::team::{DiscoverableTeam, MembershipRole, Team};
 use crate::ai::execution_profiles::{
     ActionPermission, ComputerUsePermission, WriteToPtyPermission,
