@@ -382,7 +382,7 @@ fn dark_theme() -> WarpTheme {
     WarpTheme::new(
         Fill::Solid(ColorU::from_u32(0x000000FF)),
         ColorU::from_u32(0xffffffff),
-        Fill::Solid(ColorU::from_u32(0x19AAD8FF)),
+        Fill::Solid(ColorU::from_u32(0x3AE8A0FF)),
         None,
         Some(Details::Darker),
         dark_mode_colors(),
@@ -395,7 +395,7 @@ fn light_theme() -> WarpTheme {
     WarpTheme::new(
         Fill::Solid(ColorU::white()),
         ColorU::new(17, 17, 17, 0xFF),
-        Fill::Solid(ColorU::from_u32(0x00c2ffff)),
+        Fill::Solid(ColorU::from_u32(0x3AE8A0FF)),
         None,
         Some(Details::Lighter),
         light_mode_colors(),
