@@ -382,35 +382,6 @@ impl UserWorkspaces {
         )
     }
 
-    /// Returns true iff AI autonomy features are allowed for `scope`'s team.
-    /// TODO: This should be deleted soon. AI autonomy settings have been moved into organization
-    /// settings (see `ai_autonomy_settings` above), but there could be an interim time where we
-    /// have not set up the org settings yet for an enterprise that previously had the entire
-    /// feature set disabled. To capture that case, we'll see if all the settings are `None`;
-    /// if so, we'll fall back to their billing metadata's value. Once we've migrated everyone
-    /// into org settings, we should remove `is_enabled` from the policy and delete this function.
-    pub fn is_ai_autonomy_allowed<S: TeamScope + ?Sized>(&self, scope: &S) -> bool {
-        let settings = self.ai_autonomy_settings(scope);
-        let all_settings_none = settings.apply_code_diffs_setting.is_none()
-            && settings.read_files_setting.is_none()
-            && settings.read_files_allowlist.is_none()
-            && settings.execute_commands_setting.is_none()
-            && settings.execute_commands_allowlist.is_none()
-            && settings.execute_commands_denylist.is_none();
-
-        if !all_settings_none {
-            return true;
-        }
-
-        self.current_workspace().is_none_or(|workspace| {
-            workspace
-                .billing_metadata
-                .tier
-                .ai_autonomy_policy
-                .is_some_and(|policy| policy.is_enabled)
-        })
-    }
-
     /// Whether AI is allowed in remote sessions under `scope`'s team. See
     /// [`Self::scoped_or_workspace_setting`] for the no-team fallback. An unresolvable named
     /// team denies rather than guessing, for a control gating AI in an environment the user

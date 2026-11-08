@@ -18,12 +18,11 @@ use parking_lot::FairMutex;
 use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentActionId, AIAgentActionType, AIAgentExchangeId,
     AIAgentOutputMessageType, AIAgentText, AIAgentTextSection, AIAgentTodo, AIBlockModel,
-    AIBlockModelHelper, AIBlockOutputStatus, AIConversationId, AuthStateProvider, BlockId,
-    BlocklistAIActionEvent, BlocklistAIActionModel, BlocklistAIHistoryModel,
-    FAILED_OUTPUT_USAGE_NOTICE_TEXT, FailedOutputPresentation, MessageId, ModelEvent,
-    ModelEventDispatcher, RenderableAIError, SummarizationType, TerminalModel, TodoOperation,
-    TodoStatus, TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent,
-    UserWorkspaces, failed_output_presentation, should_show_failed_output_usage_notice,
+    AIBlockOutputStatus, AIConversationId, AuthStateProvider, BlockId, BlocklistAIActionEvent,
+    BlocklistAIActionModel, BlocklistAIHistoryModel, FailedOutputPresentation, MessageId,
+    ModelEvent, ModelEventDispatcher, SummarizationType, TerminalModel, TodoOperation, TodoStatus,
+    TuiOnboardingMarker, TuiOnboardingMarkers, TuiOnboardingMarkersEvent, UserWorkspaces,
+    failed_output_presentation,
 };
 use warpui::SingletonEntity;
 use warpui_core::elements::MouseStateHandle;
@@ -169,7 +168,6 @@ enum TuiAIBlockSection {
     },
     Failure(FailedOutputPresentation),
     FirstCreditGate,
-    UsageNotice,
 }
 
 /// Per-message UI state for collapsible sections (thinking blocks,
@@ -295,12 +293,6 @@ fn render_failure_section(
         ])
         .finish(),
     }
-}
-
-fn render_usage_notice(app: &AppContext) -> Box<dyn TuiElement> {
-    TuiText::new(FAILED_OUTPUT_USAGE_NOTICE_TEXT)
-        .with_style(TuiUiBuilder::from_app(app).muted_text_style())
-        .finish()
 }
 
 fn failure_text(presentation: &FailedOutputPresentation, app: &AppContext) -> String {
@@ -539,7 +531,6 @@ impl TuiAIBlock {
         let presentation = {
             let status = self.block_model.status(ctx);
             self.visible_failure(&status, ctx)
-                .map(|(_, presentation)| presentation)
         };
         let is_out_of_credits =
             should_consume_first_credit_gate(self.block_model.is_restored(), presentation.as_ref());
@@ -1059,27 +1050,26 @@ impl TuiAIBlock {
     /// Returns the failure that is visible in this block.
     ///
     /// This is the single source of truth for both failure rendering and
-    /// contextual failure actions. Restored active failures remain visible;
-    /// restoration only suppresses the separate usage notice.
-    fn visible_failure<'a>(
+    /// contextual failure actions. Restored active failures remain visible.
+    fn visible_failure(
         &self,
-        status: &'a AIBlockOutputStatus,
+        status: &AIBlockOutputStatus,
         app: &AppContext,
-    ) -> Option<(&'a RenderableAIError, FailedOutputPresentation)> {
+    ) -> Option<FailedOutputPresentation> {
         if !self.block_model.request_type(app).is_active() {
             return None;
         }
         let AIBlockOutputStatus::Failed { error, .. } = status else {
             return None;
         };
-        failed_output_presentation(error, app).map(|presentation| (error, presentation))
+        failed_output_presentation(error)
     }
 
     pub(super) fn has_out_of_credits_failure(&self, app: &AppContext) -> bool {
         let status = self.block_model.status(app);
         matches!(
             self.visible_failure(&status, app),
-            Some((_, FailedOutputPresentation::OutOfCredits { .. }))
+            Some(FailedOutputPresentation::OutOfCredits { .. })
         )
     }
 
@@ -1294,7 +1284,6 @@ impl TuiAIBlock {
             TuiAIBlockSection::FirstCreditGate => {
                 render_first_credit_gate(&self.out_of_credits_hover_state, app)
             }
-            TuiAIBlockSection::UsageNotice => render_usage_notice(app),
         })
     }
     fn rich_text_sections(message_id: &MessageId, text: &AIAgentText) -> Vec<TuiRichTextSection> {
@@ -1416,7 +1405,7 @@ impl TuiAIBlock {
             }
         }
 
-        if let Some((error, presentation)) = self.visible_failure(&status, app) {
+        if let Some(presentation) = self.visible_failure(&status, app) {
             if self.first_credit_gate
                 && matches!(presentation, FailedOutputPresentation::OutOfCredits { .. })
             {
@@ -1424,46 +1413,9 @@ impl TuiAIBlock {
             } else {
                 sections.push(TuiAIBlockSection::Failure(presentation));
             }
-            if !self.first_credit_gate
-                && should_show_failed_output_usage_notice(
-                    error,
-                    self.block_model
-                        .is_latest_visible_exchange_in_root_task(app),
-                    self.has_expanded_last_requested_command(app),
-                    self.block_model.is_restored(),
-                )
-            {
-                sections.push(TuiAIBlockSection::UsageNotice);
-            }
         }
 
         sections
-    }
-
-    fn has_expanded_last_requested_command(&self, app: &AppContext) -> bool {
-        let status = self.block_model.status(app);
-        let Some(output) = status.output_to_render() else {
-            return false;
-        };
-        let action_id = output.get().messages.iter().rev().find_map(|message| {
-            let AIAgentOutputMessageType::Action(action) = &message.message else {
-                return None;
-            };
-            matches!(
-                &action.action,
-                AIAgentActionType::RequestCommandOutput { .. }
-            )
-            .then(|| action.id.clone())
-        });
-        action_id
-            .and_then(|action_id| self.action_views.get(&action_id))
-            .is_some_and(|view| match view {
-                TuiToolCallView::ShellCommand(view) => view.as_ref(app).is_expanded(),
-                TuiToolCallView::AskQuestion(_)
-                | TuiToolCallView::FileEdits(_)
-                | TuiToolCallView::Generic(_)
-                | TuiToolCallView::Plan(_) => false,
-            })
     }
 
     fn markdown_palette(app: &AppContext, muted: bool) -> TuiMarkdownPalette {
@@ -1673,7 +1625,6 @@ impl TuiAIBlock {
                 TuiAIBlockSection::FirstCreditGate => {
                     render_first_credit_gate(&self.out_of_credits_hover_state, app)
                 }
-                TuiAIBlockSection::UsageNotice => render_usage_notice(app),
             };
 
             // One row of bottom padding separates sections; the last section
@@ -1746,7 +1697,6 @@ fn section_logical_text(section: &TuiAIBlockSection, app: &AppContext) -> Option
                  {FIRST_CREDIT_GATE_ACTION_HINT}\n\n{upgrade_url}"
             ))
         }
-        TuiAIBlockSection::UsageNotice => Some(FAILED_OUTPUT_USAGE_NOTICE_TEXT.to_owned()),
     }
 }
 

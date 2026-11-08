@@ -104,12 +104,11 @@ pub struct NewFolder {
     pub is_warp_pack: bool,
 }
 
-#[derive(Identifiable, Insertable, Queryable)]
+#[derive(Identifiable, Queryable, Selectable)]
 pub struct Team {
     pub id: i32,
     pub name: String,
     pub server_uid: String,
-    pub billing_metadata_json: Option<String>,
     pub feature_model_choice_json: Option<String>,
 }
 
@@ -118,7 +117,6 @@ pub struct Team {
 pub struct NewTeam {
     pub name: String,
     pub server_uid: String,
-    pub billing_metadata_json: Option<String>,
     pub feature_model_choice_json: Option<String>,
 }
 

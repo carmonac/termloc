@@ -15,19 +15,14 @@ use warpui::ui_components::components::{UiComponent, UiComponentStyles};
 use warpui::ui_components::text::Span;
 use warpui::{AppContext, Element, EntityId, EventContext, SingletonEntity};
 
-use crate::ai::AIRequestUsageModel;
 use crate::ai::agent::RenderableAIError;
-use crate::settings::{AISettings, UsageDisplayUnit};
 use crate::themes::theme::{AnsiColorIdentifier, Fill, WarpTheme};
 use crate::ui_components::icons::Icon;
-use crate::workspaces::user_workspaces::UserWorkspaces;
-use crate::workspaces::workspace::ChargeUnit;
 
 const PROVIDER_BUTTON_ICON_SIZE: f32 = 14.;
 const PROVIDER_BUTTON_ICON_TEXT_GAP: f32 = 8.;
 const ERROR_APOLOGY_TEXT: &str = "I'm sorry, I couldn't complete that request.";
 const INTERNAL_WARP_ERROR: &str = "Internal Termloc error.";
-pub const FAILED_OUTPUT_USAGE_NOTICE_TEXT: &str = "This response won't count towards your usage.";
 #[cfg(feature = "tui")]
 pub const OUT_OF_CREDITS_SUBSCRIBE_LABEL: &str = "Subscribe";
 /// Text to use as a label throughout the app for user interactions that will attach selected
@@ -74,10 +69,7 @@ pub enum FailedOutputPresentation {
 ///
 /// Recovery-pending failures are intentionally suppressed so callers cannot accidentally render
 /// an alarming terminal error while an automatic resume is still in flight.
-pub fn failed_output_presentation(
-    error: &RenderableAIError,
-    app: &AppContext,
-) -> Option<FailedOutputPresentation> {
+pub fn failed_output_presentation(error: &RenderableAIError) -> Option<FailedOutputPresentation> {
     if error.should_suppress_during_recovery() {
         return None;
     }
@@ -87,20 +79,12 @@ pub fn failed_output_presentation(
             user_display_message,
         } => {
             if let Some(message) = user_display_message {
-                if should_show_subscribe_cta(app) {
-                    FailedOutputPresentation::OutOfCredits {
-                        message: format!("{ERROR_APOLOGY_TEXT}\n\n{message}"),
-                    }
-                } else {
-                    FailedOutputPresentation::Message(format!("{ERROR_APOLOGY_TEXT}\n\n{message}"))
+                FailedOutputPresentation::OutOfCredits {
+                    message: format!("{ERROR_APOLOGY_TEXT}\n\n{message}"),
                 }
             } else {
-                let formatted_next_refresh_time = AIRequestUsageModel::as_ref(app)
-                    .next_refresh_time()
-                    .format("%B %d")
-                    .to_string();
                 FailedOutputPresentation::Message(format!(
-                    "{ERROR_APOLOGY_TEXT}\n\nYou've reached your credit limit. Your credit limit resets on {formatted_next_refresh_time}.",
+                    "{ERROR_APOLOGY_TEXT}\n\nYou've reached your credit limit."
                 ))
             }
         }
@@ -126,27 +110,6 @@ pub fn failed_output_presentation(
             FailedOutputPresentation::Message(format!("{ERROR_APOLOGY_TEXT}\n\n{error}"))
         }
     })
-}
-
-/// Whether a failed Agent Mode response should explain that it will not count towards usage.
-pub fn should_show_failed_output_usage_notice(
-    error: &RenderableAIError,
-    is_latest_visible_exchange_in_root_task: bool,
-    has_expanded_last_requested_command: bool,
-    is_restored: bool,
-) -> bool {
-    !error.should_suppress_during_recovery()
-        && is_latest_visible_exchange_in_root_task
-        && !has_expanded_last_requested_command
-        && !is_restored
-}
-
-/// Whether to show the out-of-credits CTA: only for non-paid users. Paid users and the enterprise
-/// spend-limit variant of this message fall back to plain text.
-fn should_show_subscribe_cta(app: &AppContext) -> bool {
-    UserWorkspaces::as_ref(app)
-        .current_workspace()
-        .is_none_or(|workspace| !workspace.billing_metadata.is_user_on_paid_plan())
 }
 
 /// Returns the AI icon element to be rendered in AI output blocks and the terminal input when in
@@ -234,116 +197,6 @@ pub fn get_ai_block_overflow_menu_element_position_id(view_id: EntityId) -> Stri
     format!("aiblock:{view_id}.overflow_menu_position")
 }
 
-/// Formats credit count to display as whole numbers when the value is effectively a whole number,
-/// otherwise displays with one decimal place. A non-zero amount below the displayed precision is
-/// shown as `<0.1 credits` rather than rounding to zero, which would read as no cost.
-/// Returns a formatted string with proper pluralization ("credit" vs "credits").
-pub fn format_credits(credits: f32) -> String {
-    if credits > 0.0 && credits < 0.1 {
-        return "<0.1 credits".to_string();
-    }
-    // If the first part of the decimal is 0, we just display the whole number.
-    if credits.fract() < 0.1 {
-        let whole = credits.trunc() as i32;
-        if whole == 1 {
-            format!("{whole} credit")
-        } else {
-            format!("{whole} credits")
-        }
-    } else {
-        format!("{credits:.1} credits")
-    }
-}
-
-/// Formats a US-cent amount as dollars without rounding a positive charge down to zero.
-pub fn format_dollars(cost_in_cents: f32) -> String {
-    // Accumulated costs can produce negative zero, which would otherwise render as `$-0.00`.
-    let cost_in_cents = if cost_in_cents == 0.0 {
-        0.0
-    } else {
-        cost_in_cents
-    };
-    let dollars = cost_in_cents / 100.0;
-    if cost_in_cents > 0.0 && dollars < 0.01 {
-        "<$0.01".to_string()
-    } else {
-        format!("${dollars:.2}")
-    }
-}
-
-/// The unit the viewer's usage, balances and purchases display in. A tier that charges usage in
-/// cents (`Tier.chargeUnit`, via [`UserWorkspaces::charge_unit`]) follows the `usage_display_unit`
-/// setting; a tier that charges in credits is always credits, whatever the setting says.
-pub fn usage_display_unit(app: &AppContext) -> UsageDisplayUnit {
-    match UserWorkspaces::as_ref(app).charge_unit() {
-        ChargeUnit::Cents => AISettings::as_ref(app).usage_display_unit,
-        ChargeUnit::Credits => UsageDisplayUnit::Credits,
-    }
-}
-
-/// Resolves the unit one usage figure is displayed in: dollars only when [`usage_display_unit`]
-/// is dollars and the figure carries a cents value, so a figure without one still renders as
-/// credits rather than blank.
-pub fn effective_usage_unit(cost_in_cents: Option<f32>, app: &AppContext) -> UsageDisplayUnit {
-    match (usage_display_unit(app), cost_in_cents) {
-        (UsageDisplayUnit::Dollars, Some(_)) => UsageDisplayUnit::Dollars,
-        (UsageDisplayUnit::Dollars, None) | (UsageDisplayUnit::Credits, Some(_) | None) => {
-            UsageDisplayUnit::Credits
-        }
-    }
-}
-
-/// Formats a usage figure in `unit`. Dollars fall back to the plain credits string when no cents
-/// figure exists.
-pub fn format_usage(credits: f32, cost_in_cents: Option<f32>, unit: UsageDisplayUnit) -> String {
-    match (unit, cost_in_cents) {
-        (UsageDisplayUnit::Dollars, Some(cost_in_cents)) => format_dollars(cost_in_cents),
-        (UsageDisplayUnit::Dollars, None) | (UsageDisplayUnit::Credits, _) => {
-            format_credits(credits)
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub enum UsageLabelKind {
-    LastResponse,
-    Total,
-    Plain,
-    DetailsPanel,
-}
-
-/// Matches the label to the unit [`format_usage`] will render.
-pub fn usage_label(
-    kind: UsageLabelKind,
-    cost_in_cents: Option<f32>,
-    unit: UsageDisplayUnit,
-) -> String {
-    let unit = match (unit, cost_in_cents) {
-        (UsageDisplayUnit::Dollars, Some(_)) => UsageDisplayUnit::Dollars,
-        (UsageDisplayUnit::Dollars, None) | (UsageDisplayUnit::Credits, _) => {
-            UsageDisplayUnit::Credits
-        }
-    };
-    let base = match (kind, unit) {
-        (UsageLabelKind::DetailsPanel, UsageDisplayUnit::Credits) => "Credits used",
-        (UsageLabelKind::DetailsPanel, UsageDisplayUnit::Dollars) => "Usage",
-        (
-            UsageLabelKind::LastResponse | UsageLabelKind::Total | UsageLabelKind::Plain,
-            UsageDisplayUnit::Credits,
-        ) => "Credits spent",
-        (
-            UsageLabelKind::LastResponse | UsageLabelKind::Total | UsageLabelKind::Plain,
-            UsageDisplayUnit::Dollars,
-        ) => "Usage charged",
-    };
-    let suffix = match kind {
-        UsageLabelKind::LastResponse => " (last response)",
-        UsageLabelKind::Total => " (total)",
-        UsageLabelKind::Plain | UsageLabelKind::DetailsPanel => "",
-    };
-    format!("{base}{suffix}")
-}
-
 /// Renders a secondary button with an MCP/skill provider icon and a text label.
 pub(crate) fn render_provider_icon_button<F>(
     button_label: &str,
@@ -403,7 +256,3 @@ where
         })
         .finish()
 }
-
-#[cfg(test)]
-#[path = "view_util_tests.rs"]
-mod tests;

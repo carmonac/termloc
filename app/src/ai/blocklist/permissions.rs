@@ -1239,16 +1239,6 @@ impl Entity for BlocklistAIPermissions {
 
 impl SingletonEntity for BlocklistAIPermissions {}
 
-/// Returns true iff Agent Mode autonomy features are allowed for `scope`.
-/// Granular permissions still need to be checked for specific autonomy features
-/// (e.g. whether a command is auto-executable).
-pub(crate) fn is_agent_mode_autonomy_allowed<S: TeamScope + ?Sized>(
-    scope: &S,
-    ctx: &AppContext,
-) -> bool {
-    UserWorkspaces::as_ref(ctx).is_ai_autonomy_allowed(scope)
-}
-
 #[cfg(test)]
 #[path = "permissions_tests.rs"]
 mod tests;

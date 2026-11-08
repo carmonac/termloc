@@ -208,7 +208,6 @@ use workflows::manager::WorkflowManager;
 use workspace::sync_inputs::SyncedInputState;
 
 use self::features::FeatureFlag;
-use crate::ai::AIRequestUsageModel;
 use crate::ai::blocklist::RecordingController;
 use crate::ai::document::ai_document_model::AIDocumentModel;
 use crate::ai::facts::manager::AIFactManager;
@@ -276,11 +275,14 @@ use crate::workspace::{
 use crate::workspaces::team_tester::TeamTesterStatus;
 use crate::workspaces::update_manager::TeamUpdateManager;
 use crate::workspaces::user_profiles::UserProfiles;
-use crate::workspaces::user_workspaces::{UserWorkspaces, UserWorkspacesEvent};
+use crate::workspaces::user_workspaces::UserWorkspaces;
 
 /// Our embedded application assets.
 pub static ASSETS: warp_assets::Assets = warp_assets::Assets;
 const TUI_SECURE_STORAGE_SERVICE_SUFFIX: &str = ".tui";
+/// Local indexes have no quota. This only keeps a huge tree from taking hours to embed.
+const LOCAL_MAX_FILES_PER_REPO: usize = 50_000;
+const EMBEDDING_GENERATION_BATCH_SIZE: usize = 100;
 
 /// Launch mode for how to start up Warp.
 #[allow(clippy::large_enum_variant)]
@@ -1026,8 +1028,6 @@ pub(crate) fn initialize_app(
         move |ctx| ServerApiProvider::new(auth_state, ctx)
     });
 
-    let ai_client = server_api_provider.as_ref(ctx).get_ai_client();
-
     ctx.add_singleton_model(|_ctx| AuthStateProvider::new(auth_state.clone()));
 
     ctx.add_singleton_model(|_ctx| GPUState::new());
@@ -1153,18 +1153,8 @@ pub(crate) fn initialize_app(
     // be initialized after it.
     ctx.add_singleton_model(|ctx| ServerExperiments::new_from_cache(experiments, ctx));
 
-    ctx.add_singleton_model(|ctx| AIRequestUsageModel::new(ai_client, ctx));
-
     ctx.add_singleton_model(|ctx| {
         UserWorkspaces::new(cached_workspaces, current_workspace_uid, ctx)
-    });
-
-    ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), |_, event, ctx| {
-        if matches!(event, UserWorkspacesEvent::CurrentWorkspaceChanged) {
-            AIRequestUsageModel::handle(ctx).update(ctx, |usage_model, ctx| {
-                usage_model.request_availability_refresh(ctx);
-            });
-        }
     });
 
     ctx.set_fallback_font_source_provider(|url| ::asset_cache::url_source(url));
@@ -1384,9 +1374,6 @@ pub(crate) fn initialize_app(
     ctx.add_singleton_model(|_| ToastStack);
     ctx.add_singleton_model(|_| GlobalCodeReviewModel);
     ctx.add_singleton_model(|_| workspace::OneTimeModalModel::default());
-    ctx.add_singleton_model(
-        workspace::bonus_grant_notification_model::BonusGrantNotificationModel::new,
-    );
     #[cfg(feature = "local_fs")]
     ctx.add_singleton_model(FileModel::new);
     ctx.add_singleton_model(GlobalBufferModel::new);
@@ -1613,17 +1600,6 @@ pub(crate) fn initialize_app(
                 model.revalidate_tips(ctx);
             });
         });
-        // Also revalidate when workspace/team data changes (e.g. voice toggled at
-        // the org level). Billing metadata — including `warp_ai_policy.is_voice_enabled`
-        // — lives inside the team data, so `TeamsChanged` covers all policy updates.
-        let tip_model_handle_for_teams = tip_model_handle.clone();
-        ctx.subscribe_to_model(&UserWorkspaces::handle(ctx), move |_, event, ctx| {
-            if matches!(event, UserWorkspacesEvent::TeamsChanged) {
-                tip_model_handle_for_teams.update(ctx, |model, ctx| {
-                    model.revalidate_tips(ctx);
-                });
-            }
-        });
         // Revalidate when any keybinding changes so tips with `<keybinding>`
         // placeholders are hidden/shown when the referenced binding is cleared
         // or reassigned.
@@ -1647,13 +1623,12 @@ pub(crate) fn initialize_app(
             vec![]
         };
 
-        let codebase_limits = AIRequestUsageModel::as_ref(ctx).codebase_context_limits();
         let store_client = crate::ai::local::embedding_store();
         let codebase_index_config = CodebaseIndexManagerConfig::new(
             indices_to_restore,
-            codebase_limits.max_indices_allowed,
-            codebase_limits.max_files_per_repo,
-            codebase_limits.embedding_generation_batch_size,
+            None,
+            LOCAL_MAX_FILES_PER_REPO,
+            EMBEDDING_GENERATION_BATCH_SIZE,
             store_client,
             launch_mode.supports_indexing(),
         );

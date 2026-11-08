@@ -79,7 +79,7 @@ impl<A: InlineMenuAction, T: 'static + Send + Sync> View for InlineMenuMessageBa
             })
             .expect("Empty message producer always returns Some().");
 
-        let message_bar = render_standard_message_bar(message, None, app);
+        let message_bar = render_standard_message_bar(message, app);
         if !self.agent_view_controller.as_ref(app).is_active() {
             let is_rendering_below_input = self
                 .positioner

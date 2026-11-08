@@ -1,7 +1,7 @@
 //! The in-progress `⋮ Warping... (Ns)` indicator row rendered between the
 //! transcript and the input box while the selected conversation is in
 //! progress — the TUI counterpart of the GUI's warping indicator — and its
-//! resting form, the completed-response summary row (`∷ 5s • 0.5 credits`).
+//! resting form, the completed-response summary row (`∷ 5s`).
 //!
 //! All animation state (spinner frame, shimmer phase, elapsed counter) is
 //! derived from one [`AnimationClock`] carrying the exchange's elapsed time,
@@ -15,7 +15,6 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use warp::tui_export::format_credits;
 use warpui_core::AppContext;
 use warpui_core::elements::animation::{AnimationClock, Keyframe, KeyframeTimeline};
 use warpui_core::elements::shimmer_math::ShimmerConfig;
@@ -133,20 +132,11 @@ pub(crate) fn render_warping_indicator_row(
 }
 
 /// Renders the completed-response summary row shown in the indicator's slot
-/// once the response finishes: the resting glyph, the response's wall-to-wall
-/// duration, and the credits it spent (omitted until any are reported). The
-/// row is static — no animation, no repaint scheduling.
-pub(crate) fn render_response_summary(
-    duration: Duration,
-    block_credits: Option<f32>,
-    app: &AppContext,
-) -> Box<dyn TuiElement> {
+/// once the response finishes: the resting glyph and the response's wall-to-wall
+/// duration. The row is static — no animation, no repaint scheduling.
+pub(crate) fn render_response_summary(duration: Duration, app: &AppContext) -> Box<dyn TuiElement> {
     let builder = TuiUiBuilder::from_app(app);
-    let mut text = format!("{RESTING_SPINNER} {}s", duration.as_secs());
-    if let Some(credits) = block_credits.filter(|credits| *credits > 0.0) {
-        text.push_str(&format!(" • {}", format_credits(credits)));
-    }
-    TuiText::new(text)
+    TuiText::new(format!("{RESTING_SPINNER} {}s", duration.as_secs()))
         .with_style(builder.muted_text_style())
         .truncate()
         .finish()

@@ -2,7 +2,7 @@
 //!
 //! Owns the agent execution profiles and everything hanging off them: the
 //! per-profile permission dropdowns, the allow/denylist editors, the model
-//! pickers and the context-window control, plus the AI credit usage summary.
+//! pickers and the context-window control.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -57,7 +57,6 @@ use crate::ai::execution_profiles::{
 use crate::ai::llms::{LLMContextWindow, LLMId, LLMPreferences, LLMPreferencesEvent};
 use crate::ai::mcp::TemplatableMCPServerManager;
 use crate::ai::paths::host_native_absolute_path;
-use crate::ai::{AIRequestUsageModel, AIRequestUsageModelEvent};
 use crate::appearance::Appearance;
 use crate::cloud_object::GenericStringObjectFormat::Json;
 use crate::cloud_object::model::persistence::{CloudModel, CloudModelEvent};
@@ -840,18 +839,6 @@ impl AgentProfilesPageView {
                 });
                 ctx.notify();
             }
-        });
-
-        let ai_request_model = AIRequestUsageModel::handle(ctx);
-        ctx.subscribe_to_model(&ai_request_model, |me, _, event, ctx| {
-            match event {
-                AIRequestUsageModelEvent::RequestUsageUpdated => ctx.notify(),
-                AIRequestUsageModelEvent::CreditAvailabilityUpdated => ctx.notify(),
-                AIRequestUsageModelEvent::RequestBonusRefunded { .. } => ctx.notify(),
-                AIRequestUsageModelEvent::AmbientCreditsBannerDismissed => {}
-            }
-            Self::refresh_base_model_menu(&me.base_model_dropdown, ctx);
-            Self::refresh_coding_model_menu(&me.coding_model_dropdown, ctx);
         });
 
         let profile_views = Self::create_profile_views(ctx);
@@ -1732,14 +1719,6 @@ impl SettingsPageMeta for AgentProfilesPageView {
 
     fn should_render(&self, _ctx: &AppContext) -> bool {
         FeatureFlag::AgentMode.is_enabled()
-    }
-
-    fn on_page_selected(&mut self, _: bool, ctx: &mut ViewContext<Self>) {
-        // The usage widget on this page is the only consumer of the request
-        // usage model, so the refresh lives here.
-        AIRequestUsageModel::handle(ctx).update(ctx, |ai_request_usage_model, ctx| {
-            ai_request_usage_model.refresh_request_usage_async(ctx)
-        });
     }
 
     fn update_filter(&mut self, query: &str, ctx: &mut ViewContext<Self>) -> MatchData {

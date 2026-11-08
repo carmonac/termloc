@@ -12,25 +12,20 @@ use warpui::{
 use super::team::{DiscoverableTeam, Team};
 #[cfg(test)]
 use super::team::{MembershipRole, TeamVisibility};
-#[cfg(test)]
-use super::workspace::WorkspaceMemberUsageInfo;
 use super::workspace::{AdminEnablementSetting, EnterpriseSecretRegex, Workspace, WorkspaceUid};
 use crate::ai::llms::{AvailableLLMs, MODELS_BY_FEATURE_CACHE_KEY, ModelsByFeature};
 use crate::auth::{AuthStateProvider, UserUid};
 use crate::channel::ChannelState;
 use crate::cloud_object::model::persistence::CloudModel;
-use crate::cloud_object::{ObjectType, Owner, Space};
+use crate::cloud_object::{Owner, Space};
 use crate::server::ids::ServerId;
 use crate::settings::{
     AISettings, AISettingsChangedEvent, CodeSettings, CodeSettingsChangedEvent, PrivacySettings,
 };
 #[cfg(test)]
 use crate::workspaces::workspace::{
-    AIAutonomyPolicy, AiAutonomySettings, BillingMetadata, CustomerType, SplitListSetting,
-    WorkspaceMember, WorkspaceSettings,
+    AiAutonomySettings, SplitListSetting, WorkspaceMember, WorkspaceSettings,
 };
-use crate::workspaces::workspace::{UsageBasedPricingSettings, UserTier};
-pub(crate) mod billing_workspace_settings;
 pub(crate) mod team_workspace_settings;
 #[cfg(any(test, feature = "tui"))]
 pub use team_workspace_settings::TeamContextForOperation;
@@ -53,8 +48,6 @@ pub enum UserWorkspacesEvent {
         window_id: WindowId,
     },
     CodebaseContextEnablementChanged,
-    /// Fired when a service agreement's sunsetted_to_build_ts field is updated.
-    SunsettedToBuildDataUpdated,
 }
 
 /// UserWorkspaces is a singleton model that holds workspace metadata (name, members, etc).
@@ -68,7 +61,6 @@ pub struct UserWorkspaces {
     joinable_teams: Vec<DiscoverableTeam>,
     /// The user-level plan terms from the latest workspaces-metadata response; the fallback for
     /// users whose only workspace is the server's placeholder filtered out of `workspaces`.
-    user_tier: UserTier,
     /// The model catalog to fall back to when no current workspace exists: before login, or
     /// for a logged-in user whose only workspace is the server's placeholder, which is
     /// filtered out of `workspaces`.
@@ -91,7 +83,6 @@ impl UserWorkspaces {
             workspaces: cached_workspaces.into(),
             window_team_uids: Default::default(),
             joinable_teams: Default::default(),
-            user_tier: Default::default(),
             workspaceless_models_by_feature: None,
         }
     }
@@ -128,7 +119,6 @@ impl UserWorkspaces {
             workspaces: cached_workspaces.into(),
             window_team_uids: Default::default(),
             joinable_teams: Default::default(),
-            user_tier: Default::default(),
             workspaceless_models_by_feature: None,
         };
 
@@ -187,20 +177,6 @@ impl UserWorkspaces {
         );
         format!("{upgrade_link}?source=warp-agent-cli")
     }
-    pub fn admin_billing_link_for_team(team_uid: ServerId) -> String {
-        format!(
-            "{}/admin/{team_uid}/billing",
-            ChannelState::server_root_url().trim_end_matches('/')
-        )
-    }
-
-    pub fn admin_billing_link_for_default_team(&self, user_email: &str) -> Option<String> {
-        let team_uid = self.inherited_or_default_team_uid(None)?;
-        self.team_from_uid(team_uid)
-            .filter(|team| team.has_admin_permissions(user_email))
-            .map(|_| Self::admin_billing_link_for_team(team_uid))
-    }
-
     pub fn team_from_uid(&self, team_uid: ServerId) -> Option<&Team> {
         self.current_workspace()
             .and_then(|w| w.teams.iter().find(|t| t.uid == team_uid))
@@ -366,105 +342,6 @@ impl UserWorkspaces {
         self.workspaces.iter_mut().find(|w| w.uid == workspace_uid)
     }
 
-    pub fn is_at_tier_limit_for_object_type(
-        team_uid: ServerId,
-        object_type: ObjectType,
-        ctx: &AppContext,
-    ) -> bool {
-        match object_type {
-            ObjectType::Notebook => {
-                !UserWorkspaces::has_capacity_for_shared_notebooks(team_uid, ctx, 1)
-            }
-            ObjectType::Workflow => {
-                !UserWorkspaces::has_capacity_for_shared_workflows(team_uid, ctx, 1)
-            }
-            ObjectType::Folder => false,
-            ObjectType::GenericStringObject(_) => false,
-        }
-    }
-
-    pub fn is_at_tier_limit_for_some_warp_drive_objects(
-        team_uid: ServerId,
-        ctx: &AppContext,
-    ) -> bool {
-        UserWorkspaces::is_at_tier_limit_for_object_type(team_uid, ObjectType::Notebook, ctx)
-            || UserWorkspaces::is_at_tier_limit_for_object_type(team_uid, ObjectType::Workflow, ctx)
-    }
-
-    // Checks if the team has capacity for another shared notebook for their current
-    // billing tier, given their current notebook count and delinquency status.
-    pub fn has_capacity_for_shared_notebooks(
-        team_uid: ServerId,
-        ctx: &AppContext,
-        new_shared_notebooks: usize,
-    ) -> bool {
-        let current_shared_notebooks = CloudModel::as_ref(ctx)
-            .active_notebooks_in_space(Space::Team { team_uid }, ctx)
-            .count();
-
-        let team = UserWorkspaces::as_ref(ctx).team_from_uid(team_uid);
-        if let Some(team) = team {
-            // If the team is past due or unpaid, then don't allow new notebooks.
-            if team.billing_metadata.is_delinquent_due_to_payment_issue() {
-                return false;
-            }
-
-            if let Some(policy) = team.billing_metadata.tier.shared_notebooks_policy {
-                // Allow new notebooks if policy is unlimited or if the number of notebooks
-                // is less than the limit.
-                policy.is_unlimited
-                    || current_shared_notebooks + new_shared_notebooks
-                        <= policy
-                            .limit
-                            .try_into()
-                            .expect("shared notebooks limit should be within max i64 range")
-            } else {
-                // If no policy is set, then allow it to go through by default (should still be enforced server-side)
-                true
-            }
-        } else {
-            // If the team is not found, then allow it to go through by default (should still be enforced server-side)
-            true
-        }
-    }
-
-    // Checks if the team has capacity for another shared workflow for their current
-    // billing tier, given their current workflow count and delinquency status.
-    pub fn has_capacity_for_shared_workflows(
-        team_uid: ServerId,
-        ctx: &AppContext,
-        new_shared_workflows: usize,
-    ) -> bool {
-        let current_shared_workflows = CloudModel::as_ref(ctx)
-            .active_workflows_in_space(Space::Team { team_uid }, ctx)
-            .count();
-
-        let team = UserWorkspaces::as_ref(ctx).team_from_uid(team_uid);
-        if let Some(team) = team {
-            // If the team is past due or unpaid, then don't allow new workflows.
-            if team.billing_metadata.is_delinquent_due_to_payment_issue() {
-                return false;
-            }
-
-            if let Some(policy) = team.billing_metadata.tier.shared_workflows_policy {
-                // Allow new workflows if policy is unlimited or if the number of workflows
-                // is less than the limit.
-                policy.is_unlimited
-                    || current_shared_workflows + new_shared_workflows
-                        <= policy
-                            .limit
-                            .try_into()
-                            .expect("shared workflows limit should be within max i64 range")
-            } else {
-                // If no policy is set, then allow it to go through by default (should still be enforced server-side)
-                true
-            }
-        } else {
-            // If the team is not found, then allow it to go through by default (should still be enforced server-side)
-            true
-        }
-    }
-
     /// The user's single team in the current workspace.
     ///
     /// Having no workspace is reported as [`SoleTeamError::NoTeam`]: a user with no workspace
@@ -495,13 +372,6 @@ impl UserWorkspaces {
     pub fn current_workspace(&self) -> Option<&Workspace> {
         self.current_workspace_uid
             .and_then(|workspace_uid| self.workspace_from_uid(workspace_uid))
-    }
-
-    /// Updates the user-level plan terms captured from a workspaces-metadata response. Must be
-    /// called on every path that applies such a response so the teamless fallback can't go
-    /// stale.
-    pub fn set_user_tier(&mut self, user_tier: UserTier) {
-        self.user_tier = user_tier;
     }
 
     pub fn current_workspace_mut(&mut self) -> Option<&mut Workspace> {
@@ -636,63 +506,11 @@ impl UserWorkspaces {
         !self.workspaces.is_empty()
     }
 
-    /// Cloud agents require a team only in native workspaces: a legacy
-    /// (non-native) workspace's teamless state is resolved by creating a
-    /// team, not by joining an existing one, so it isn't subject to this
-    /// blocker (see `TeamsPageView::page_sections_for`).
-    pub fn cloud_agents_require_team(&self) -> bool {
-        self.current_workspace().is_some_and(|workspace| {
-            workspace.is_native_workspaces_enabled() && workspace.teams.is_empty()
-        })
-    }
-
     pub fn update_workspaces(&mut self, workspaces: Vec<Workspace>, ctx: &mut ModelContext<Self>) {
-        // Check if sunsetted_to_build_ts changed for any workspace
-        let sunsetted_to_build_changed = self.has_sunsetted_to_build_data_changed(&workspaces);
-
         *self.workspaces = workspaces;
         let reassigned_windows = self.reconcile_window_team_assignments();
         self.notify_and_emit_teams_changed(ctx);
         Self::emit_window_team_changed(reassigned_windows, ctx);
-
-        if sunsetted_to_build_changed {
-            ctx.emit(UserWorkspacesEvent::SunsettedToBuildDataUpdated);
-        }
-    }
-
-    /// Checks if any workspace's service agreement sunsetted_to_build_ts field has changed.
-    fn has_sunsetted_to_build_data_changed(&self, new_workspaces: &[Workspace]) -> bool {
-        for new_workspace in new_workspaces {
-            // Find the corresponding old workspace
-            let old_workspace = self.workspaces.iter().find(|w| w.uid == new_workspace.uid);
-
-            if let Some(old_workspace) = old_workspace {
-                // Check if any team's service agreement sunsetted_to_build_ts changed
-                for new_team in &new_workspace.teams {
-                    let old_team = old_workspace.teams.iter().find(|t| t.uid == new_team.uid);
-
-                    if let Some(old_team) = old_team {
-                        let old_sunsetted = old_team
-                            .billing_metadata
-                            .service_agreements
-                            .first()
-                            .and_then(|sa| sa.sunsetted_to_build_ts);
-
-                        let new_sunsetted = new_team
-                            .billing_metadata
-                            .service_agreements
-                            .first()
-                            .and_then(|sa| sa.sunsetted_to_build_ts);
-
-                        // Detect if it changed from None to Some or changed value
-                        if old_sunsetted != new_sunsetted {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        false
     }
 
     fn notify_and_emit_teams_changed(&self, ctx: &mut ModelContext<Self>) {
@@ -722,12 +540,6 @@ impl UserWorkspaces {
             joinable_teams,
         ));
         ctx.notify();
-    }
-
-    pub fn usage_based_pricing_settings(&self) -> UsageBasedPricingSettings {
-        self.current_workspace()
-            .map(|workspace| workspace.settings.usage_based_pricing_settings.clone())
-            .unwrap_or_default()
     }
 
     pub fn is_enterprise_secret_redaction_enabled(&self) -> bool {
@@ -857,21 +669,17 @@ impl UserWorkspaces {
         let workspace = Workspace {
             uid: workspace_uid,
             name: "Test Workspace".to_string(),
-            stripe_customer_id: None,
             teams: vec![Team {
                 uid: ServerId::from(2),
                 name: "Test Team".to_string(),
                 settings: Default::default(),
                 color: None,
-                billing_metadata: BillingMetadata::default(),
                 members: vec![],
                 invite_link: None,
                 pending_email_invites: vec![],
                 invite_link_domain_restrictions: vec![],
-                stripe_customer_id: None,
                 feature_model_choice: Default::default(),
                 is_eligible_for_discovery: false,
-                has_billing_history: false,
                 visibility: TeamVisibility::Open,
             }],
             open_teams: vec![],
@@ -880,25 +688,12 @@ impl UserWorkspaces {
                 email: "test@example.com".to_string(),
                 role: MembershipRole::Owner,
                 is_disabled: false,
-                usage_info: WorkspaceMemberUsageInfo {
-                    requests_used_since_last_refresh: 0,
-                    request_limit: 1000,
-                    is_unlimited: false,
-                    included_usage_cents: None,
-                    usage_cents_used_since_last_refresh: None,
-                    is_request_limit_prorated: false,
-                },
             }],
-            billing_metadata: BillingMetadata::default(),
-            bonus_grants_purchased_this_month: Default::default(),
-            billing_cycle_usage: None,
-            has_billing_history: false,
             settings: workspace_settings,
             feature_model_choice: Default::default(),
             invite_link_domain_restrictions: vec![],
             pending_email_invites: vec![],
             is_eligible_for_discovery: false,
-            total_requests_used_since_last_refresh: 0,
         };
 
         self.update_workspaces(vec![workspace], ctx);

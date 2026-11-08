@@ -1,11 +1,4 @@
 use warp_core::ui::Icon;
-use warp_core::ui::theme::{Fill, WarpTheme};
-use warpui::Element;
-
-mod colors;
-pub mod conversation_usage_view;
-pub mod request_metadata_turn_view;
-pub mod usage_popover_view;
 
 pub fn icon_for_context_window_usage(context_window_usage: f32) -> Icon {
     // The circle's solid (white) marks represent the context *remaining*, not
@@ -40,22 +33,6 @@ pub fn icon_for_context_window_usage(context_window_usage: f32) -> Icon {
     }
 }
 
-pub fn render_context_window_usage_icon(
-    context_window_usage: f32,
-    theme: &WarpTheme,
-    color_override: Option<Fill>,
-) -> Box<dyn Element> {
-    let icon = icon_for_context_window_usage(context_window_usage);
-
-    let fill = if context_window_usage >= 0.8 {
-        Fill::Solid(theme.ansi_fg_red())
-    } else {
-        color_override.unwrap_or_else(|| theme.main_text_color(theme.background()))
-    };
-
-    icon.to_warpui_icon(fill).finish()
-}
-
 #[cfg(test)]
-#[path = "mod_tests.rs"]
+#[path = "context_window_icon_tests.rs"]
 mod tests;

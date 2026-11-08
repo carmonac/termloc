@@ -371,8 +371,6 @@ pub enum TerminalAction {
     OpenInlineHistoryMenu,
     OpenModelSelector,
     ResolvePromptSuggestion(PromptSuggestionResolution),
-    /// Toggle the usage footer on the last AI block in the active conversation.
-    ToggleUsageFooter,
     /// Toggle PTY recording for this session.
     ToggleSessionRecording,
     /// Toggle the rich input editor for composing a prompt to send to a CLI agent.
@@ -624,7 +622,6 @@ impl fmt::Debug for TerminalAction {
             OpenInlineHistoryMenu => write!(f, "OpenInlineHistoryMenu"),
             OpenModelSelector => write!(f, "OpenModelSelector"),
             ResolvePromptSuggestion(..) => write!(f, "ResolvePromptSuggestion"),
-            ToggleUsageFooter => write!(f, "ToggleUsageFooter"),
             ToggleSessionRecording => write!(f, "ToggleSessionRecording"),
             ToggleCLIAgentRichInput => write!(f, "ToggleCLIAgentRichInput"),
             Osc52AllowBlockedClipboardOperation => {

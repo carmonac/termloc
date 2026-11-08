@@ -4,6 +4,7 @@ pub mod agent_view;
 pub mod block;
 pub mod code_block;
 mod context_model;
+pub mod context_window_icon;
 mod controller;
 pub(crate) mod conversation_selection;
 pub(crate) mod diff_storage;
@@ -23,7 +24,6 @@ pub mod suggested_agent_mode_workflow_modal;
 pub mod suggested_rule_modal;
 mod suggestion_chip_view;
 pub mod summarization_cancel_dialog;
-pub mod usage;
 
 pub(crate) mod codebase_index_speedbump_banner;
 pub(crate) mod view_util;
@@ -92,8 +92,6 @@ pub(crate) use passive_suggestions::{
     MaaPassiveSuggestionsModel, PassiveSuggestionsModels,
 };
 pub use permissions::BlocklistAIPermissions;
-#[cfg(test)]
-pub(crate) use permissions::is_agent_mode_autonomy_allowed;
 #[cfg_attr(target_family = "wasm", allow(unused_imports))]
 pub(crate) use permissions::{
     CommandExecutionPermission, CommandExecutionPermissionDeniedReason, FileWritePermission,

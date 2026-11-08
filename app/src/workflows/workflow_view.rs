@@ -37,7 +37,6 @@ use super::aliases::WorkflowAliases;
 use super::command_parser::WorkflowCommandDisplayData;
 use super::{CloudWorkflowModel, WorkflowSource, WorkflowType, WorkflowViewMode};
 use crate::FeatureFlag;
-use crate::ai::AIRequestUsageModel;
 use crate::ai::blocklist::secret_redaction::find_secrets_in_text;
 use crate::appearance::Appearance;
 use crate::cloud_object::breadcrumbs::ContainingObject;
@@ -2571,51 +2570,46 @@ impl WorkflowView {
 
         ctx.spawn(
             async move { ai_client.generate_metadata_for_command(raw_request).await },
-            move |pane, response, ctx| {
-                match response {
-                    Ok(metadata) => {
-                        pane.ai_metadata_assist_state = AiAssistState::Generated;
-                        pane.enable_editors(ctx);
+            move |pane, response, ctx| match response {
+                Ok(metadata) => {
+                    pane.ai_metadata_assist_state = AiAssistState::Generated;
+                    pane.enable_editors(ctx);
 
-                        let arguments = metadata
-                            .arguments
-                            .into_iter()
-                            .map(|parameter| Argument {
-                                name: parameter.name,
-                                description: Some(parameter.description),
-                                default_value: Some(parameter.default_value),
-                                arg_type: Default::default(),
-                            })
-                            .collect_vec();
+                    let arguments = metadata
+                        .arguments
+                        .into_iter()
+                        .map(|parameter| Argument {
+                            name: parameter.name,
+                            description: Some(parameter.description),
+                            default_value: Some(parameter.default_value),
+                            arg_type: Default::default(),
+                        })
+                        .collect_vec();
 
-                        let workflow = Workflow::Command {
-                            name: metadata.title,
-                            description: Some(metadata.description),
-                            command: metadata.command,
-                            arguments,
-                            tags: vec![],
-                            source_url: None,
-                            author: None,
-                            author_url: None,
-                            shells: vec![],
-                            environment_variables: None,
-                        };
+                    let workflow = Workflow::Command {
+                        name: metadata.title,
+                        description: Some(metadata.description),
+                        command: metadata.command,
+                        arguments,
+                        tags: vec![],
+                        source_url: None,
+                        author: None,
+                        author_url: None,
+                        shells: vec![],
+                        environment_variables: None,
+                    };
 
-                        pane.populate_missing_field_with_suggestion(workflow, ctx);
-                        ctx.notify();
-                    }
-                    Err(err) => {
-                        let message = err.user_facing_message();
-                        pane.display_error_toast(message.clone(), ctx);
-
-                        pane.ai_metadata_assist_state = AiAssistState::PreRequest;
-                        pane.enable_editors(ctx);
-                        ctx.notify();
-                    }
+                    pane.populate_missing_field_with_suggestion(workflow, ctx);
+                    ctx.notify();
                 }
-                AIRequestUsageModel::handle(ctx).update(ctx, |request_usage_model, ctx| {
-                    request_usage_model.refresh_request_usage_async(ctx);
-                });
+                Err(err) => {
+                    let message = err.user_facing_message();
+                    pane.display_error_toast(message.clone(), ctx);
+
+                    pane.ai_metadata_assist_state = AiAssistState::PreRequest;
+                    pane.enable_editors(ctx);
+                    ctx.notify();
+                }
             },
         );
 

@@ -6,7 +6,6 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use chrono::{DateTime, Utc};
 pub use cloud_object_models::{
     AgentModeCommandExecutionPredicate, DEFAULT_COMMAND_EXECUTION_ALLOWLIST,
     DEFAULT_COMMAND_EXECUTION_DENYLIST,
@@ -28,7 +27,6 @@ use warpui::platform::keyboard::KeyCode;
 use warpui::{AppContext, Entity, ModelContext, SingletonEntity, UpdateModel, WeakViewHandle};
 
 use crate::ai::execution_profiles::ExecutionProfilesConfig;
-use crate::ai::request_usage_model::RequestLimitInfo;
 use crate::auth::AuthStateProvider;
 use crate::terminal::{CLIAgent, TerminalView};
 use crate::workspaces::user_workspaces::{TeamScope, UserWorkspaces};
@@ -595,85 +593,6 @@ impl ThinkingDisplayMode {
     }
 }
 
-/// Which unit the usage entry displays in Warp Agent CLI.
-#[derive(
-    Default,
-    Debug,
-    serde::Serialize,
-    serde::Deserialize,
-    PartialEq,
-    Copy,
-    Clone,
-    EnumIter,
-    schemars::JsonSchema,
-    settings_value::SettingsValue,
-)]
-#[schemars(
-    description = "Which unit the usage entry displays in Termloc TUI.",
-    rename_all = "snake_case"
-)]
-pub enum TuiUsageDisplayMode {
-    /// Credits spent — the same number the GUI's usage footer shows (default).
-    #[default]
-    Credits,
-    /// Billed dollar cost.
-    Cost,
-}
-
-settings::macros::implement_setting_for_enum!(
-    TuiUsageDisplayMode,
-    AISettings,
-    SupportedPlatforms::ALL,
-    SyncToCloud::Never,
-    surface: settings::SettingSurfaces::TUI,
-    private: false,
-    toml_path: "agents.usage_display_mode",
-    description: "Which unit the usage entry displays in Termloc TUI: credits or dollars.",
-);
-
-/// Unit for GUI usage and spend displays.
-#[derive(
-    Default,
-    Debug,
-    serde::Serialize,
-    serde::Deserialize,
-    PartialEq,
-    Copy,
-    Clone,
-    EnumIter,
-    schemars::JsonSchema,
-    settings_value::SettingsValue,
-)]
-#[schemars(
-    description = "Which unit the GUI's usage/spend displays show: credits or dollars.",
-    rename_all = "snake_case"
-)]
-pub enum UsageDisplayUnit {
-    #[default]
-    Credits,
-    Dollars,
-}
-
-settings::macros::implement_setting_for_enum!(
-    UsageDisplayUnit,
-    AISettings,
-    SupportedPlatforms::ALL,
-    SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-    surface: settings::SettingSurfaces::GUI,
-    private: false,
-    toml_path: "agents.warp_agent.other.usage_display_unit",
-    description: "Which unit the GUI's usage/spend displays show: credits or dollars.",
-);
-
-impl UsageDisplayUnit {
-    pub fn display_name(&self) -> &'static str {
-        match self {
-            UsageDisplayUnit::Credits => "Credits",
-            UsageDisplayUnit::Dollars => "Dollars",
-        }
-    }
-}
-
 /// One configurable item in the Warp Agent CLI statusline.
 #[derive(
     Debug,
@@ -703,7 +622,6 @@ pub enum TuiStatuslineItem {
     GitBranchStatus,
     GitDiffStatus,
     GitHubPullRequest,
-    CreditUsage,
     ContextWindowUsage,
     Date,
     #[schemars(rename = "time_12_hour")]
@@ -715,7 +633,7 @@ pub enum TuiStatuslineItem {
 }
 
 impl TuiStatuslineItem {
-    pub const ALL: [Self; 16] = [
+    pub const ALL: [Self; 15] = [
         Self::AutoApprove,
         Self::VimModeIndicator,
         Self::Model,
@@ -725,7 +643,6 @@ impl TuiStatuslineItem {
         Self::GitBranchStatus,
         Self::GitDiffStatus,
         Self::GitHubPullRequest,
-        Self::CreditUsage,
         Self::ContextWindowUsage,
         Self::Date,
         Self::Time12Hour,
@@ -745,7 +662,6 @@ impl TuiStatuslineItem {
             Self::GitBranchStatus => "Git branch status",
             Self::GitDiffStatus => "Git diff status",
             Self::GitHubPullRequest => "GitHub pull request",
-            Self::CreditUsage => "Credit usage",
             Self::ContextWindowUsage => "Context window usage",
             Self::Date => "Date",
             Self::Time12Hour => "Time (12 hour format)",
@@ -814,16 +730,6 @@ impl TuiStatuslineConfig {
 
     pub fn is_enabled(&self, item: TuiStatuslineItem) -> bool {
         self.enabled.contains(&item)
-    }
-}
-
-impl TuiUsageDisplayMode {
-    /// The other unit — clicking the usage entry flips to this.
-    pub fn toggled(self) -> Self {
-        match self {
-            TuiUsageDisplayMode::Credits => TuiUsageDisplayMode::Cost,
-            TuiUsageDisplayMode::Cost => TuiUsageDisplayMode::Credits,
-        }
     }
 }
 
@@ -965,67 +871,6 @@ impl LongRunningCommandSubmissionMode {
             }
         }
     }
-}
-
-/// Tracks the state of the quota reset banner
-#[derive(
-    Debug,
-    Serialize,
-    Deserialize,
-    Clone,
-    PartialEq,
-    Default,
-    schemars::JsonSchema,
-    settings_value::SettingsValue,
-)]
-#[schemars(description = "State of the quota reset banner.")]
-pub struct BannerState {
-    #[serde(default)]
-    #[schemars(description = "Whether the banner has been dismissed.")]
-    pub dismissed: bool,
-}
-
-/// Tracks information about a single billing cycle for AI request usage
-#[derive(
-    Debug,
-    Serialize,
-    Deserialize,
-    Clone,
-    PartialEq,
-    schemars::JsonSchema,
-    settings_value::SettingsValue,
-)]
-#[schemars(description = "Information about a single billing cycle.")]
-pub struct CycleInfo {
-    /// End date of the billing cycle
-    #[schemars(description = "End date of the billing cycle.")]
-    pub end_date: DateTime<Utc>,
-    /// Whether the quota was exceeded in this cycle
-    #[schemars(description = "Whether the usage quota was exceeded in this cycle.")]
-    pub was_quota_exceeded: bool,
-    /// State of the quota reset banner
-    #[schemars(description = "State of the quota reset banner for this cycle.")]
-    pub banner_state: BannerState,
-}
-
-#[derive(
-    Debug,
-    Serialize,
-    Deserialize,
-    Clone,
-    Default,
-    PartialEq,
-    schemars::JsonSchema,
-    settings_value::SettingsValue,
-)]
-#[schemars(description = "AI usage quota information across billing cycles.")]
-pub struct AIRequestQuotaInfo {
-    /// History of billing cycles and their usage.
-    ///
-    /// Note that these are only populated going forward from when this setting
-    /// was introduced.
-    #[schemars(description = "History of billing cycles and their quota usage.")]
-    pub cycle_history: Vec<CycleInfo>,
 }
 
 #[derive(
@@ -1442,12 +1287,6 @@ define_settings_group!(AISettings, settings: [
         max_table_depth: 2,
         description: "AI execution profiles and their permissions.",
     }
-    // Which unit the TUI footer's usage entry displays (credits or provider
-    // cost), flipped by clicking the entry.
-    //
-    // TUI-only and file-backed so the choice persists across TUI sessions.
-    usage_display_mode: TuiUsageDisplayMode,
-    usage_display_unit: UsageDisplayUnit,
     // Ordered visibility configuration for the TUI's bottom statusline.
     // TUI-only and local so separate devices can use different terminal layouts.
     tui_statusline: TuiStatusline {
@@ -1621,16 +1460,6 @@ define_settings_group!(AISettings, settings: [
         surface: settings::SettingSurfaces::GUI,
         private: true,
     }
-
-    // Information about AI request quotas and usage across billing cycles
-    ai_request_quota_info: AIRequestQuotaInfoSetting {
-        type: AIRequestQuotaInfo,
-        default: AIRequestQuotaInfo::default(),
-        supported_platforms: SupportedPlatforms::ALL,
-        sync_to_cloud: SyncToCloud::Globally(RespectUserSyncSetting::Yes),
-        surface: settings::SettingSurfaces::GUI,
-        private: true,
-    },
 
     // Whether or not we should show the speedbump for showing code suggestion banners.
     // This includes both passive code diffs and suggested prompts (passive unit tests).
@@ -2092,94 +1921,6 @@ impl AISettings {
             return false;
         }
         *self.file_based_mcp_enabled
-    }
-
-    /// Determines whether a quota reset banner should be displayed to the user.
-    ///
-    /// The banner should be shown if the most recent completed billing cycle had
-    /// quota exceeded and the banner was not manually dismissed.
-    pub fn should_display_quota_reset_banner(&self) -> bool {
-        let quota_info = &self.ai_request_quota_info;
-
-        let most_recent_completed_cycle = quota_info
-            .cycle_history
-            .iter()
-            .rev()
-            .find(|cycle| cycle.end_date < Utc::now());
-
-        if let Some(cycle) = most_recent_completed_cycle
-            && cycle.was_quota_exceeded
-            && !cycle.banner_state.dismissed
-        {
-            return true;
-        }
-
-        false
-    }
-
-    /// Marks the banner as dismissed for all completed cycles.
-    pub fn mark_quota_banner_as_dismissed(&mut self, ctx: &mut ModelContext<Self>) {
-        let mut cycle_history = self.ai_request_quota_info.cycle_history.clone();
-
-        for cycle in cycle_history.iter_mut() {
-            if cycle.end_date < Utc::now() {
-                cycle.banner_state.dismissed = true;
-            }
-        }
-
-        report_if_error!(
-            self.ai_request_quota_info
-                .set_value(AIRequestQuotaInfo { cycle_history }, ctx)
-        );
-    }
-
-    /// Updates the quota info based on the latest RequestLimitInfo.
-    ///
-    /// This method finds or creates the appropriate CycleInfo based on the
-    /// request_limit_info's next refresh time and updates its fields accordingly.
-    pub fn update_quota_info(
-        &mut self,
-        request_limit_info: &RequestLimitInfo,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        // Convert ServerTimestamp to DateTime<Utc>
-        let next_refresh_time = request_limit_info.next_refresh_time.utc();
-        let now = Utc::now();
-
-        // Check if request_limit_info has unlimited requests
-        let is_quota_exceeded = !request_limit_info.is_unlimited
-            && request_limit_info.num_requests_used_since_refresh >= request_limit_info.limit;
-
-        let mut cycle_history = self.ai_request_quota_info.cycle_history.clone();
-
-        // Track if we updated an existing cycle
-        let mut updated_existing_cycle = false;
-
-        // Find or create a cycle that matches the current period
-        if let Some(current_cycle) = cycle_history.last_mut()
-            && now <= current_cycle.end_date
-        {
-            // Update existing cycle
-            current_cycle.was_quota_exceeded = is_quota_exceeded;
-            updated_existing_cycle = true;
-        }
-
-        // Only create a new cycle if we didn't update an existing one
-        if !updated_existing_cycle {
-            // Create a new cycle
-            let new_cycle = CycleInfo {
-                end_date: next_refresh_time,
-                was_quota_exceeded: is_quota_exceeded,
-                banner_state: BannerState::default(),
-            };
-
-            cycle_history.push(new_cycle);
-        }
-
-        report_if_error!(
-            self.ai_request_quota_info
-                .set_value(AIRequestQuotaInfo { cycle_history }, ctx)
-        );
     }
 
     pub fn is_command_denylist_editable(&self, app: &AppContext) -> bool {

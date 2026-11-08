@@ -4,40 +4,14 @@ use ai::agent::action::UseComputerRequest;
 use ai::skills::{ParsedSkill, SkillProvider, SkillReference, SkillScope};
 use computer_use::{Action, ScreenshotParams, Target, TargetedAction};
 use warp_util::local_or_remote_path::LocalOrRemotePath;
-use warpui::App;
 
 use super::{
     RecordingCardText, read_skill_display_text, should_decorate_recorded_use_computer,
-    start_recording_card_text, stop_recording_card_text, usage_pill_text,
+    start_recording_card_text, stop_recording_card_text,
 };
 use crate::ai::agent::{
     RecordingStarted, RecordingStopped, StartRecordingResult, StopRecordingResult,
 };
-use crate::settings::UsageDisplayUnit;
-use crate::test_util::billing_unit::{set_charge_unit, set_usage_display_unit};
-use crate::test_util::terminal::initialize_app_for_terminal_view;
-use crate::workspaces::workspace::ChargeUnit;
-
-/// The pill shows a cents-charged viewer who prefers dollars their figure in dollars whenever a
-/// cents figure exists and falls back to credits otherwise; a credits-charged viewer sees credits
-/// even when cents are present and the dollars preference is set.
-#[test]
-fn usage_pill_text_follows_the_display_unit() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        set_usage_display_unit(&mut app, UsageDisplayUnit::Dollars);
-
-        app.read(|ctx| {
-            assert_eq!(usage_pill_text(20.0, Some(36.0), ctx), "20 credits");
-        });
-
-        set_charge_unit(&mut app, ChargeUnit::Cents);
-        app.read(|ctx| {
-            assert_eq!(usage_pill_text(20.0, Some(36.0), ctx), "$0.36");
-            assert_eq!(usage_pill_text(20.0, None, ctx), "20 credits");
-        });
-    });
-}
 
 #[test]
 fn start_recording_card_text_uses_static_title_and_description_subtext() {

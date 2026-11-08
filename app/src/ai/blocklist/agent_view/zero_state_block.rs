@@ -6,19 +6,16 @@ use std::sync::Arc;
 use itertools::Itertools as _;
 use markdown_parser::parse_markdown;
 use parking_lot::FairMutex;
-use pathfinder_color::ColorU;
 use warpui::elements::{
-    Container, CornerRadius, CrossAxisAlignment, DispatchEventResult, EventHandler, Flex,
-    FormattedTextElement, MainAxisSize, MouseStateHandle, ParentElement, Radius, Text,
+    Container, CornerRadius, CrossAxisAlignment, Flex, FormattedTextElement, MainAxisSize,
+    MouseStateHandle, ParentElement, Radius, Text,
 };
 use warpui::fonts::{Properties, Weight};
 use warpui::keymap::Keystroke;
 use warpui::prelude::{Cursor, Empty, Hoverable, SavePosition};
 use warpui::scene::Border;
-use warpui::ui_components::components::{UiComponent as _, UiComponentStyles};
 use warpui::{
-    Action, AppContext, Element, Entity, ModelHandle, SingletonEntity, TypedActionView, View,
-    ViewContext,
+    AppContext, Element, Entity, ModelHandle, SingletonEntity, TypedActionView, View, ViewContext,
 };
 
 use crate::ai::active_agent_views_model::ActiveAgentViewsModel;
@@ -27,7 +24,6 @@ use crate::ai::blocklist::agent_view::{
     AgentViewController, AgentViewEntryOrigin, ENTER_AGENT_VIEW_NEW_CONVERSATION_KEYSTROKE,
 };
 use crate::ai::blocklist::history_model::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel};
-use crate::ai::blocklist::view_util::format_dollars;
 use crate::ai::conversation_navigation::ConversationNavigationData;
 use crate::appearance::Appearance;
 use crate::terminal::event::BlockType;
@@ -757,113 +753,12 @@ fn render_recent_conversations_section(
     )
 }
 
-/// Renders the ambient credits banner showing free cloud credits, as dollars when `usage_cents`
-/// is given (a plan charged in cents whose grants carry a dollar value).
-pub fn render_ambient_credits_banner<A>(
-    credits: i32,
-    usage_cents: Option<f64>,
-    close_button_mouse_state: MouseStateHandle,
-    dismiss_action: A,
-    app: &AppContext,
-) -> Box<dyn Element>
-where
-    A: Action + Clone + 'static,
-{
-    let appearance = Appearance::as_ref(app);
-    render_dismissible_promo_pill(
-        ambient_credits_banner_label(credits, usage_cents),
-        appearance.theme().terminal_colors().normal.blue.into(),
-        None,
-        None,
-        close_button_mouse_state,
-        dismiss_action,
-        app,
-    )
-}
-
-fn ambient_credits_banner_label(credits: i32, usage_cents: Option<f64>) -> String {
-    match usage_cents {
-        Some(cents) => format!("{} free cloud agent usage", format_dollars(cents as f32)),
-        None => format!("{credits} free cloud agent credits"),
-    }
-}
-
-pub fn render_dismissible_promo_pill<A>(
-    label: String,
-    text_color: ColorU,
-    click_mouse_state: Option<MouseStateHandle>,
-    click_action: Option<A>,
-    close_button_mouse_state: MouseStateHandle,
-    dismiss_action: A,
-    app: &AppContext,
-) -> Box<dyn Element>
-where
-    A: Action + Clone + 'static,
-{
-    let appearance = Appearance::as_ref(app);
-    let font_family = appearance.ui_font_family();
-    let font_size = styles::CREDITS_BANNER_FONT_SIZE;
-    let label_element: Box<dyn Element> = match (click_mouse_state, click_action) {
-        (Some(mouse_state), Some(action)) => {
-            let label_for_hover = label.clone();
-            let clickable_label = Hoverable::new(mouse_state, move |_| {
-                Text::new(label_for_hover.clone(), font_family, font_size)
-                    .with_color(text_color)
-                    .with_style(Properties::default().weight(Weight::Semibold))
-                    .soft_wrap(false)
-                    .finish()
-            })
-            .with_cursor(Cursor::PointingHand)
-            .finish();
-            EventHandler::new(clickable_label)
-                .on_left_mouse_down(|_, _, _| DispatchEventResult::StopPropagation)
-                .on_left_mouse_up(move |ctx, _, _| {
-                    ctx.dispatch_typed_action(action.clone());
-                    DispatchEventResult::StopPropagation
-                })
-                .finish()
-        }
-        _ => Text::new(label, font_family, font_size)
-            .with_color(text_color)
-            .with_style(Properties::default().weight(Weight::Semibold))
-            .soft_wrap(false)
-            .finish(),
-    };
-    let close_button = appearance
-        .ui_builder()
-        .close_button(12., close_button_mouse_state)
-        .with_style(UiComponentStyles {
-            font_color: Some(text_color),
-            ..Default::default()
-        })
-        .build()
-        .on_click(move |ctx, _, _| {
-            ctx.dispatch_typed_action(dismiss_action.clone());
-        })
-        .finish();
-
-    let content = Flex::row()
-        .with_cross_axis_alignment(CrossAxisAlignment::Center)
-        .with_child(label_element)
-        .with_child(Container::new(close_button).with_margin_left(4.).finish())
-        .finish();
-
-    Container::new(content)
-        .with_border(Border::all(1.).with_border_color(text_color))
-        .with_corner_radius(CornerRadius::with_all(Radius::Percentage(50.)))
-        .with_vertical_padding(2.)
-        .with_horizontal_padding(6.)
-        .with_margin_left(8.)
-        .finish()
-}
-
 mod styles {
     use warp_core::ui::appearance::Appearance;
 
     pub const CONTAINER_VERTICAL_PADDING: f32 = 16.;
     pub const TITLE_MARGIN_BOTTOM: f32 = 8.;
     pub const SECTION_HEADER_MARGIN_BOTTOM: f32 = 8.;
-    pub const CREDITS_BANNER_FONT_SIZE: f32 = 12.;
 
     pub fn title_font_size(appearance: &Appearance) -> f32 {
         appearance.monospace_font_size() + 6.

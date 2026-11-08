@@ -32,7 +32,6 @@ use warp_util::{local_or_remote_path::LocalOrRemotePath, standardized_path::Stan
 use warpui::windowing::WindowManager;
 use warpui::{AppContext, Entity, ModelContext, SingletonEntity};
 
-use crate::ai::AIRequestUsageModel;
 use crate::ai::blocklist::{BlocklistAIHistoryEvent, BlocklistAIHistoryModel};
 #[cfg(feature = "local_fs")]
 use crate::ai::codebase_auto_indexing::{auto_index_candidate_roots, should_auto_index_codebase};
@@ -640,19 +639,11 @@ impl PersistedWorkspace {
         });
     }
 
+    #[cfg_attr(not(feature = "local_fs"), allow(unused_variables))]
     fn enable_codebase_indexing(
         manager: &mut CodebaseIndexManager,
         ctx: &mut ModelContext<CodebaseIndexManager>,
     ) {
-        let request_model = AIRequestUsageModel::handle(ctx);
-        let codebase_limits = request_model.as_ref(ctx).codebase_context_limits();
-        manager.update_max_limits(
-            codebase_limits.max_indices_allowed,
-            codebase_limits.max_files_per_repo,
-            codebase_limits.embedding_generation_batch_size,
-            ctx,
-        );
-
         #[cfg(feature = "local_fs")]
         if should_auto_index_codebase(ctx) {
             let roots = all_working_directories(ctx).into_iter().filter_map(|dir| {

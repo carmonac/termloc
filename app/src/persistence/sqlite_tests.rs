@@ -1054,7 +1054,6 @@ fn team_member_is_disabled_round_trips_through_sqlite_cache() {
         ServerId::from_string_lossy(format!("{:0>22}", "team")),
         "Team".to_string(),
         None,
-        None,
         Some(vec![
             TeamMember {
                 uid: UserUid::new("active-user"),

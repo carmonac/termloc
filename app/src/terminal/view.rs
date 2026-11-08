@@ -214,12 +214,6 @@ use crate::ai::blocklist::model::{AIBlockModelImpl, AIBlockOutputStatus};
 use crate::ai::blocklist::suggested_agent_mode_workflow_modal::SuggestedAgentModeWorkflowAndId;
 use crate::ai::blocklist::suggested_rule_modal::SuggestedRuleAndId;
 use crate::ai::blocklist::summarization_cancel_dialog::SummarizationCancelDialog;
-use crate::ai::blocklist::usage::conversation_usage_view::{
-    ConversationUsageInfo, ConversationUsageView, TimingInfo,
-};
-use crate::ai::blocklist::usage::request_metadata_turn_view::{
-    RequestMetadataTurnView, RequestMetadataTurnViewEvent,
-};
 use crate::ai::blocklist::{
     AIBlock, AIBlockEvent, ATTACH_AS_AGENT_MODE_CONTEXT_TEXT, AutofireAction,
     BlocklistAIActionEvent, BlocklistAIActionModel, BlocklistAIContextEvent,
@@ -473,11 +467,7 @@ use crate::workspace::{
     WorkspaceRegistry,
 };
 use crate::workspaces::user_workspaces::{UserWorkspaces, UserWorkspacesEvent};
-use crate::workspaces::workspace::ChargeUnit;
-use crate::{
-    AIAgentActionResultType, AIRequestUsageModel, ActiveSession as WindowActiveSession, safe_error,
-    safe_warn,
-};
+use crate::{AIAgentActionResultType, ActiveSession as WindowActiveSession, safe_error, safe_warn};
 
 lazy_static! {
     // A set of commands that perform minimal work that we use as a baseline to measure the latency of blocks.
@@ -2273,13 +2263,6 @@ pub struct TerminalView {
     queued_prompt_callback: Option<ConversationFinishedCallback>,
     last_observed_active_subagent: HashMap<AIConversationId, bool>,
 
-    /// Cached view ids for usage footers keyed by the AI block view id that owns them.
-    usage_footer_view_ids: HashMap<EntityId, EntityId>,
-
-    /// Cached view ids for per-turn request-metadata "Turn" panels, keyed by the AI block
-    /// view id that owns them.
-    turn_panel_view_ids: HashMap<EntityId, EntityId>,
-
     // Whether the block onboarding view is active or not.
     block_onboarding_active: bool,
 
@@ -3702,8 +3685,6 @@ impl TerminalView {
             pending_user_query_view_id: None,
             queued_prompt_callback: None,
             last_observed_active_subagent: Default::default(),
-            usage_footer_view_ids: Default::default(),
-            turn_panel_view_ids: Default::default(),
             block_onboarding_active: false,
             onboarding_prompt_block: None,
             settings_import_onboarding_block: None,
@@ -4967,36 +4948,6 @@ impl TerminalView {
                 ..
             } => {
                 self.maybe_send_lrc_queued_prompts_after_subagent_handoff(*conversation_id, ctx);
-                // Close any open usage footer(s) when a new AI block is added
-                if !self.usage_footer_view_ids.is_empty() {
-                    let owner_block_ids: Vec<EntityId> =
-                        self.usage_footer_view_ids.keys().copied().collect();
-                    for owner_id in &owner_block_ids {
-                        if let Some(ai_block_handle) = self.ai_block_handle_by_view_id(*owner_id) {
-                            ai_block_handle.update(ctx, |block, ctx| {
-                                block.handle_action(
-                                    &AIBlockAction::ToggleIsUsageFooterExpanded,
-                                    ctx,
-                                );
-                            });
-                        }
-                    }
-                }
-                // Likewise for any open per-turn "Turn" panel(s).
-                if !self.turn_panel_view_ids.is_empty() {
-                    let owner_block_ids: Vec<EntityId> =
-                        self.turn_panel_view_ids.keys().copied().collect();
-                    for owner_id in &owner_block_ids {
-                        if let Some(ai_block_handle) = self.ai_block_handle_by_view_id(*owner_id) {
-                            ai_block_handle.update(ctx, |block, ctx| {
-                                block.handle_action(
-                                    &AIBlockAction::SetIsTurnPanelExpanded(false),
-                                    ctx,
-                                );
-                            });
-                        }
-                    }
-                }
 
                 let should_add_ai_block = history_model
                     .as_ref(ctx)
@@ -5576,215 +5527,6 @@ impl TerminalView {
         self.ai_controller.update(ctx, |controller, ctx| {
             controller.resume_conversation(*conversation_id, vec![], ctx);
         });
-    }
-
-    /// Handle the opening and closing of the usage footer.
-    /// We insert the usage footer as a rich content view into the blocklist
-    /// below the block that triggered the toggle event.
-    fn handle_usage_footer_toggled(
-        &mut self,
-        source_ai_block_view_id: EntityId,
-        conversation_id: AIConversationId,
-        is_expanded: bool,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        // Close any existing usage footer for this specific AI block
-        if let Some(id) = self.usage_footer_view_ids.remove(&source_ai_block_view_id) {
-            let mut model = self.model.lock();
-            model.block_list_mut().remove_rich_content(id);
-            drop(model);
-            self.rich_content_views.retain(|rc| rc.view_id() != id);
-        }
-
-        if !is_expanded {
-            // If the goal was to close the usage footer block, we've done that above
-            ctx.notify();
-            return;
-        }
-
-        // Get the conversation from the history model
-        let Some(conversation) =
-            BlocklistAIHistoryModel::as_ref(ctx).conversation(&conversation_id)
-        else {
-            report_error!("Could not find conversation for usage footer");
-            return;
-        };
-
-        let tool_usage = conversation.tool_usage_metadata();
-        let time_to_first_token_ms = conversation.time_to_first_token_for_last_user_query_ms();
-        let total_agent_response_time_ms =
-            conversation.total_agent_response_time_since_last_user_query_ms();
-        let wall_to_wall_response_time_ms =
-            conversation.wall_to_wall_response_time_since_last_query();
-
-        let conversation_usage_info = ConversationUsageInfo {
-            credits_spent: conversation.inference_credits_spent(),
-            platform_credits_spent: conversation.platform_credits_spent(),
-            credits_spent_for_last_block: conversation.credits_spent_for_last_block(),
-            tool_calls: tool_usage.total_tool_calls(),
-            models: conversation.token_usage().to_vec(),
-            context_window_usage: conversation.context_window_usage(),
-            context_window_segments: conversation.context_window_segments().to_vec(),
-            files_changed: tool_usage.apply_file_diff_stats.files_changed,
-            lines_added: tool_usage.apply_file_diff_stats.lines_added,
-            lines_removed: tool_usage.apply_file_diff_stats.lines_removed,
-            commands_executed: tool_usage.run_command_stats.commands_executed,
-            total_cost_in_cents: conversation.usage_totals().total_cost_in_cents(),
-            cost_in_cents_for_last_block: conversation
-                .charged_usage_for_last_block()
-                .map(|usage| usage.total_cost_in_cents()),
-        };
-
-        let timing_info = TimingInfo {
-            time_to_first_token_ms,
-            total_agent_response_time_ms,
-            wall_to_wall_response_time_ms,
-        };
-
-        // Use `add_typed_action_view` (not `add_view`) so the framework
-        // registers `ConversationUsageView::handle_action`. Without this,
-        // typed actions dispatched from the view's own click handlers would
-        // be logged as `Dispatched action has no handlers` and silently ignored.
-        let usage_view = ctx.add_typed_action_view(|ctx| {
-            ConversationUsageView::new_footer(
-                conversation_usage_info,
-                Some(timing_info),
-                MouseStateHandle::default(),
-                ctx,
-            )
-        });
-        self.usage_footer_view_ids
-            .insert(source_ai_block_view_id, usage_view.id());
-
-        let agent_view_conversation_id = self
-            .agent_view_controller
-            .as_ref(ctx)
-            .agent_view_state()
-            .active_conversation_id();
-
-        let item = RichContentItem::new(None, usage_view.id(), agent_view_conversation_id, false);
-
-        let mut model = self.model.lock();
-        let inserted = model.block_list_mut().insert_rich_content_after_item(
-            RemovableBlocklistItem::RichContent(source_ai_block_view_id),
-            item,
-        );
-        drop(model);
-
-        if inserted {
-            self.rich_content_views.push(
-                RichContent::new(usage_view, agent_view_conversation_id)
-                    .with_metadata(RichContentMetadata::UsageFooter),
-            );
-        } else {
-            // Fallback: append usage block to the end of the blocklist
-            self.insert_rich_content(
-                None,
-                usage_view,
-                Some(RichContentMetadata::UsageFooter),
-                RichContentInsertionPosition::Append {
-                    insert_below_long_running_block: true,
-                },
-                ctx,
-            );
-        }
-
-        ctx.notify();
-    }
-
-    fn handle_turn_panel_toggled(
-        &mut self,
-        source_ai_block_view_id: EntityId,
-        conversation_id: AIConversationId,
-        exchange_id: AIAgentExchangeId,
-        is_expanded: bool,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        if self
-            .turn_panel_view_ids
-            .remove(&source_ai_block_view_id)
-            .is_some()
-            && let Some(ai_block_handle) = self.ai_block_handle_by_view_id(source_ai_block_view_id)
-        {
-            ai_block_handle.update(ctx, |block, ctx| block.set_turn_panel_view(None, ctx));
-        }
-
-        if !is_expanded {
-            ctx.notify();
-            return;
-        }
-
-        match UserWorkspaces::as_ref(ctx).charge_unit() {
-            ChargeUnit::Cents => {}
-            ChargeUnit::Credits => {
-                ctx.notify();
-                return;
-            }
-        }
-
-        let Some(conversation) =
-            BlocklistAIHistoryModel::as_ref(ctx).conversation(&conversation_id)
-        else {
-            report_error!("Could not find conversation for turn panel");
-            return;
-        };
-        let Some(data) = conversation.turn_panel_data(exchange_id) else {
-            log::warn!("Exchange {exchange_id} does not close its turn; not opening turn panel");
-            return;
-        };
-
-        let turn_view = ctx.add_typed_action_view(|ctx| RequestMetadataTurnView::new(data, ctx));
-
-        // Close the panel when the user clicks its "X" button.
-        ctx.subscribe_to_view(&turn_view, move |me, _, event, ctx| match event {
-            RequestMetadataTurnViewEvent::CloseRequested => {
-                if let Some(ai_block_handle) =
-                    me.ai_block_handle_by_view_id(source_ai_block_view_id)
-                {
-                    ai_block_handle.update(ctx, |block, ctx| {
-                        block.handle_action(&AIBlockAction::SetIsTurnPanelExpanded(false), ctx);
-                    });
-                }
-            }
-        });
-
-        self.turn_panel_view_ids
-            .insert(source_ai_block_view_id, turn_view.id());
-        if let Some(ai_block_handle) = self.ai_block_handle_by_view_id(source_ai_block_view_id) {
-            ai_block_handle.update(ctx, |block, ctx| {
-                block.set_turn_panel_view(Some(turn_view), ctx)
-            });
-        }
-
-        ctx.notify();
-    }
-
-    fn toggle_usage_footer(&mut self, ctx: &mut ViewContext<Self>) {
-        let conversation_id = self
-            .agent_view_controller
-            .as_ref(ctx)
-            .agent_view_state()
-            .active_conversation_id();
-
-        let Some(conversation_id) = conversation_id else {
-            return;
-        };
-
-        let last_ai_block_handle = self
-            .rich_content_views
-            .iter()
-            .rev()
-            .find_map(|rich_content| {
-                let ai_metadata = rich_content.ai_block_metadata()?;
-                (ai_metadata.conversation_id == conversation_id)
-                    .then(|| ai_metadata.ai_block_handle.clone())
-            });
-
-        if let Some(ai_block_handle) = last_ai_block_handle {
-            ai_block_handle.update(ctx, |block, ctx| {
-                block.handle_action(&AIBlockAction::ToggleIsUsageFooterExpanded, ctx);
-            });
-        }
     }
 
     /// Returns true if the window is wide enough to auto-open side panels.
@@ -8322,12 +8064,6 @@ impl TerminalView {
             return false;
         }
 
-        // Return early if we've run out of AI usage.
-        let has_any_ai = AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(ctx);
-        if !has_any_ai {
-            return false;
-        }
-
         let Some(banner_state) = &self.inline_banners_state.prompt_suggestions_banner else {
             return false;
         };
@@ -8476,8 +8212,7 @@ impl TerminalView {
         let ai_settings = AISettings::as_ref(ctx);
         let is_prompt_suggestions_enabled = ai_settings.is_prompt_suggestions_enabled(ctx);
         let is_setting_enabled = ai_settings.is_code_suggestions_enabled(ctx);
-        let is_setting_toggleable = UserWorkspaces::as_ref(ctx).is_code_suggestions_toggleable();
-        is_prompt_suggestions_enabled && is_setting_enabled && is_setting_toggleable
+        is_prompt_suggestions_enabled && is_setting_enabled
     }
 
     fn insert_alias_expansion_banner(
@@ -12460,7 +12195,6 @@ impl TerminalView {
             let rule = correction.rule_applied;
 
             if AISettings::as_ref(ctx).is_intelligent_autosuggestions_enabled(ctx)
-                && UserWorkspaces::as_ref(ctx).is_next_command_enabled()
                 && COMMAND_CORRECTIONS_PREFERRED_DENYLIST.contains(rule.to_str())
             {
                 // Defer to Next Command if the rule is in the denylist.
@@ -12607,20 +12341,6 @@ impl TerminalView {
             }
             true
         });
-
-        // Close any open usage footers on blocks being removed to prevent them becoming orphaned
-        for (view_id, handle) in &blocks_to_remove {
-            if self.usage_footer_view_ids.contains_key(view_id) {
-                handle.update(ctx, |block, ctx| {
-                    block.handle_action(&AIBlockAction::ToggleIsUsageFooterExpanded, ctx);
-                });
-            }
-            if self.turn_panel_view_ids.contains_key(view_id) {
-                handle.update(ctx, |block, ctx| {
-                    block.handle_action(&AIBlockAction::SetIsTurnPanelExpanded(false), ctx);
-                });
-            }
-        }
 
         blocks_to_remove.into_iter().for_each(|(view_id, handle)| {
             handle.update(ctx, |block, ctx| {
@@ -17569,25 +17289,6 @@ impl TerminalView {
             AIBlockEvent::CopiedEmptyText => {
                 self.copy(ctx);
             }
-            AIBlockEvent::UsageFooterToggled {
-                conversation_id,
-                is_expanded,
-            } => {
-                self.handle_usage_footer_toggled(block.id(), *conversation_id, *is_expanded, ctx);
-            }
-            AIBlockEvent::TurnPanelToggled {
-                conversation_id,
-                exchange_id,
-                is_expanded,
-            } => {
-                self.handle_turn_panel_toggled(
-                    block.id(),
-                    *conversation_id,
-                    *exchange_id,
-                    *is_expanded,
-                    ctx,
-                );
-            }
             AIBlockEvent::OpenSettings => {
                 ctx.emit(Event::OpenSettings(SettingsSection::WarpAgent));
             }
@@ -17787,12 +17488,11 @@ impl TerminalView {
     }
 
     fn active_ai_block(&self, ctx: &AppContext) -> Option<&ViewHandle<AIBlock>> {
-        // Skip trailing non-AI items (usage footers) as they don't impact the conversation state.
         let candidate = self
             .rich_content_views
             .iter()
             .rev()
-            .find(|rc| !rc.is_usage_footer() && !rc.is_pending_user_query());
+            .find(|rc| !rc.is_pending_user_query());
 
         candidate.and_then(|rich_content| {
             let ai_metadata = rich_content.ai_block_metadata()?;
@@ -19719,7 +19419,7 @@ impl TerminalView {
         self.rich_content_views
             .iter()
             .rev()
-            .find(|rc| !rc.is_usage_footer() && !rc.is_pending_user_query())
+            .find(|rc| !rc.is_pending_user_query())
             .and_then(|rich_content| rich_content.ai_block_metadata())
             .map(|ai_metadata| ai_metadata.ai_block_handle.clone())
     }
@@ -22922,7 +22622,6 @@ impl TypedActionView for TerminalView {
             | OpenModelSelector
             | ResolvePromptSuggestion(..)
             | ExecuteRewindFromInlineMenu { .. }
-            | ToggleUsageFooter
             | ToggleCLIAgentRichInput
             | ToggleSessionRecording
             | Osc52AllowBlockedClipboardOperation => Empty,
@@ -23899,9 +23598,6 @@ impl TypedActionView for TerminalView {
                     self.fetch_and_update_conversation_details_panel(ctx);
                 }
                 ctx.notify();
-            }
-            ToggleUsageFooter => {
-                self.toggle_usage_footer(ctx);
             }
             ToggleSessionRecording => {
                 self.pty_recorder.update(ctx, |recorder, ctx| {

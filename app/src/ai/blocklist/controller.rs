@@ -37,7 +37,6 @@ use super::conversation_selection::{ConversationSelectionEvent, ConversationSele
 use super::history_model::BlocklistAIHistoryModel;
 use super::queued_query::{QueuedQueryEvent, QueuedQueryId, QueuedQueryModel, RequestRow};
 use super::{BlocklistAIInputModel, ResponseStreamId};
-use crate::ai::AIRequestUsageModel;
 use crate::ai::agent::api::{self, ServerConversationToken};
 use crate::ai::agent::conversation::{AIConversation, AIConversationId, ConversationStatus};
 use crate::ai::agent::task::TaskId;
@@ -59,7 +58,6 @@ use crate::global_resource_handles::GlobalResourceHandlesProvider;
 use crate::network::NetworkStatus;
 use crate::notebooks::editor::model::FileLinkResolutionContext;
 use crate::persistence::ModelEvent;
-use crate::server::server_api::AIApiError;
 use crate::terminal::ShellLaunchData;
 use crate::terminal::model::block::{
     BlockId, CURSOR_MARKER, formatted_terminal_contents_for_input,
@@ -2635,12 +2633,6 @@ impl BlocklistAIController {
                         );
                     }
                     Err(e) => {
-                        if matches!(e.as_ref(), AIApiError::QuotaLimit { .. }) {
-                            AIRequestUsageModel::handle(ctx).update(ctx, |model, ctx| {
-                                model.enable_buy_credits_banner(ctx);
-                            });
-                        }
-
                         // A resume scheduled for this failure keeps the conversation in
                         // the non-terminal TransientError status instead of Error.
                         let recovery_pending = response_stream
@@ -2821,9 +2813,6 @@ impl BlocklistAIController {
                 ctx.emit(BlocklistAIControllerEvent::FinishedReceivingOutput {
                     stream_id,
                     conversation_id,
-                });
-                AIRequestUsageModel::handle(ctx).update(ctx, |request_usage_model, ctx| {
-                    request_usage_model.refresh_request_usage_async(ctx);
                 });
             }
         }

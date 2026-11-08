@@ -1529,7 +1529,7 @@ impl TemplatableMCPServerManager {
             let has_admin_permissions = team_uid
                 .and_then(|team_uid| UserWorkspaces::as_ref(ctx).team_from_uid(team_uid))
                 .is_some_and(|team| {
-                    team.has_admin_permissions(&auth_state.user_email().unwrap_or_default())
+                    team.has_owner_permissions(&auth_state.user_email().unwrap_or_default())
                 });
             let is_author = cloud_templatable_mcp_server.metadata().creator_uid
                 == auth_state.user_id().map(|user_id| user_id.as_string());

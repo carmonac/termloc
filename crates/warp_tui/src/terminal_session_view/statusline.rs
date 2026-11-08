@@ -6,8 +6,7 @@ use chrono::{Local, NaiveDateTime};
 use vim::vim::{MotionType, VimMode};
 use warp::settings::{AISettings, TuiStatuslineConfig, TuiStatuslineItem};
 use warp::tui_export::{
-    ConversationUsageTotals, GitRepoModels, GitStatusMetadata, LLMPreferences, ResolvedTeamScope,
-    UserWorkspaces,
+    GitRepoModels, GitStatusMetadata, LLMPreferences, ResolvedTeamScope, UserWorkspaces,
 };
 use warp_util::local_or_remote_path::LocalOrRemotePath;
 use warpui::SingletonEntity;
@@ -129,7 +128,6 @@ pub(super) enum FooterSegment {
     Team(Box<dyn TuiElement>),
     WorkingDirectory(String),
     GitBranch(String),
-    CreditUsage(Box<dyn TuiElement>),
     ContextWindowUsage(ContextWindowUsage),
     GitDiff {
         files_changed: usize,
@@ -165,7 +163,6 @@ impl FooterSegment {
                 | Self::Team(_)
                 | Self::WorkingDirectory(_)
                 | Self::GitBranch(_)
-                | Self::CreditUsage(_)
                 | Self::ContextWindowUsage(_)
                 | Self::GitDiff { .. }
                 | Self::GitBranchStatus(_)
@@ -178,7 +175,6 @@ impl FooterSegment {
                 | Self::Team(_)
                 | Self::WorkingDirectory(_)
                 | Self::GitBranch(_)
-                | Self::CreditUsage(_)
                 | Self::ContextWindowUsage(_)
                 | Self::GitDiff { .. }
                 | Self::GitBranchStatus(_)
@@ -228,7 +224,6 @@ pub(super) fn render_status_footer_row(
             FooterSegment::AutoApproveIndicator(element)
             | FooterSegment::Model(element)
             | FooterSegment::Team(element)
-            | FooterSegment::CreditUsage(element)
             | FooterSegment::GitBranchStatus(element)
             | FooterSegment::GitHubPullRequest(element)
             | FooterSegment::DateTime(element)
@@ -562,24 +557,6 @@ impl TuiTerminalSessionView {
                         deletions: stats.total_deletions,
                     })
                 }),
-                TuiStatuslineItem::CreditUsage => (!shell_mode)
-                    .then(|| self.selected_conversation_usage_totals(ctx))
-                    .flatten()
-                    .map(|totals| {
-                        let mode = AISettings::as_ref(ctx).usage_display_mode;
-                        let charge_unit = UserWorkspaces::as_ref(ctx).charge_unit();
-                        FooterSegment::CreditUsage(self.usage_toggle.render_entry(
-                            mode,
-                            totals,
-                            charge_unit,
-                            ctx,
-                            |event_ctx, _| {
-                                event_ctx.dispatch_typed_action(
-                                    TuiTerminalSessionAction::ToggleUsageDisplay,
-                                );
-                            },
-                        ))
-                    }),
                 TuiStatuslineItem::ContextWindowUsage => (!shell_mode)
                     .then(|| {
                         self.conversation_selection
@@ -829,19 +806,5 @@ impl TuiTerminalSessionView {
 
     fn git_status_metadata<'a>(&self, ctx: &'a AppContext) -> Option<&'a GitStatusMetadata> {
         self.git_repo_status.as_ref()?.as_ref(ctx).metadata(ctx)
-    }
-
-    /// The selected conversation's accumulated usage totals, or `None` (entry
-    /// hidden) until any usage has been reported.
-    pub(super) fn selected_conversation_usage_totals(
-        &self,
-        ctx: &AppContext,
-    ) -> Option<ConversationUsageTotals> {
-        let totals = self
-            .conversation_selection
-            .as_ref(ctx)
-            .selected_conversation(ctx)?
-            .usage_totals();
-        totals.has_usage.then_some(totals)
     }
 }

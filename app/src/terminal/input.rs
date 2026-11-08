@@ -132,7 +132,6 @@ use super::{
     should_right_click_paste,
 };
 #[allow(unused_imports)]
-use crate::ai::AIRequestUsageModel;
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::agent::{AIAgentContext, AIAgentExchangeId, CancellationReason, EntrypointType};
 use crate::ai::agent_conversations_model::{
@@ -3003,14 +3002,6 @@ impl Input {
             }
         });
 
-        let ai_req_usage_model = AIRequestUsageModel::handle(ctx);
-        ctx.subscribe_to_model(&ai_req_usage_model, |_, _, _, ctx| {
-            ctx.notify();
-        });
-        ctx.observe(&ai_req_usage_model, |_, _, ctx| {
-            ctx.notify();
-        });
-
         let agent_status_view = ctx.add_typed_action_view(|ctx| {
             BlocklistAIStatusBar::new(
                 ai_controller.clone(),
@@ -4687,11 +4678,6 @@ impl Input {
         suggestion_type: ZeroStatePromptSuggestionType,
         ctx: &mut ViewContext<Self>,
     ) {
-        let has_any_ai = AIRequestUsageModel::as_ref(ctx).has_any_ai_remaining(ctx);
-        if !has_any_ai {
-            return;
-        }
-
         match suggestion_type {
             ZeroStatePromptSuggestionType::Explain | ZeroStatePromptSuggestionType::Fix => {
                 self.auto_attach_last_block_for_query(ctx);
@@ -11388,7 +11374,6 @@ impl Input {
                     });
                 }
             });
-            return;
         } else if self
             .suggestions_mode_model
             .as_ref(ctx)
@@ -11396,19 +11381,15 @@ impl Input {
         {
             self.inline_conversation_menu_view
                 .update(ctx, |view, ctx| view.accept_selected_item(ctx));
-            return;
         } else if self.suggestions_mode_model.as_ref(ctx).is_skill_menu() {
             self.inline_skill_selector_view
                 .update(ctx, |view, ctx| view.accept_selected_item(ctx));
-            return;
         } else if self.suggestions_mode_model.as_ref(ctx).is_user_query_menu() {
             self.user_query_menu_view
                 .update(ctx, |view, ctx| view.accept_selected_item(false, ctx));
-            return;
         } else if self.suggestions_mode_model.as_ref(ctx).is_rewind_menu() {
             self.rewind_menu_view
                 .update(ctx, |view, ctx| view.accept_selected_item(ctx));
-            return;
         } else if self
             .suggestions_mode_model
             .as_ref(ctx)
@@ -11423,20 +11404,16 @@ impl Input {
         {
             self.inline_history_menu_view
                 .update(ctx, |view, ctx| view.accept_selected_item(ctx));
-            return;
         } else if self.suggestions_mode_model.as_ref(ctx).is_repos_menu() {
             self.inline_repos_menu_view
                 .update(ctx, |view, ctx| view.accept_selected_item(false, ctx));
-            return;
         } else if self.suggestions_mode_model.as_ref(ctx).is_plan_menu() {
             self.inline_plan_menu_view
                 .update(ctx, |view, ctx| view.accept_selected_item(ctx));
-            return;
         } else if self.suggestions_mode_model.as_ref(ctx).is_slash_commands() {
             self.inline_slash_commands_view.update(ctx, |view, ctx| {
                 view.accept_selected_item(false, ctx);
             });
-            return;
         } else if self
             .queued_prompts_panel
             .as_ref()
@@ -11459,12 +11436,10 @@ impl Input {
             {
                 self.send_queued_row_immediately(conversation_id, query_id, text, is_command, ctx);
             }
-            return;
         } else if self.maybe_queue_input_for_in_progress_conversation(ctx)
             || self.maybe_handle_enter_for_slash_command(ctx)
             || self.maybe_steer_input_for_in_progress_conversation(ctx)
         {
-            return;
         } else if matches!(
             self.suggestions_mode_model.as_ref(ctx).mode(),
             InputSuggestionsMode::CompletionSuggestions { .. }
@@ -11571,12 +11546,6 @@ impl Input {
 
             self.model.lock().set_is_input_dirty(false);
         }
-
-        AISettings::handle(ctx).update(ctx, |ai_settings, ctx| {
-            // Don't show the quota banner once a user has run a command or AI query.
-            ai_settings.mark_quota_banner_as_dismissed(ctx);
-            ctx.notify();
-        });
     }
 
     /// Submits the rich-input buffer on Ctrl+Enter when `submit_on_ctrl_enter` is enabled;

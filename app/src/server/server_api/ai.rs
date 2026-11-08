@@ -12,8 +12,6 @@ use crate::ai::agent::conversation::ServerAIConversationMetadata;
 use crate::ai::generate_code_review_content::api::{
     GenerateCodeReviewContentRequest, GenerateCodeReviewContentResponse, OutputType,
 };
-use crate::ai::request_usage_model::RequestLimitInfo;
-use crate::ai::{AICreditAvailability, RequestUsageInfo};
 use crate::ai_assistant::execution_context::WarpAiExecutionContext;
 use crate::ai_assistant::requests::GenerateDialogueResult;
 use crate::ai_assistant::utils::TranscriptPart;
@@ -62,10 +60,9 @@ async fn local_dialogue_answer(
         .collect();
     let client = crate::ai::local::one_shot().await?;
     let answer = client.answer(&history, prompt).await?;
-    Ok(GenerateDialogueResult::Success {
+    Ok(GenerateDialogueResult {
         answer,
         truncated: false,
-        request_limit_info: RequestLimitInfo::unlimited(),
         transcript_summarized: false,
     })
 }
@@ -107,17 +104,6 @@ pub trait AIClient: 'static + Send + Sync {
         &self,
         command: String,
     ) -> Result<GeneratedCommandMetadata, GeneratedCommandMetadataError>;
-
-    async fn get_request_limit_info(&self) -> Result<RequestUsageInfo, anyhow::Error>;
-
-    /// Returns whether the user can start an interactive AI request.
-    async fn get_ai_credit_availability(&self) -> Result<AICreditAvailability, anyhow::Error>;
-
-    async fn provide_negative_feedback_response_for_ai_conversation(
-        &self,
-        conversation_id: String,
-        request_ids: Vec<String>,
-    ) -> anyhow::Result<i32, anyhow::Error>;
 
     /// Materialize a server-side fork of a conversation.
     async fn fork_conversation(
@@ -195,25 +181,6 @@ impl AIClient for ServerApi {
         command: String,
     ) -> Result<GeneratedCommandMetadata, GeneratedCommandMetadataError> {
         local_metadata_for_command(&command).await
-    }
-
-    async fn get_request_limit_info(&self) -> Result<RequestUsageInfo, anyhow::Error> {
-        Ok(RequestUsageInfo {
-            request_limit_info: RequestLimitInfo::unlimited(),
-            bonus_grants: vec![],
-        })
-    }
-
-    async fn get_ai_credit_availability(&self) -> Result<AICreditAvailability, anyhow::Error> {
-        Ok(AICreditAvailability::available_with_source(None))
-    }
-
-    async fn provide_negative_feedback_response_for_ai_conversation(
-        &self,
-        _conversation_id: String,
-        _request_ids: Vec<String>,
-    ) -> anyhow::Result<i32, anyhow::Error> {
-        Ok(0)
     }
 
     async fn get_ai_conversation(

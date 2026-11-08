@@ -64,7 +64,6 @@ use crate::ai::blocklist::block::view_impl::common::{
 };
 use crate::ai::blocklist::code_block::CodeSnippetButtonHandles;
 use crate::ai::blocklist::inline_action::inline_action_icons::icon_size;
-use crate::ai::blocklist::permissions::is_agent_mode_autonomy_allowed;
 use crate::ai::blocklist::{
     BlocklistAIActionModel, BlocklistAIHistoryEvent, BlocklistAIPermissions,
 };
@@ -320,28 +319,26 @@ impl CLISubagentView {
         // We want to default the checkbox to true when rendering the speedbump for the first time.
         // Otherwise, update it when the permission changes.
         let scope = subagent_controller.as_ref(ctx).team_context(ctx);
-        let always_allow_write_to_pty_checked =
-            if should_show_write_to_pty_speedbump(&subagent_controller, ctx) {
-                true
-            } else {
-                BlocklistAIPermissions::as_ref(ctx)
-                    .can_write_to_pty(&conversation_id, Some(ctx.view_id()), &scope, ctx)
-                    .is_always_allow()
-            };
-        let always_allow_read_files_checked =
-            if should_show_read_files_speedbump(&subagent_controller, ctx) {
-                true
-            } else {
-                BlocklistAIPermissions::as_ref(ctx)
-                    .can_read_files(
-                        Some(&conversation_id),
-                        Vec::new(),
-                        Some(ctx.view_id()),
-                        &scope,
-                        ctx,
-                    )
-                    .is_allowed()
-            };
+        let always_allow_write_to_pty_checked = if should_show_write_to_pty_speedbump(ctx) {
+            true
+        } else {
+            BlocklistAIPermissions::as_ref(ctx)
+                .can_write_to_pty(&conversation_id, Some(ctx.view_id()), &scope, ctx)
+                .is_always_allow()
+        };
+        let always_allow_read_files_checked = if should_show_read_files_speedbump(ctx) {
+            true
+        } else {
+            BlocklistAIPermissions::as_ref(ctx)
+                .can_read_files(
+                    Some(&conversation_id),
+                    Vec::new(),
+                    Some(ctx.view_id()),
+                    &scope,
+                    ctx,
+                )
+                .is_allowed()
+        };
 
         let history_model = BlocklistAIHistoryModel::handle(ctx);
         let mut task_id_clone = task_id.clone();
@@ -408,7 +405,7 @@ impl CLISubagentView {
                 if should_update_permissions {
                     let scope = me.subagent_controller.as_ref(ctx).team_context(ctx);
                     let ai_permission = BlocklistAIPermissions::as_ref(ctx);
-                    if should_show_write_to_pty_speedbump(&me.subagent_controller, ctx) {
+                    if should_show_write_to_pty_speedbump(ctx) {
                         me.always_allow_write_to_pty_checked = ai_permission
                             .can_write_to_pty(
                                 &me.conversation_id,
@@ -418,7 +415,7 @@ impl CLISubagentView {
                             )
                             .is_always_allow();
                     }
-                    if should_show_read_files_speedbump(&me.subagent_controller, ctx) {
+                    if should_show_read_files_speedbump(ctx) {
                         me.always_allow_read_files_checked = ai_permission
                             .get_read_files_setting(Some(me.terminal_view_id), &scope, ctx)
                             .is_always_allow();
@@ -599,7 +596,7 @@ impl CLISubagentView {
     fn maybe_update_speedbump(&mut self, action: &AIAgentActionType, ctx: &mut ViewContext<Self>) {
         match action {
             AIAgentActionType::WriteToLongRunningShellCommand { .. }
-                if should_show_write_to_pty_speedbump(&self.subagent_controller, ctx) =>
+                if should_show_write_to_pty_speedbump(ctx) =>
             {
                 AISettings::handle(ctx).update(ctx, |settings, ctx| {
                     let _ = settings
@@ -622,7 +619,7 @@ impl CLISubagentView {
             | AIAgentActionType::ReadFiles(_)
             | AIAgentActionType::Grep { .. }
             | AIAgentActionType::FileGlobV2 { .. } => {
-                if should_show_read_files_speedbump(&self.subagent_controller, ctx) {
+                if should_show_read_files_speedbump(ctx) {
                     AISettings::handle(ctx).update(ctx, |settings, ctx| {
                         let _ = settings
                             .should_show_agent_mode_autoread_files_speedbump
@@ -1298,19 +1295,17 @@ impl View for CLISubagentView {
                             &self.reject_button,
                             &self.take_over_button,
                         ],
-                        speedbump: should_show_write_to_pty_speedbump(
-                            &self.subagent_controller,
-                            app,
-                        )
-                        .then_some(PermissionsSpeedbumpProps {
-                            always_allow_checked: self.always_allow_write_to_pty_checked,
-                            speedbump_checkbox_handle: &self
-                                .state_handles
-                                .speedbump_checkbox_handle,
-                            speedbump_checkbox_action:
-                                CLISubagentAction::ToggleAlwaysAllowWriteToPty,
-                            ai_settings_link: &self.state_handles.ai_settings_link,
-                        }),
+                        speedbump: should_show_write_to_pty_speedbump(app).then_some(
+                            PermissionsSpeedbumpProps {
+                                always_allow_checked: self.always_allow_write_to_pty_checked,
+                                speedbump_checkbox_handle: &self
+                                    .state_handles
+                                    .speedbump_checkbox_handle,
+                                speedbump_checkbox_action:
+                                    CLISubagentAction::ToggleAlwaysAllowWriteToPty,
+                                ai_settings_link: &self.state_handles.ai_settings_link,
+                            },
+                        ),
                     },
                     app,
                 ))
@@ -1342,8 +1337,8 @@ impl View for CLISubagentView {
                         &self.reject_button,
                         &self.take_over_button,
                     ],
-                    speedbump: should_show_read_files_speedbump(&self.subagent_controller, app)
-                        .then_some(PermissionsSpeedbumpProps {
+                    speedbump: should_show_read_files_speedbump(app).then_some(
+                        PermissionsSpeedbumpProps {
                             always_allow_checked: self.always_allow_read_files_checked,
                             speedbump_checkbox_handle: &self
                                 .state_handles
@@ -1351,7 +1346,8 @@ impl View for CLISubagentView {
                             speedbump_checkbox_action:
                                 CLISubagentAction::ToggleAlwaysAllowReadFiles,
                             ai_settings_link: &self.state_handles.ai_settings_link,
-                        }),
+                        },
+                    ),
                 },
                 app,
             )),
@@ -1527,21 +1523,11 @@ impl TypedActionView for CLISubagentView {
     }
 }
 
-fn should_show_write_to_pty_speedbump(
-    subagent_controller: &ModelHandle<CLISubagentController>,
-    app: &AppContext,
-) -> bool {
-    let scope = subagent_controller.as_ref(app).team_context(app);
-    is_agent_mode_autonomy_allowed(&scope, app)
-        && *AISettings::as_ref(app).should_show_agent_mode_write_to_pty_speedbump
+fn should_show_write_to_pty_speedbump(app: &AppContext) -> bool {
+    *AISettings::as_ref(app).should_show_agent_mode_write_to_pty_speedbump
 }
-fn should_show_read_files_speedbump(
-    subagent_controller: &ModelHandle<CLISubagentController>,
-    app: &AppContext,
-) -> bool {
-    let scope = subagent_controller.as_ref(app).team_context(app);
-    is_agent_mode_autonomy_allowed(&scope, app)
-        && *AISettings::as_ref(app).should_show_agent_mode_autoread_files_speedbump
+fn should_show_read_files_speedbump(app: &AppContext) -> bool {
+    *AISettings::as_ref(app).should_show_agent_mode_autoread_files_speedbump
 }
 
 fn get_action_loading_text(action: AIAgentActionType) -> Option<String> {

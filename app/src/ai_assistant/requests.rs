@@ -1,25 +1,16 @@
 // TODO(roland): Delete all of this once agent mode fully replaces the AI assistant panel.
-// app/src/ai/request_usage_model duplicates much of this logic.
 use std::sync::Arc;
 
-use anyhow::Result;
-use chrono::{OutOfRangeError, Utc};
+use chrono::Utc;
 use futures::stream::AbortHandle;
-use warp_core::user_preferences::GetUserPreferences as _;
-use warpui::{AppContext, Entity, ModelContext, SingletonEntity};
+use warpui::{Entity, ModelContext};
 
 use super::execution_context::WarpAiExecutionContext;
 use super::utils::{FormattedTranscriptMessage, TranscriptPart, markdown_segments_from_text};
-use crate::ai::{RequestLimitInfo, RequestUsageInfo};
 use crate::ai_assistant::utils::{AssistantTranscriptPart, TranscriptPartSubType};
-use crate::auth::AuthStateProvider;
 use crate::server::ids::ServerId;
 use crate::server::server_api::ServerApi;
-use crate::server::server_api::ai::AIClient;
-
-/// The key for the corresponding entry in UserDefaults.
-/// Not wiring through Settings for now since this data is only needed by the panel view.
-pub const REQUEST_LIMIT_INFO_CACHE_KEY: &str = "AIAssistantRequestLimitInfo";
+use crate::server::server_api::ai::AIClient as _;
 
 /// Tracks the current request status for making Warp AI requests against server.
 pub enum RequestStatus {
@@ -35,40 +26,16 @@ pub enum RequestStatus {
     },
 }
 
-fn cache_request_limit_info(request_limit_info: RequestLimitInfo, app_mut: &mut AppContext) {
-    if let Ok(serialized) = serde_json::to_string(&request_limit_info) {
-        let _ = app_mut
-            .private_user_preferences()
-            .write_value(REQUEST_LIMIT_INFO_CACHE_KEY, serialized);
-    }
-}
-
-fn get_cached_request_limit_info(app_mut: &mut AppContext) -> Option<RequestLimitInfo> {
-    app_mut
-        .private_user_preferences()
-        .read_value(REQUEST_LIMIT_INFO_CACHE_KEY)
-        .unwrap_or_default()
-        .and_then(|serialized| serde_json::from_str(serialized.as_str()).ok())
-}
-
 #[derive(Debug, Clone)]
-pub enum GenerateDialogueResult {
-    Success {
-        answer: String,
-        truncated: bool,
-        request_limit_info: RequestLimitInfo,
-        transcript_summarized: bool,
-    },
-    Failure {
-        request_limit_info: RequestLimitInfo,
-    },
+pub struct GenerateDialogueResult {
+    pub answer: String,
+    pub truncated: bool,
+    pub transcript_summarized: bool,
 }
 
 pub struct Requests {
     server_api: Arc<ServerApi>,
-    ai_client: Arc<dyn AIClient>,
     request_status: RequestStatus,
-    request_limit_info: RequestLimitInfo,
 
     /// The currently displayed transcript.
     current_transcript: Vec<TranscriptPart>,
@@ -92,51 +59,17 @@ pub enum Event {
     RequestFinished,
 }
 
-/// Private interface.
-impl Requests {
-    fn remaining_time_to_refresh_std(&self) -> Result<std::time::Duration, OutOfRangeError> {
-        self.request_limit_info
-            .next_refresh_time
-            .utc()
-            .signed_duration_since(Utc::now())
-            .to_std()
-    }
-}
-
 /// Public interface.
 impl Requests {
-    pub fn new(
-        server_api: Arc<ServerApi>,
-        ai_client: Arc<dyn AIClient>,
-        ctx: &mut ModelContext<Self>,
-    ) -> Self {
-        // Check if the user has cached request limit info from before.
-        // If not, let's just make an assumption about the server's default request limit
-        // and fetch the true request limit later.
-        let cached_request_limit_info = get_cached_request_limit_info(ctx);
-        let request_limit_info = cached_request_limit_info.unwrap_or_default();
-
-        let requests = Self {
+    pub fn new(server_api: Arc<ServerApi>) -> Self {
+        Self {
             server_api,
-            ai_client,
             current_transcript: Vec::new(),
             current_transcript_summarized: false,
             old_transcript_parts: Vec::new(),
             request_status: RequestStatus::NotInFlight,
-            request_limit_info,
             ai_execution_context: None,
-        };
-
-        if cached_request_limit_info.is_none()
-            && AuthStateProvider::as_ref(ctx).get().is_logged_in()
-        {
-            let ai_client = requests.ai_client.clone();
-            let _ = ctx.spawn(
-                async move { ai_client.get_request_limit_info().await },
-                Self::update_request_limit_info,
-            );
         }
-        requests
     }
 
     pub fn update_ai_execution_context(
@@ -144,23 +77,6 @@ impl Requests {
         ai_execution_context: Option<WarpAiExecutionContext>,
     ) {
         self.ai_execution_context = ai_execution_context;
-    }
-
-    pub fn update_request_limit_info(
-        &mut self,
-        result: Result<RequestUsageInfo>,
-        ctx: &mut ModelContext<Self>,
-    ) {
-        match result {
-            Ok(usage_info) => {
-                self.request_limit_info = usage_info.request_limit_info;
-                ctx.notify();
-                cache_request_limit_info(usage_info.request_limit_info, ctx);
-            }
-            Err(e) => {
-                log::warn!("Failed to retrieve initial request limit info: {e:#}");
-            }
-        }
     }
 
     /// Starts a Warp AI request against the server with the given request prompt.
@@ -195,10 +111,9 @@ impl Requests {
                 std::mem::swap(&mut model.request_status, &mut current_request_status);
                 if let RequestStatus::InFlight { request, .. } = current_request_status {
                     match response {
-                        Ok(GenerateDialogueResult::Success {
+                        Ok(GenerateDialogueResult {
                             mut answer,
                             truncated,
-                            request_limit_info,
                             transcript_summarized,
                         }) => {
                             if truncated {
@@ -223,43 +138,13 @@ impl Requests {
                                 },
                             });
 
-                            cache_request_limit_info(request_limit_info, ctx);
-                            model.request_limit_info = request_limit_info;
-
                             // If the transcript was already marked as summarized before,
                             // it will remain so until it's reset.
                             model.current_transcript_summarized |= transcript_summarized;
 
 
                         }
-                        Ok(GenerateDialogueResult::Failure { request_limit_info }) if request_limit_info.limit <= request_limit_info.num_requests_used_since_refresh => {
-                            cache_request_limit_info(request_limit_info, ctx);
-                            model.request_limit_info = request_limit_info;
-                            let next_time = if let Some(next_refresh_time) = model.serialized_time_until_refresh() {
-                                format!("after {next_refresh_time}")
-                            } else {
-                                String::from("later")
-                            };
-
-                            let response = format!("It seems you're out of credits. Please try again {next_time}.");
-                            let response_in_markdown = markdown_segments_from_text(
-                                transcript_part_index,
-                                TranscriptPartSubType::Answer,
-                                &response,
-                            );
-                            model.current_transcript.push(TranscriptPart {
-                                user: request,
-                                assistant: AssistantTranscriptPart {
-                                    is_error: true,
-                                    copy_all_tooltip_and_button_mouse_handles: None,
-                                    formatted_message: FormattedTranscriptMessage {
-                                        markdown: response_in_markdown,
-                                        raw: response,
-                                    },
-                                },
-                            });
-                        }
-                        _ => {
+                        Err(_) => {
                             let response = "We're experiencing technical difficulties right now. Please try again later.".to_owned();
                             let response_in_markdown = markdown_segments_from_text(
                                 transcript_part_index,
@@ -335,49 +220,6 @@ impl Requests {
     pub fn current_transcript_summarized(&self) -> bool {
         self.current_transcript_summarized
     }
-
-    /// Returns the number of remaining requests the user has based on their latest rate limit info.
-    /// If the current time is past the next refresh time, then the number of remaining reqs is the limit.
-    pub fn num_remaining_reqs(&self) -> usize {
-        match self.remaining_time_to_refresh_std() {
-            Err(_) => self.request_limit_info.limit,
-            Ok(t) if t.is_zero() => self.request_limit_info.limit,
-            Ok(_t) => {
-                self.request_limit_info.limit
-                    - self.request_limit_info.num_requests_used_since_refresh
-            }
-        }
-    }
-
-    pub fn num_requests_used(&self) -> usize {
-        self.request_limit_info.limit - self.num_remaining_reqs()
-    }
-
-    pub fn request_limit(&self) -> usize {
-        self.request_limit_info.limit
-    }
-
-    /// Returns the next refresh time based on the latest rate limit info as a formatted string.
-    /// If the current time is past the next refresh time, then returns None.
-    pub fn serialized_time_until_refresh(&self) -> Option<String> {
-        match self.remaining_time_to_refresh_std() {
-            Err(_) => None,
-            Ok(t) if t.is_zero() => None,
-            Ok(t) => {
-                let num_minutes = t.as_secs() / 60;
-                let num_hours = num_minutes / 60;
-                let num_days = num_hours / 24;
-                let remaining_text = if num_days > 0 {
-                    format!("{num_days} days")
-                } else if num_hours > 0 {
-                    format!("{num_hours} hours")
-                } else {
-                    format!("{num_minutes} minutes")
-                };
-                Some(remaining_text)
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -387,12 +229,10 @@ impl Requests {
 
         Self {
             server_api: ServerApiProvider::new_for_test().get(),
-            ai_client: ServerApiProvider::new_for_test().get_ai_client(),
             current_transcript: transcript,
             current_transcript_summarized: false,
             old_transcript_parts: Vec::new(),
             request_status: RequestStatus::NotInFlight,
-            request_limit_info: RequestLimitInfo::default(),
             ai_execution_context: None,
         }
     }

@@ -1,8 +1,7 @@
+use warpui::App;
 use warpui::platform::WindowStyle;
-use warpui::{App, SingletonEntity};
 
 use super::Transcript;
-use crate::ai::AIRequestUsageModel;
 use crate::ai_assistant::requests::Requests;
 use crate::ai_assistant::test_util::{
     default_assistant_transcript_part, default_code_block_segment, default_formatted_message,
@@ -50,9 +49,6 @@ fn initialize_app(app: &mut App) {
     app.add_singleton_model(UserWorkspaces::default_mock);
     app.add_singleton_model(|_| AuthStateProvider::new_for_test());
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
-    app.add_singleton_model(|ctx| {
-        AIRequestUsageModel::new_for_test(ServerApiProvider::as_ref(ctx).get_ai_client(), ctx)
-    });
 }
 
 #[test]

@@ -3065,7 +3065,7 @@ pub struct FailedOutputProps<'a> {
 
 pub fn render_failed_output(props: FailedOutputProps, app: &AppContext) -> Box<dyn Element> {
     let appearance = Appearance::as_ref(app);
-    let Some(presentation) = failed_output_presentation(props.error, app) else {
+    let Some(presentation) = failed_output_presentation(props.error) else {
         return Empty::new().finish();
     };
 

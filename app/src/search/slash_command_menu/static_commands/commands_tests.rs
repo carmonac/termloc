@@ -49,13 +49,6 @@ fn command_registry_filters_explicit_surface_metadata() {
             );
         }
     }
-    assert_eq!(COST.kind, SlashCommandKind::Cost);
-    assert!(matches!(
-        COST.supported_surfaces,
-        SlashCommandSurfaces::GuiAndTui {
-            icon_path: "bundled/svg/bar-chart-04.svg"
-        }
-    ));
     assert_eq!(EXIT.kind, SlashCommandKind::Exit);
     assert_eq!(EXIT.supported_surfaces, SlashCommandSurfaces::TuiOnly);
     assert_eq!(ADD_MCP.kind, SlashCommandKind::AddMcp);
@@ -73,7 +66,7 @@ fn command_registry_contains_commands_for_both_surfaces() {
 
     assert_eq!(
         registry
-            .get_command_with_name(UPGRADE.name)
+            .get_command_with_name(EXIT.name)
             .map(|command| command.supported_surfaces),
         Some(SlashCommandSurfaces::TuiOnly)
     );
@@ -114,43 +107,6 @@ fn view_logs_command_is_registered_only_for_tui_mode() {
     );
 }
 
-#[test]
-fn manage_billing_command_is_always_available_only_in_tui_mode() {
-    let command = all_commands(settings::SettingsMode::Tui)
-        .into_iter()
-        .find(|command| command.kind == SlashCommandKind::ManageBilling)
-        .expect("expected /manage-billing to be registered in TUI mode");
-
-    assert_eq!(command, MANAGE_BILLING);
-    assert_eq!(command.availability, Availability::ALWAYS);
-    assert_eq!(command.supported_surfaces, SlashCommandSurfaces::TuiOnly);
-    assert!(!command.auto_enter_ai_mode);
-    assert!(command.argument.is_none());
-    assert!(
-        all_commands(settings::SettingsMode::Gui)
-            .iter()
-            .all(|command| command.kind != SlashCommandKind::ManageBilling)
-    );
-}
-
-#[test]
-fn upgrade_command_is_always_available_only_in_tui_mode() {
-    let command = all_commands(settings::SettingsMode::Tui)
-        .into_iter()
-        .find(|command| command.kind == SlashCommandKind::Upgrade)
-        .expect("expected /upgrade to be registered in TUI mode");
-
-    assert_eq!(command, UPGRADE);
-    assert_eq!(command.availability, Availability::ALWAYS);
-    assert_eq!(command.supported_surfaces, SlashCommandSurfaces::TuiOnly);
-    assert!(!command.auto_enter_ai_mode);
-    assert!(command.argument.is_none());
-    assert!(
-        all_commands(settings::SettingsMode::Gui)
-            .iter()
-            .all(|command| command.kind != SlashCommandKind::Upgrade)
-    );
-}
 #[test]
 fn auto_approve_command_is_local_agent_action_without_arguments() {
     let tui_commands = all_commands(settings::SettingsMode::Tui);

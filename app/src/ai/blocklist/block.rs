@@ -80,10 +80,8 @@ use super::inline_action::code_diff_view::{
 };
 use super::inline_action::requested_action::{CTRL_C_KEYSTROKE, ENTER_KEYSTROKE};
 use super::inline_action::requested_command_attribution::is_command_copied_from_document;
-use super::permissions::is_agent_mode_autonomy_allowed;
 use super::suggested_agent_mode_workflow_modal::SuggestedAgentModeWorkflowAndId;
 use super::suggested_rule_modal::SuggestedRuleAndId;
-use super::usage::request_metadata_turn_view::RequestMetadataTurnView;
 use super::{
     BlocklistAIActionModel, BlocklistAIController, BlocklistAIHistoryModel, BlocklistAIPermissions,
     ResponseStreamId,
@@ -91,10 +89,10 @@ use super::{
 use crate::ai::agent::conversation::AIConversationId;
 use crate::ai::agent::{
     AIAgentAction, AIAgentActionId, AIAgentActionResultType, AIAgentActionType, AIAgentAttachment,
-    AIAgentCitation, AIAgentContext, AIAgentExchangeId, AIAgentInput, AIAgentOutput,
-    AIAgentOutputMessage, AIAgentOutputMessageType, AIAgentTextSection, CancellationReason,
-    CreateDocumentsRequest, CreateDocumentsResult, DocumentToCreate, EditDocumentsResult,
-    MessageId, PassiveSuggestionTrigger, ProgrammingLanguage, RequestCommandOutputResult,
+    AIAgentCitation, AIAgentContext, AIAgentInput, AIAgentOutput, AIAgentOutputMessage,
+    AIAgentOutputMessageType, AIAgentTextSection, CancellationReason, CreateDocumentsRequest,
+    CreateDocumentsResult, DocumentToCreate, EditDocumentsResult, MessageId,
+    PassiveSuggestionTrigger, ProgrammingLanguage, RequestCommandOutputResult,
     RequestFileEditsResult, ScreenshotSource, SearchCodebaseResult, ServerOutputId,
     SuggestPromptRequest, SuggestPromptResult, SuggestedLoggingId, SummarizationType,
     TodoOperation,
@@ -137,7 +135,6 @@ use crate::ai::get_relevant_files::controller::{
     GetRelevantFilesController, GetRelevantFilesControllerEvent,
 };
 use crate::ai::stored_screenshots::stored_screenshot_asset_source;
-use crate::ai::{AIRequestUsageModel, AIRequestUsageModelEvent};
 use crate::auth::{AuthStateProvider, UserUid};
 use crate::cloud_object::model::generic_string_model::GenericStringObjectId;
 use crate::cloud_object::model::persistence::CloudModel;
@@ -184,7 +181,6 @@ use crate::view_components::compactible_action_button::CompactibleActionButton;
 use crate::view_components::find::FindEvent;
 use crate::workspace::{ForkAIConversationParams, ForkedConversationDestination, WorkspaceAction};
 use crate::workspaces::user_profiles::{UserProfileWithUID, UserProfiles};
-use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::{AIAgentTodoList, Appearance, LLMPreferences, ToastStack};
 
 /// The default display name used for the user if they have no associated display name.
@@ -413,12 +409,6 @@ pub(super) struct AIBlockStateHandles {
 
     /// Mouse state handle for the fork conversation button
     fork_conversation_handle: MouseStateHandle,
-
-    /// Mouse state handle for the usage button
-    usage_button_handle: MouseStateHandle,
-
-    /// Mouse state handle for the per-turn request-metadata "Turn" panel trigger
-    turn_panel_button_handle: MouseStateHandle,
 
     /// Mouse state handles per citation.
     /// A given citation should only appear once per block.
@@ -946,10 +936,6 @@ pub struct AIBlock {
     /// The thumbs up/down rating of the AI block response.
     response_rating: OnceCell<AIBlockResponseRating>,
 
-    /// The number of requests that have been refunded.
-    /// Right now, this happens when a user thumbs down a response.
-    request_refunded_count: Option<i32>,
-
     /// Requested commands that were auto-expanded,
     /// and should thus be auto-collapsed when the block is finished.
     requested_commands_to_auto_collapse: HashSet<AIAgentActionId>,
@@ -978,14 +964,6 @@ pub struct AIBlock {
     /// Stores the last command that was right-clicked by a child component.
     /// When set, CopyCommand will copy this specific command instead of all commands.
     last_right_clicked_command: Option<String>,
-
-    /// Whether the usage summary footer is expanded.
-    is_usage_footer_expanded: bool,
-
-    /// Whether the per-turn request-metadata "Turn" panel is expanded. Independent of
-    /// `is_usage_footer_expanded`: the two panels are separate surfaces.
-    is_turn_panel_expanded: bool,
-    turn_panel_view: Option<ViewHandle<RequestMetadataTurnView>>,
 
     /// Controller for reading/modifying `AgentView` state for this terminal pane (e.g. if there is
     /// an active agent view or not, which affects whether or not this block should be hidden).
@@ -1105,8 +1083,7 @@ impl AIBlock {
                     }
                     ctx.notify();
                 }
-                AISettingsChangedEvent::ThinkingDisplayMode { .. }
-                | AISettingsChangedEvent::UsageDisplayUnit { .. } => {
+                AISettingsChangedEvent::ThinkingDisplayMode { .. } => {
                     ctx.notify();
                 }
                 _ => {}
@@ -1168,31 +1145,6 @@ impl AIBlock {
         let manage_rules_button = ctx.add_typed_action_view(|_| {
             ActionButton::new("Manage rules", NakedTheme)
                 .on_click(|ctx| ctx.dispatch_typed_action(AIBlockAction::OpenAIFactCollection))
-        });
-
-        ctx.subscribe_to_model(&AIRequestUsageModel::handle(ctx), |me, _, event, ctx| {
-            if let AIRequestUsageModelEvent::RequestBonusRefunded {
-                requests_refunded,
-                server_conversation_id,
-                request_id,
-            } = event
-            {
-                let server_conversation_token = BlocklistAIHistoryModel::as_ref(ctx)
-                    .conversation(&me.client_ids.conversation_id)
-                    .and_then(|conversation| conversation.server_conversation_token())
-                    .cloned();
-
-                let server_output_id = me.model.server_output_id(ctx);
-
-                if let (Some(server_conversation_token), Some(server_output_id)) =
-                    (server_conversation_token, server_output_id)
-                    && request_id.eq(server_output_id.to_string().as_str())
-                    && server_conversation_id.eq(server_conversation_token.as_str())
-                {
-                    me.request_refunded_count = Some(*requests_refunded);
-                    ctx.notify();
-                }
-            }
         });
 
         ctx.subscribe_to_model(
@@ -1381,7 +1333,6 @@ impl AIBlock {
             keyboard_navigable_buttons: None,
             response_rating: OnceCell::new(),
             terminal_view_id,
-            request_refunded_count: None,
             action_buttons: Default::default(),
             search_codebase_view: Default::default(),
             web_search_views: Default::default(),
@@ -1396,9 +1347,6 @@ impl AIBlock {
             open_recording_buttons: Default::default(),
             has_recording_related_actions: false,
             last_right_clicked_command: None,
-            is_usage_footer_expanded: false,
-            is_turn_panel_expanded: false,
-            turn_panel_view: None,
             agent_view_controller,
             imported_comments: Default::default(),
             has_imported_comments: false,
@@ -2371,10 +2319,6 @@ impl AIBlock {
 
         let shell_type = self.active_session.as_ref(ctx).shell_type(ctx);
         let escape_char = shell_type.map(|s| ShellFamily::from(s).escape_char());
-        let autonomy_allowed = {
-            let scope = self.controller.as_ref(ctx).team_context(ctx);
-            is_agent_mode_autonomy_allowed(&scope, ctx)
-        };
 
         for (requested_command_action_id, command, is_read_only, is_risky) in
             output.actions().filter_map(|action| {
@@ -2400,76 +2344,74 @@ impl AIBlock {
                 }
             })
         {
-            if autonomy_allowed {
-                let autoexecute_decision = escape_char.map(|escape_char| {
-                    let scope = self.controller.as_ref(ctx).team_context(ctx);
-                    BlocklistAIPermissions::as_ref(ctx).can_autoexecute_command(
-                        &self.client_ids.conversation_id,
-                        command,
-                        escape_char,
-                        is_read_only,
-                        is_risky,
-                        Some(self.terminal_view_id),
-                        &scope,
-                        ctx,
-                    )
-                });
+            let autoexecute_decision = escape_char.map(|escape_char| {
+                let scope = self.controller.as_ref(ctx).team_context(ctx);
+                BlocklistAIPermissions::as_ref(ctx).can_autoexecute_command(
+                    &self.client_ids.conversation_id,
+                    command,
+                    escape_char,
+                    is_read_only,
+                    is_risky,
+                    Some(self.terminal_view_id),
+                    &scope,
+                    ctx,
+                )
+            });
 
-                match autoexecute_decision {
-                    Some(CommandExecutionPermission::Denied(
-                        CommandExecutionPermissionDeniedReason::AlwaysAskEnabled,
-                    )) if !*AISettings::as_ref(ctx)
-                        .has_shown_agent_mode_profile_command_autoexecution_speedbump =>
-                    {
-                        // Show the default command autonomy setting if set to Always Ask.
-                        self.autonomy_setting_speedbump =
-                            AutonomySettingSpeedbump::ShouldShowForProfileCommandAutoexecution {
-                                action_id: requested_command_action_id.clone(),
-                                shown: Default::default(),
-                            };
-                        self.update_requested_command_autonomy_speedbump(
-                            requested_command_action_id.clone(),
-                            ctx,
-                        );
-                        // Mark the speedbump as shown in settings so that we do not render it again.
-                        AISettings::handle(ctx)
+            match autoexecute_decision {
+                Some(CommandExecutionPermission::Denied(
+                    CommandExecutionPermissionDeniedReason::AlwaysAskEnabled,
+                )) if !*AISettings::as_ref(ctx)
+                    .has_shown_agent_mode_profile_command_autoexecution_speedbump =>
+                {
+                    // Show the default command autonomy setting if set to Always Ask.
+                    self.autonomy_setting_speedbump =
+                        AutonomySettingSpeedbump::ShouldShowForProfileCommandAutoexecution {
+                            action_id: requested_command_action_id.clone(),
+                            shown: Default::default(),
+                        };
+                    self.update_requested_command_autonomy_speedbump(
+                        requested_command_action_id.clone(),
+                        ctx,
+                    );
+                    // Mark the speedbump as shown in settings so that we do not render it again.
+                    AISettings::handle(ctx)
                             .update(ctx, |ai_settings, ctx| {
                                 if let Err(err) = ai_settings.has_shown_agent_mode_profile_command_autoexecution_speedbump.set_value(true, ctx) {
                                     log::warn!("Could not mark profile command autoexecution speedbump as shown {err}");
                                 }
                             }
                         )
-                    }
-                    Some(CommandExecutionPermission::Denied(
-                        CommandExecutionPermissionDeniedReason::Inconclusive,
-                    )) if *AISettings::as_ref(ctx)
-                        .should_show_agent_mode_autoexecute_readonly_commands_speedbump
-                        && is_read_only =>
-                    {
-                        // Try to show the speedbump for the readonly command setting
-                        // if we haven't shown it enough before and this command is
-                        // considered readonly.
-                        self.autonomy_setting_speedbump =
-                            AutonomySettingSpeedbump::ShouldShowForAutoexecutingReadonlyCommands {
-                                action_id: requested_command_action_id.clone(),
-                                checked: true,
-                                shown: Arc::new(Mutex::new(false)),
-                            };
-                        self.update_requested_command_autonomy_speedbump(
-                            requested_command_action_id.clone(),
-                            ctx,
-                        );
-                        // Mark the speedbump as shown in settings so that we do not render it again.
-                        AISettings::handle(ctx)
+                }
+                Some(CommandExecutionPermission::Denied(
+                    CommandExecutionPermissionDeniedReason::Inconclusive,
+                )) if *AISettings::as_ref(ctx)
+                    .should_show_agent_mode_autoexecute_readonly_commands_speedbump
+                    && is_read_only =>
+                {
+                    // Try to show the speedbump for the readonly command setting
+                    // if we haven't shown it enough before and this command is
+                    // considered readonly.
+                    self.autonomy_setting_speedbump =
+                        AutonomySettingSpeedbump::ShouldShowForAutoexecutingReadonlyCommands {
+                            action_id: requested_command_action_id.clone(),
+                            checked: true,
+                            shown: Arc::new(Mutex::new(false)),
+                        };
+                    self.update_requested_command_autonomy_speedbump(
+                        requested_command_action_id.clone(),
+                        ctx,
+                    );
+                    // Mark the speedbump as shown in settings so that we do not render it again.
+                    AISettings::handle(ctx)
                             .update(ctx, |ai_settings, ctx| {
                                 if let Err(err) = ai_settings.should_show_agent_mode_autoexecute_readonly_commands_speedbump.set_value(false, ctx) {
                                     log::warn!("Could not mark autoexecute read-only commands speedbump as shown {err}");
                                 }
                             }
                         )
-                    }
-                    _ => (),
                 }
+                _ => (),
             }
 
             for citation in &output.citations {
@@ -2489,9 +2431,7 @@ impl AIBlock {
             .actions()
             .filter_map(|action| (action.is_get_relevant_files()).then_some(&action.id))
         {
-            if autonomy_allowed
-                && *AISettings::as_ref(ctx).should_show_agent_mode_autoread_files_speedbump
-            {
+            if *AISettings::as_ref(ctx).should_show_agent_mode_autoread_files_speedbump {
                 // Try to show the speedbump for codebase search.
                 self.state_handles.codebase_search_speedbump_option_handles =
                     vec![Default::default(), Default::default()];
@@ -2522,9 +2462,7 @@ impl AIBlock {
             let is_file_access =
                 action.is_get_specific_files() || action.is_grep() || action.is_file_glob();
             if is_file_access {
-                if autonomy_allowed
-                    && *AISettings::as_ref(ctx).should_show_agent_mode_autoread_files_speedbump
-                {
+                if *AISettings::as_ref(ctx).should_show_agent_mode_autoread_files_speedbump {
                     // Try to show the speedbump for autoread files setting
                     // if we haven't shown it enough before.
                     self.autonomy_setting_speedbump =
@@ -2548,7 +2486,6 @@ impl AIBlock {
             } else if matches!(action.action, AIAgentActionType::AskUserQuestion { .. })
                 && !self.model.is_restored()
                 && FeatureFlag::AskUserQuestion.is_enabled()
-                && autonomy_allowed
                 && *AISettings::as_ref(ctx).should_show_agent_mode_ask_user_question_speedbump
             {
                 self.autonomy_setting_speedbump =
@@ -2792,7 +2729,6 @@ impl AIBlock {
         // Only show the speedbump once, update the setting afterwards.
         let should_show_code_suggestion_speedbump =
             self.model.request_type(ctx).is_passive_code_diff()
-                && UserWorkspaces::as_ref(ctx).is_code_suggestions_toggleable()
                 && AISettings::as_ref(ctx).show_code_suggestion_speedbump(ctx);
         if should_show_code_suggestion_speedbump {
             AISettings::handle(ctx).update(ctx, |settings, ctx| {
@@ -3767,7 +3703,6 @@ impl AIBlock {
             .model
             .request_type(ctx)
             .is_passive_unit_test_suggestion()
-            && UserWorkspaces::as_ref(ctx).is_code_suggestions_toggleable()
             && AISettings::as_ref(ctx).show_code_suggestion_speedbump(ctx);
         if should_show_speedbump {
             AISettings::handle(ctx).update(ctx, |settings, ctx| {
@@ -5469,27 +5404,6 @@ fn set_imported_comment_button_disabled(
     });
 }
 
-impl AIBlock {
-    pub(crate) fn set_turn_panel_view(
-        &mut self,
-        view: Option<ViewHandle<RequestMetadataTurnView>>,
-        ctx: &mut ViewContext<Self>,
-    ) {
-        self.turn_panel_view = view;
-        ctx.notify();
-    }
-
-    /// Notifies the terminal view of the turn panel's current expansion state, using this
-    /// block's own conversation/exchange ids.
-    fn emit_turn_panel_toggled(&self, ctx: &mut ViewContext<Self>) {
-        ctx.emit(AIBlockEvent::TurnPanelToggled {
-            conversation_id: self.client_ids.conversation_id,
-            exchange_id: self.client_ids.client_exchange_id,
-            is_expanded: self.is_turn_panel_expanded,
-        });
-    }
-}
-
 fn num_attached_context_blocks(inputs: &[AIAgentInput]) -> usize {
     inputs.iter().fold(0, |count, input| {
         if let Some(context) = input.context() {
@@ -5557,20 +5471,6 @@ pub enum AIBlockEvent {
     /// interactable (if any requested commands or requested actions were included, all requested
     /// commands and requested actions have been executed or cancelled).
     Finished,
-
-    /// Emitted when we want to show or hide the usage footer.
-    UsageFooterToggled {
-        conversation_id: AIConversationId,
-        is_expanded: bool,
-    },
-
-    /// Emitted when we want to show or hide the per-turn request-metadata "Turn" panel.
-    TurnPanelToggled {
-        conversation_id: AIConversationId,
-        /// The exchange this block renders, used to look up that turn's record
-        exchange_id: AIAgentExchangeId,
-        is_expanded: bool,
-    },
 
     /// Emitted when the AI block requires user confirmation to execute.
     ActionBlockedOnUserConfirmation,
@@ -5794,11 +5694,6 @@ pub enum AIBlockAction {
     CopyDebugId(String),
     CopyText(String),
     /// Open Warp feedback documentation
-    /// Toggle the usage summary footer expansion state
-    ToggleIsUsageFooterExpanded,
-    /// Toggle the per-turn request-metadata "Turn" panel expansion state.
-    ToggleIsTurnPanelExpanded,
-    SetIsTurnPanelExpanded(bool),
     CommentExpanded {
         id: CommentId,
     },
@@ -6036,21 +5931,6 @@ impl TypedActionView for AIBlock {
             AIBlockAction::ToggleReferencesSection => {
                 self.is_references_section_open = !self.is_references_section_open;
             }
-            AIBlockAction::ToggleIsUsageFooterExpanded => {
-                self.is_usage_footer_expanded = !self.is_usage_footer_expanded;
-                ctx.emit(AIBlockEvent::UsageFooterToggled {
-                    conversation_id: self.client_ids.conversation_id,
-                    is_expanded: self.is_usage_footer_expanded,
-                });
-            }
-            AIBlockAction::ToggleIsTurnPanelExpanded => {
-                self.is_turn_panel_expanded = !self.is_turn_panel_expanded;
-                self.emit_turn_panel_toggled(ctx);
-            }
-            AIBlockAction::SetIsTurnPanelExpanded(is_expanded) => {
-                self.is_turn_panel_expanded = *is_expanded;
-                self.emit_turn_panel_toggled(ctx);
-            }
             AIBlockAction::CommentExpanded { id } => {
                 let Some(comment) = self.comment_states.get_mut(id) else {
                     return;
@@ -6183,7 +6063,6 @@ impl TypedActionView for AIBlock {
                 });
             }
             AIBlockAction::Rated { is_positive } => {
-                let output_id = self.model.server_output_id(ctx);
                 let rating = if *is_positive {
                     AIBlockResponseRating::Positive
                 } else {
@@ -6192,20 +6071,6 @@ impl TypedActionView for AIBlock {
                 if self.response_rating.set(rating).is_err() {
                     // A rating was already set for this block. This should be unreachable.
                     return;
-                }
-
-                if matches!(rating, AIBlockResponseRating::Negative)
-                    && let Some(output_id) = output_id.clone()
-                {
-                    let request_usage_model = AIRequestUsageModel::handle(ctx);
-                    request_usage_model.update(ctx, |request_usage_model, ctx| {
-                        request_usage_model.provide_negative_feedback_response_for_ai_conversation(
-                            self.client_ids.conversation_id,
-                            output_id.to_string(),
-                            self.client_ids.client_exchange_id,
-                            ctx,
-                        );
-                    });
                 }
 
                 let window_id = ctx.window_id();

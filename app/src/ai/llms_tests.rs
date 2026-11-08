@@ -393,13 +393,11 @@ fn team_catalog_hydration_preserves_shared_profile_and_resolves_against_active_t
             "Engineering".to_string(),
             None,
             None,
-            None,
             Some(enabled_models.clone()),
         );
         let disabled_team = Team::from_local_cache(
             disabled_team_uid,
             "Disabled team".to_string(),
-            None,
             None,
             None,
             Some(disabled_models.clone()),

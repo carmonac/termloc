@@ -24,11 +24,7 @@ pub fn standard_message_bar_height(app: &AppContext) -> f32 {
         + styles::VERTICAL_PADDING * 2.
 }
 
-pub fn render_standard_message_bar(
-    message: Message,
-    right_element: Option<Box<dyn Element>>,
-    app: &AppContext,
-) -> Box<dyn Element> {
+pub fn render_standard_message_bar(message: Message, app: &AppContext) -> Box<dyn Element> {
     use warpui::prelude::MainAxisAlignment;
 
     let (left_items, right_chips): (Vec<_>, Vec<_>) = message.items.into_iter().partition(|item| {
@@ -41,28 +37,13 @@ pub fn render_standard_message_bar(
         )
     });
 
-    let right_element = if right_chips.is_empty() {
-        right_element
-    } else {
-        let right_chips_element = render_message_bar_items(&right_chips, app);
-        Some(if let Some(existing_right) = right_element {
-            Flex::row()
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
-                .with_child(right_chips_element)
-                .with_child(existing_right)
-                .finish()
-        } else {
-            right_chips_element
-        })
-    };
-
-    let content = if let Some(right_element) = right_element {
+    let content = if !right_chips.is_empty() {
         Flex::row()
             .with_main_axis_size(MainAxisSize::Max)
             .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
             .with_cross_axis_alignment(CrossAxisAlignment::Center)
             .with_child(render_message_bar_items(&left_items, app))
-            .with_child(right_element)
+            .with_child(render_message_bar_items(&right_chips, app))
             .finish()
     } else {
         Align::new(render_message_bar_items(&left_items, app))

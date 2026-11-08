@@ -22,7 +22,6 @@ use crate::ai::blocklist::{
 use crate::ai::execution_profiles::profiles::AIExecutionProfilesModel;
 use crate::ai::llms::{LLMId, LLMPreferences};
 use crate::ai::mcp::templatable_manager::TemplatableMCPServerManager;
-use crate::ai::request_usage_model::AIRequestUsageModel;
 use crate::auth::AuthStateProvider;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::code_review::git_repo_model::GitRepoModels;
@@ -53,7 +52,7 @@ use crate::tui_onboarding_markers::TuiOnboardingMarkers;
 use crate::user_config::WarpConfig;
 #[cfg(feature = "voice_input")]
 use crate::voice::transcriber::VoiceTranscriber;
-use crate::workspaces::team::{MembershipRole, Team, TeamMember};
+use crate::workspaces::team::Team;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::Workspace;
 
@@ -249,35 +248,10 @@ pub fn register_tui_input_mode_test_settings(ctx: &mut AppContext) {
     ctx.add_singleton_model(|ctx| UserWorkspaces::mock(Vec::new(), ctx));
 }
 
-pub fn set_tui_default_team_admin_for_test(ctx: &mut AppContext) {
-    let auth = AuthStateProvider::as_ref(ctx).get();
-    let user_uid = auth.user_id().expect("test user should have an id");
-    let user_email = auth.user_email().expect("test user should have an email");
-    let mut team =
-        Team::from_local_cache(123.into(), "test team".to_owned(), None, None, None, None);
-    team.members.push(TeamMember {
-        uid: user_uid,
-        email: user_email,
-        role: MembershipRole::Owner,
-        is_disabled: false,
-    });
-    let workspace = Workspace::from_local_cache(
-        "workspace_uid123456789".to_owned().into(),
-        "test workspace".to_owned(),
-        Some(vec![team]),
-        None,
-    );
-    let workspace_uid = workspace.uid;
-    UserWorkspaces::handle(ctx).update(ctx, |workspaces, ctx| {
-        workspaces.update_workspaces(vec![workspace], ctx);
-        workspaces.set_current_workspace_uid(workspace_uid, ctx);
-    });
-}
-
 pub fn set_tui_workspace_teams_for_test(teams: Vec<(ServerId, String)>, ctx: &mut AppContext) {
     let teams = teams
         .into_iter()
-        .map(|(uid, name)| Team::from_local_cache(uid, name, None, None, None, None))
+        .map(|(uid, name)| Team::from_local_cache(uid, name, None, None, None))
         .collect();
     let workspace = Workspace::from_local_cache(
         "workspace_uid123456789".to_owned().into(),
@@ -330,9 +304,6 @@ pub fn register_tui_session_view_test_singletons(app: &mut warpui::App) {
     app.add_singleton_model(BlocklistAIPermissions::new);
     app.add_singleton_model(|ctx| {
         AIExecutionProfilesModel::new(&LaunchMode::new_for_unit_test(), ctx)
-    });
-    app.add_singleton_model(|ctx| {
-        AIRequestUsageModel::new(ServerApiProvider::as_ref(ctx).get_ai_client(), ctx)
     });
     #[cfg(feature = "voice_input")]
     {

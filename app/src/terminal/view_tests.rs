@@ -61,7 +61,6 @@ use crate::terminal::view::load_ai_conversation::{
     RestoreConversationEntryBehavior, RestoredAIConversation,
 };
 use crate::terminal::{CLIAgent, MockTerminalManager, TerminalModel, should_right_click_paste};
-use crate::test_util::billing_unit::set_charge_unit;
 use crate::test_util::terminal::{
     add_window_with_id_and_terminal, initialize_app_for_terminal_view,
 };
@@ -69,7 +68,6 @@ use crate::test_util::{add_window_with_terminal, assert_eventually};
 use crate::view_components::find::FindWithinBlockState;
 use crate::workspace::WorkspaceAction;
 use crate::workspace::view::tests::{initialize_app as initialize_workspace_app, mock_workspace};
-use crate::workspaces::workspace::ChargeUnit;
 
 /// The AI blocks currently flagged to render the transcript-navigation ring.
 fn navigation_ring_targets(view: &TerminalView, app: &AppContext) -> Vec<EntityId> {
@@ -1584,53 +1582,6 @@ fn is_passive_conversation_is_false_for_a_directly_issued_user_query() {
         terminal.read(&app, |view, ctx| {
             let ai_block = view.last_ai_block().expect("AI block should exist");
             assert!(!ai_block.as_ref(ctx).is_passive_conversation());
-        });
-    })
-}
-
-#[test]
-fn turn_panel_does_not_insert_a_block_after_its_footer() {
-    App::test((), |mut app| async move {
-        initialize_app_for_terminal_view(&mut app);
-        set_charge_unit(&mut app, ChargeUnit::Cents);
-        let terminal = add_window_with_terminal(&mut app, None);
-        let ai_block = terminal.update(&mut app, |view, ctx| {
-            view.insert_dummy_ai_block("query".to_string(), "response".to_string(), ctx)
-        });
-
-        let initial_content_ids = terminal.read(&app, |view, _| {
-            view.rich_content_views
-                .iter()
-                .map(|content| content.view_id())
-                .collect::<Vec<_>>()
-        });
-
-        ai_block.update(&mut app, |block, ctx| {
-            block.handle_action(&AIBlockAction::ToggleIsTurnPanelExpanded, ctx);
-        });
-        terminal.read(&app, |view, _| {
-            assert!(view.turn_panel_view_ids.contains_key(&ai_block.id()));
-            assert_eq!(
-                view.rich_content_views
-                    .iter()
-                    .map(|content| content.view_id())
-                    .collect::<Vec<_>>(),
-                initial_content_ids
-            );
-        });
-
-        ai_block.update(&mut app, |block, ctx| {
-            block.handle_action(&AIBlockAction::ToggleIsTurnPanelExpanded, ctx);
-        });
-        terminal.read(&app, |view, _| {
-            assert!(!view.turn_panel_view_ids.contains_key(&ai_block.id()));
-            assert_eq!(
-                view.rich_content_views
-                    .iter()
-                    .map(|content| content.view_id())
-                    .collect::<Vec<_>>(),
-                initial_content_ids
-            );
         });
     })
 }

@@ -105,24 +105,6 @@ pub const NATURAL_LANGUAGE_DETECTION: StaticCommand = StaticCommand {
     argument: None,
 };
 
-pub const MANAGE_BILLING: StaticCommand = StaticCommand {
-    name: "/manage-billing",
-    description: "Open the team billing page in your browser",
-    kind: SlashCommandKind::ManageBilling,
-    supported_surfaces: SlashCommandSurfaces::TuiOnly,
-    availability: Availability::ALWAYS,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-pub const UPGRADE: StaticCommand = StaticCommand {
-    name: "/upgrade",
-    description: "Open the Termloc upgrade page in your browser",
-    kind: SlashCommandKind::Upgrade,
-    supported_surfaces: SlashCommandSurfaces::TuiOnly,
-    availability: Availability::ALWAYS,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
 pub const THEME: StaticCommand = StaticCommand {
     name: "/theme",
     description: "Set color theme",
@@ -577,28 +559,6 @@ pub const FORK_FROM: StaticCommand = StaticCommand {
     argument: None,
 };
 
-pub const USAGE: StaticCommand = StaticCommand {
-    name: "/usage",
-    description: "View account and credit usage",
-    kind: SlashCommandKind::Usage,
-    supported_surfaces: SlashCommandSurfaces::TuiOnly,
-    availability: Availability::AI_ENABLED,
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-
-pub const COST: StaticCommand = StaticCommand {
-    name: "/cost",
-    description: "Toggle credit usage details",
-    kind: SlashCommandKind::Cost,
-    supported_surfaces: SlashCommandSurfaces::GuiAndTui {
-        icon_path: "bundled/svg/bar-chart-04.svg",
-    },
-    availability: Availability::AGENT_VIEW.union(Availability::AI_ENABLED),
-    auto_enter_ai_mode: false,
-    argument: None,
-};
-
 pub const CONVERSATIONS: StaticCommand = StaticCommand {
     name: "/conversations",
     description: "Open conversation history",
@@ -764,12 +724,9 @@ fn all_commands_for_all_surfaces() -> Vec<StaticCommand> {
         ADD_PROMPT.clone(),
         ADD_RULE,
         AUTO_APPROVE,
-        COST,
         EXIT,
         INDEX,
         INIT,
-        UPGRADE,
-        MANAGE_BILLING,
         MCP,
         OPEN_PROJECT_RULES,
         OPEN_MCP_SERVERS,
@@ -786,7 +743,6 @@ fn all_commands_for_all_surfaces() -> Vec<StaticCommand> {
         NATURAL_LANGUAGE_DETECTION,
         THEME,
         VIM_MODE,
-        USAGE,
         CONVERSATIONS,
         EXPORT_TO_CLIPBOARD,
         COPY_DEBUGGING_ID,

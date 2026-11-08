@@ -235,7 +235,7 @@ impl TuiUiBuilder {
     }
 
     /// Theme-accent overlay shared by every read-only menu's card background
-    /// (`?` shortcuts, `/status`, `/usage`, etc).
+    /// (`?` shortcuts, `/status`, etc).
     fn read_only_menu_background_fill(&self) -> ThemeFill {
         let accent = ThemeFill::from(self.warp_theme.terminal_colors().normal.cyan);
         self.base_background().blend(&accent.with_opacity(10))
@@ -244,15 +244,6 @@ impl TuiUiBuilder {
     /// Theme-accent overlay for shared read-only menus.
     pub(crate) fn read_only_menu_background(&self) -> Color {
         cell_color(self.read_only_menu_background_fill())
-    }
-
-    /// The design's 60%-foreground texture over the usage card background.
-    pub(crate) fn usage_bar_empty_style(&self) -> TuiStyle {
-        let foreground = self.warp_theme.foreground();
-        TuiStyle::default().fg(cell_color(
-            self.read_only_menu_background_fill()
-                .blend(&foreground.with_opacity(60)),
-        ))
     }
 
     /// Pale-green overlay behind shell command rows in the transcript.
@@ -321,13 +312,6 @@ impl TuiUiBuilder {
     pub(crate) fn brand_accent_style(&self) -> TuiStyle {
         TuiStyle::default().fg(cell_color(ThemeFill::Solid(
             self.design_palette().brand_accent,
-        )))
-    }
-
-    /// Magenta credential-entry accent used by the API-key input states.
-    pub(crate) fn credential_entry_accent_style(&self) -> TuiStyle {
-        TuiStyle::default().fg(cell_color(ThemeFill::from(
-            self.warp_theme.terminal_colors().normal.magenta,
         )))
     }
 

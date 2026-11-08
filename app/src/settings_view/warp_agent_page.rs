@@ -10,7 +10,6 @@ use std::sync::LazyLock;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use settings::{Setting, ToggleableSetting};
 use strum::IntoEnumIterator;
-use warp_core::channel::ChannelState;
 use warp_core::context_flag::ContextFlag;
 use warp_core::features::FeatureFlag;
 use warp_errors::report_if_error;
@@ -59,7 +58,7 @@ use crate::settings::{
 };
 use crate::util::bindings;
 use crate::view_components::{Dropdown, DropdownItem, FilterableDropdown};
-use crate::workspaces::workspace::{AdminEnablementSetting, CustomerType};
+use crate::workspaces::workspace::AdminEnablementSetting;
 
 const AI_SETTINGS_DROPDOWN_WIDTH: f32 = 250.;
 const AI_SETTINGS_DROPDOWN_MAX_HEIGHT: f32 = 250.;
@@ -686,7 +685,7 @@ impl WarpAgentPageView {
                 Box::new(PromptSuggestionsWidget::default()),
                 Box::new(SuggestedCodeBannersWidget::default()),
                 Box::new(NaturalLanguageAutosuggestionsWidget::default()),
-                Box::new(SharedBlockTitleGenerationWidget::new(ctx)),
+                Box::new(SharedBlockTitleGenerationWidget::default()),
                 Box::new(GitOperationsAutogenWidget::default()),
             ];
             let active_ai_toggle = SwitchStateHandle::default();
@@ -891,9 +890,6 @@ impl TypedActionView for WarpAgentPageView {
                 ctx.notify();
             }
             WarpAgentPageAction::TogglePromptSuggestions => {
-                if !UserWorkspaces::as_ref(ctx).is_prompt_suggestions_toggleable() {
-                    return;
-                }
                 match AISettings::handle(ctx).update(ctx, |settings, ctx| {
                     settings
                         .prompt_suggestions_enabled_internal
@@ -950,9 +946,6 @@ impl TypedActionView for WarpAgentPageView {
                 ctx.notify();
             }
             WarpAgentPageAction::ToggleGitOperationsAutogen => {
-                if !UserWorkspaces::as_ref(ctx).is_git_operations_ai_enabled() {
-                    return;
-                }
                 match AISettings::handle(ctx).update(ctx, |settings, ctx| {
                     settings
                         .git_operations_autogen_enabled_internal
@@ -1220,25 +1213,21 @@ fn render_global_ai_toggle(
 }
 
 fn is_next_command_toggleable(app: &AppContext) -> bool {
-    UserWorkspaces::as_ref(app).is_next_command_enabled()
-        && AISettings::as_ref(app)
-            .intelligent_autosuggestions_enabled_internal
-            .is_supported_on_current_platform()
+    AISettings::as_ref(app)
+        .intelligent_autosuggestions_enabled_internal
+        .is_supported_on_current_platform()
 }
 
 fn is_prompt_suggestions_toggleable(app: &AppContext) -> bool {
-    UserWorkspaces::as_ref(app).is_prompt_suggestions_toggleable()
-        && AISettings::as_ref(app)
-            .prompt_suggestions_enabled_internal
-            .is_supported_on_current_platform()
+    AISettings::as_ref(app)
+        .prompt_suggestions_enabled_internal
+        .is_supported_on_current_platform()
 }
 
 fn is_suggested_code_banners_toggleable(app: &AppContext) -> bool {
-    (is_prompt_suggestions_toggleable(app)
-        || UserWorkspaces::as_ref(app).is_code_suggestions_toggleable())
-        && AISettings::as_ref(app)
-            .code_suggestions_enabled_internal
-            .is_supported_on_current_platform()
+    AISettings::as_ref(app)
+        .code_suggestions_enabled_internal
+        .is_supported_on_current_platform()
 }
 
 fn is_natural_language_autosuggestions_toggleable(app: &AppContext) -> bool {
@@ -1248,21 +1237,11 @@ fn is_natural_language_autosuggestions_toggleable(app: &AppContext) -> bool {
             .is_supported_on_current_platform()
 }
 
-// TODO: Check if the user's enterprise billing policy allows toggling this feature.
-fn is_shared_block_title_generation_toggleable(
-    view_handle: &WeakViewHandle<WarpAgentPageView>,
-    app: &AppContext,
-) -> bool {
+fn is_shared_block_title_generation_toggleable(app: &AppContext) -> bool {
     FeatureFlag::SharedBlockTitleGeneration.is_enabled()
         && AISettings::as_ref(app)
             .shared_block_title_generation_enabled_internal
             .is_supported_on_current_platform()
-        && (!UserWorkspaces::as_ref(app)
-            .team_for_view_handle(view_handle, app)
-            .is_some_and(|team| team.billing_metadata.customer_type == CustomerType::Enterprise)
-            // Override the enterprise check for dogfood builds, as our dogfood team
-            // is an enterprise team.
-            || ChannelState::channel().is_dogfood())
 }
 
 fn is_git_operations_autogen_toggleable(app: &AppContext) -> bool {
@@ -1270,7 +1249,6 @@ fn is_git_operations_autogen_toggleable(app: &AppContext) -> bool {
         && AISettings::as_ref(app)
             .git_operations_autogen_enabled_internal
             .is_supported_on_current_platform()
-        && UserWorkspaces::as_ref(app).is_git_operations_ai_enabled()
 }
 
 /// The "Active AI" category's header trailing widget: the master switch for all of
@@ -1470,18 +1448,9 @@ impl SettingsWidget for NaturalLanguageAutosuggestionsWidget {
     }
 }
 
+#[derive(Default)]
 struct SharedBlockTitleGenerationWidget {
     toggle: SwitchStateHandle,
-    view_handle: WeakViewHandle<WarpAgentPageView>,
-}
-
-impl SharedBlockTitleGenerationWidget {
-    fn new(ctx: &ViewContext<WarpAgentPageView>) -> Self {
-        Self {
-            toggle: Default::default(),
-            view_handle: ctx.handle(),
-        }
-    }
 }
 
 impl SettingsWidget for SharedBlockTitleGenerationWidget {
@@ -1492,7 +1461,7 @@ impl SettingsWidget for SharedBlockTitleGenerationWidget {
     }
 
     fn should_render(&self, app: &AppContext) -> bool {
-        is_shared_block_title_generation_toggleable(&self.view_handle, app)
+        is_shared_block_title_generation_toggleable(app)
     }
 
     fn render(
@@ -2056,8 +2025,8 @@ impl SettingsWidget for VoiceWidget {
         "voice agent ai a.i. speech input natural language talk english spanish french german estonian finnish"
     }
 
-    fn should_render(&self, app: &AppContext) -> bool {
-        cfg!(feature = "voice_input") && UserWorkspaces::as_ref(app).is_voice_enabled()
+    fn should_render(&self, _app: &AppContext) -> bool {
+        cfg!(feature = "voice_input")
     }
 
     fn render(

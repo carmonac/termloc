@@ -18,11 +18,9 @@ use crate::ai::agent::{
     AIAgentExchangeId, AIAgentOutputStatus, FinishedAIAgentOutput, RenderableAIError,
 };
 use crate::ai::blocklist::agent_view::shortcuts::AgentShortcutViewModel;
-use crate::ai::blocklist::agent_view::zero_state_block::render_ambient_credits_banner;
 use crate::ai::blocklist::agent_view::{
     AgentViewController, AgentViewControllerEvent, is_in_cloud_context,
 };
-use crate::ai::blocklist::view_util::usage_display_unit;
 use crate::ai::blocklist::{
     BlocklistAIContextEvent, BlocklistAIContextModel, BlocklistAIHistoryEvent,
     BlocklistAIInputEvent, BlocklistAIInputModel,
@@ -30,11 +28,7 @@ use crate::ai::blocklist::{
 use crate::ai::document::ai_document_model::{AIDocumentModel, AIDocumentModelEvent};
 use crate::ai::mcp::TemplatableMCPServerManager;
 use crate::ai::mcp::templatable_manager::{FigmaMcpStatus, TemplatableMCPServerManagerEvent};
-use crate::ai::request_usage_model::{
-    AIRequestUsageModel, AIRequestUsageModelEvent, AMBIENT_AGENT_TRIAL_CREDIT_THRESHOLD,
-};
 use crate::search::slash_command_menu::static_commands::commands;
-use crate::settings::{AISettings, AISettingsChangedEvent, UsageDisplayUnit};
 use crate::terminal::input::buffer_model::{InputBufferModel, InputBufferUpdateEvent};
 use crate::terminal::input::message_bar::attached_context::{
     AttachedBlocksMessageProducer, AttachedContextArgs, AttachedTextSelectionMessageProducer,
@@ -73,8 +67,6 @@ pub struct AgentMessageBarMouseStates {
     pub figma_install_button: MouseStateHandle,
     /// Mouse state handle for the "Enable Figma MCP" contextual button.
     pub figma_enable_button: MouseStateHandle,
-    /// Mouse state handle for dismissing the ambient credits banner.
-    pub ambient_credits_banner_close: MouseStateHandle,
 }
 
 /// Renders contextual hint text at the bottom of the agent view status bar.
@@ -97,11 +89,6 @@ pub struct AgentMessageBar {
 impl Entity for AgentMessageBar {
     type Event = ();
 }
-#[derive(Clone, Debug)]
-pub enum AgentMessageBarAction {
-    DismissAmbientCreditsBanner,
-}
-
 impl AgentMessageBar {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -218,22 +205,6 @@ impl AgentMessageBar {
                 },
             );
         }
-
-        ctx.subscribe_to_model(&AIRequestUsageModel::handle(ctx), |_, _, event, ctx| {
-            if matches!(
-                event,
-                AIRequestUsageModelEvent::RequestUsageUpdated
-                    | AIRequestUsageModelEvent::CreditAvailabilityUpdated
-                    | AIRequestUsageModelEvent::AmbientCreditsBannerDismissed
-            ) {
-                ctx.notify();
-            }
-        });
-        ctx.subscribe_to_model(&AISettings::handle(ctx), |_, _, event, ctx| {
-            if matches!(event, AISettingsChangedEvent::UsageDisplayUnit { .. }) {
-                ctx.notify();
-            }
-        });
 
         Self {
             agent_view_controller,
@@ -354,33 +325,6 @@ impl View for AgentMessageBar {
             return Empty::new().finish();
         };
 
-        let right_element = if cfg!(target_family = "wasm") {
-            None
-        } else {
-            let request_usage_model = AIRequestUsageModel::as_ref(app);
-            request_usage_model
-                .ambient_only_credits_remaining()
-                .filter(|credits| {
-                    *credits >= AMBIENT_AGENT_TRIAL_CREDIT_THRESHOLD
-                        && !request_usage_model.is_ambient_credits_banner_dismissed()
-                })
-                .map(|credits| {
-                    let usage_cents = match usage_display_unit(app) {
-                        UsageDisplayUnit::Dollars => {
-                            request_usage_model.ambient_only_usage_cents_remaining()
-                        }
-                        UsageDisplayUnit::Credits => None,
-                    };
-                    render_ambient_credits_banner(
-                        credits,
-                        usage_cents,
-                        self.mouse_states.ambient_credits_banner_close.clone(),
-                        AgentMessageBarAction::DismissAmbientCreditsBanner,
-                        app,
-                    )
-                })
-        };
-
         // Append a Figma MCP chip to the message if applicable.
         match self.figma_button_status(app) {
             Some(FigmaMcpStatus::NotInstalled) => {
@@ -410,23 +354,14 @@ impl View for AgentMessageBar {
             Some(FigmaMcpStatus::Running) | None => {}
         }
 
-        render_standard_message_bar(message, right_element, app)
+        render_standard_message_bar(message, app)
     }
 }
 
 impl TypedActionView for AgentMessageBar {
-    type Action = AgentMessageBarAction;
-
-    fn handle_action(&mut self, action: &Self::Action, ctx: &mut ViewContext<Self>) {
-        match action {
-            AgentMessageBarAction::DismissAmbientCreditsBanner => {
-                AIRequestUsageModel::handle(ctx).update(ctx, |model, ctx| {
-                    model.dismiss_ambient_credits_banner(ctx);
-                });
-            }
-        }
-    }
+    type Action = ();
 }
+
 /// Arguments for agent message producers.
 #[derive(Copy, Clone)]
 pub struct AgentMessageArgs<'a> {

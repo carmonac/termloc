@@ -2,7 +2,6 @@
 //!
 //! This includes text, code snippets, suggested commands, and interactive inline action UX.
 use std::cell::OnceCell;
-use std::cmp::Ordering;
 use std::collections::HashMap;
 #[allow(unused_imports)]
 use std::path::{Component, Path};
@@ -17,7 +16,6 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use pathfinder_color::ColorU;
-use pathfinder_geometry::vector::vec2f;
 use ui_components::{Component as _, Options as _, button};
 use warp_core::channel::ChannelState;
 use warp_core::ui::theme::color::internal_colors;
@@ -25,10 +23,9 @@ use warp_errors::report_error;
 use warp_util::local_or_remote_path::LocalOrRemotePath;
 use warpui::elements::new_scrollable::SingleAxisConfig;
 use warpui::elements::{
-    Align, Border, ChildAnchor, ChildView, ConstrainedBox, Container, CornerRadius,
-    CrossAxisAlignment, Empty, Expanded, Fill, Flex, FormattedTextElement, Hoverable,
-    MainAxisAlignment, MainAxisSize, NewScrollable, OffsetPositioning, ParentAnchor, ParentElement,
-    ParentOffsetBounds, Radius, Shrinkable, Stack, Text, Wrap,
+    Align, Border, ChildView, ConstrainedBox, Container, CornerRadius, CrossAxisAlignment,
+    Expanded, Fill, Flex, FormattedTextElement, Hoverable, MainAxisAlignment, MainAxisSize,
+    NewScrollable, ParentElement, Radius, Shrinkable, Text, Wrap,
 };
 use warpui::keymap::Keystroke;
 use warpui::platform::{Cursor, OperatingSystem};
@@ -41,8 +38,7 @@ use warpui::{
 use super::common::{
     DebugFooterProps, FailedOutputProps, FindContext, STATUS_FOOTER_VERTICAL_PADDING,
     STATUS_ICON_SIZE_DELTA, TextSectionsProps, render_debug_footer, render_failed_output,
-    render_informational_footer, render_output_status_text, render_scrollable_collapsible_content,
-    render_text_sections,
+    render_output_status_text, render_scrollable_collapsible_content, render_text_sections,
 };
 use super::imported_comments::render_imported_comments;
 use super::todos::{render_completed_todo_items, render_todos};
@@ -55,7 +51,6 @@ use crate::ai::agent::api::ServerConversationToken;
 use crate::ai::agent::comment::ReviewComment;
 use crate::ai::agent::conversation::{RecordingSpanInfo, RecordingSpanStatus};
 use crate::ai::agent::icons::{self, gray_stop_icon, yellow_stop_icon};
-use crate::ai::agent::request_metadata::TurnPanelData;
 use crate::ai::agent::task::TaskId;
 use crate::ai::agent::{
     AIAgentAction, AIAgentActionId, AIAgentActionResult, AIAgentActionResultType,
@@ -95,13 +90,6 @@ use crate::ai::blocklist::inline_action::web_fetch::WebFetchView;
 use crate::ai::blocklist::inline_action::web_search::WebSearchView;
 use crate::ai::blocklist::keyboard_navigable_buttons::KeyboardNavigableButtons;
 use crate::ai::blocklist::secret_redaction::SecretRedactionState;
-use crate::ai::blocklist::usage::request_metadata_turn_view::{
-    RequestMetadataTurnView, turn_panel_tooltip_text_for_data, turn_panel_usage_display_unit,
-};
-use crate::ai::blocklist::view_util::{
-    FAILED_OUTPUT_USAGE_NOTICE_TEXT, effective_usage_unit, format_usage,
-    should_show_failed_output_usage_notice,
-};
 use crate::ai::blocklist::{AIBlockResponseRating, BlocklistAIActionModel, SuggestionChipView};
 use crate::ai::paths::shell_native_absolute_path;
 use crate::ai::skills::{
@@ -125,8 +113,6 @@ use crate::view_components::compactible_action_button::{
     CompactibleActionButton, RenderCompactibleActionButton, SMALL_SIZE_SWITCH_THRESHOLD,
 };
 use crate::workspace::WorkspaceAction;
-use crate::workspaces::user_workspaces::UserWorkspaces;
-use crate::workspaces::workspace::ChargeUnit;
 use crate::{AIAgentTodoList, FeatureFlag};
 
 /// Data required to render the AI block output component.
@@ -164,7 +150,6 @@ pub(crate) struct Props<'a> {
     pub(super) manage_rules_button: &'a ViewHandle<ActionButton>,
     pub(super) keyboard_navigable_buttons: Option<&'a ViewHandle<KeyboardNavigableButtons>>,
     pub(super) response_rating: &'a OnceCell<AIBlockResponseRating>,
-    pub(super) request_refunded_count: Option<i32>,
     pub(super) search_codebase_view: &'a HashMap<AIAgentActionId, ViewHandle<SearchCodebaseView>>,
     pub(super) web_search_views: &'a HashMap<MessageId, ViewHandle<WebSearchView>>,
     pub(super) web_fetch_views: &'a HashMap<MessageId, ViewHandle<WebFetchView>>,
@@ -175,9 +160,6 @@ pub(crate) struct Props<'a> {
     pub(super) current_todo_list: Option<&'a AIAgentTodoList>,
     pub(super) has_accepted_edits: bool,
     pub(super) finish_reason: Option<&'a FinishReason>,
-    pub(super) is_usage_footer_expanded: bool,
-    pub(super) is_turn_panel_expanded: bool,
-    pub(super) turn_panel_view: Option<&'a ViewHandle<RequestMetadataTurnView>>,
     pub(super) terminal_view_id: EntityId,
     pub(super) is_conversation_transcript_viewer: bool,
     pub(super) imported_comments: &'a HashMap<AIAgentActionId, ImportedCommentGroup>,
@@ -1077,38 +1059,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                     .then(|| render_response_footer(props, app))
                     .flatten()
                 {
-                    if let Some(turn_panel_view) = props.turn_panel_view {
-                        output_items.add_child(ChildView::new(turn_panel_view).finish());
-                    }
                     output_items.add_child(footer);
-                }
-
-                if let Some(request_refunded_count) = props.request_refunded_count {
-                    match request_refunded_count.cmp(&1) {
-                        Ordering::Equal | Ordering::Less => {
-                            output_items.add_child(
-                                render_informational_footer(
-                                    app,
-                                    "Sorry you had a bad experience with this interaction. We've refunded you 1 credit. We appreciate your feedback!"
-                                        .to_string(),
-                                )
-                                .with_agent_output_item_spacing(app)
-                                .finish(),
-                            );
-                        }
-                        Ordering::Greater => {
-                            output_items.add_child(
-                                render_informational_footer(
-                                    app,
-                                    format!(
-                                        "Sorry you had a bad experience with this interaction. We've refunded you {request_refunded_count} credits. We appreciate your feedback!"
-                                    ),
-                                )
-                                .with_agent_output_item_spacing(app)
-                                .finish(),
-                            );
-                        }
-                    }
                 }
             }
         }
@@ -1117,11 +1068,10 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
     if request_type.is_active()
         && let AIBlockOutputStatus::Failed { error, .. } = &status
     {
-        // While an automatic resume is still in flight, keep the failed exchange
-        // quiet: skip the error banner, the "won't count towards usage" notice, and
-        // the debug footer. The full failure UI is surfaced only once recovery has
-        // actually failed. Dogfood builds (Local/Dev) opt out so developers still see
-        // every transport failure aggressively.
+        // While an automatic resume is still in flight, keep the failed exchange quiet: skip the
+        // error banner and the debug footer. The full failure UI is surfaced only once recovery has
+        // actually failed. Dogfood builds (Local/Dev) opt out so developers still see every
+        // transport failure aggressively.
         if !error.should_suppress_during_recovery() {
             output_items.add_child(
                 render_failed_output(
@@ -1136,18 +1086,10 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                 .finish(),
             );
 
-            if should_show_failed_output_usage_notice(
-                error,
-                props.model.is_latest_visible_exchange_in_root_task(app),
-                has_expanded_last_requested_command,
-                props.model.is_restored(),
-            ) {
-                output_items.add_child(
-                    render_informational_footer(app, FAILED_OUTPUT_USAGE_NOTICE_TEXT.to_string())
-                        .with_agent_output_item_spacing(app)
-                        .finish(),
-                );
-
+            if props.model.is_latest_visible_exchange_in_root_task(app)
+                && !has_expanded_last_requested_command
+                && !props.model.is_restored()
+            {
                 output_items.add_child(
                     render_debug_footer(
                         DebugFooterProps {
@@ -3271,13 +3213,6 @@ fn footer_icon_button_styles(app: &AppContext) -> (UiComponentStyles, UiComponen
     (style_override, style_override_with_background)
 }
 
-/// The Turn panel contents for the user-visible turn this block closes
-fn turn_panel_data_for_block(props: Props, app: &AppContext) -> Option<TurnPanelData> {
-    let exchange_id = props.model.exchange_id(app)?;
-    let conversation = props.model.conversation(app)?;
-    conversation.turn_panel_data(exchange_id)
-}
-
 fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Element>> {
     if props.model.status(app).is_streaming() {
         return None;
@@ -3440,26 +3375,6 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         flex.add_child(fork_button);
     }
 
-    let turn_panel_data = match UserWorkspaces::as_ref(app).charge_unit() {
-        ChargeUnit::Cents => turn_panel_data_for_block(props, app),
-        ChargeUnit::Credits => None,
-    };
-    if let Some(data) = turn_panel_data {
-        flex.add_child(
-            Container::new(render_turn_panel_button(
-                props,
-                &data,
-                style_override,
-                style_override_with_background,
-                app,
-            ))
-            .with_margin_left(4.)
-            .finish(),
-        );
-    } else {
-        flex.add_child(render_usage_button(props, app));
-    }
-
     // Review changes button.
     if props.has_accepted_edits {
         // Only show Review Changes button if we're in a git repository
@@ -3488,187 +3403,6 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
     }
 
     Some(flex.finish().with_content_item_spacing().finish())
-}
-
-/// Renders the per-turn icon that, on click, opens/closes the docked "Turn" panel backed by the
-/// turn's usage data.
-fn render_turn_panel_button(
-    props: Props,
-    data: &TurnPanelData,
-    style_override: UiComponentStyles,
-    style_override_with_background: UiComponentStyles,
-    app: &AppContext,
-) -> Box<dyn Element> {
-    let appearance = Appearance::as_ref(app);
-    let ui_builder = appearance.ui_builder().clone();
-    let tooltip_text =
-        turn_panel_tooltip_text_for_data(data, turn_panel_usage_display_unit(data, app));
-
-    icon_button(
-        appearance,
-        Icon::TurnUsagePie,
-        // Keep the trigger visibly "active" while the panel is open, not just while
-        // hovered/clicked, so the icon reads as the panel's open/closed toggle.
-        props.is_turn_panel_expanded,
-        props.state_handles.turn_panel_button_handle.clone(),
-    )
-    .with_tooltip(move || ui_builder.tool_tip(tooltip_text.clone()).build().finish())
-    .with_style(style_override)
-    .with_hovered_styles(style_override_with_background)
-    .with_active_styles(style_override_with_background)
-    .build()
-    .on_click(|ctx, _, _| {
-        ctx.dispatch_typed_action(AIBlockAction::ToggleIsTurnPanelExpanded);
-    })
-    .finish()
-}
-
-/// Renders the usage button that, on click, will expand & collapse the usage summary footer.
-fn render_usage_button(props: Props, app: &AppContext) -> Box<dyn Element> {
-    let Some(conversation) = props.model.conversation(app) else {
-        return Empty::new().finish();
-    };
-
-    // If this conversation has no usage metadata (e.g. a forked conversation from
-    // mid-way through a prior conversation where the server did not send
-    // ConversationUsageMetadata), avoid rendering the usage button entirely.
-    let headline_credits = conversation.credits_spent();
-    let headline_cost_in_cents = conversation.usage_totals().total_cost_in_cents();
-    let has_any_usage = headline_credits > 0.0
-        || conversation.credits_spent_for_last_block().is_some()
-        || !conversation.token_usage().is_empty()
-        || conversation.tool_usage_metadata().total_tool_calls() > 0;
-    if !has_any_usage {
-        return Empty::new().finish();
-    }
-
-    let appearance = Appearance::as_ref(app);
-    let ui_builder = appearance.ui_builder().clone();
-
-    let expansion_icon = if props.is_usage_footer_expanded {
-        Icon::ChevronDown
-    } else {
-        Icon::ChevronRight
-    };
-
-    let total_credits_spent = headline_credits;
-    let mut usage_text = usage_pill_text(total_credits_spent, headline_cost_in_cents, app);
-    if let Some(credits_spent_for_last_block) = conversation.credits_spent_for_last_block() {
-        // Only show the credits spent for the last block if it is different from the total credits spent
-        // and we spent a non-zero amount of credits for the last block.
-        // Avoid showing the credits spent for the last block if the request failed, as we refund user
-        // credits in that case (so no credits were in fact spent).
-        if credits_spent_for_last_block > 0.0
-            && total_credits_spent != credits_spent_for_last_block
-            && props.model.status(app).error().is_none()
-        {
-            let last_block_text = usage_pill_text(
-                credits_spent_for_last_block,
-                conversation
-                    .charged_usage_for_last_block()
-                    .map(|usage| usage.total_cost_in_cents()),
-                app,
-            );
-            usage_text = format!("{usage_text} (+{last_block_text})");
-        }
-    }
-
-    let icon_size = icon_size(app);
-    let button_row = Flex::row()
-        .with_cross_axis_alignment(CrossAxisAlignment::Center)
-        .with_main_axis_size(MainAxisSize::Min)
-        .with_child(
-            Container::new(
-                Text::new_inline(
-                    usage_text,
-                    appearance.ui_font_family(),
-                    appearance.monospace_font_size(),
-                )
-                .with_color(
-                    appearance
-                        .theme()
-                        .sub_text_color(appearance.theme().background())
-                        .into(),
-                )
-                .with_selectable(false)
-                .finish(),
-            )
-            .with_padding_top(2.)
-            .with_margin_left(4.)
-            .finish(),
-        )
-        .with_child(
-            Container::new(
-                // Expansion icon
-                ConstrainedBox::new(
-                    expansion_icon
-                        .to_warpui_icon(
-                            appearance
-                                .theme()
-                                .sub_text_color(appearance.theme().background()),
-                        )
-                        .finish(),
-                )
-                .with_width(icon_size)
-                .with_height(icon_size)
-                .finish(),
-            )
-            .with_margin_top(1.)
-            .finish(),
-        );
-
-    Hoverable::new(
-        props.state_handles.usage_button_handle.clone(),
-        |mouse_state| {
-            let mut content = Container::new(button_row.finish());
-
-            if mouse_state.is_hovered() || mouse_state.is_clicked() {
-                let background = if mouse_state.is_clicked() {
-                    appearance.theme().background()
-                } else {
-                    blended_colors::neutral_4(appearance.theme()).into()
-                };
-
-                content = content
-                    .with_background(background)
-                    .with_corner_radius(CornerRadius::with_all(Radius::Pixels(4.)));
-
-                // Show tooltip on hover or while clicked
-                let mut stack = Stack::new().with_child(content.finish());
-                let tooltip = ui_builder
-                    .tool_tip("Show credit usage details".to_string())
-                    .build()
-                    .finish();
-                stack.add_positioned_overlay_child(
-                    tooltip,
-                    OffsetPositioning::offset_from_parent(
-                        vec2f(0., 8.),
-                        ParentOffsetBounds::WindowByPosition,
-                        ParentAnchor::BottomMiddle,
-                        ChildAnchor::TopMiddle,
-                    ),
-                );
-
-                stack.finish()
-            } else {
-                content.finish()
-            }
-        },
-    )
-    .on_click(|ctx, _, _| {
-        ctx.dispatch_typed_action(AIBlockAction::ToggleIsUsageFooterExpanded);
-    })
-    .with_cursor(Cursor::PointingHand)
-    .finish()
-}
-
-/// One figure of the block footer's usage pill, in the unit resolved for it.
-fn usage_pill_text(credits: f32, cost_in_cents: Option<f32>, app: &AppContext) -> String {
-    format_usage(
-        credits,
-        cost_in_cents,
-        effective_usage_unit(cost_in_cents, app),
-    )
 }
 
 pub fn action_icon<V: View>(

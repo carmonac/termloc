@@ -44,8 +44,6 @@ bitflags! {
 pub enum SlashCommandKind {
     Agent,
     AddMcp,
-    Upgrade,
-    ManageBilling,
     AutoApprove,
     Statusline,
     ResetStatusline,
@@ -85,8 +83,6 @@ pub enum SlashCommandKind {
     Queue,
     ForkAndCompact,
     ForkFrom,
-    Usage,
-    Cost,
     Conversations,
     Prompts,
     Rewind,

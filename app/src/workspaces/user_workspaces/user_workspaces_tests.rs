@@ -9,7 +9,6 @@ use warpui::{AddSingletonModel, App, Element, TypedActionView, View, ViewHandle,
 use warpui_extras::user_preferences;
 
 use super::*;
-use crate::ai::blocklist::is_agent_mode_autonomy_allowed;
 use crate::ai::execution_profiles::ActionPermission;
 use crate::ai::llms::{AvailableLLMs, LLMInfo, MODELS_BY_FEATURE_CACHE_KEY};
 use crate::cloud_object::model::persistence::CloudModel;
@@ -27,14 +26,13 @@ use crate::settings::{
 use crate::system::SystemStats;
 use crate::workflows::workflow::Workflow;
 use crate::workflows::{CloudWorkflow, CloudWorkflowModel};
-use crate::workspaces::team::{Team, TeamMember, TeamVisibility};
+use crate::workspaces::team::{Team, TeamVisibility};
 use crate::workspaces::team_tester::TeamTesterStatus;
 use crate::workspaces::update_manager::TeamUpdateManager;
 use crate::workspaces::user_workspaces::UserWorkspaces;
 use crate::workspaces::workspace::{
-    AdminEnablementSetting, EnforceableSetting, LinkSharingSettings, MultiAdminPolicy,
-    PurchaseAddOnCreditsPolicy, SandboxedAgentSettings, SplitListSetting, TeamLinkSharingSettings,
-    Workspace,
+    AdminEnablementSetting, EnforceableSetting, LinkSharingSettings, SandboxedAgentSettings,
+    SplitListSetting, TeamLinkSharingSettings, Workspace,
 };
 
 #[derive(Default)]
@@ -111,12 +109,9 @@ fn team_for_test() -> Team {
         members: vec![],
         pending_email_invites: vec![],
         invite_link_domain_restrictions: vec![],
-        billing_metadata: Default::default(),
-        stripe_customer_id: None,
         settings: Default::default(),
         feature_model_choice: Default::default(),
         is_eligible_for_discovery: false,
-        has_billing_history: false,
         visibility: TeamVisibility::Open,
     }
 }
@@ -125,50 +120,17 @@ fn workspace_for_test(team: &Team) -> Workspace {
     Workspace {
         uid: "workspace_uid123456789".to_string().into(),
         name: "test".to_string(),
-        stripe_customer_id: None,
         teams: vec![team.clone()],
         open_teams: vec![],
-        billing_metadata: team.billing_metadata.clone(),
-        bonus_grants_purchased_this_month: Default::default(),
-        billing_cycle_usage: None,
-        has_billing_history: false,
         settings: Default::default(),
         feature_model_choice: Default::default(),
         invite_link_domain_restrictions: vec![],
         pending_email_invites: vec![],
         is_eligible_for_discovery: false,
         members: vec![],
-        total_requests_used_since_last_refresh: 0,
     }
 }
 
-#[test]
-fn test_current_workspace_billing_metadata_uses_selected_teamless_workspace() {
-    let first_team = team_for_test();
-    let first_workspace = workspace_for_test(&first_team);
-    let mut second_workspace = workspace_for_test(&first_team);
-    second_workspace.uid = "workspace_uid987654321".to_string().into();
-    second_workspace.teams.clear();
-    second_workspace.billing_metadata.customer_type = CustomerType::Enterprise;
-    let second_workspace_uid = second_workspace.uid;
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![first_workspace, second_workspace]);
-
-        UserWorkspaces::handle(&app).update(&mut app, |user_workspaces, ctx| {
-            user_workspaces.set_current_workspace_uid(second_workspace_uid, ctx);
-        });
-
-        app.read(|ctx| {
-            assert_eq!(
-                UserWorkspaces::as_ref(ctx)
-                    .current_workspace_billing_metadata()
-                    .map(|metadata| metadata.customer_type),
-                Some(CustomerType::Enterprise)
-            );
-        });
-    })
-}
 #[test]
 fn test_window_team_assignment_is_immutable() {
     let first_team = team_for_test();
@@ -261,118 +223,6 @@ fn warp_agent_cli_upgrade_link_uses_channel_aware_fallback_without_a_user() {
             ChannelState::server_root_url().trim_end_matches('/'),
         )
     );
-}
-
-#[test]
-fn admin_billing_link_for_default_team_targets_the_first_admin_team() {
-    let email = "admin@example.com";
-    let user_uid = UserUid::new("admin");
-    let mut first_team = team_for_test();
-    first_team.members.push(TeamMember {
-        uid: user_uid,
-        email: email.to_owned(),
-        role: MembershipRole::Owner,
-        is_disabled: false,
-    });
-    let mut second_team = first_team.clone();
-    second_team.uid = 456.into();
-    let first_team_uid = first_team.uid;
-    let mut workspace = workspace_for_test(&first_team);
-    workspace.teams.push(second_team);
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            assert_eq!(
-                UserWorkspaces::as_ref(ctx).admin_billing_link_for_default_team(email),
-                Some(format!(
-                    "{}/admin/{first_team_uid}/billing",
-                    ChannelState::server_root_url().trim_end_matches('/'),
-                ))
-            );
-        });
-    })
-}
-
-#[test]
-fn admin_billing_link_for_default_team_accepts_admin_when_multi_admin_is_enabled() {
-    let email = "admin@example.com";
-    let user_uid = UserUid::new("admin");
-    let mut team = team_for_test();
-    team.billing_metadata.tier.multi_admin_policy = Some(MultiAdminPolicy { enabled: true });
-    team.members.push(TeamMember {
-        uid: user_uid,
-        email: email.to_owned(),
-        role: MembershipRole::Admin,
-        is_disabled: false,
-    });
-    let team_uid = team.uid;
-    let workspace = workspace_for_test(&team);
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            assert_eq!(
-                UserWorkspaces::as_ref(ctx).admin_billing_link_for_default_team(email),
-                Some(format!(
-                    "{}/admin/{team_uid}/billing",
-                    ChannelState::server_root_url().trim_end_matches('/'),
-                ))
-            );
-        });
-    })
-}
-
-#[test]
-fn admin_billing_link_for_default_team_rejects_admin_without_multi_admin_policy() {
-    let email = "admin@example.com";
-    let user_uid = UserUid::new("admin");
-    let mut team = team_for_test();
-    team.members.push(TeamMember {
-        uid: user_uid,
-        email: email.to_owned(),
-        role: MembershipRole::Admin,
-        is_disabled: false,
-    });
-    let workspace = workspace_for_test(&team);
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            assert_eq!(
-                UserWorkspaces::as_ref(ctx).admin_billing_link_for_default_team(email),
-                None
-            );
-        });
-    })
-}
-
-#[test]
-fn admin_billing_link_for_default_team_rejects_regular_members() {
-    let email = "member@example.com";
-    let user_uid = UserUid::new("member");
-    let mut team = team_for_test();
-    team.members.push(TeamMember {
-        uid: user_uid,
-        email: email.to_owned(),
-        role: MembershipRole::User,
-        is_disabled: false,
-    });
-    let workspace = workspace_for_test(&team);
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            assert_eq!(
-                UserWorkspaces::as_ref(ctx).admin_billing_link_for_default_team(email),
-                None
-            );
-        });
-    })
 }
 
 #[test]
@@ -1197,101 +1047,6 @@ fn test_disjoint_admin_allowlists_are_an_override_that_permits_nothing() {
     })
 }
 
-/// The tier policy is the interim fallback for a team whose admins enforce nothing, and it
-/// is billing entitlement, so it is read from the workspace rather than per team.
-fn workspace_without_autonomy_entitlement(teams: Vec<Team>) -> Workspace {
-    let mut workspace = workspace_for_test(&team_for_test());
-    workspace.teams = teams;
-    workspace.billing_metadata.tier.ai_autonomy_policy = Some(AIAutonomyPolicy {
-        is_enabled: false,
-        toggleable: true,
-    });
-    workspace
-}
-
-#[test]
-fn test_ai_autonomy_allowed_uses_the_scoped_team() {
-    let (team_a, team_b) = two_teams();
-    let team_a = team_enforcing_execute_commands(&team_a, ActionPermission::AlwaysAsk);
-    let workspace = workspace_without_autonomy_entitlement(vec![team_a.clone(), team_b.clone()]);
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-        let (window_a, view_a) = create_test_window(&mut app);
-        let (window_b, view_b) = create_test_window(&mut app);
-        UserWorkspaces::handle(&app).update(&mut app, |user_workspaces, ctx| {
-            user_workspaces.set_team_for_window(window_a, team_a.uid, ctx);
-            user_workspaces.set_team_for_window(window_b, team_b.uid, ctx);
-        });
-        let view_a = view_a.downgrade();
-        let view_b = view_b.downgrade();
-
-        app.read(|ctx| {
-            let user_workspaces = UserWorkspaces::as_ref(ctx);
-            let scope_a = user_workspaces.team_context(&view_a, ctx);
-            let scope_b = user_workspaces.team_context(&view_b, ctx);
-            assert!(
-                is_agent_mode_autonomy_allowed(&scope_a, ctx),
-                "team A configures autonomy, so its window should allow autonomy"
-            );
-            assert!(
-                !is_agent_mode_autonomy_allowed(&scope_b, ctx),
-                "team B configures no autonomy policy and the workspace tier does not allow it"
-            );
-        });
-    })
-}
-
-#[test]
-fn test_ai_autonomy_allowed_uses_the_workspace_tier_fallback() {
-    let team = team_for_test();
-    let mut workspace = workspace_for_test(&team);
-    workspace.billing_metadata.tier.ai_autonomy_policy = Some(AIAutonomyPolicy {
-        is_enabled: true,
-        toggleable: true,
-    });
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-        let (window_id, view) = create_test_window(&mut app);
-        UserWorkspaces::handle(&app).update(&mut app, |user_workspaces, ctx| {
-            user_workspaces.set_team_for_window(window_id, team.uid, ctx);
-        });
-        let view = view.downgrade();
-
-        app.read(|ctx| {
-            let scope = UserWorkspaces::as_ref(ctx).team_context(&view, ctx);
-            assert!(is_agent_mode_autonomy_allowed(&scope, ctx));
-        });
-    })
-}
-
-#[test]
-fn test_ai_autonomy_falls_back_to_the_workspace_layer_with_no_teams() {
-    let mut workspace = workspace_without_autonomy_entitlement(vec![]);
-    workspace
-        .settings
-        .ai_autonomy_settings
-        .execute_commands_setting = Some(ActionPermission::AlwaysAsk);
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-        let (window_id, view) = create_test_window(&mut app);
-        UserWorkspaces::handle(&app).update(&mut app, |user_workspaces, ctx| {
-            user_workspaces.register_window(window_id, None, ctx);
-        });
-        let view = view.downgrade();
-
-        app.read(|ctx| {
-            let scope = UserWorkspaces::as_ref(ctx).team_context(&view, ctx);
-            assert!(
-                is_agent_mode_autonomy_allowed(&scope, ctx),
-                "a user with no teams reads the workspace layer, which is team-neutral for them"
-            );
-        });
-    })
-}
-
 fn team_with_sandboxed_denylist(team: &Team, patterns: &[&str]) -> Team {
     let mut team = team.clone();
     team.settings.sandboxed_agent.execute_commands_denylist = SplitListSetting {
@@ -1777,32 +1532,23 @@ fn test_joining_team_moves_objects() {
         members: vec![],
         pending_email_invites: vec![],
         invite_link_domain_restrictions: vec![],
-        billing_metadata: Default::default(),
-        stripe_customer_id: None,
         settings: Default::default(),
         feature_model_choice: Default::default(),
         is_eligible_for_discovery: false,
-        has_billing_history: false,
         visibility: TeamVisibility::Open,
     };
     let team_uid = team.uid;
     let workspace = Workspace {
         uid: "workspace_uid123456789".to_string().into(),
         name: "test".to_string(),
-        stripe_customer_id: None,
         teams: vec![team.clone()],
         open_teams: vec![],
-        billing_metadata: Default::default(),
-        bonus_grants_purchased_this_month: Default::default(),
-        billing_cycle_usage: None,
-        has_billing_history: false,
         settings: Default::default(),
         feature_model_choice: Default::default(),
         invite_link_domain_restrictions: vec![],
         pending_email_invites: vec![],
         is_eligible_for_discovery: false,
         members: vec![],
-        total_requests_used_since_last_refresh: 0,
     };
 
     let shared_object = CloudWorkflow::new_local(
@@ -2045,32 +1791,23 @@ fn test_leaving_team_moves_objects() {
         members: vec![],
         pending_email_invites: vec![],
         invite_link_domain_restrictions: vec![],
-        billing_metadata: Default::default(),
-        stripe_customer_id: None,
         settings: Default::default(),
         feature_model_choice: Default::default(),
         is_eligible_for_discovery: false,
-        has_billing_history: false,
         visibility: TeamVisibility::Open,
     };
     let team_uid = team.uid;
     let workspace = Workspace {
         uid: "workspace_uid123456789".to_string().into(),
         name: "test".to_string(),
-        stripe_customer_id: None,
         teams: vec![team.clone()],
         open_teams: vec![],
-        billing_metadata: Default::default(),
-        bonus_grants_purchased_this_month: Default::default(),
-        billing_cycle_usage: None,
-        has_billing_history: false,
         settings: Default::default(),
         feature_model_choice: Default::default(),
         invite_link_domain_restrictions: vec![],
         pending_email_invites: vec![],
         is_eligible_for_discovery: false,
         members: vec![],
-        total_requests_used_since_last_refresh: 0,
     };
 
     let shared_object = CloudWorkflow::new_local(
@@ -2115,98 +1852,6 @@ fn test_leaving_team_moves_objects() {
                 .unwrap()
                 .space(ctx);
             assert_eq!(space, Space::Shared);
-        });
-    })
-}
-
-#[test]
-fn test_team_billing_metadata_prefers_team_over_workspace() {
-    let mut team = team_for_test();
-    team.billing_metadata.customer_type = CustomerType::Build;
-    let mut workspace = workspace_for_test(&team);
-    workspace.billing_metadata.customer_type = CustomerType::Free;
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            let user_workspaces = UserWorkspaces::as_ref(ctx);
-            let team = user_workspaces.team_from_uid(123.into());
-            assert!(team.is_some(), "test team should exist");
-            assert_eq!(
-                user_workspaces
-                    .team_billing_metadata(team)
-                    .map(|billing| billing.customer_type),
-                Some(CustomerType::Build),
-                "the team's billing metadata should win when a team exists"
-            );
-            assert_eq!(
-                user_workspaces
-                    .team_billing_metadata(None)
-                    .map(|billing| billing.customer_type),
-                Some(CustomerType::Free),
-                "the workspace's billing metadata should be used without a team"
-            );
-        });
-    })
-}
-
-#[test]
-fn test_team_billing_metadata_enables_teamless_premium_purchases() {
-    let team = team_for_test();
-    let mut workspace = workspace_for_test(&team);
-    workspace.teams.clear();
-    workspace
-        .billing_metadata
-        .tier
-        .purchase_add_on_credits_policy = Some(PurchaseAddOnCreditsPolicy {
-        enabled: false,
-        premium_enabled: true,
-        price_premium_bps: 1000,
-    });
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            let user_workspaces = UserWorkspaces::as_ref(ctx);
-            assert!(!user_workspaces.has_teams(), "user should be teamless");
-            let billing = user_workspaces.team_billing_metadata(None);
-            assert!(
-                billing.is_some_and(|billing| billing.is_purchase_add_on_credits_policy_enabled()),
-                "premiumEnabled on the workspace policy should enable purchases without a team"
-            );
-            assert_eq!(
-                billing.map_or(0, |billing| billing.addon_credits_price_premium_bps()),
-                1000
-            );
-        });
-    })
-}
-
-#[test]
-fn test_team_billing_metadata_disabled_policy_stays_disabled_without_team() {
-    let team = team_for_test();
-    let mut workspace = workspace_for_test(&team);
-    workspace.teams.clear();
-    workspace
-        .billing_metadata
-        .tier
-        .purchase_add_on_credits_policy = Some(PurchaseAddOnCreditsPolicy {
-        enabled: false,
-        premium_enabled: false,
-        price_premium_bps: 0,
-    });
-
-    App::test((), |mut app| async move {
-        initialize_window_team_test_app(&mut app, vec![workspace]);
-
-        app.read(|ctx| {
-            let billing = UserWorkspaces::as_ref(ctx).team_billing_metadata(None);
-            assert!(
-                !billing.is_some_and(|billing| billing.is_purchase_add_on_credits_policy_enabled()),
-                "a fully disabled policy should keep purchases disabled without a team"
-            );
         });
     })
 }

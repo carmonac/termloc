@@ -73,8 +73,6 @@ pub struct AgentConversationDisplayData {
     pub last_updated: DateTime<Utc>,
     pub status: AgentRunDisplayStatus,
     pub creator: AgentConversationPrincipal,
-    pub request_usage: Option<f32>,
-    pub cost_in_cents: Option<f32>,
     pub working_directory: Option<String>,
     pub harness: Option<Harness>,
     pub artifacts: Vec<Artifact>,
@@ -200,34 +198,6 @@ fn conversation_display_status(
         .unwrap_or(AgentRunDisplayStatus::ConversationSucceeded)
 }
 
-fn conversation_request_usage(
-    metadata: &ConversationMetadata,
-    history_model: &BlocklistAIHistoryModel,
-) -> Option<f32> {
-    history_model
-        .conversation(&metadata.nav_data.id)
-        .map(|conversation| conversation.credits_spent())
-        .or_else(|| {
-            history_model
-                .get_conversation_metadata(&metadata.nav_data.id)
-                .and_then(|metadata| metadata.credits_spent)
-        })
-}
-
-fn conversation_cost_in_cents(
-    metadata: &ConversationMetadata,
-    history_model: &BlocklistAIHistoryModel,
-) -> Option<f32> {
-    history_model
-        .conversation(&metadata.nav_data.id)
-        .and_then(|conversation| conversation.usage_totals().total_cost_in_cents())
-        .or_else(|| {
-            history_model
-                .get_conversation_metadata(&metadata.nav_data.id)
-                .and_then(|metadata| metadata.server_conversation_metadata.as_ref())
-                .and_then(|metadata| metadata.usage.billed_cost_in_cents())
-        })
-}
 fn conversation_artifacts(
     metadata: &ConversationMetadata,
     history_model: &BlocklistAIHistoryModel,
@@ -348,8 +318,6 @@ fn entry_for_conversation_parts(
             last_updated: metadata.nav_data.last_updated.into(),
             status: status.clone(),
             creator: conversation_creator(&metadata, history_model, app),
-            request_usage: conversation_request_usage(&metadata, history_model),
-            cost_in_cents: conversation_cost_in_cents(&metadata, history_model),
             working_directory: metadata
                 .nav_data
                 .latest_working_directory

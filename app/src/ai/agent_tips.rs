@@ -21,7 +21,6 @@ use crate::workspace::WorkspaceAction;
 use crate::workspace::view::{
     TOGGLE_COMMAND_PALETTE_KEYBINDING_NAME, TOGGLE_RIGHT_PANEL_BINDING_NAME,
 };
-use crate::workspaces::user_workspaces::UserWorkspaces;
 
 /// Trait for tip implementations that can be displayed to users.
 /// Tips provide helpful information with optional keybindings.
@@ -229,12 +228,6 @@ static DEFAULT_TIPS: LazyLock<Vec<AgentTip>> = LazyLock::new(|| {
             kind: AgentTipKind::SlashCommands,
         },
         AgentTip {
-            description: "`/usage` to show your current AI credits usage.".to_string(),
-            binding_name: None,
-            action: None,
-            kind: AgentTipKind::General,
-        },
-        AgentTip {
             description: "Right-click selected text to attach it as agent context.".to_string(),
             binding_name: None,
             action: None,
@@ -387,10 +380,7 @@ impl WorkspaceAction {
 pub fn get_agent_tips(ctx: &AppContext) -> Vec<AgentTip> {
     let mut tips = DEFAULT_TIPS.clone();
 
-    if cfg!(feature = "voice_input")
-        && UserWorkspaces::as_ref(ctx).is_voice_enabled()
-        && AISettings::as_ref(ctx).is_voice_input_enabled(ctx)
-    {
+    if AISettings::as_ref(ctx).is_voice_input_enabled(ctx) {
         tips.push(AgentTip {
             description: "Hold <keybinding> to speak your prompt directly to the agent."
                 .to_string(),

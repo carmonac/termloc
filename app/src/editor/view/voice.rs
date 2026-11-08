@@ -124,10 +124,6 @@ impl EditorView {
         options: VoiceTranscriptionOptions,
         ctx: &mut ViewContext<Self>,
     ) {
-        if !UserWorkspaces::handle(ctx).as_ref(ctx).is_voice_enabled() {
-            return;
-        }
-
         log::debug!("update_voice_transcription_options: {options:?}");
         self.voice_transcription_options = options;
         if !self.voice_transcription_options.is_enabled() {
@@ -150,9 +146,6 @@ impl EditorView {
         cancel_transcription: bool,
         ctx: &mut ViewContext<Self>,
     ) {
-        if !UserWorkspaces::handle(ctx).as_ref(ctx).is_voice_enabled() {
-            return;
-        }
         if cancel_transcription {
             self.stop_transcribing_voice_input(ctx);
             return;
@@ -204,10 +197,6 @@ impl EditorView {
         source: &voice_input::VoiceInputToggledFrom,
         ctx: &mut ViewContext<Self>,
     ) -> bool {
-        if !UserWorkspaces::handle(ctx).as_ref(ctx).is_voice_enabled() {
-            return false;
-        }
-
         if !matches!(
             Self::voice_options(ctx),
             VoiceTranscriptionOptions::Enabled { .. }
@@ -259,14 +248,6 @@ impl EditorView {
         match self.voice_input_state.lifecycle.state() {
             VoiceInputLifecycleState::Idle => {
                 if !self.voice_transcription_options.is_enabled() {
-                    return false;
-                }
-
-                if !crate::ai::AIRequestUsageModel::handle(ctx)
-                    .as_ref(ctx)
-                    .can_request_voice()
-                {
-                    self.voice_error_toast(super::VOICE_LIMIT_HIT_TOAST_TEXT, ctx);
                     return false;
                 }
 
@@ -400,12 +381,6 @@ impl EditorView {
     ) {
         let mut state = self.voice_input_state.clone();
         state.recording_handle = None;
-        if !UserWorkspaces::handle(ctx).as_ref(ctx).is_voice_enabled() {
-            if state.lifecycle.fail() {
-                self.set_voice_input_state(state, ctx);
-            }
-            return;
-        }
 
         match result {
             VoiceSessionResult::Audio { wav_base64 } => {

@@ -1743,7 +1743,6 @@ fn save_workspace(conn: &mut SqliteConnection, workspace: WorkspaceMetadata) -> 
         let new_team = NewTeam {
             name: team.name,
             server_uid: team.uid.into(),
-            billing_metadata_json: serde_json::to_string(&team.billing_metadata).ok(),
             feature_model_choice_json: serde_json::to_string(&team.feature_model_choice).ok(),
         };
         diesel::insert_into(teams)
@@ -1846,7 +1845,6 @@ fn save_workspaces(
                 .map(|team| NewTeam {
                     server_uid: team.uid.into(),
                     name: team.name.clone(),
-                    billing_metadata_json: serde_json::to_string(&team.billing_metadata).ok(),
                     feature_model_choice_json: serde_json::to_string(&team.feature_model_choice)
                         .ok(),
                 })
@@ -2536,7 +2534,9 @@ fn read_sqlite_data(
             .filter_map(box_persisted_generic_string_object),
     );
 
-    let db_teams: Vec<model::Team> = schema::teams::dsl::teams.load(conn)?;
+    let db_teams: Vec<model::Team> = schema::teams::dsl::teams
+        .select(model::Team::as_select())
+        .load(conn)?;
 
     let team_member_rows: Vec<model::TeamMemberRow> =
         schema::team_members::dsl::team_members.load(conn)?;
@@ -2569,11 +2569,6 @@ fn read_sqlite_data(
                 .get(&team.id)
                 .and_then(|json| serde_json::from_str(json).ok());
 
-            let billing_metadata = team
-                .billing_metadata_json
-                .as_ref()
-                .and_then(|json| serde_json::from_str(json).ok());
-
             let members = members_by_team_id.get(&team.id).cloned();
 
             let feature_model_choice = team
@@ -2585,7 +2580,6 @@ fn read_sqlite_data(
                 ServerId::from_string_lossy(team.server_uid),
                 team.name,
                 team_settings,
-                billing_metadata,
                 members,
                 feature_model_choice,
             )

@@ -9,7 +9,6 @@ pub use ::ai::agent::{
     QuestionDraft,
 };
 pub use repo_metadata::repositories::RepoDetectionSource;
-use thousands::Separable as _;
 #[cfg(feature = "voice_input")]
 pub use voice_input::{
     StartListeningError, VoiceInput, VoiceInputLifecycle, VoiceInputLifecycleState,
@@ -23,8 +22,7 @@ pub use warp_core::SessionId;
 pub use self::history::{TuiUpArrowHistoryItem, TuiUpArrowHistoryItemKind, tui_up_arrow_history};
 pub use crate::ai::agent::api::ServerConversationToken;
 pub use crate::ai::agent::conversation::{
-    AIConversation, AIConversationAutoexecuteMode, AIConversationId, ConversationStatus,
-    ConversationUsageTotals, TodoStatus,
+    AIConversation, AIConversationAutoexecuteMode, AIConversationId, ConversationStatus, TodoStatus,
 };
 pub use crate::ai::agent::task::TaskId;
 pub use crate::ai::agent::todos::AIAgentTodoList;
@@ -71,9 +69,7 @@ pub use crate::ai::blocklist::history_model::{
 };
 pub use crate::ai::blocklist::inline_action::code_diff_view::convert_file_edits_to_file_diffs;
 pub use crate::ai::blocklist::view_util::{
-    FAILED_OUTPUT_USAGE_NOTICE_TEXT, FailedOutputPresentation, OUT_OF_CREDITS_SUBSCRIBE_LABEL,
-    failed_output_presentation, format_credits, format_dollars,
-    should_show_failed_output_usage_notice,
+    FailedOutputPresentation, OUT_OF_CREDITS_SUBSCRIBE_LABEL, failed_output_presentation,
 };
 pub use crate::ai::blocklist::{
     AIActionStatus, AskUserQuestionExecutor, AttachmentType, BlocklistAIActionEvent,
@@ -90,7 +86,6 @@ pub use crate::ai::conversation_export::{
 };
 pub use crate::ai::get_relevant_files::controller::GetRelevantFilesController;
 pub use crate::ai::llms::{LLMId, LLMInfo, LLMPreferences, LLMPreferencesEvent};
-pub use crate::ai::request_usage_model::{AIRequestUsageModel, BonusGrantType};
 pub use crate::ai::skills::{SkillManager, SkillManagerEvent, SkillReference};
 #[cfg(not(target_family = "wasm"))]
 pub use crate::appearance::Appearance;
@@ -104,7 +99,6 @@ pub use crate::code_review::github_repo_model::GitHubRepoModel;
 pub use crate::completer::SessionContext;
 pub use crate::global_resource_handles::GlobalResourceHandlesProvider;
 pub use crate::persistence::PersistenceWriter;
-pub use crate::persistence::model::ChargedUsageTotals;
 pub use crate::prefix::longest_common_prefix;
 pub use crate::search::slash_command_menu::static_commands::commands::{
     self as slash_commands, COMMAND_REGISTRY,
@@ -185,8 +179,7 @@ pub use crate::tui_test_support::{
     add_tui_history_test_models, append_tui_history_test_command,
     blocklist_ai_history_model_with_queries, forkable_tui_conversation_for_test,
     queue_tui_permission_action, register_tui_input_mode_test_settings,
-    register_tui_session_view_test_singletons, set_tui_default_team_admin_for_test,
-    set_tui_workspace_teams_for_test,
+    register_tui_session_view_test_singletons, set_tui_workspace_teams_for_test,
 };
 pub use crate::user_config::{WarpConfig, WarpConfigUpdateEvent};
 pub use crate::util::image::{
@@ -201,28 +194,6 @@ pub use crate::workspaces::user_workspaces::{
     ResolvedTeamScope, TeamContext, TeamContextForOperation, TeamContextResolver, TeamScope,
     UserWorkspaces, UserWorkspacesEvent,
 };
-pub use crate::workspaces::workspace::{
-    AiCreditsUsageAndCostType, ChargeUnit, UsageVisibilityGranularity,
-};
-
-pub fn format_usage_cost_cents(cents: f64) -> String {
-    let cents = cents.round() as i64;
-    let dollars = cents / 100;
-    let remainder = (cents.abs() % 100) as u8;
-    if dollars < 0 {
-        format!(
-            "-${}.{remainder:02}",
-            dollars.unsigned_abs().separate_with_commas()
-        )
-    } else {
-        format!("${}.{remainder:02}", dollars.separate_with_commas())
-    }
-}
-
-pub fn format_usage_credits(credits: f64) -> String {
-    (credits.round() as i64).separate_with_commas()
-}
-
 /// Builds the live-shell completion context used to parse TUI input for NLD.
 pub fn tui_completion_session_context(
     active_session: &ActiveSession,

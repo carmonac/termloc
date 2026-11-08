@@ -59,7 +59,6 @@ lazy_static! {
         None,
         None,
         None,
-        None,
     );
 
     static ref TEST_WORKSPACE: Workspace = Workspace::from_local_cache(

@@ -20,7 +20,7 @@ use warp::tui_export::{
     RenderableAIError, RequestCommandOutputResult, ServerOutputId, Sessions, Shared,
     SummarizationType, TaskId, TerminalModel, TodoOperation, TodoStatus, TuiOnboardingMarker,
     TuiOnboardingMarkers, UserQueryMode, UserWorkspaces, queue_tui_permission_action,
-    register_tui_session_view_test_singletons, should_show_failed_output_usage_notice,
+    register_tui_session_view_test_singletons,
 };
 use warp_core::ui::color::blend::Blend;
 use warp_core::ui::theme::Fill as ThemeFill;
@@ -394,31 +394,6 @@ fn out_of_credits_failure_matches_tui_design_and_opens_upgrade() {
 
         assert_eq!(&*opened_urls.borrow(), &[expected_upgrade_url]);
     });
-}
-
-#[test]
-fn failed_output_usage_notice_matches_gui_conditions() {
-    let error = RenderableAIError::other("failed", false);
-    assert!(should_show_failed_output_usage_notice(
-        &error, true, false, false
-    ));
-    assert!(should_show_failed_output_usage_notice(
-        &RenderableAIError::QuotaLimit {
-            user_display_message: Some("You've reached your credit limit.".to_owned()),
-        },
-        true,
-        false,
-        false,
-    ));
-    assert!(!should_show_failed_output_usage_notice(
-        &error, false, false, false
-    ));
-    assert!(!should_show_failed_output_usage_notice(
-        &error, true, true, false
-    ));
-    assert!(!should_show_failed_output_usage_notice(
-        &error, true, false, true
-    ));
 }
 
 #[test]

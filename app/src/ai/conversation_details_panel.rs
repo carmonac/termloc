@@ -34,9 +34,6 @@ use crate::ai::agent_management::details_action_buttons::{
     ActionButtonsConfig, AgentDetailsButtonEvent, ConversationActionButtonsRow,
 };
 use crate::ai::artifacts::{Artifact, ArtifactButtonsRow, ArtifactButtonsRowEvent};
-use crate::ai::blocklist::view_util::{
-    UsageLabelKind, effective_usage_unit, format_usage, usage_label,
-};
 use crate::ai::harness_display;
 use crate::appearance::Appearance;
 use crate::auth::UserUid;
@@ -147,10 +144,6 @@ pub struct ConversationDetailsData {
     creator: Option<PrincipalInfo>,
     /// When the conversation was created.
     created_at: Option<DateTime<Local>>,
-    /// Total credits spent on the conversation.
-    credits: Option<f32>,
-    /// Total cost billed to the customer in US cents, when the source provides it.
-    cost_in_cents: Option<f32>,
     /// Total duration of the conversation.
     run_time: Option<Duration>,
     /// Artifacts created during the conversation (plans, PRs, branches).
@@ -240,8 +233,6 @@ impl ConversationDetailsData {
                 .unwrap_or_else(|| "Conversation".to_string()),
             creator,
             created_at,
-            credits: Some(conversation.credits_spent()),
-            cost_in_cents: conversation.usage_totals().total_cost_in_cents(),
             run_time,
             artifacts: conversation.artifacts().to_vec(),
             open_action: None,
@@ -275,8 +266,6 @@ impl ConversationDetailsData {
                 .clone()
                 .map(|name| PrincipalInfo::new(name, None)),
             created_at: Some(entry.display.created_at.with_timezone(&Local)),
-            credits: entry.display.request_usage,
-            cost_in_cents: entry.display.cost_in_cents,
             run_time: None,
             artifacts: entry.display.artifacts.clone(),
             open_action,
@@ -296,7 +285,6 @@ impl ConversationDetailsData {
         creator_name: Option<String>,
         created_at: DateTime<Local>,
         directory: Option<String>,
-        credits_used: Option<f32>,
         conversation_id: Option<String>,
         artifacts: Vec<Artifact>,
         open_action: Option<WorkspaceAction>,
@@ -315,8 +303,6 @@ impl ConversationDetailsData {
             title,
             creator: creator_name.map(|name| PrincipalInfo::new(name, None)),
             created_at: Some(created_at),
-            credits: credits_used,
-            cost_in_cents: None,
             run_time: None,
             open_action,
             artifacts,
@@ -407,11 +393,7 @@ impl ConversationDetailsPanel {
                 })
         });
         ctx.subscribe_to_model(&AISettings::handle(ctx), |_, _, event, ctx| {
-            if matches!(
-                event,
-                AISettingsChangedEvent::IsAnyAIEnabled { .. }
-                    | AISettingsChangedEvent::UsageDisplayUnit { .. }
-            ) {
+            if matches!(event, AISettingsChangedEvent::IsAnyAIEnabled { .. }) {
                 ctx.notify();
             }
         });
@@ -1055,22 +1037,6 @@ impl View for ConversationDetailsPanel {
                 ))
                 .with_margin_bottom(FIELD_SPACING)
                 .finish(),
-            );
-        }
-
-        if let Some(credits) = self.data.credits {
-            let cost_in_cents = self.data.cost_in_cents;
-            let usage_display_unit = effective_usage_unit(cost_in_cents, app);
-            let formatted = format_usage(credits, cost_in_cents, usage_display_unit);
-            let label = usage_label(
-                UsageLabelKind::DetailsPanel,
-                cost_in_cents,
-                usage_display_unit,
-            );
-            content.add_child(
-                Container::new(self.render_simple_field(&label, &formatted, appearance))
-                    .with_margin_bottom(FIELD_SPACING)
-                    .finish(),
             );
         }
 

@@ -1,6 +1,6 @@
 //! Authenticated terminal-session TUI surface.
 use std::borrow::Cow;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::Path;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -19,7 +19,7 @@ use warp::settings::{
 #[cfg(feature = "voice_input")]
 use warp::tui_export::slash_commands;
 use warp::tui_export::{
-    AIAgentActionId, AIAgentContext, AIAgentExchangeId, AIAgentPtyWriteMode, AIConversation,
+    AIAgentActionId, AIAgentContext, AIAgentPtyWriteMode, AIConversation,
     AIConversationAutoexecuteMode, AIConversationId, AcceptSlashCommandOrSavedPrompt,
     ActiveSession, ActiveSessionEvent, AgentConversationEntryId, AgentConversationListEntryState,
     AgentConversationsModel, AgentInteractionMetadata, AgentViewEntryOrigin, Appearance, BlockId,
@@ -129,7 +129,6 @@ use crate::tui_builder::TuiUiBuilder;
 use crate::tui_cli_subagent_view::{HAND_BACK_KEY_BINDING, TuiCLISubagentView};
 use crate::tui_permission_prompt::TuiPermissionPrompt;
 use crate::ui::{abbreviate_home_prefix, conversation_restore_failed, conversation_restoring};
-use crate::usage::UsageToggle;
 #[cfg(feature = "voice_input")]
 use crate::voice_input::{
     TuiVoiceInputEvent, TuiVoiceInputState, VoiceInputStartSource, configured_hold_key,
@@ -148,14 +147,12 @@ pub(crate) mod state;
 mod status_menu;
 mod statusline;
 mod todo_menu;
-mod usage_menu;
 use self::completions::CompletionRequestState;
 use self::input_detection::InputDetectionState;
 use self::state::{
     TuiFirstZeroStateState, TuiTerminalSessionState, TuiTerminalSessionStateModel,
     TuiTerminalSessionStateResolveError,
 };
-use self::usage_menu::TuiUsageSnapshot;
 
 /// Width used before the first layout pass pushes the real terminal width into the editor.
 const INITIAL_INPUT_WIDTH: u16 = 80;
@@ -195,13 +192,6 @@ fn status_menu_is_open(mode: TuiInputSuggestionsMode) -> bool {
     matches!(
         mode,
         TuiInputSuggestionsMode::ReadOnlyMenu(TuiReadOnlyMenuKind::Status)
-    )
-}
-
-fn usage_menu_is_open(mode: TuiInputSuggestionsMode) -> bool {
-    matches!(
-        mode,
-        TuiInputSuggestionsMode::ReadOnlyMenu(TuiReadOnlyMenuKind::Usage)
     )
 }
 
@@ -354,11 +344,6 @@ const AUTO_APPROVE_DISABLED_HINT: &str = "Auto approve off";
 const STATUSLINE_SAVED_HINT: &str = "Statusline configuration saved.";
 const STATUSLINE_RESET_HINT: &str = "Statusline reset to defaults.";
 const STATUSLINE_PERSISTENCE_FAILED_HINT: &str = "Could not save the statusline configuration.";
-const COST_NO_ACTIVE_CONVERSATION_HINT: &str =
-    "Cannot show conversation cost: no active conversation";
-const COST_EMPTY_CONVERSATION_HINT: &str = "Cannot show conversation cost: conversation is empty";
-const COST_CONVERSATION_IN_PROGRESS_HINT: &str =
-    "Cannot show conversation cost: conversation is in progress";
 
 fn log_bundle_success_message(path: &Path) -> String {
     format!("Log bundle saved to {}", path.display())
@@ -387,16 +372,6 @@ pub(crate) fn tui_resume_shell_command(channel: Channel, token: &str) -> String 
 
 fn raw_prompt_if_not_blank(input: &str) -> Option<&str> {
     (!input.trim().is_empty()).then_some(input)
-}
-fn cost_command_unavailable_hint(
-    selected_conversation: Option<(bool, bool)>,
-) -> Option<&'static str> {
-    match selected_conversation {
-        None => Some(COST_NO_ACTIVE_CONVERSATION_HINT),
-        Some((true, _)) => Some(COST_EMPTY_CONVERSATION_HINT),
-        Some((false, false)) => Some(COST_CONVERSATION_IN_PROGRESS_HINT),
-        Some((false, true)) => None,
-    }
 }
 
 fn attachment_focus_available(is_shell_mode: bool, attachments_should_render: bool) -> bool {
@@ -562,11 +537,6 @@ pub(crate) enum TuiTerminalSessionAction {
     AcceptBlockedTerminalUseAction,
     /// Reject the active terminal-use agent's blocked action.
     RejectBlockedTerminalUseAction,
-    /// Click on the footer's usage entry: flips the persisted credits⇄cost
-    /// display-mode setting.
-    ToggleUsageDisplay,
-    /// Toggle the completed-response summary for the selected conversation.
-    ToggleResponseSummaryVisibility,
     /// Toggle the selected conversation's active TODO list above the input.
     ToggleTodoMenu,
     /// Click on the footer's active-model label: toggles the inline model
@@ -620,7 +590,6 @@ pub(crate) struct TuiTerminalSessionView {
     suggestions_mode: ModelHandle<TuiInputSuggestionsModeModel>,
     read_only_menu_selection: TuiSelectionHandle,
     read_only_menu_viewport: TuiViewportedListState,
-    usage_snapshot: Option<TuiUsageSnapshot>,
     /// The selected conversation and active TODO-list generation currently
     /// displayed by an open TODO menu.
     open_todo_menu_list_key: Option<(AIConversationId, usize)>,
@@ -655,15 +624,8 @@ pub(crate) struct TuiTerminalSessionView {
     /// Armed by a ctrl-c press; a second press while armed exits the TUI.
     /// The footer shows [`CTRL_C_EXIT_HINT`] while armed.
     exit_confirmation: ExitConfirmation,
-    /// Credits⇄cost display state for the footer's clickable usage entry.
-    usage_toggle: UsageToggle,
-    /// Last-response exchanges whose completed summary has been hidden with
-    /// `/cost`. A later response has a new exchange ID and starts visible,
-    /// matching the GUI's per-last-block state.
-    hidden_response_summary_exchange_ids: HashSet<AIAgentExchangeId>,
     /// Hover state for the footer's clickable active-model label, owned here
-    /// (not created inline during render) so it survives element-tree rebuilds
-    /// — the same `MouseStateHandle` pattern as [`UsageToggle`].
+    /// (not created inline during render) so it survives element-tree rebuilds.
     model_label_hover: MouseStateHandle,
     team_label_hover: MouseStateHandle,
     /// Hover and click state for the configured TODO statusline control.
@@ -694,8 +656,6 @@ pub(crate) struct TuiTerminalSessionView {
     auto_approve_feedback_timer: Option<SpawnedFutureHandle>,
     footer_auto_approve_mouse: MouseStateHandle,
     warping_auto_approve_mouse: MouseStateHandle,
-    usage_manage_billing_link: TuiLink,
-    usage_upgrade_link: TuiLink,
     conversation_restore_state: ConversationRestoreState,
     next_restore_request_id: u64,
     exit_summary: TuiExitSummaryHandle,
@@ -1752,19 +1712,9 @@ impl TuiTerminalSessionView {
         });
         ctx.subscribe_to_model(&suggestions_mode, |view, _, event, ctx| {
             view.read_only_menu_selection.clear();
-            view.usage_snapshot = matches!(
-                event.mode,
-                TuiInputSuggestionsMode::ReadOnlyMenu(TuiReadOnlyMenuKind::Usage)
-            )
-            .then(|| TuiUsageSnapshot::capture(ctx));
             view.open_todo_menu_list_key = match event.mode.read_only_menu() {
                 Some(TuiReadOnlyMenuKind::Todos) => view.active_todo_menu_list_key(ctx),
-                Some(
-                    TuiReadOnlyMenuKind::Shortcuts
-                    | TuiReadOnlyMenuKind::Status
-                    | TuiReadOnlyMenuKind::Usage,
-                )
-                | None => None,
+                Some(TuiReadOnlyMenuKind::Shortcuts | TuiReadOnlyMenuKind::Status) | None => None,
             };
             let scroll_top = event
                 .mode
@@ -1863,15 +1813,13 @@ impl TuiTerminalSessionView {
             }
             _ => {}
         });
-        // Re-render when the configured statusline or usage-display mode
-        // changes (click or settings-file hot reload). Model, working
+        // Re-render when the configured statusline changes (click or settings-file hot reload). Model, working
         // directory, git, queue, and conversation subscriptions below cover
         // changes in the configured items' live values.
         ctx.subscribe_to_model(&AISettings::handle(ctx), |view, _, event, ctx| {
             if matches!(
                 event,
-                AISettingsChangedEvent::TuiUsageDisplayMode { .. }
-                    | AISettingsChangedEvent::TuiStatusline { .. }
+                AISettingsChangedEvent::TuiStatusline { .. }
                     | AISettingsChangedEvent::VoiceInputEnabled { .. }
                     | AISettingsChangedEvent::ExecutionProfiles { .. }
             ) {
@@ -2017,7 +1965,6 @@ impl TuiTerminalSessionView {
             suggestions_mode,
             read_only_menu_selection,
             read_only_menu_viewport,
-            usage_snapshot: None,
             open_todo_menu_list_key: None,
             session_state,
             conversation_menu,
@@ -2041,8 +1988,6 @@ impl TuiTerminalSessionView {
             github_repo: None,
             terminal_surface_id,
             exit_confirmation: ExitConfirmation::default(),
-            usage_toggle: UsageToggle::default(),
-            hidden_response_summary_exchange_ids: HashSet::new(),
             model_label_hover: MouseStateHandle::default(),
             team_label_hover: MouseStateHandle::default(),
             todo_list_mouse: MouseStateHandle::default(),
@@ -2062,8 +2007,6 @@ impl TuiTerminalSessionView {
             auto_approve_feedback_timer: None,
             footer_auto_approve_mouse: MouseStateHandle::default(),
             warping_auto_approve_mouse: MouseStateHandle::default(),
-            usage_manage_billing_link: TuiLink::default(),
-            usage_upgrade_link: TuiLink::default(),
             conversation_restore_state: ConversationRestoreState::Idle,
             next_restore_request_id: 0,
             exit_summary,
@@ -2174,29 +2117,16 @@ impl TuiTerminalSessionView {
                 .selected_conversation(ctx)
                 .and_then(|conversation| todo_menu::active_todo_menu(conversation, builder))
                 .map(|menu| self.render_read_only_menu(menu, builder)),
-            TuiReadOnlyMenuKind::Usage => self.usage_snapshot.as_ref().map(|snapshot| {
-                usage_menu::render(
-                    snapshot,
-                    &self.usage_manage_billing_link,
-                    &self.usage_upgrade_link,
-                    &upgrade_url(ctx),
-                    builder,
-                )
-            }),
         });
         if let Some(menu_element) = menu_element {
             let padded_menu = TuiContainer::new(menu_element)
                 .with_padding_top(INLINE_MENU_TOP_PADDING_ROWS)
                 .finish();
-            // Pay-as-you-go circles can wrap, so the usage panel is not capped.
-            let wrapped_menu = if matches!(open_read_only_menu, Some(TuiReadOnlyMenuKind::Usage)) {
-                padded_menu
-            } else {
+            content = content.child(
                 TuiConstrainedBox::new(padded_menu)
                     .with_max_rows(MAX_READ_ONLY_MENU_ROWS + INLINE_MENU_TOP_PADDING_ROWS)
-                    .finish()
-            };
-            content = content.child(wrapped_menu);
+                    .finish(),
+            );
         }
         #[cfg(feature = "voice_input")]
         let input = if self.input_view.as_ref(ctx).voice_state(ctx) == TuiVoiceInputState::Listening
@@ -2943,54 +2873,6 @@ impl TuiTerminalSessionView {
         render_warping_indicator_row(label, elapsed, auto_approve, ctx)
     }
 
-    /// Flips the footer usage entry's persisted credits⇄cost display mode.
-    /// The settings-changed event re-renders every subscribed surface.
-    fn toggle_usage_display(&mut self, ctx: &mut ViewContext<Self>) {
-        let next = AISettings::as_ref(ctx).usage_display_mode.toggled();
-        AISettings::handle(ctx).update(ctx, |settings, ctx| {
-            if let Err(error) = settings.usage_display_mode.set_value(next, ctx) {
-                report_error!(error.context("failed to persist the TUI usage display mode"));
-            }
-        });
-    }
-    /// Mirrors the GUI `/cost` eligibility checks, then toggles the selected
-    /// conversation's completed-response summary without changing the
-    /// persistent footer's independent credits⇄cost setting.
-    fn toggle_response_summary_visibility(&mut self, ctx: &mut ViewContext<Self>) {
-        let selected_conversation = self
-            .conversation_selection
-            .as_ref(ctx)
-            .selected_conversation(ctx)
-            .map(|conversation| {
-                (
-                    conversation.latest_exchange().map(|exchange| exchange.id),
-                    conversation.is_empty(),
-                    conversation.status().is_done(),
-                )
-            });
-        if let Some(hint) = cost_command_unavailable_hint(
-            selected_conversation.map(|(_, is_empty, is_done)| (is_empty, is_done)),
-        ) {
-            self.show_transient_hint(hint.to_owned(), ctx);
-            return;
-        }
-        let Some((Some(exchange_id), _, _)) = selected_conversation else {
-            self.show_transient_hint(COST_NO_ACTIVE_CONVERSATION_HINT.to_owned(), ctx);
-            return;
-        };
-        self.toggle_response_summary_visibility_for_exchange(exchange_id);
-        ctx.notify();
-    }
-    fn toggle_response_summary_visibility_for_exchange(&mut self, exchange_id: AIAgentExchangeId) {
-        if !self
-            .hidden_response_summary_exchange_ids
-            .remove(&exchange_id)
-        {
-            self.hidden_response_summary_exchange_ids
-                .insert(exchange_id);
-        }
-    }
-
     fn has_active_todo_list(&self, ctx: &AppContext) -> bool {
         self.active_todo_menu_list_key(ctx).is_some()
     }
@@ -3011,9 +2893,7 @@ impl TuiTerminalSessionView {
         ctx: &AppContext,
     ) -> usize {
         match kind {
-            TuiReadOnlyMenuKind::Shortcuts
-            | TuiReadOnlyMenuKind::Status
-            | TuiReadOnlyMenuKind::Usage => 0,
+            TuiReadOnlyMenuKind::Shortcuts | TuiReadOnlyMenuKind::Status => 0,
             TuiReadOnlyMenuKind::Todos => self
                 .conversation_selection
                 .as_ref(ctx)
@@ -3070,18 +2950,6 @@ impl TuiTerminalSessionView {
             }
         });
         self.sync_open_todo_menu_list(ctx);
-    }
-    fn render_response_summary_for_exchange(
-        &self,
-        exchange_id: AIAgentExchangeId,
-        duration: Duration,
-        block_credits: Option<f32>,
-        ctx: &AppContext,
-    ) -> Option<Box<dyn TuiElement>> {
-        (!self
-            .hidden_response_summary_exchange_ids
-            .contains(&exchange_id))
-        .then(|| render_response_summary(duration, block_credits, ctx))
     }
 
     /// Toggles the inline model picker from the footer's active-model label —
@@ -3794,31 +3662,6 @@ impl TuiTerminalSessionView {
             SlashCommandKind::ResetStatusline => {
                 self.reset_statusline(ctx);
             }
-            SlashCommandKind::Upgrade => {
-                self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                ctx.open_url(&upgrade_url(ctx));
-            }
-            SlashCommandKind::ManageBilling => {
-                self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                let Some(url) = self
-                    .slash_commands_source
-                    .as_ref(ctx)
-                    .manage_billing_url(ctx)
-                else {
-                    self.show_error_hint(
-                        "Billing management is only available to team admins".to_owned(),
-                        ctx,
-                    );
-                    return;
-                };
-                ctx.open_url(&url);
-            }
-            SlashCommandKind::Cost => {
-                self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                ctx.dispatch_typed_action_deferred(
-                    TuiTerminalSessionAction::ToggleResponseSummaryVisibility,
-                );
-            }
             SlashCommandKind::Model => {
                 self.model_menu.update(ctx, |menu, ctx| menu.open(ctx));
             }
@@ -3839,15 +3682,6 @@ impl TuiTerminalSessionView {
                 self.suggestions_mode.update(ctx, |mode, ctx| {
                     mode.set_mode(
                         TuiInputSuggestionsMode::ReadOnlyMenu(TuiReadOnlyMenuKind::Status),
-                        ctx,
-                    );
-                });
-            }
-            SlashCommandKind::Usage => {
-                self.input_view.update(ctx, |input, ctx| input.clear(ctx));
-                self.suggestions_mode.update(ctx, |mode, ctx| {
-                    mode.set_mode(
-                        TuiInputSuggestionsMode::ReadOnlyMenu(TuiReadOnlyMenuKind::Usage),
                         ctx,
                     );
                 });
@@ -4364,7 +4198,6 @@ impl TuiView for TuiTerminalSessionView {
             .transcript
             .as_ref(ctx)
             .latest_agent_block_is_out_of_credits(ctx)
-            || usage_menu_is_open(self.suggestions_mode.as_ref(ctx).mode())
         {
             context.set.insert(SESSION_CAN_OPEN_UPGRADE_URL_FLAG);
         }
@@ -4613,7 +4446,7 @@ impl TuiTerminalSessionView {
                 }
             } else {
                 // Once the response completes, the indicator's slot rests on
-                // the last response's summary: `∷ {duration} • {credits}`.
+                // the last response's summary: `∷ {duration}`.
                 // Wall-to-wall duration is only available once the block's
                 // final exchange finished, which also keeps the row hidden
                 // for brand-new conversations.
@@ -4621,17 +4454,12 @@ impl TuiTerminalSessionView {
                     .wall_to_wall_response_time_since_last_query()
                     .and_then(|ms| u64::try_from(ms).ok())
                     .map(Duration::from_millis);
-                if let (Some(duration), Some(exchange_id)) = (
-                    wall_to_wall,
-                    conversation.latest_exchange().map(|exchange| exchange.id),
-                ) && let Some(summary) = self.render_response_summary_for_exchange(
-                    exchange_id,
-                    duration,
-                    conversation.credits_spent_for_last_block(),
-                    ctx,
-                ) {
-                    content =
-                        content.child(TuiContainer::new(summary).with_padding_top(1).finish());
+                if let Some(duration) = wall_to_wall {
+                    content = content.child(
+                        TuiContainer::new(render_response_summary(duration, ctx))
+                            .with_padding_top(1)
+                            .finish(),
+                    );
                 }
             }
         }
@@ -4754,10 +4582,6 @@ impl TypedActionView for TuiTerminalSessionView {
             }
             TuiTerminalSessionAction::RejectBlockedTerminalUseAction => {
                 self.reject_active_cli_subagent_action(ctx);
-            }
-            TuiTerminalSessionAction::ToggleUsageDisplay => self.toggle_usage_display(ctx),
-            TuiTerminalSessionAction::ToggleResponseSummaryVisibility => {
-                self.toggle_response_summary_visibility(ctx)
             }
             TuiTerminalSessionAction::ToggleTodoMenu => self.toggle_todo_menu(ctx),
             TuiTerminalSessionAction::ToggleModelMenu => self.toggle_model_menu(ctx),

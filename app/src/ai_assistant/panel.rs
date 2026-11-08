@@ -22,25 +22,23 @@ use warpui::ui_components::button::ButtonVariant;
 use warpui::ui_components::components::{Coords, UiComponent, UiComponentStyles};
 use warpui::{
     AppContext, Entity, FocusContext, ModelHandle, SingletonEntity, TypedActionView, View,
-    ViewContext, ViewHandle, WeakViewHandle,
+    ViewContext, ViewHandle,
 };
 
 use super::execution_context::execution_context_for_session;
 use super::requests::{Event as RequestsEvent, RequestStatus, Requests};
 use super::transcript::{Transcript, TranscriptEvent};
-use super::utils::{TranscriptPart, render_prepared_response_button, render_request_limit_info};
+use super::utils::{TranscriptPart, render_prepared_response_button};
 use super::{
     AI_ASSISTANT_FEATURE_NAME, AI_ASSISTANT_LOGO_COLOR, AI_ASSISTANT_SVG_PATH,
     ASK_AI_ASSISTANT_TEXT, AskAIType, PROMPT_CHARACTER_LIMIT,
 };
-use crate::ai::AIRequestUsageModel;
 use crate::appearance::Appearance;
 use crate::editor::{
     EditorOptions, EditorView, Event as EditorEvent, PropagateAndNoOpNavigationKeys, TextOptions,
 };
 use crate::input_suggestions::{Event as InputSuggestionsEvent, InputSuggestions};
 use crate::server::server_api::ServerApi;
-use crate::server::server_api::ai::AIClient;
 use crate::terminal::resizable_data::{DEFAULT_WARP_AI_WIDTH, ModalType, ResizableData};
 use crate::ui_components::blended_colors;
 use crate::ui_components::buttons::icon_button;
@@ -115,7 +113,6 @@ enum InputSuggestionsMode {
 /// TODO: we should eventually refactor this and other panels into a more
 /// general Panel view.
 pub struct AIAssistantPanelView {
-    view_handle: WeakViewHandle<Self>,
     editor: ViewHandle<EditorView>,
     transcript_view: ViewHandle<Transcript>,
     input_suggestions_view: ViewHandle<InputSuggestions>,
@@ -175,11 +172,7 @@ pub fn init(app: &mut AppContext) {
 }
 
 impl AIAssistantPanelView {
-    pub fn new(
-        server_api: Arc<ServerApi>,
-        ai_client: Arc<dyn AIClient>,
-        ctx: &mut ViewContext<Self>,
-    ) -> Self {
+    pub fn new(server_api: Arc<ServerApi>, ctx: &mut ViewContext<Self>) -> Self {
         let editor = {
             ctx.add_typed_action_view(|ctx| {
                 let appearance = Appearance::as_ref(ctx);
@@ -206,8 +199,7 @@ impl AIAssistantPanelView {
         let active_session_model = ActiveSession::handle(ctx);
         ctx.observe(&active_session_model, Self::on_active_session_change);
 
-        let requests_model =
-            ctx.add_model(|ctx| Requests::new(server_api.clone(), ai_client.clone(), ctx));
+        let requests_model = ctx.add_model(|_| Requests::new(server_api.clone()));
         ctx.subscribe_to_model(&requests_model, move |me, _, event, ctx| {
             me.handle_requests_model_event(event, ctx);
         });
@@ -237,7 +229,6 @@ impl AIAssistantPanelView {
         };
 
         let mut panel = Self {
-            view_handle: ctx.handle(),
             editor,
             transcript_view,
             input_suggestions_view,
@@ -873,7 +864,7 @@ impl AIAssistantPanelView {
         .finish()
     }
 
-    fn render_zero_state(&self, appearance: &Appearance, app: &AppContext) -> Box<dyn Element> {
+    fn render_zero_state(&self, appearance: &Appearance) -> Box<dyn Element> {
         let theme = appearance.theme();
 
         // TODO: fill should be Copy. it's cheap (a few ColorU's at most).
@@ -898,38 +889,35 @@ impl AIAssistantPanelView {
                 .finish(),
             );
 
-        let user_workspaces = UserWorkspaces::as_ref(app);
-        if AIRequestUsageModel::as_ref(app).has_any_ai_remaining(app) {
-            column.add_children([
-                Container::new(render_prepared_response_button(
-                    appearance,
-                    self.mouse_state_handles.git_zero_state_prompt.clone(),
-                    Some(300.),
-                    None,
-                    GIT_ZERO_STATE_PROMPT,
-                ))
-                .with_margin_top(20.)
-                .with_margin_bottom(10.)
-                .finish(),
-                Container::new(render_prepared_response_button(
-                    appearance,
-                    self.mouse_state_handles.files_zero_state_prompt.clone(),
-                    Some(300.),
-                    None,
-                    FILES_ZERO_STATE_PROMPT,
-                ))
-                .with_margin_bottom(10.)
-                .finish(),
-                Container::new(render_prepared_response_button(
-                    appearance,
-                    self.mouse_state_handles.script_zero_state_prompt.clone(),
-                    Some(300.),
-                    None,
-                    SCRIPT_ZERO_STATE_PROMPT,
-                ))
-                .finish(),
-            ]);
-        }
+        column.add_children([
+            Container::new(render_prepared_response_button(
+                appearance,
+                self.mouse_state_handles.git_zero_state_prompt.clone(),
+                Some(300.),
+                None,
+                GIT_ZERO_STATE_PROMPT,
+            ))
+            .with_margin_top(20.)
+            .with_margin_bottom(10.)
+            .finish(),
+            Container::new(render_prepared_response_button(
+                appearance,
+                self.mouse_state_handles.files_zero_state_prompt.clone(),
+                Some(300.),
+                None,
+                FILES_ZERO_STATE_PROMPT,
+            ))
+            .with_margin_bottom(10.)
+            .finish(),
+            Container::new(render_prepared_response_button(
+                appearance,
+                self.mouse_state_handles.script_zero_state_prompt.clone(),
+                Some(300.),
+                None,
+                SCRIPT_ZERO_STATE_PROMPT,
+            ))
+            .finish(),
+        ]);
 
         column.add_child(
             Container::new(
@@ -971,22 +959,6 @@ impl AIAssistantPanelView {
             .with_margin_top(25.)
             .finish(),
         );
-
-        let is_custom_llm_enabled = user_workspaces.is_custom_llm_enabled_for_team(
-            user_workspaces.team_for_view_handle(&self.view_handle, app),
-        );
-
-        if !is_custom_llm_enabled {
-            column.add_child(
-                Container::new(render_request_limit_info(
-                    &self.requests_model,
-                    app,
-                    appearance,
-                ))
-                .with_margin_top(18.)
-                .finish(),
-            );
-        }
 
         Container::new(column.finish())
             .with_margin_left(12.)
@@ -1061,7 +1033,7 @@ impl View for AIAssistantPanelView {
 
         let should_render_zero_state = self.should_render_zero_state(app);
         let body = if should_render_zero_state {
-            Align::new(self.render_zero_state(appearance, app)).finish()
+            Align::new(self.render_zero_state(appearance)).finish()
         } else {
             Align::new(ChildView::new(&self.transcript_view).finish())
                 .top_center()

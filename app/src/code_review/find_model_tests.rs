@@ -7,11 +7,10 @@ use warp_editor::content::buffer::InitialBufferState;
 use warp_editor::render::element::VerticalExpansionBehavior;
 use warpui::elements::Empty;
 use warpui::platform::WindowStyle;
-use warpui::{App, Element as _, ModelHandle, SingletonEntity, ViewHandle};
+use warpui::{App, Element as _, ModelHandle, ViewHandle};
 
 use super::*;
 use crate::NotebookKeybindings;
-use crate::ai::request_usage_model::AIRequestUsageModel;
 use crate::auth::AuthStateProvider;
 use crate::cloud_object::model::persistence::CloudModel;
 use crate::code::buffer_location::LocalOrRemotePath;
@@ -165,9 +164,6 @@ fn initialize_test_app(app: &mut App) {
     // (e.g. to compute the comment tray's "Send to Agent" button state), so
     // register the same AI singletons the other code_review tests use.
     app.add_singleton_model(|_| ServerApiProvider::new_for_test());
-    app.add_singleton_model(|ctx| {
-        AIRequestUsageModel::new_for_test(ServerApiProvider::as_ref(ctx).get_ai_client(), ctx)
-    });
 }
 
 fn create_find_model_with_query(

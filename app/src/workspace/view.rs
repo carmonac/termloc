@@ -394,7 +394,6 @@ use crate::workflows::{
     WorkflowViewMode,
 };
 use crate::workspace::action::CommandSearchOptions;
-use crate::workspace::bonus_grant_notification_model::BonusGrantNotificationEvent;
 #[cfg(target_os = "macos")]
 use crate::workspace::cli_install;
 use crate::workspace::cross_window_tab_drag::{
@@ -1464,12 +1463,11 @@ impl Workspace {
     }
 
     fn build_ai_assistant_panel_view(
-        ctx: &mut ViewContext<Self>,
         server_api: Arc<ServerApi>,
-        ai_client: Arc<dyn AIClient>,
+        ctx: &mut ViewContext<Self>,
     ) -> ViewHandle<AIAssistantPanelView> {
         let ai_assistant_panel =
-            ctx.add_typed_action_view(|ctx| AIAssistantPanelView::new(server_api, ai_client, ctx));
+            ctx.add_typed_action_view(|ctx| AIAssistantPanelView::new(server_api, ctx));
 
         ctx.subscribe_to_view(&ai_assistant_panel, |me, _, event, ctx| {
             me.handle_ai_assistant_panel_event(event, ctx);
@@ -2629,8 +2627,7 @@ impl Workspace {
             None
         };
 
-        let ai_assistant_panel =
-            Self::build_ai_assistant_panel_view(ctx, server_api.clone(), ai_client.clone());
+        let ai_assistant_panel = Self::build_ai_assistant_panel_view(server_api.clone(), ctx);
 
         ctx.observe(&tips_completed, Workspace::on_tips_model_changed);
 
@@ -2830,19 +2827,6 @@ impl Workspace {
             }
             ctx.notify();
         });
-
-        ctx.subscribe_to_model(
-            &crate::workspace::bonus_grant_notification_model::BonusGrantNotificationModel::handle(
-                ctx,
-            ),
-            |me, _, event, ctx| {
-                let BonusGrantNotificationEvent::ShowNotification { message, .. } = event;
-                me.toast_stack.update(ctx, |toast_stack, ctx| {
-                    toast_stack
-                        .add_persistent_toast(DismissibleToast::success(message.clone()), ctx);
-                });
-            },
-        );
 
         let mut ws = Self {
             tabs: Vec::new(),
@@ -21770,9 +21754,7 @@ impl View for Workspace {
         if AISettings::as_ref(app).is_active_ai_enabled(app) {
             context.set.insert(flags::IS_ACTIVE_AI_ENABLED);
         }
-        if AISettings::as_ref(app).is_voice_input_enabled(app)
-            && UserWorkspaces::as_ref(app).is_voice_enabled()
-        {
+        if AISettings::as_ref(app).is_voice_input_enabled(app) {
             context.set.insert(flags::IS_VOICE_INPUT_ENABLED);
         }
 

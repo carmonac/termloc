@@ -32,8 +32,6 @@ fn team_with_link_sharing(uid: i64, name: &str, permitted: bool) -> Team {
         members: vec![],
         pending_email_invites: vec![],
         invite_link_domain_restrictions: vec![],
-        billing_metadata: Default::default(),
-        stripe_customer_id: None,
         settings: TeamSettings {
             link_sharing: TeamLinkSharingSettings {
                 anyone_with_link_sharing_enabled: permission.clone(),
@@ -43,7 +41,6 @@ fn team_with_link_sharing(uid: i64, name: &str, permitted: bool) -> Team {
         },
         feature_model_choice: Default::default(),
         is_eligible_for_discovery: false,
-        has_billing_history: false,
         visibility: TeamVisibility::Open,
     }
 }
@@ -52,20 +49,14 @@ fn install_workspace_with_teams(app: &mut App, teams: Vec<Team>) {
     let workspace = Workspace {
         uid: "workspace_uid123456789".to_string().into(),
         name: "test".to_string(),
-        stripe_customer_id: None,
         teams,
         open_teams: vec![],
-        billing_metadata: Default::default(),
-        bonus_grants_purchased_this_month: Default::default(),
-        billing_cycle_usage: None,
-        has_billing_history: false,
         settings: WorkspaceSettings::default(),
         feature_model_choice: Default::default(),
         invite_link_domain_restrictions: vec![],
         pending_email_invites: vec![],
         is_eligible_for_discovery: false,
         members: vec![],
-        total_requests_used_since_last_refresh: 0,
     };
     let workspace_uid = workspace.uid;
 

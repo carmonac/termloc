@@ -60,7 +60,6 @@ fn tui_commands_have_typed_identities_and_explicit_surface_support() {
         (&*commands::AGENT, SlashCommandKind::Agent),
         (&*commands::NEW, SlashCommandKind::New),
         (&*commands::COMPACT, SlashCommandKind::Compact),
-        (&commands::COST, SlashCommandKind::Cost),
         (&*commands::PLAN, SlashCommandKind::Plan),
         (&*commands::MODEL, SlashCommandKind::Model),
         (
