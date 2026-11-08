@@ -127,7 +127,7 @@ impl CodeSymbolCache {
                     .get_root_for_path(&LocalOrRemotePath::Local(
                         Path::new(current_dir).to_path_buf(),
                     ))
-                    .and_then(|r| PathBuf::try_from(r).ok())
+                    .map(PathBuf::from)
             })?;
 
         let (outline_status, _) = RepoOutlines::as_ref(app).get_outline(&git_repo_path)?;
@@ -211,7 +211,7 @@ impl CodeSymbolCache {
                     .get_root_for_path(&LocalOrRemotePath::Local(
                         Path::new(current_dir).to_path_buf(),
                     ))
-                    .and_then(|r| PathBuf::try_from(r).ok())
+                    .map(PathBuf::from)
             })
         else {
             return HashSet::new();

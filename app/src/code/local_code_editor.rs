@@ -1188,7 +1188,7 @@ impl LocalCodeEditorView {
             return;
         }
 
-        if self.is_remote_disconnected() || !self.has_unsaved_changes(ctx) {
+        if !self.has_unsaved_changes(ctx) {
             return;
         }
 
@@ -1208,7 +1208,7 @@ impl LocalCodeEditorView {
     /// Mirrors VS Code's `files.autoSave: onFocusChange` / `onWindowChange`,
     /// which *do* honor format-on-save. We route through [`Self::save_local`] so
     /// the existing format-on-save setting is respected. `NoFileId` (untitled
-    /// files) and `RemoteDisconnected` are expected no-ops; real save failures
+    /// files) are expected no-ops; real save failures
     /// still surface via `FailedToSave` events.
     fn auto_save_on_focus_change(&mut self, ctx: &mut ViewContext<Self>) {
         // Never auto-save a pending accept/reject diff (see
@@ -1314,14 +1314,6 @@ impl LocalCodeEditorView {
             BufferFileLocation::Local(path) => {
                 editor.update(ctx, |editor, ctx| {
                     editor.set_language_with_local_path(path, ctx);
-                    editor.model.update(ctx, |model, ctx| {
-                        model.rebuild_layout_with_syntax_highlighting(ctx)
-                    });
-                });
-            }
-            BufferFileLocation::Remote(remote_path) => {
-                editor.update(ctx, |editor, ctx| {
-                    editor.set_language_with_path(&remote_path.path, ctx);
                     editor.model.update(ctx, |model, ctx| {
                         model.rebuild_layout_with_syntax_highlighting(ctx)
                     });
@@ -1523,7 +1515,7 @@ impl LocalCodeEditorView {
         } else {
             match DetectedRepositories::as_ref(ctx)
                 .get_root_for_path(&LocalOrRemotePath::Local(path.to_path_buf()))
-                .and_then(|r| PathBuf::try_from(r).ok())
+                .map(PathBuf::from)
             {
                 Some(root) => Some(root),
                 None => path.parent().map(|s| s.to_path_buf()), // If we can't find root, treat the parent as the root.
@@ -1564,7 +1556,7 @@ impl LocalCodeEditorView {
         } else {
             match DetectedRepositories::as_ref(ctx)
                 .get_root_for_path(&LocalOrRemotePath::Local(path.to_path_buf()))
-                .and_then(|r| PathBuf::try_from(r).ok())
+                .map(PathBuf::from)
             {
                 Some(root) => Some(root),
                 None => path.parent().map(|s| s.to_path_buf()),
@@ -1700,27 +1692,17 @@ impl LocalCodeEditorView {
             && self.base_content_version != GlobalBufferModel::as_ref(app).base_version(file_id)
     }
 
-    /// Returns `true` when this editor is backed by a remote file, which has no connected host
-    /// to read from or save to.
-    pub fn is_remote_disconnected(&self) -> bool {
-        matches!(self.file_location(), Some(BufferFileLocation::Remote(_)))
-    }
-
     /// Whether auto-save can actually persist this editor's changes: it needs
     /// a backing file and, for remote files, a still-connected host. Untitled
     /// buffers (no `file_id`) and disconnected remotes return `false`.
     pub fn can_auto_save(&self) -> bool {
-        self.file_id().is_some() && !self.is_remote_disconnected()
+        self.file_id().is_some()
     }
 
     /// Save the file to the local file system.
     /// This will only return an error immediately if there is a failure in the sync part of the call.
     /// Other errors could be returned asynchronously via the FileModelEvent::FailedToSave event.
     pub fn save_local(&mut self, ctx: &mut ViewContext<Self>) -> Result<(), ImmediateSaveError> {
-        if self.is_remote_disconnected() {
-            return Err(ImmediateSaveError::RemoteDisconnected);
-        }
-
         let Some(file_id) = self.file_id() else {
             return Err(ImmediateSaveError::NoFileId);
         };
@@ -2205,45 +2187,30 @@ impl View for LocalCodeEditorView {
     }
 
     fn render(&self, app: &AppContext) -> Box<dyn warpui::Element> {
-        // Rendering the remote disconnection banner or version conflict banner.
-        // Only show the disconnection banner if the file was successfully loaded;
-        // if it never loaded, the error/loading state handles that.
-        let base: Box<dyn Element> =
-            if self.base_content_version.is_some() && self.is_remote_disconnected() {
-                let appearance = Appearance::as_ref(app);
-                let banner = render_remote_disconnected_banner(appearance);
-                let mut col = Flex::column().with_child(banner);
+        // Rendering the version conflict banner.
+        let base: Box<dyn Element> = if self.has_version_conflicts(app) {
+            let appearance = Appearance::as_ref(app);
+            let banner = render_unsaved_changes_banner(
+                appearance,
+                self.conflict_banner_mouse_states
+                    .discard_mouse_state
+                    .clone(),
+                self.conflict_banner_mouse_states
+                    .overwrite_mouse_state
+                    .clone(),
+            );
+            let mut col = Flex::column().with_child(banner);
 
-                let editor_view = ChildView::new(&self.editor).finish();
-                if self.editor.as_ref(app).needs_vertical_constraint() {
-                    col.add_child(Shrinkable::new(1., editor_view).finish());
-                } else {
-                    col.add_child(editor_view);
-                }
-                col.finish()
-            } else if self.has_version_conflicts(app) {
-                let appearance = Appearance::as_ref(app);
-                let banner = render_unsaved_changes_banner(
-                    appearance,
-                    self.conflict_banner_mouse_states
-                        .discard_mouse_state
-                        .clone(),
-                    self.conflict_banner_mouse_states
-                        .overwrite_mouse_state
-                        .clone(),
-                );
-                let mut col = Flex::column().with_child(banner);
-
-                let editor_view = ChildView::new(&self.editor).finish();
-                if self.editor.as_ref(app).needs_vertical_constraint() {
-                    col.add_child(Shrinkable::new(1., editor_view).finish());
-                } else {
-                    col.add_child(editor_view);
-                }
-                col.finish()
+            let editor_view = ChildView::new(&self.editor).finish();
+            if self.editor.as_ref(app).needs_vertical_constraint() {
+                col.add_child(Shrinkable::new(1., editor_view).finish());
             } else {
-                ChildView::new(&self.editor).finish()
-            };
+                col.add_child(editor_view);
+            }
+            col.finish()
+        } else {
+            ChildView::new(&self.editor).finish()
+        };
 
         let base_with_handler =
             Hoverable::new(self.context_menu_state.mouse_state.clone(), |_| base)
@@ -2501,51 +2468,6 @@ pub fn render_unsaved_changes_banner(
     .with_padding_left(12.)
     .with_padding_right(12.)
     .finish()
-}
-
-/// Renders a banner indicating that the remote SSH session is disconnected
-/// and save / auto-reload are unavailable.
-pub fn render_remote_disconnected_banner(appearance: &Appearance) -> Box<dyn Element> {
-    let row = Flex::row()
-        .with_cross_axis_alignment(CrossAxisAlignment::Center)
-        .with_main_axis_size(MainAxisSize::Max)
-        .with_child(
-            Container::new(
-                ConstrainedBox::new(
-                    Icon::Warning
-                        .to_warpui_icon(appearance.theme().active_ui_text_color())
-                        .finish(),
-                )
-                .with_height(16.)
-                .with_width(16.)
-                .finish(),
-            )
-            .with_margin_right(8.)
-            .finish(),
-        )
-        .with_child(
-            Shrinkable::new(
-                1.,
-                Text::new(
-                    "Remote host disconnected. You will not be able to see updates and save changes.",
-                    appearance.ui_font_family(),
-                    appearance.ui_font_size(),
-                )
-                .with_color(appearance.theme().active_ui_text_color().into())
-                .soft_wrap(true)
-                .finish(),
-            )
-            .finish(),
-        )
-        .finish();
-
-    Container::new(row)
-        .with_background(appearance.theme().text_selection_as_context_color())
-        .with_padding_top(8.)
-        .with_padding_bottom(8.)
-        .with_padding_left(12.)
-        .with_padding_right(12.)
-        .finish()
 }
 
 /// Renders a small yellow circle with tooltip indicating unsaved changes

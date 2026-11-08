@@ -318,9 +318,6 @@ impl CodeReviewState {
         update_dropdown: bool,
         ctx: &mut ViewContext<RightPanelView>,
     ) {
-        if repo_path.is_remote() {
-            return;
-        }
         if self.selected_repo_path.as_ref() == Some(&repo_path) {
             return;
         }
@@ -704,9 +701,6 @@ impl RightPanelView {
         else {
             return;
         };
-        if repo_path.is_remote() {
-            return;
-        }
         let pane_group_id = active_pane_group.id();
 
         if repo_dropdown_state.selected_repo_path.is_none() {
@@ -863,9 +857,10 @@ impl RightPanelView {
                 .finish();
         };
 
-        let selected_repo_path = state.selected_repo_path.as_ref().filter(|repo_path| {
-            !repo_path.is_remote() && state.available_repos.contains(repo_path)
-        });
+        let selected_repo_path = state
+            .selected_repo_path
+            .as_ref()
+            .filter(|repo_path| state.available_repos.contains(repo_path));
 
         let Some(selected_repo_path) = selected_repo_path else {
             let simple_header = self.render_simple_header(close_button);
@@ -1189,13 +1184,11 @@ impl RightPanelView {
         ctx: &mut ViewContext<Self>,
     ) -> Option<ViewHandle<CodeReviewView>> {
         // Early check: if pane group has no active repositories, don't create a view.
-        // Remote repos have no code review backend.
-        let has_active_repos = !repo_path.is_remote()
-            && self
-                .working_directories_model
-                .as_ref(ctx)
-                .most_recent_repositories_for_pane_group(pane_group_id)
-                .is_some_and(|mut repos| repos.any(|r| &r == repo_path));
+        let has_active_repos = self
+            .working_directories_model
+            .as_ref(ctx)
+            .most_recent_repositories_for_pane_group(pane_group_id)
+            .is_some_and(|mut repos| repos.any(|r| &r == repo_path));
 
         if !has_active_repos {
             return None;
@@ -1392,12 +1385,6 @@ impl RightPanelView {
                                 .push(ReviewTerminalUnavailableReason::SessionPathUnavailable),
                         }
                     }
-                    (repo_path @ LocalOrRemotePath::Remote(_), Some(current_repo_path))
-                        if repo_path.strip_repo_prefix(current_repo_path).is_some() => {}
-                    (LocalOrRemotePath::Remote(_), Some(_)) => unavailable_reasons
-                        .push(ReviewTerminalUnavailableReason::SessionOutsideSelectedRepo),
-                    (LocalOrRemotePath::Remote(_), None) => unavailable_reasons
-                        .push(ReviewTerminalUnavailableReason::SessionPathUnavailable),
                 },
                 None => unavailable_reasons.push(ReviewTerminalUnavailableReason::NoSelectedRepo),
             }
@@ -1671,9 +1658,6 @@ impl RightPanelView {
         repo_path: &LocalOrRemotePath,
         ctx: &mut ViewContext<Self>,
     ) {
-        if repo_path.is_remote() {
-            return;
-        }
         let Some(pane_group) = &self.active_pane_group else {
             return;
         };

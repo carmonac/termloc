@@ -6,13 +6,9 @@ use super::*;
 
 /// Builds a [`TuiDiffStorage`] over `diffs`, registering the `FileModel` its
 /// writes go through.
-fn add_tui_storage(
-    app: &mut App,
-    diffs: Vec<FileDiff>,
-    session_type: DiffSessionType,
-) -> ModelHandle<TuiDiffStorage> {
+fn add_tui_storage(app: &mut App, diffs: Vec<FileDiff>) -> ModelHandle<TuiDiffStorage> {
     app.add_singleton_model(FileModel::new);
-    app.add_model(|_| TuiDiffStorage::new(diffs, session_type))
+    app.add_model(|_| TuiDiffStorage::new(diffs))
 }
 
 #[test]
@@ -58,7 +54,7 @@ fn tui_v4a_final_bytes() {
 
 /// Runs the shared accept flow for local diffs on a fresh app and awaits the result.
 async fn accept_local(app: &mut App, diffs: Vec<FileDiff>) -> RequestFileEditsResult {
-    let model = add_tui_storage(app, diffs, DiffSessionType::Local);
+    let model = add_tui_storage(app, diffs);
     let future = model.update(app, |model, ctx| model.accept_and_save(ctx));
     future.await
 }

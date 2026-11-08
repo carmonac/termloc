@@ -1385,7 +1385,6 @@ impl CodePageWidget {
                                 codebase_path.clone(),
                             ));
                         }
-                        (LocalOrRemotePath::Remote(_), IndexingRefreshAction::Resync) => {}
                     })
                     .finish(),
             );
@@ -1407,7 +1406,6 @@ impl CodePageWidget {
                                 codebase_path.clone(),
                             ));
                         }
-                        LocalOrRemotePath::Remote(_) => {}
                     })
                     .finish(),
             );

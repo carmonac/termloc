@@ -261,9 +261,7 @@ impl SkillWatcher {
         repo_id: &RepositoryIdentifier,
         ctx: &mut ModelContext<Self>,
     ) {
-        let RepositoryIdentifier::Local(repo_path) = repo_id else {
-            return;
-        };
+        let RepositoryIdentifier::Local(repo_path) = repo_id;
         let Some(local_path) = repo_path.to_local_path() else {
             return;
         };
@@ -406,9 +404,7 @@ impl SkillWatcher {
         repo_id: &RepositoryIdentifier,
         ctx: &mut ModelContext<Self>,
     ) {
-        let RepositoryIdentifier::Local(repo_path) = repo_id else {
-            return;
-        };
+        let RepositoryIdentifier::Local(repo_path) = repo_id;
         let Some(local_path) = repo_path.to_local_path() else {
             return;
         };
@@ -1034,7 +1030,6 @@ fn read_project_skill_contents(
         LocalOrRemotePath::Local(_) => Some(Box::pin(async move {
             Ok(read_local_project_skill_contents(skill_paths))
         })),
-        LocalOrRemotePath::Remote(_) => None,
     }
 }
 

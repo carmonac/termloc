@@ -5819,35 +5819,23 @@ impl TerminalView {
                 ctx.emit(event_constructor(arg));
             }
             GitDeltaPreference::OnlyDirty => {
-                // For remote repos, skip the dirty check — there's no local
-                // GitRepoStatusModel, so the deferred open would never resolve.
-                // The diff chip only appears when the remote shell reports changes,
-                // so the user intent is clear.
-                if self
-                    .current_repo_path
-                    .as_ref()
-                    .is_some_and(|p| p.is_remote())
+                // Check if repo has uncommitted changes via the per-repo sub-model.
+                #[cfg(feature = "local_fs")]
                 {
-                    ctx.emit(event_constructor(arg));
-                } else {
-                    // Check if repo has uncommitted changes via the per-repo sub-model.
-                    #[cfg(feature = "local_fs")]
-                    {
-                        let is_dirty = self
-                            .git_status_metadata(ctx)
-                            .map(|m| !m.stats_against_head.has_no_changes());
-                        match is_dirty {
-                            Some(true) => ctx.emit(event_constructor(arg)),
-                            // Metadata not loaded yet — defer until the next
-                            // git repo status update delivers it.
-                            None => {
-                                self.deferred_code_review_open = Some(DeferredCodeReviewOpen {
-                                    git_delta_preference: delta_pref,
-                                    focus_new_pane,
-                                });
-                            }
-                            Some(false) => {}
+                    let is_dirty = self
+                        .git_status_metadata(ctx)
+                        .map(|m| !m.stats_against_head.has_no_changes());
+                    match is_dirty {
+                        Some(true) => ctx.emit(event_constructor(arg)),
+                        // Metadata not loaded yet — defer until the next
+                        // git repo status update delivers it.
+                        None => {
+                            self.deferred_code_review_open = Some(DeferredCodeReviewOpen {
+                                git_delta_preference: delta_pref,
+                                focus_new_pane,
+                            });
                         }
+                        Some(false) => {}
                     }
                 }
             }
@@ -9433,44 +9421,6 @@ impl TerminalView {
                             }
 
                             match &repo_path_opt {
-                                Some(LocalOrRemotePath::Remote(remote_path)) => {
-                                    #[cfg(not(target_family = "wasm"))]
-                                    DetectedRepositories::handle(ctx).update(
-                                        ctx,
-                                        |repos, _| {
-                                            repos.register_remote_repo_root(remote_path.clone());
-                                        },
-                                    );
-
-                                    // Remote sessions can only materialize their working
-                                    // directory after repo detection has resolved the host.
-                                    // Re-run app-state propagation now that the remote path
-                                    // is known so the active session's working directory catches up.
-                                    ctx.emit(Event::AppStateChanged);
-
-                                    if FeatureFlag::AIContextMenuEnabled.is_enabled() {
-                                        me.input.update(ctx, |input, ctx| {
-                                            input
-                                                .check_and_update_ai_context_menu_disabled_state(
-                                                    ctx,
-                                                );
-                                        });
-                                    }
-                                    ctx.emit(Event::Pane(PaneEvent::RemoteRepoNavigated {
-                                        remote_path: remote_path.clone(),
-                                    }));
-
-                                    // Wire up the remote git-status chips when the
-                                    // remote repo changed (mirrors the local branch).
-                                    let changed = !matches!(
-                                        old_repo_path.as_ref(),
-                                        Some(LocalOrRemotePath::Remote(rp)) if rp == remote_path
-                                    );
-                                    if changed {
-                                        me.clear_git_repo_status_subscription(ctx);
-                                        me.update_git_status_subscription(ctx);
-                                    }
-                                }
                                 Some(LocalOrRemotePath::Local(repo_path)) => {
                                     #[cfg(feature = "local_fs")]
                                     {
@@ -20123,10 +20073,7 @@ impl TerminalView {
     /// Returns the active session's CWD as a `LocalOrRemotePath`.
     ///
     /// For local sessions the CWD is canonicalized via `dunce::canonicalize`
-    /// and wrapped as `Local`. For remote sessions the CWD is read from
-    /// `active_block_metadata` and paired with the session's `host_id` to
-    /// form a `Remote` path. Returns `None` when no CWD is available or
-    /// (for remote sessions) the `host_id` has not been established yet.
+    /// and wrapped as `Local`. Returns `None` for remote sessions and when no CWD is available.
     pub fn pwd_as_local_or_remote(&self, ctx: &AppContext) -> Option<LocalOrRemotePath> {
         let session_id = self.active_block_session_id()?;
         let session = self.sessions.as_ref(ctx).get(session_id)?;

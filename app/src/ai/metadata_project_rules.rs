@@ -25,6 +25,5 @@ pub(crate) fn read_project_rule_contents(
             Ok(contents)
         }
         .boxed(),
-        Some(LocalOrRemotePath::Remote(_)) => futures::future::ready(Ok(Vec::new())).boxed(),
     }
 }

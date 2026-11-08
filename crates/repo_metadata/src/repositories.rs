@@ -5,9 +5,7 @@ use std::path::{Path, PathBuf};
 use futures::future::{Either, ready};
 #[cfg(test)]
 use virtual_fs::{Stub, VirtualFS};
-use warp_util::host_id::HostId;
 use warp_util::local_or_remote_path::LocalOrRemotePath;
-use warp_util::remote_path::{RemoteNavigationResult, RemotePath};
 use warp_util::standardized_path::StandardizedPath;
 #[cfg(test)]
 use warpui_core::r#async::FutureId;
@@ -43,44 +41,15 @@ pub struct DetectedRepositories {
 }
 
 impl DetectedRepositories {
-    /// Detects the git repository root for the given working directory.
-    ///
-    /// For **local sessions**, pass `None` for `remote_detect` — this delegates
-    /// to the local filesystem detection path.
-    ///
-    /// For **remote sessions**, pass `Some(future)` where the future resolves
-    /// with `(RemotePath, is_git)` from the remote server. The future is
-    /// typically obtained from `RemoteServerManager::navigate_to_directory`.
-    /// When `is_git` is true, the result is `Some(LocalOrRemotePath::Remote(...))`.
-    ///
-    /// This design avoids a circular dependency between `repo_metadata` and
-    /// `remote_server` — the caller in `app/` constructs the remote future
-    /// and injects it here.
-    pub fn detect_possible_git_repo<
-        F: Future<Output = Option<RemoteNavigationResult>> + 'static,
-    >(
+    /// Detects the git repository root for the given local working directory.
+    pub fn detect_possible_git_repo(
         &mut self,
         active_directory: &str,
         source: RepoDetectionSource,
-        remote_detect: Option<F>,
         ctx: &mut ModelContext<Self>,
-    ) -> impl Future<Output = Option<LocalOrRemotePath>> + use<F> {
-        match remote_detect {
-            None => {
-                // Local detection path.
-                let fut = self.detect_possible_local_git_repo(active_directory, source, ctx);
-                Either::Left(async move { fut.await.map(LocalOrRemotePath::Local) })
-            }
-            Some(remote_fut) => Either::Right(async move {
-                match remote_fut.await {
-                    Some(RemoteNavigationResult {
-                        remote_path,
-                        is_git: true,
-                    }) => Some(LocalOrRemotePath::Remote(remote_path)),
-                    _ => None,
-                }
-            }),
-        }
+    ) -> impl Future<Output = Option<LocalOrRemotePath>> + use<> {
+        let fut = self.detect_possible_local_git_repo(active_directory, source, ctx);
+        async move { fut.await.map(LocalOrRemotePath::Local) }
     }
 
     /// Given the active directory pwd, kick off a background job to detect the git project root and emit an event
@@ -215,7 +184,7 @@ impl DetectedRepositories {
         DirectoryWatcher::as_ref(ctx).get_watched_directory_for_path(local_path)
     }
 
-    /// Given a local or remote path, return its corresponding repo root.
+    /// Given a path, return its corresponding repo root.
     ///
     /// No git detection is performed; roots are looked up in our cached
     /// path-to-root mapping. Note that for local paths this still hits the
@@ -229,11 +198,10 @@ impl DetectedRepositories {
                 let std_path = StandardizedPath::from_local_canonicalized(local_path).ok()?;
                 self.find_local_repository_root(&std_path)
             }
-            LocalOrRemotePath::Remote(remote_path) => self.find_remote_repository_root(remote_path),
         }
     }
 
-    /// Given a local or remote path, return its corresponding repo root.
+    /// Given a path, return its corresponding repo root.
     /// This does not run the check against the actual file system.
     /// Instead it checks against our cached path to root mapping.
     ///
@@ -250,7 +218,6 @@ impl DetectedRepositories {
                 let std_path = StandardizedPath::try_from_local(local_path).ok()?;
                 self.find_local_repository_root(&std_path)
             }
-            LocalOrRemotePath::Remote(remote_path) => self.find_remote_repository_root(remote_path),
         }
     }
 
@@ -265,33 +232,6 @@ impl DetectedRepositories {
             }
         }
         None
-    }
-
-    /// Find the remote repository that contains the given path, if any.
-    fn find_remote_repository_root(&self, remote_path: &RemotePath) -> Option<LocalOrRemotePath> {
-        for ancestor in remote_path.path.ancestors() {
-            let candidate =
-                LocalOrRemotePath::Remote(RemotePath::new(remote_path.host_id.clone(), ancestor));
-            if self.repository_roots.contains(&candidate) {
-                return Some(candidate);
-            }
-        }
-        None
-    }
-
-    /// Register a remote repository root discovered via the remote server.
-    pub fn register_remote_repo_root(&mut self, remote_path: RemotePath) {
-        self.repository_roots
-            .insert(LocalOrRemotePath::Remote(remote_path));
-    }
-
-    /// Remove all cached repository roots for a given remote host.
-    /// Call on `HostDisconnected` to prevent stale entries.
-    pub fn remove_roots_for_host(&mut self, host_id: &HostId) {
-        self.repository_roots.retain(|entry| match entry {
-            LocalOrRemotePath::Local(_) => true,
-            LocalOrRemotePath::Remote(remote) => remote.host_id != *host_id,
-        });
     }
 }
 

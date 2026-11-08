@@ -13,8 +13,6 @@ use repo_metadata::repositories::DetectedRepositories;
 #[cfg(feature = "local_fs")]
 use warp_errors::report_error;
 #[cfg(feature = "local_fs")]
-use warp_util::remote_path::RemotePath;
-#[cfg(feature = "local_fs")]
 use warpui::{AppContext, SingletonEntity as _};
 use warpui::{Entity, EntityId, ModelContext, ModelHandle, ViewHandle};
 
@@ -28,10 +26,7 @@ use crate::code_review::comments::{
 use crate::code_review::diff_state::{DiffMode, DiffStateModel};
 use crate::workspace::view::global_search::view::GlobalSearchView;
 
-/// Type-safe wrapper around the map of `LocalOrRemotePath` → `DiffStateModel`.
-///
-/// Enforces that local keys are always paired with local-backend models and
-/// remote keys with remote-backend models via dedicated insertion methods.
+/// Map of `LocalOrRemotePath` → `DiffStateModel`.
 #[cfg(feature = "local_fs")]
 #[derive(Default)]
 struct DiffStateModelMap {
@@ -44,17 +39,7 @@ impl DiffStateModelMap {
         self.models.get(key)
     }
 
-    /// Insert a model that was created from a `LocalOrRemotePath::Local` key.
-    fn insert_local(
-        &mut self,
-        path: PathBuf,
-        model: ModelHandle<DiffStateModel>,
-        ctx: &AppContext,
-    ) {
-        debug_assert!(
-            matches!(model.as_ref(ctx), DiffStateModel::Local(_)),
-            "insert_local called with a remote-backend DiffStateModel",
-        );
+    fn insert_local(&mut self, path: PathBuf, model: ModelHandle<DiffStateModel>) {
         self.models.insert(LocalOrRemotePath::Local(path), model);
     }
 
@@ -371,12 +356,10 @@ impl WorkingDirectoriesModel {
             return Some(model.clone());
         }
 
-        let LocalOrRemotePath::Local(path) = key else {
-            return None;
-        };
+        let LocalOrRemotePath::Local(path) = key;
         let diff_state_model = ctx.add_model(|ctx| DiffStateModel::new_local(path.clone(), ctx));
         self.diff_state_models
-            .insert_local(path, diff_state_model.clone(), ctx);
+            .insert_local(path, diff_state_model.clone());
 
         Some(diff_state_model)
     }
@@ -593,25 +576,18 @@ impl WorkingDirectoriesModel {
         let root_for_path = |path: PathBuf| {
             DetectedRepositories::as_ref(ctx)
                 .get_root_for_path(&LocalOrRemotePath::Local(path.clone()))
-                .and_then(|r| PathBuf::try_from(r).ok())
+                .map(PathBuf::from)
                 .unwrap_or(path)
         };
 
         let root_for_raw_path = |raw_path: &str| normalize_cwd(raw_path).map(root_for_path);
 
-        // Split terminal CWDs into local and remote buckets.
-        let mut local_terminal_cwds: Vec<(EntityId, String)> = Vec::new();
-        let mut remote_terminal_cwds: Vec<(EntityId, RemotePath)> = Vec::new();
-        for (terminal_id, cwd) in &terminal_cwds {
-            match cwd {
-                LocalOrRemotePath::Local(path) => {
-                    local_terminal_cwds.push((*terminal_id, path.to_string_lossy().into_owned()));
-                }
-                LocalOrRemotePath::Remote(remote_path) => {
-                    remote_terminal_cwds.push((*terminal_id, remote_path.clone()));
-                }
-            }
-        }
+        let local_terminal_cwds: Vec<(EntityId, String)> = terminal_cwds
+            .iter()
+            .map(|(terminal_id, LocalOrRemotePath::Local(path))| {
+                (*terminal_id, path.to_string_lossy().into_owned())
+            })
+            .collect();
 
         // Collapse working directories to their nearest repository root (when detected).
         let mut file_path_ancestors: HashSet<PathBuf> = local_terminal_cwds
@@ -619,19 +595,12 @@ impl WorkingDirectoriesModel {
             .filter_map(|(_, cwd)| root_for_raw_path(cwd))
             .collect();
 
-        // Split editor paths into local and remote buckets.
-        let mut local_editor_paths: Vec<(EntityId, String)> = Vec::new();
-        let mut remote_editor_paths: Vec<(EntityId, RemotePath)> = Vec::new();
-        for (view_id, path) in &editor_paths {
-            match path {
-                LocalOrRemotePath::Local(p) => {
-                    local_editor_paths.push((*view_id, p.to_string_lossy().into_owned()));
-                }
-                LocalOrRemotePath::Remote(remote_path) => {
-                    remote_editor_paths.push((*view_id, remote_path.clone()));
-                }
-            }
-        }
+        let local_editor_paths: Vec<(EntityId, String)> = editor_paths
+            .iter()
+            .map(|(view_id, LocalOrRemotePath::Local(p))| {
+                (*view_id, p.to_string_lossy().into_owned())
+            })
+            .collect();
 
         let local_cwds: Vec<(EntityId, String)> = local_editor_paths
             .into_iter()
@@ -656,37 +625,10 @@ impl WorkingDirectoriesModel {
             .filter_map(|(_, cwd)| root_for_raw_path(cwd))
             .collect();
 
-        // Build remote root paths for pane_groups from remote terminal CWDs
-        // and remote editor paths (resolved to repo root when possible).
-        let mut new_remote_display_roots: Vec<LocalOrRemotePath> = Vec::new();
-        for (_terminal_id, remote_path) in &remote_terminal_cwds {
-            let remote_key = LocalOrRemotePath::Remote(remote_path.clone());
-            let root = DetectedRepositories::as_ref(ctx)
-                .get_root_for_path(&remote_key)
-                .unwrap_or(remote_key);
-            new_remote_display_roots.push(root);
-        }
-        for (_view_id, remote_path) in &remote_editor_paths {
-            let remote_key = LocalOrRemotePath::Remote(remote_path.clone());
-            if let Some(repo_root) =
-                DetectedRepositories::as_ref(ctx).get_root_for_path(&remote_key)
-            {
-                new_remote_display_roots.push(repo_root);
-            } else if let Some(parent) = remote_path.path.parent() {
-                // Fall back to the parent directory, matching the local editor path behavior.
-                new_remote_display_roots.push(LocalOrRemotePath::Remote(RemotePath::new(
-                    remote_path.host_id.clone(),
-                    parent,
-                )));
-            }
-        }
-
-        // Combine local + remote into the unified display roots set.
         let new_display_roots: Vec<LocalOrRemotePath> = new_local_root_paths
             .iter()
             .cloned()
             .map(LocalOrRemotePath::Local)
-            .chain(new_remote_display_roots.iter().cloned())
             .collect();
 
         // Get or create the IndexSet for this pane group
@@ -719,32 +661,6 @@ impl WorkingDirectoriesModel {
         new_root_to_terminal
             .retain(|cwd, _terminal_id| cwd.to_local_path().is_some_and(|p| new_roots.contains(p)));
 
-        // Resolve remote terminal CWDs to their repo roots and add to mappings.
-        let mut new_remote_repo_roots: Vec<LocalOrRemotePath> = Vec::new();
-        for (terminal_id, remote_path) in &remote_terminal_cwds {
-            let remote_key = LocalOrRemotePath::Remote(remote_path.clone());
-            if let Some(repo_root) =
-                DetectedRepositories::as_ref(ctx).get_root_for_path(&remote_key)
-            {
-                new_root_to_terminal.insert(repo_root.clone(), *terminal_id);
-                new_remote_repo_roots.push(repo_root);
-            } else {
-                // No repo detected — still track the CWD → terminal mapping
-                // so `find_review_terminal` can resolve it.
-                new_root_to_terminal.insert(remote_key, *terminal_id);
-            }
-        }
-
-        // Resolve remote editor paths to their repo roots.
-        for (_view_id, remote_path) in &remote_editor_paths {
-            let remote_key = LocalOrRemotePath::Remote(remote_path.clone());
-            if let Some(repo_root) =
-                DetectedRepositories::as_ref(ctx).get_root_for_path(&remote_key)
-            {
-                new_remote_repo_roots.push(repo_root);
-            }
-        }
-
         // Second pass: if we have a focused terminal, ensure its repo maps to it
         // This ensures the dropdown selects the correct repo when a pane is focused or CD'd
         let mut focused_repo: Option<LocalOrRemotePath> = None;
@@ -764,12 +680,9 @@ impl WorkingDirectoriesModel {
             }
         }
 
-        // Build the unified set of repo roots (local + remote).
         let mut new_repo_roots_wrapped: Vec<LocalOrRemotePath> = new_local_repo_roots
             .into_iter()
             .map(LocalOrRemotePath::Local)
-            .chain(new_remote_repo_roots)
-            .chain(new_remote_display_roots)
             .collect();
         // Deduplicate (IndexSet handles this, but avoid duplicates in the input).
         let seen: HashSet<_> = new_repo_roots_wrapped.iter().cloned().collect();
@@ -852,7 +765,7 @@ impl WorkingDirectoriesModel {
     fn get_repo_root_for_path(&self, path: &Path, ctx: &AppContext) -> Option<PathBuf> {
         DetectedRepositories::as_ref(ctx)
             .get_root_for_path(&LocalOrRemotePath::Local(path.to_path_buf()))
-            .and_then(|r| PathBuf::try_from(r).ok())
+            .map(PathBuf::from)
     }
 
     /// Emit a DirectoriesChanged event with the current state for a specific pane group.

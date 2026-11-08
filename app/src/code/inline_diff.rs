@@ -24,8 +24,6 @@ use super::editor::NavBarBehavior;
 use super::editor::scroll::{ScrollPosition, ScrollTrigger};
 use super::editor::view::{CodeEditorEvent, CodeEditorView};
 use crate::ai::blocklist::diff_storage::SaveFuture;
-#[cfg(not(target_family = "wasm"))]
-use crate::ai::blocklist::diff_types::DiffSessionType;
 use crate::editor::InteractionState;
 
 pub enum InlineDiffViewEvent {
@@ -72,8 +70,6 @@ pub struct InlineDiffView {
     /// - Accept, save, and revert are no-ops.
     backing_file_id: Option<FileId>,
     #[cfg(not(target_family = "wasm"))]
-    session_type: Option<DiffSessionType>,
-    #[cfg(not(target_family = "wasm"))]
     persistence: PersistenceState,
 }
 
@@ -105,8 +101,6 @@ impl InlineDiffView {
             was_edited: false,
             backing_file_id: None,
             #[cfg(not(target_family = "wasm"))]
-            session_type: None,
-            #[cfg(not(target_family = "wasm"))]
             persistence: PersistenceState::Unpersisted,
         };
 
@@ -124,34 +118,28 @@ impl InlineDiffView {
     ///
     /// This must be called after construction for non-WASM environments.
     #[cfg(not(target_family = "wasm"))]
-    pub fn register_file(&mut self, session_type: &DiffSessionType, ctx: &mut ViewContext<Self>) {
+    pub fn register_file(&mut self, ctx: &mut ViewContext<Self>) {
         let Some(file_path) = &self.file_path else {
             return;
         };
 
         let file_model = FileModel::handle(ctx);
-        let file_id = match session_type {
-            DiffSessionType::Local => {
-                let Some(local_path) = file_path.to_local_path() else {
-                    crate::safe_error!(
-                        safe: (
-                            "Failed to convert StandardizedPath to local path; diff will be \
-                            read-only"
-                        ),
-                        full: (
-                            "Failed to convert StandardizedPath to local path: {file_path}; diff \
-                            will be read-only"
-                        )
-                    );
-                    return;
-                };
-                file_model.update(ctx, |file_model, ctx| {
-                    file_model.register_file_path(&local_path, false, ctx)
-                })
-            }
+        let Some(local_path) = file_path.to_local_path() else {
+            crate::safe_error!(
+                safe: (
+                    "Failed to convert StandardizedPath to local path; diff will be read-only"
+                ),
+                full: (
+                    "Failed to convert StandardizedPath to local path: {file_path}; diff will \
+                    be read-only"
+                )
+            );
+            return;
         };
+        let file_id = file_model.update(ctx, |file_model, ctx| {
+            file_model.register_file_path(&local_path, false, ctx)
+        });
 
-        self.session_type = Some(session_type.clone());
         self.finish_file_registration(file_id, ctx);
     }
 
@@ -338,11 +326,9 @@ impl InlineDiffView {
                         .base_content(ctx)
                         .ok_or_else(|| "Missing base content".to_owned())?;
                     match diff {
-                        Some(DiffType::Delete { .. })
-                            if matches!(self.session_type, Some(DiffSessionType::Local)) =>
-                        {
-                            // Local IDs cache canonical paths, so reuse could write a deleted
-                            // symlink's referent. Remote IDs already preserve the requested path.
+                        Some(DiffType::Delete { .. }) => {
+                            // File IDs cache canonical paths, so reuse could write a deleted
+                            // symlink's referent.
                             let original_path =
                                 self.file_path.as_ref().expect("registered file has a path");
                             file_model.update(ctx, |model, ctx| {
@@ -363,17 +349,8 @@ impl InlineDiffView {
                             .as_ref()
                             != self.file_path.as_ref() =>
                         {
-                            let target_id = file_model.update(ctx, |model, ctx| {
-                                match self
-                                    .session_type
-                                    .as_ref()
-                                    .expect("registered file has a session")
-                                {
-                                    DiffSessionType::Local => {
-                                        Ok::<_, String>(model.register_file_path(to, false, ctx))
-                                    }
-                                }
-                            })?;
+                            let target_id = file_model
+                                .update(ctx, |model, ctx| model.register_file_path(to, false, ctx));
                             let original_path =
                                 self.file_path.as_ref().expect("registered file has a path");
                             file_model.update(ctx, |model, ctx| {
@@ -388,11 +365,10 @@ impl InlineDiffView {
                                 result
                             })
                         }
-                        Some(DiffType::Delete { .. } | DiffType::Update { .. }) | None => {
-                            file_model.update(ctx, |model, ctx| {
+                        Some(DiffType::Update { .. }) | None => file_model
+                            .update(ctx, |model, ctx| {
                                 model.save(file_id, base_content, version, ctx)
-                            })
-                        }
+                            }),
                         Some(DiffType::Create { .. }) => unreachable!(),
                     }
                 }

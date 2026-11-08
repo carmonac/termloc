@@ -191,10 +191,7 @@ impl GlobalBufferModel {
         // Collect paths for didClose before removing entries.
         let paths_to_close: Vec<PathBuf> = ids_to_remove
             .iter()
-            .filter_map(|id| match self.location_to_id.get_by_right(id) {
-                Some(LocalOrRemotePath::Local(path)) => Some(path.clone()),
-                Some(LocalOrRemotePath::Remote(_)) | None => None,
-            })
+            .filter_map(|id| self.location_to_id.get_by_right(id).map(PathBuf::from))
             .collect();
 
         for path in &paths_to_close {
@@ -842,15 +839,6 @@ impl GlobalBufferModel {
             LocalOrRemotePath::Local(_) => {
                 unimplemented!("Local buffers require the local_fs feature")
             }
-            LocalOrRemotePath::Remote(_) => {
-                let file_id = FileId::new();
-                let buffer = ctx.add_model(|_| Buffer::default());
-                ctx.emit(GlobalBufferModelEvent::FailedToLoad {
-                    file_id,
-                    error: Rc::new(FileLoadError::DoesNotExist),
-                });
-                BufferState::new(file_id, buffer)
-            }
         }
     }
 
@@ -1201,9 +1189,7 @@ impl GlobalBufferModel {
             .location_to_id
             .iter()
             .filter_map(|(location, id)| {
-                let LocalOrRemotePath::Local(path) = location else {
-                    return None;
-                };
+                let LocalOrRemotePath::Local(path) = location;
                 if !path.starts_with(workspace_path) {
                     return None;
                 }

@@ -21,7 +21,7 @@ use crate::ai::agent::{
 };
 use crate::ai::blocklist::BlocklistAIPermissions;
 use crate::ai::blocklist::diff_storage::RegisteredDiffStorage;
-use crate::ai::blocklist::diff_types::{DiffSessionType, FileDiff};
+use crate::ai::blocklist::diff_types::FileDiff;
 use crate::ai::paths::host_native_absolute_path;
 use crate::terminal::model::session::active_session::ActiveSession;
 use crate::workspaces::user_workspaces::TeamContext;
@@ -264,7 +264,7 @@ impl RequestFileEditsExecutor {
 
         // Set the session type so save/delete/create routes through the
         // correct FileModel backend.
-        storage.set_candidate_diffs(diffs, DiffSessionType::Local, ctx);
+        storage.set_candidate_diffs(diffs, ctx);
     }
 }
 

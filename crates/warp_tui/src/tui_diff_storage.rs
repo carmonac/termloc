@@ -14,12 +14,12 @@ use ai::diff_validation::{DiffDelta, DiffType};
 use futures::FutureExt;
 use futures::future::BoxFuture;
 use warp::tui_export::{
-    DiffSessionType, DiffStorage, DiffStorageHelper, FileDiff, FileSnapshot, RegisteredDiffStorage,
-    SaveFuture, UpdatedFileState, changed_lines_from_op,
+    DiffStorage, DiffStorageHelper, FileDiff, FileSnapshot, RegisteredDiffStorage, SaveFuture,
+    UpdatedFileState, changed_lines_from_op,
 };
 use warp_files::FileModel;
 use warp_util::content_version::ContentVersion;
-use warp_util::file::{FileId, FileSaveError};
+use warp_util::file::FileSaveError;
 use warp_util::standardized_path::StandardizedPath;
 use warpui::{AppContext, Entity, ModelContext, ModelHandle, SingletonEntity};
 
@@ -106,29 +106,16 @@ impl PersistAction {
     }
 }
 
-/// Registers `path` with [`FileModel`] using the session's local/remote backend.
-fn register_file(
-    file_model: &mut FileModel,
-    session_type: &DiffSessionType,
-    path: &str,
-    ctx: &mut ModelContext<FileModel>,
-) -> Result<FileId, FileSaveError> {
-    match session_type {
-        DiffSessionType::Local => Ok(file_model.register_file_path(Path::new(path), false, ctx)),
-    }
-}
-
 /// Registers a file with [`FileModel`] and dispatches its write, returning the
 /// write's completion future.
 fn dispatch_write(
     file_model: &mut FileModel,
-    session_type: &DiffSessionType,
     action: &PersistAction,
     path: &str,
     final_content: String,
     ctx: &mut ModelContext<FileModel>,
 ) -> Result<SaveFuture, FileSaveError> {
-    let file_id = register_file(file_model, session_type, path, ctx)?;
+    let file_id = file_model.register_file_path(Path::new(path), false, ctx);
     let version = ContentVersion::new();
     let dispatch = match action {
         PersistAction::Delete => file_model.delete(file_id, version, ctx),
@@ -206,16 +193,12 @@ pub(crate) enum TuiDiffStorageEvent {
 /// buffers of its own.
 pub(crate) struct TuiDiffStorage {
     diffs: Vec<FileDiff>,
-    session_type: DiffSessionType,
 }
 
 impl TuiDiffStorage {
     /// Creates storage over resolved diffs.
-    pub(crate) fn new(diffs: Vec<FileDiff>, session_type: DiffSessionType) -> Self {
-        Self {
-            diffs,
-            session_type,
-        }
+    pub(crate) fn new(diffs: Vec<FileDiff>) -> Self {
+        Self { diffs }
     }
 
     /// The stored diffs (for views rendering a summary over this storage).
@@ -223,10 +206,9 @@ impl TuiDiffStorage {
         &self.diffs
     }
 
-    /// Replaces the stored diffs and session backend.
-    fn set_candidate_diffs(&mut self, diffs: Vec<FileDiff>, session_type: DiffSessionType) {
+    /// Replaces the stored diffs.
+    fn set_candidate_diffs(&mut self, diffs: Vec<FileDiff>) {
         self.diffs = diffs;
-        self.session_type = session_type;
     }
 }
 
@@ -248,7 +230,6 @@ impl DiffStorage for TuiDiffStorage {
 
     fn start_saving(&mut self, app: &mut AppContext) -> Vec<SaveFuture> {
         let file_model = FileModel::handle(app);
-        let session_type = self.session_type.clone();
         self.diffs
             .iter()
             .map(|diff| {
@@ -261,14 +242,7 @@ impl DiffStorage for TuiDiffStorage {
                 let action = PersistAction::resolve(&diff.diff_type, &path);
                 file_model
                     .update(app, |file_model, ctx| {
-                        dispatch_write(
-                            file_model,
-                            &session_type,
-                            &action,
-                            &path,
-                            final_content,
-                            ctx,
-                        )
+                        dispatch_write(file_model, &action, &path, final_content, ctx)
                     })
                     .unwrap_or_else(ready_save_failure)
             })
@@ -297,14 +271,9 @@ impl TuiDiffStorageHandle {
 }
 
 impl RegisteredDiffStorage for TuiDiffStorageHandle {
-    fn set_candidate_diffs(
-        &self,
-        diffs: Vec<FileDiff>,
-        session_type: DiffSessionType,
-        app: &mut AppContext,
-    ) {
+    fn set_candidate_diffs(&self, diffs: Vec<FileDiff>, app: &mut AppContext) {
         self.storage.update(app, |model, ctx| {
-            model.set_candidate_diffs(diffs, session_type);
+            model.set_candidate_diffs(diffs);
             ctx.emit(TuiDiffStorageEvent::CandidateDiffsSet);
         });
     }

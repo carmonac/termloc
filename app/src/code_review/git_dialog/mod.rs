@@ -492,7 +492,7 @@ impl GitDialog {
             has_upstream,
             ctx,
         );
-        let mut this = Self {
+        let this = Self {
             repo_location,
             diff_state_model,
             branch_name,
@@ -506,9 +506,6 @@ impl GitDialog {
         // generates it (local in-process, remote on the daemon) and the result
         // returns via the diff-state subscription wired up just above.
         commit::maybe_start_commit_message_autogen(&this, ctx);
-        // Remote repos source the Changes box from synced metadata (the local
-        // path loads it from the working tree in `commit::new_state`).
-        commit::refresh_remote_file_changes(&mut this, ctx);
         this.refresh_confirm_enabled(ctx);
         this
     }
@@ -626,11 +623,8 @@ impl GitDialog {
             commit::apply_generated_commit_message(self, result.clone(), ctx);
             return;
         }
-        // Commit mode (remote) sources its Changes box from synced metadata, so
-        // refresh it whenever metadata lands. Arrives independently of any
-        // in-flight op, so it's handled outside the `loading` gate below.
+        // Metadata refreshes arrive independently of any in-flight op.
         if let DiffStateModelEvent::MetadataRefreshed(_) = event {
-            commit::refresh_remote_file_changes(self, ctx);
             return;
         }
         // The create-PR dialog fetches its committed file list on open

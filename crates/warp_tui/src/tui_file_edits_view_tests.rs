@@ -5,7 +5,7 @@ use futures::channel::oneshot;
 use warp::appearance::Appearance;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
-    AIAgentAction, AIAgentActionId, AIAgentActionType, AIConversationId, DiffSessionType, FileDiff,
+    AIAgentAction, AIAgentActionId, AIAgentActionType, AIConversationId, FileDiff,
     RegisteredDiffStorage, TaskId, queue_tui_permission_action,
 };
 use warp_editor::content::buffer::InitialBufferState;
@@ -425,7 +425,6 @@ fn seed_two_file_diffs(app: &mut App, view: &ViewHandle<TuiFileEditsView>) {
                 update_diff("/tmp/a/lib.rs", None),
                 update_diff("/tmp/b/main.rs", None),
             ],
-            DiffSessionType::Local,
             ctx,
         );
     });

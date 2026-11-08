@@ -1,27 +1,15 @@
 use warp_util::local_or_remote_path::LocalOrRemotePath;
 pub use warp_util::path::*;
 
-/// Label used for the host of a `RemotePath`.
-const UNKNOWN_HOST_LABEL: &str = "Remote host";
-
-/// Returns the display name of a local or remote path, prefixed with the
-/// host label for remote paths.
+/// Returns the display name of a path.
 pub fn display_name_with_host(path: &LocalOrRemotePath) -> String {
-    let name = path.display_name();
-    match path {
-        LocalOrRemotePath::Local(_) => name.to_string(),
-        LocalOrRemotePath::Remote(_) => {
-            format!("{UNKNOWN_HOST_LABEL}:{name}")
-        }
-    }
+    path.display_name().to_string()
 }
 
-/// Returns the display path of a local or remote path,
-/// prefixed with the host label for remote paths.
+/// Returns the display path of a path.
 ///
-/// When `abbreviate_home` is true, local paths under the user's home directory
-/// are abbreviated with a `~/` prefix. The flag is ignored for remote paths,
-/// whose home directory lives on a different machine.
+/// When `abbreviate_home` is true, paths under the user's home directory are abbreviated with a
+/// `~/` prefix.
 pub fn display_path_with_host(path: &LocalOrRemotePath, abbreviate_home: bool) -> String {
     match path {
         LocalOrRemotePath::Local(local_path) => {
@@ -33,9 +21,6 @@ pub fn display_path_with_host(path: &LocalOrRemotePath, abbreviate_home: bool) -
             } else {
                 path.display_path()
             }
-        }
-        LocalOrRemotePath::Remote(_) => {
-            format!("{UNKNOWN_HOST_LABEL}:{}", path.display_path())
         }
     }
 }

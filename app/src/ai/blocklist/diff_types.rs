@@ -69,12 +69,6 @@ fn line_count(content: &str) -> usize {
     content.lines().count()
 }
 
-/// The filesystem a code diff targets.
-#[derive(Clone, Debug)]
-pub enum DiffSessionType {
-    Local,
-}
-
 /// Derives the 1-indexed changed line ranges described by a diff's deltas.
 pub fn changed_lines_from_op(diff_type: &DiffType) -> Vec<Range<usize>> {
     match diff_type {

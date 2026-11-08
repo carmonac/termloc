@@ -6,6 +6,8 @@
 
 use std::future::Future;
 
+#[cfg(not(target_family = "wasm"))]
+use futures::future::Either;
 use futures::future::ready;
 #[cfg(not(target_family = "wasm"))]
 use repo_metadata::repositories::DetectedRepositories;
@@ -28,9 +30,8 @@ pub enum RepoDetectionSessionType {
 /// Delegates to [`DetectedRepositories::detect_possible_git_repo`]; remote sessions never
 /// resolve to a repository.
 ///
-/// The caller is responsible for registering remote repo roots in
-/// `DetectedRepositories` and triggering downstream side effects (git status,
-/// code review, etc.) in the spawn callback. Callers that only need the
+/// The caller is responsible for triggering downstream side effects (git status, code review,
+/// etc.) in the spawn callback. Callers that only need the
 /// `DetectedGitRepo` event side effect (e.g. the TUI front-end's project
 /// rules/skills indexing) may drop the returned future: detection runs on a
 /// task spawned inside [`DetectedRepositories`], so it completes regardless.
@@ -43,14 +44,14 @@ pub fn detect_possible_git_repo(
 ) -> impl Future<Output = Option<LocalOrRemotePath>> + use<> {
     // Remote sessions resolve to `None` rather than falling through to local detection, which
     // would misclassify a remote CWD as a local repo if the same absolute path exists locally.
-    let remote_detect = match session_type {
-        RepoDetectionSessionType::Local => None,
-        RepoDetectionSessionType::Remote => Some(ready(None)),
-    };
-
-    DetectedRepositories::handle(ctx).update(ctx, |repos, ctx| {
-        repos.detect_possible_git_repo(active_directory, source, remote_detect, ctx)
-    })
+    match session_type {
+        RepoDetectionSessionType::Local => {
+            Either::Left(DetectedRepositories::handle(ctx).update(ctx, |repos, ctx| {
+                repos.detect_possible_git_repo(active_directory, source, ctx)
+            }))
+        }
+        RepoDetectionSessionType::Remote => Either::Right(ready(None)),
+    }
 }
 
 /// Repository detection is not available in WASM builds because

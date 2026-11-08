@@ -476,20 +476,6 @@ impl DiffStateModel {
         }
     }
 
-    /// Per-file entries for the uncommitted-vs-HEAD changes, sourced from
-    /// synced metadata (`against_head.files`). The per-file counterpart to
-    /// `get_uncommitted_stats`. Empty until metadata loads. Available for both
-    /// backends, so the commit dialog's Changes box works for remote repos
-    /// without reading the working tree.
-    pub(crate) fn uncommitted_file_entries<'a>(
-        &self,
-        ctx: &'a AppContext,
-    ) -> &'a [FileChangeEntry] {
-        match self {
-            Self::Local(m) => m.as_ref(ctx).uncommitted_file_entries(),
-        }
-    }
-
     pub(crate) fn get_main_branch_name(&self, ctx: &AppContext) -> Option<String> {
         match self {
             Self::Local(m) => m.as_ref(ctx).get_main_branch_name(),

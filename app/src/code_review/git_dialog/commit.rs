@@ -293,28 +293,6 @@ pub(super) fn maybe_start_commit_message_autogen(me: &GitDialog, ctx: &mut ViewC
     });
 }
 
-/// Sources the commit Changes box from synced metadata (`against_head.files`).
-/// Remote repos can't read the working tree, so the list comes from metadata
-/// instead of `get_file_change_entries`. No-op for local repos, which load it
-/// from the working tree in `new_state` (and re-scope it on the unstaged
-/// toggle). Safe to call on open and on every metadata refresh.
-pub(super) fn refresh_remote_file_changes(me: &mut GitDialog, ctx: &mut ViewContext<GitDialog>) {
-    if !me.repo_location().is_remote() {
-        return;
-    }
-    let entries = me.diff_state_model().read(ctx, |model, ctx| {
-        model.uncommitted_file_entries(ctx).to_vec()
-    });
-    {
-        let GitDialogMode::Commit(state) = me.mode_mut() else {
-            return;
-        };
-        state.file_changes = entries;
-    }
-    me.refresh_confirm_enabled(ctx);
-    ctx.notify();
-}
-
 pub(super) fn handle_sub_action(
     me: &mut GitDialog,
     action: &CommitSubAction,

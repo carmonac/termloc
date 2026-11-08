@@ -64,7 +64,7 @@ pub use crate::ai::blocklist::diff_storage::{
     DiffStorage, DiffStorageHelper, FileSnapshot, RegisteredDiffStorage, SaveFuture,
     UpdatedFileState,
 };
-pub use crate::ai::blocklist::diff_types::{DiffSessionType, FileDiff, changed_lines_from_op};
+pub use crate::ai::blocklist::diff_types::{FileDiff, changed_lines_from_op};
 pub use crate::ai::blocklist::history_model::{
     AIQueryHistory, BlocklistAIHistoryEvent, BlocklistAIHistoryModel, CloudConversationData,
     ConversationStatusUpdate, FORK_PREFIX, ForkConversationError,

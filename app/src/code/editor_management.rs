@@ -149,7 +149,6 @@ impl CodeSource {
             Self::FileTree { location, .. } | Self::CommandPalette { location, .. } => {
                 match location {
                     LocalOrRemotePath::Local(path) => Some(path.clone()),
-                    LocalOrRemotePath::Remote(_) => None,
                 }
             }
             Self::Link { path, .. } | Self::Finder { path } => Some(path.clone()),
@@ -215,23 +214,7 @@ impl CodeSource {
     /// `AIAction` is ephemeral (tied to a live conversation) and should not
     /// be restored.
     pub fn is_restorable(&self) -> bool {
-        !matches!(
-            self,
-            Self::AIAction { .. }
-                | Self::FileTree {
-                    location: LocalOrRemotePath::Remote(_),
-                }
-                | Self::CommandPalette {
-                    location: LocalOrRemotePath::Remote(_),
-                }
-                | Self::ProjectRules {
-                    location: LocalOrRemotePath::Remote(_),
-                }
-                | Self::Skill {
-                    location: LocalOrRemotePath::Remote(_),
-                    ..
-                }
-        )
+        !matches!(self, Self::AIAction { .. })
     }
 }
 

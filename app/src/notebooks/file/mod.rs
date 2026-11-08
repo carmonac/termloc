@@ -12,7 +12,6 @@ use warp_files::{FileModel, FileModelEvent};
 use warp_util::file::FileId;
 use warp_util::local_or_remote_path::LocalOrRemotePath;
 use warp_util::path::user_friendly_path;
-use warp_util::remote_path::RemotePath;
 use warpui::accessibility::{AccessibilityContent, WarpA11yRole};
 #[cfg(feature = "local_fs")]
 use warpui::clipboard::ClipboardContent;
@@ -417,11 +416,10 @@ impl FileNotebookView {
         ctx.notify();
     }
 
-    /// Open a file from a local or remote path.
+    /// Open a file from a path.
     ///
-    /// `session` resolves display names and link context for local paths; when `None` the
-    /// view falls back to the active local session once one becomes available. Remote paths
-    /// ignore it because the `RemotePath` already carries host info.
+    /// `session` resolves display names and link context; when `None` the view falls back to
+    /// the active local session once one becomes available.
     pub fn open(
         &mut self,
         path: LocalOrRemotePath,
@@ -436,9 +434,6 @@ impl FileNotebookView {
                         .filter(|s| s.is_local())
                 });
                 self.open_local(local_path, session, ctx);
-            }
-            LocalOrRemotePath::Remote(remote_path) => {
-                self.open_remote(remote_path, ctx);
             }
         }
     }
@@ -597,31 +592,6 @@ impl FileNotebookView {
             }
         };
         self.open(path, session, ctx);
-    }
-
-    fn open_remote(&mut self, remote_path: RemotePath, ctx: &mut ViewContext<Self>) {
-        let path_str = remote_path.path.as_str().to_string();
-        let display_name = remote_path
-            .path
-            .file_name()
-            .unwrap_or(path_str.as_str())
-            .to_string();
-
-        self.pane_configuration.update(ctx, |pane_config, ctx| {
-            pane_config.set_title(display_name, ctx);
-        });
-
-        let lor_path = LocalOrRemotePath::Remote(remote_path);
-        self.file_state = FileState::Loading(SourceFile::FileBased {
-            path: lor_path,
-            session: None,
-        });
-
-        self.file_state = match mem::replace(&mut self.file_state, FileState::NoFile) {
-            FileState::Loading(source) => FileState::Error(source),
-            other => other,
-        };
-        ctx.notify();
     }
 
     #[cfg(feature = "local_fs")]

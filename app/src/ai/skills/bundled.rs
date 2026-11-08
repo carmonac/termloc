@@ -9,9 +9,7 @@ use warp_core::features::FeatureFlag;
 use warp_core::safe_warn;
 use warp_core::ui::icons::Icon;
 use warp_errors::report_error;
-use warp_util::host_id::HostId;
 use warp_util::local_or_remote_path::LocalOrRemotePath;
-use warp_util::remote_path::RemotePath;
 use warpui::{AppContext, SingletonEntity};
 
 use super::SkillDescriptor;
@@ -50,11 +48,10 @@ impl BundledSkillActivation {
     }
 }
 
-/// Catalogs of bundled skills for the local host and connected remote hosts.
+/// Catalog of bundled skills for the local host.
 #[derive(Debug, Default)]
 pub struct BundledSkills {
     local: BundledSkill,
-    remote_by_host: HashMap<HostId, BundledSkill>,
 }
 
 impl BundledSkills {
@@ -71,10 +68,6 @@ impl BundledSkills {
             SkillPathOrigin::Local | SkillPathOrigin::RestoredDisplayOnly => {
                 self.local.active_descriptors(ctx)
             }
-            SkillPathOrigin::Remote { host_id } => self
-                .remote(host_id)
-                .map(|bundled_skill| bundled_skill.active_path_referenced_descriptors(ctx))
-                .unwrap_or_default(),
             SkillPathOrigin::Unavailable => Vec::new(),
         }
     }
@@ -96,39 +89,10 @@ impl BundledSkills {
         self.for_path_origin(path_origin)?.active_skill(id, ctx)
     }
 
-    /// Returns the catalog for a connected remote host.
-    pub fn remote(&self, host_id: &HostId) -> Option<&BundledSkill> {
-        self.remote_by_host.get(host_id)
-    }
-
-    /// Returns the remote catalog skill matching `path`, looked up in the
-    /// catalog of the host that owns the path. Remote bundled skills are
-    /// addressed by path (their paths are real files on the remote host),
-    /// unlike local bundled skills which are addressed by
-    /// [`SkillReference::BundledSkillId`].
-    pub fn remote_skill_by_path(&self, path: &RemotePath) -> Option<&ParsedSkill> {
-        self.remote_by_host
-            .get(&path.host_id)?
-            .skill_by_path(&LocalOrRemotePath::Remote(path.clone()))
-    }
-
-    /// Like [`Self::remote_skill_by_path`], but only returns the skill when
-    /// its activation condition is met.
-    pub fn remote_active_skill_by_path(
-        &self,
-        path: &RemotePath,
-        ctx: &AppContext,
-    ) -> Option<&ParsedSkill> {
-        self.remote_by_host
-            .get(&path.host_id)?
-            .active_skill_by_path(&LocalOrRemotePath::Remote(path.clone()), ctx)
-    }
-
     /// Returns the bundled catalog selected by the execution path origin.
     fn for_path_origin(&self, path_origin: &SkillPathOrigin) -> Option<&BundledSkill> {
         match path_origin {
             SkillPathOrigin::Local | SkillPathOrigin::RestoredDisplayOnly => Some(&self.local),
-            SkillPathOrigin::Remote { host_id } => self.remote(host_id),
             SkillPathOrigin::Unavailable => None,
         }
     }
@@ -189,27 +153,6 @@ impl BundledSkill {
             .collect()
     }
 
-    /// Returns descriptors for bundled skills whose activation conditions are
-    /// met, referenced by their `SKILL.md` paths instead of
-    /// [`SkillReference::BundledSkillId`].
-    ///
-    /// Used for remote-host catalogs: a `BundledSkillId` reference resolves
-    /// against the local catalog, so descriptors listed from a remote catalog
-    /// must carry the skill's real remote path — which resolves back to this
-    /// catalog through the path lookups — or invoking a listed skill would
-    /// serve the local client's content.
-    pub fn active_path_referenced_descriptors(&self, ctx: &AppContext) -> Vec<SkillDescriptor> {
-        self.definitions
-            .values()
-            .filter(|definition| definition.activation.is_enabled(ctx))
-            .map(|definition| {
-                let mut descriptor = SkillDescriptor::from(definition.skill.clone());
-                descriptor.icon_override = Some(definition.icon);
-                descriptor
-            })
-            .collect()
-    }
-
     /// Returns a bundled skill reference when the path belongs to a bundled skill.
     pub fn reference_for_path(&self, path: &LocalOrRemotePath) -> Option<SkillReference> {
         self.definitions
@@ -230,28 +173,6 @@ impl BundledSkill {
             .activation
             .is_enabled(ctx)
             .then_some(&definition.skill)
-    }
-
-    /// Returns a bundled skill by its `SKILL.md` path.
-    pub fn skill_by_path(&self, path: &LocalOrRemotePath) -> Option<&ParsedSkill> {
-        self.definitions
-            .values()
-            .map(|definition| &definition.skill)
-            .find(|skill| skill.path == *path)
-    }
-
-    /// Returns a bundled skill by its `SKILL.md` path only if its activation
-    /// condition is met.
-    pub fn active_skill_by_path(
-        &self,
-        path: &LocalOrRemotePath,
-        ctx: &AppContext,
-    ) -> Option<&ParsedSkill> {
-        self.definitions
-            .values()
-            .find(|definition| definition.skill.path == *path)
-            .filter(|definition| definition.activation.is_enabled(ctx))
-            .map(|definition| &definition.skill)
     }
 
     #[cfg(test)]

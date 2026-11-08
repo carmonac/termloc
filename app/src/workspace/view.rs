@@ -48,8 +48,6 @@ use parking_lot::FairMutex;
 use pathfinder_color::ColorU;
 use pathfinder_geometry::rect::RectF;
 #[cfg(feature = "local_fs")]
-use repo_metadata::RemoteRepositoryIdentifier;
-#[cfg(feature = "local_fs")]
 use repo_metadata::repositories::DetectedRepositories;
 use serde_json;
 #[cfg(target_family = "wasm")]
@@ -5373,18 +5371,6 @@ impl Workspace {
                                 ctx,
                             );
                         }
-                        LocalOrRemotePath::Remote(_) => {
-                            self.open_code(
-                                CodeSource::ProjectRules {
-                                    location: location.clone(),
-                                },
-                                EditorLayout::SplitPane,
-                                None,
-                                false,
-                                &[],
-                                ctx,
-                            );
-                        }
                     }
                 }
             }
@@ -5593,32 +5579,6 @@ impl Workspace {
                             ctx,
                         );
                     }
-                    LocalOrRemotePath::Remote(_) => {
-                        #[cfg(feature = "local_fs")]
-                        {
-                            // Honor a notebook-viewer target (e.g. a remote
-                            // Jupyter notebook) instead of always opening remote
-                            // files as raw code in the editor.
-                            if let FileTarget::MarkdownViewer(layout) = target {
-                                self.open_file_notebook(
-                                    location.clone(),
-                                    None,
-                                    *layout,
-                                    Some(code_source),
-                                    ctx,
-                                );
-                            } else {
-                                self.open_code(
-                                    code_source,
-                                    crate::util::openable_file_type::EditorLayout::SplitPane,
-                                    *line_col,
-                                    false,
-                                    &[],
-                                    ctx,
-                                );
-                            }
-                        }
-                    }
                 }
             }
             LeftPanelEvent::NewConversationInNewTab => {
@@ -5679,16 +5639,6 @@ impl Workspace {
             } => match path {
                 LocalOrRemotePath::Local(path) => {
                     self.add_tab_for_code_file(path, line_and_column, ctx);
-                }
-                path @ LocalOrRemotePath::Remote(_) => {
-                    self.open_code(
-                        CodeSource::FileTree { location: path },
-                        EditorLayout::NewTab,
-                        line_and_column,
-                        false,
-                        &[],
-                        ctx,
-                    );
                 }
             },
             #[cfg(not(target_family = "wasm"))]
@@ -12877,26 +12827,12 @@ impl Workspace {
             } => {
                 #[cfg(feature = "local_fs")]
                 {
-                    // Build a LocalOrRemotePath for the file. For remote sessions
-                    // the host_id comes from the active working directory.
+                    // Build a LocalOrRemotePath for the file from the active working directory.
                     let location = {
                         let window_id = ctx.window_id();
                         ActiveSession::as_ref(ctx)
                             .working_directory(window_id)
                             .and_then(|wd| match wd {
-                                LocalOrRemotePath::Remote(remote) => {
-                                    let std_path =
-                                        warp_util::standardized_path::StandardizedPath::try_new(
-                                            path,
-                                        )
-                                        .ok()?;
-                                    Some(LocalOrRemotePath::Remote(
-                                        warp_util::remote_path::RemotePath::new(
-                                            remote.host_id.clone(),
-                                            std_path,
-                                        ),
-                                    ))
-                                }
                                 LocalOrRemotePath::Local(_) => None,
                             })
                             .unwrap_or_else(|| LocalOrRemotePath::Local(PathBuf::from(path)))
@@ -13670,31 +13606,6 @@ impl Workspace {
                     Self::sync_codebase_tab_color(tab, ctx);
                 }
             }
-            #[cfg(feature = "local_fs")]
-            pane_group::Event::RemoteRepoNavigated { remote_path } => {
-                let remote_id = RemoteRepositoryIdentifier::new(
-                    remote_path.host_id.clone(),
-                    remote_path.path.clone(),
-                );
-                let pane_group_id = pane_group.id();
-                if let Some(file_tree_view) = self
-                    .working_directories_model
-                    .as_ref(ctx)
-                    .get_file_tree_view(pane_group_id)
-                {
-                    file_tree_view.update(ctx, |view, ctx| {
-                        view.set_remote_root_directories(std::slice::from_ref(&remote_id), ctx);
-                    });
-                }
-
-                // Remote repos now enter repository_roots through
-                // refresh_working_directories_for_pane_group (via
-                // pwd_as_local_or_remote). No need to register here —
-                // doing so would race with refresh and prevent stale
-                // DiffStateModels from being dropped.
-            }
-            #[cfg(not(feature = "local_fs"))]
-            pane_group::Event::RemoteRepoNavigated { .. } => {}
             pane_group::Event::DroppedOnTabBar { origin, pane_id } => {
                 if let Some(hovered_tab_index) = self.hovered_tab_index {
                     match hovered_tab_index {

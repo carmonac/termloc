@@ -2903,9 +2903,6 @@ impl CodeReviewView {
             self.create_code_review_model(file, ctx)
         } else {
             let self_handle = ctx.handle();
-            // Join host-aware: for local repos this yields a local absolute
-            // PathBuf; for remote repos this yields a `RemotePath` with the
-            // same host id as `repo_path`.
             let full_file_location = repo_path.join(&file.file_diff.file_path);
 
             let local_code_view = ctx.add_typed_action_view(|ctx| {
@@ -6928,17 +6925,8 @@ impl TypedActionView for CodeReviewView {
                     return;
                 };
                 let full_path = repo_path.join(path);
-                match full_path {
-                    LocalOrRemotePath::Local(path) => {
-                        self.open_code_review_file(path, *line_and_column, ctx);
-                    }
-                    remote @ LocalOrRemotePath::Remote(_) => {
-                        ctx.emit(CodeReviewViewEvent::OpenFileInNewTab {
-                            path: remote,
-                            line_and_column: *line_and_column,
-                        });
-                    }
-                }
+                let LocalOrRemotePath::Local(path) = full_path;
+                self.open_code_review_file(path, *line_and_column, ctx);
             }
             CodeReviewAction::ToggleFileExpanded(path) => {
                 let (file_index, now_expanded, chevron_button) = {

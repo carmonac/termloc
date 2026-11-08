@@ -80,9 +80,6 @@ impl GitRepoModels {
                     );
                 }
             }
-            LocalOrRemotePath::Remote(remote_path) => {
-                anyhow::bail!("Remote repositories are not supported: {remote_path:?}");
-            }
         };
 
         self.git_status_models
@@ -137,9 +134,6 @@ impl GitRepoModels {
                         repo_path.display()
                     );
                 }
-            }
-            LocalOrRemotePath::Remote(remote_path) => {
-                anyhow::bail!("Remote repositories are not supported: {remote_path:?}");
             }
         };
 

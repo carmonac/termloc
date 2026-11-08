@@ -809,10 +809,6 @@ fn resolve_file_open_path(
         Some(LocalOrRemotePath::Local(working_directory)) => {
             Ok(resolve_against_working_directory(path, &working_directory))
         }
-        Some(LocalOrRemotePath::Remote(_)) => Err(ControlError::new(
-            ErrorCode::TargetStateConflict,
-            "file.open requires an absolute path when the target session is remote",
-        )),
         None => Err(ControlError::new(
             ErrorCode::TargetStateConflict,
             "file.open cannot resolve a relative path without a working directory for the target session",

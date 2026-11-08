@@ -8,7 +8,6 @@ use anyhow::Error;
 use repo_metadata::{RepoMetadataModel, RepositoryIdentifier};
 use walkdir::{DirEntry, WalkDir};
 use warp_util::local_or_remote_path::LocalOrRemotePath;
-use warp_util::remote_path::RemotePath;
 use warp_util::standardized_path::StandardizedPath;
 use warpui::AppContext;
 
@@ -20,9 +19,6 @@ fn local_or_remote_path_for_repo_path(
 ) -> LocalOrRemotePath {
     match repo_id {
         RepositoryIdentifier::Local(_) => LocalOrRemotePath::Local(path.to_local_path_lossy()),
-        RepositoryIdentifier::Remote(remote) => {
-            LocalOrRemotePath::Remote(RemotePath::new(remote.host_id.clone(), path.clone()))
-        }
     }
 }
 

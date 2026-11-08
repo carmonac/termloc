@@ -57,7 +57,7 @@ fn add_diff(app: &mut App, path: &Path, base: &str, diff: DiffType) -> ViewHandl
             Some(StandardizedPath::try_from_local(path).unwrap()),
             ctx,
         );
-        view.register_file(&DiffSessionType::Local, ctx);
+        view.register_file(ctx);
         view
     });
     view

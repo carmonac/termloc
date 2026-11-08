@@ -28,8 +28,7 @@ use itertools::Itertools;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
     AIActionStatus, AIAgentActionId, AIConversationId, BlocklistAIActionEvent,
-    BlocklistAIActionModel, CancellationReason, DiffSessionType, FileDiff,
-    convert_file_edits_to_file_diffs,
+    BlocklistAIActionModel, CancellationReason, FileDiff, convert_file_edits_to_file_diffs,
 };
 use warp_editor::content::buffer::InitialBufferState;
 use warpui_core::elements::MouseStateHandle;
@@ -276,7 +275,7 @@ impl TuiFileEditsView {
         } else {
             Default::default()
         };
-        let storage = ctx.add_model(|_| TuiDiffStorage::new(initial_diffs, DiffSessionType::Local));
+        let storage = ctx.add_model(|_| TuiDiffStorage::new(initial_diffs));
 
         ctx.subscribe_to_model(&storage, |me, _, event, ctx| match event {
             TuiDiffStorageEvent::CandidateDiffsSet => me.rebuild_sections(ctx),
