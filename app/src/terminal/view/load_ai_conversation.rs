@@ -1,3 +1,4 @@
+use i18n::t;
 use std::ops::Not;
 use std::path::Path;
 use std::rc::Rc;
@@ -833,18 +834,18 @@ impl TerminalView {
 
         match &restore_context_state {
             RestorationDirState::MissingOriginalDir => {
-                items.push(MessageItem::text(
-                    "couldn't find original conversation directory ",
-                ));
+                items.push(MessageItem::text(t!(
+                    "couldn't find original conversation directory "
+                )));
                 items.push(open_repo_hint.clone());
-                items.push(MessageItem::text(" change repos"));
+                items.push(MessageItem::text(t!(" change repos")));
             }
             RestorationDirState::NeedsCd { .. } => {
-                items.push(MessageItem::text(
-                    "changed directory to continue conversation ",
-                ));
+                items.push(MessageItem::text(t!(
+                    "changed directory to continue conversation "
+                )));
                 items.push(open_repo_hint.clone());
-                items.push(MessageItem::text(" change repos"));
+                items.push(MessageItem::text(t!(" change repos")));
             }
             RestorationDirState::Unchanged | RestorationDirState::SkippedNonLocalConversation => {}
         }

@@ -1,3 +1,4 @@
+use i18n::t;
 use warp_core::ui::appearance::Appearance;
 use warpui::elements::{Container, CrossAxisAlignment, Element, Flex, ParentElement, Text};
 use warpui::{AppContext, Entity, SingletonEntity, TypedActionView, View, ViewContext};
@@ -37,7 +38,7 @@ impl WebFetchView {
         let appearance = Appearance::as_ref(app);
         let loading_icon = yellow_running_icon(appearance);
 
-        let text = format!("Fetching {} web pages...", urls.len());
+        let text = t!("Fetching {count} web pages...", count = urls.len());
 
         super::search_results_common::render_status_header(text, loading_icon, app)
     }
@@ -49,9 +50,13 @@ impl WebFetchView {
     ) -> Box<dyn Element> {
         let successful_count = pages.iter().filter(|(_, _, success)| *success).count();
         let title_text = if successful_count == pages.len() {
-            format!("Fetched {} web pages", pages.len())
+            t!("Fetched {count} web pages", count = pages.len())
         } else {
-            format!("Fetched {} of {} web pages", successful_count, pages.len())
+            t!(
+                "Fetched {successful} of {count} web pages",
+                successful = successful_count,
+                count = pages.len()
+            )
         };
 
         let body = if self.collapsible.is_expanded {
@@ -63,7 +68,7 @@ impl WebFetchView {
         render_collapsible_search_results(
             title_text,
             pages.len(),
-            "URLs",
+            t!("URLs"),
             &self.collapsible,
             body,
             |ctx| {
@@ -118,7 +123,7 @@ impl WebFetchView {
 
         if pages.is_empty() {
             let no_results = Text::new_inline(
-                "No URLs fetched".to_string(),
+                t!("No URLs fetched").to_string(),
                 appearance.ui_font_family(),
                 appearance.monospace_font_size(),
             )
@@ -171,7 +176,7 @@ impl View for WebFetchView {
             WebFetchStatus::Error => {
                 let appearance = Appearance::as_ref(app);
                 super::search_results_common::render_status_header(
-                    "Web page fetch failed".to_string(),
+                    t!("Web page fetch failed").to_string(),
                     failed_icon(appearance),
                     app,
                 )

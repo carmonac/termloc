@@ -1,4 +1,5 @@
 use chrono::{Local, TimeZone};
+use i18n::t;
 use uuid::Uuid;
 use warp_core::ui::external_product_icon::ExternalProductIcon;
 use warp_core::ui::icons::Icon;
@@ -57,14 +58,14 @@ pub struct UpdateModalBody {
 impl UpdateModalBody {
     pub fn new(ctx: &mut ViewContext<Self>) -> Self {
         let cancel_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Cancel", NakedTheme).on_click(|ctx| {
+            ActionButton::new(t!("Cancel"), NakedTheme).on_click(|ctx| {
                 ctx.dispatch_typed_action(UpdateModalBodyAction::Cancel);
             })
         });
 
         let enter_keystroke = Keystroke::parse("enter").expect("valid keystroke");
         let update_button = ctx.add_typed_action_view(|ctx| {
-            let mut button = ActionButton::new("Update", PrimaryTheme)
+            let mut button = ActionButton::new(t!("Update"), PrimaryTheme)
                 .with_keybinding(KeystrokeSource::Fixed(enter_keystroke), ctx)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(UpdateModalBodyAction::Update);
@@ -123,7 +124,7 @@ impl UpdateModalBody {
 
     fn render_title(&self, appearance: &Appearance) -> Box<dyn Element> {
         let theme = appearance.theme();
-        let name = self.server_name.as_deref().unwrap_or("Server");
+        let name = self.server_name.as_deref().unwrap_or(t!("Server"));
 
         // Renders MCP avatar icon
         let avatar_content = if let Some(icon) = ExternalProductIcon::from_string(name) {
@@ -153,7 +154,7 @@ impl UpdateModalBody {
 
         // Renders MCP title text
         let title = Text::new(
-            format!("Update {name}"),
+            t!("Update {name}", name = name),
             appearance.ui_font_family(),
             appearance.header_font_size(),
         )
@@ -220,9 +221,9 @@ impl UpdateModalBody {
 
     fn render_description(&self, appearance: &Appearance) -> Box<dyn Element> {
         // Modal appears only when multiple updates are available
-        let description = format!(
-            "This server has {} updates available, which would you like to proceed with?",
-            self.update_options.len()
+        let description = t!(
+            "This server has {count} updates available, which would you like to proceed with?",
+            count = self.update_options.len()
         );
 
         Text::new(
@@ -256,26 +257,23 @@ impl UpdateModalBody {
                 new_version_ts,
                 ..
             } => {
-                let publisher_string = match publisher {
-                    Author::CurrentUser => "another device",
-                    Author::OtherUser { name } => name,
-                    Author::Unknown => "a team member",
+                let update_title = match publisher {
+                    Author::CurrentUser => t!("Update from another device").to_owned(),
+                    Author::OtherUser { name } => t!("Update from {name}", name = name),
+                    Author::Unknown => t!("Update from a team member").to_owned(),
                 };
                 let datetime = Local
                     .timestamp_opt(*new_version_ts, 0)
                     .single()
                     .unwrap_or_else(Local::now);
                 let formatted_time = format_approx_duration_from_now(datetime);
-                (
-                    format!("Update from {publisher_string}"),
-                    formatted_time.to_string(),
-                )
+                (update_title, formatted_time.to_string())
             }
             MCPServerUpdate::Gallery {
                 name, new_version, ..
             } => (
-                format!("Update from {name}"),
-                format!("Version {new_version}"),
+                t!("Update from {name}", name = name),
+                t!("Version {new_version}", new_version = new_version),
             ),
         };
 
@@ -391,7 +389,7 @@ impl View for UpdateModalBody {
         // Add update options
         if self.update_options.is_empty() {
             let no_updates_text = Text::new(
-                "No updates available",
+                t!("No updates available"),
                 appearance.ui_font_family(),
                 appearance.ui_font_size(),
             )

@@ -1,0 +1,3151 @@
+# English source text -> translation per language code.
+
+"Settings":
+  es: Ajustes
+  pt: Configurações
+  fr: Paramètres
+  de: Einstellungen
+  it: Impostazioni
+  uk: Налаштування
+  ja: 設定
+  zh-Hans: 设置
+
+"Language":
+  es: Idioma
+  pt: Idioma
+  fr: Langue
+  de: Sprache
+  it: Lingua
+  uk: Мова
+  ja: 言語
+  zh-Hans: 语言
+
+"Interface language":
+  es: Idioma de la interfaz
+  pt: Idioma da interface
+  fr: Langue de l'interface
+  de: Sprache der Oberfläche
+  it: Lingua dell'interfaccia
+  uk: Мова інтерфейсу
+  ja: 表示言語
+  zh-Hans: 界面语言
+
+"Menus and some labels change after restarting termloc.":
+  es: Los menús y algunas etiquetas cambian al reiniciar termloc.
+  pt: Os menus e alguns rótulos mudam após reiniciar o termloc.
+  fr: Les menus et certains libellés changent après le redémarrage de termloc.
+  de: Menüs und einige Beschriftungen ändern sich nach einem Neustart von termloc.
+  it: I menu e alcune etichette cambiano dopo il riavvio di termloc.
+  uk: Меню та деякі підписи зміняться після перезапуску termloc.
+  ja: メニューと一部の表示は termloc の再起動後に切り替わります。
+  zh-Hans: 菜单和部分标签将在重启 termloc 后更改。
+
+"System default ({language})":
+  es: Predeterminado del sistema ({language})
+  pt: Padrão do sistema ({language})
+  fr: Par défaut du système ({language})
+  de: Systemstandard ({language})
+  it: Predefinito di sistema ({language})
+  uk: Як у системі ({language})
+  ja: システムの既定 ({language})
+  zh-Hans: 系统默认（{language}）
+
+"Set Interface Language: {language}":
+  es: "Cambiar idioma de la interfaz: {language}"
+  pt: "Definir idioma da interface: {language}"
+  fr: "Définir la langue de l'interface : {language}"
+  de: "Sprache der Oberfläche festlegen: {language}"
+  it: "Imposta lingua dell'interfaccia: {language}"
+  uk: "Мова інтерфейсу: {language}"
+  ja: "表示言語を設定: {language}"
+  zh-Hans: "设置界面语言：{language}"
+
+"Themes":
+  es: Temas
+  pt: Temas
+  fr: Thèmes
+  de: Designs
+  it: Temi
+  uk: Теми
+  ja: テーマ
+  zh-Hans: 主题
+
+"Adjusts the default zoom level across all windows":
+  es: "Ajusta el nivel de zoom predeterminado en todas las ventanas"
+  pt: "Ajusta o nível de zoom padrão em todas as janelas"
+  fr: "Ajuste le niveau de zoom par défaut dans toutes les fenêtres"
+  de: "Passt die Standardzoomstufe für alle Fenster an"
+  it: "Regola il livello di zoom predefinito in tutte le finestre"
+  uk: "Налаштовує типовий масштаб для всіх вікон"
+  ja: "すべてのウィンドウの既定のズームレベルを調整します"
+  zh-Hans: "调整所有窗口的默认缩放级别"
+
+"Agent conversations":
+  es: "Conversaciones del agente"
+  pt: "Conversas do agente"
+  fr: "Conversations de l'agent"
+  de: "Agent-Unterhaltungen"
+  it: "Conversazioni dell'agente"
+  uk: "Розмови агента"
+  ja: "エージェントの会話"
+  zh-Hans: "智能体对话"
+
+"Agent font":
+  es: "Fuente del agente"
+  pt: "Fonte do agente"
+  fr: "Police de l'agent"
+  de: "Agent-Schriftart"
+  it: "Carattere dell'agente"
+  uk: "Шрифт агента"
+  ja: "エージェントのフォント"
+  zh-Hans: "智能体字体"
+
+"Always":
+  es: "Siempre"
+  pt: "Sempre"
+  fr: "Toujours"
+  de: "Immer"
+  it: "Sempre"
+  uk: "Завжди"
+  ja: "常に"
+  zh-Hans: "始终"
+
+"Automatically color tabs based on the directory or repo you're working in.":
+  es: "Colorea automáticamente las pestañas según el directorio o repositorio en el que trabajas."
+  pt: "Colore as abas automaticamente com base no diretório ou repositório em que você está trabalhando."
+  fr: "Colorez automatiquement les onglets selon le répertoire ou le dépôt dans lequel vous travaillez."
+  de: "Tabs automatisch nach dem Verzeichnis oder Repository einfärben, in dem Sie arbeiten."
+  it: "Colora automaticamente le schede in base alla directory o al repository in cui lavori."
+  uk: "Автоматично розфарбовувати вкладки залежно від каталогу чи репозиторію, у якому ви працюєте."
+  ja: "作業中のディレクトリやリポジトリに応じてタブに自動で色を付けます。"
+  zh-Hans: "根据你正在使用的目录或仓库自动为标签页着色。"
+
+"Automatically switch between light and dark themes when your system does.":
+  es: "Cambia automáticamente entre los temas claro y oscuro cuando lo haga tu sistema."
+  pt: "Alterne automaticamente entre os temas claro e escuro quando o sistema alternar."
+  fr: "Basculer automatiquement entre les thèmes clair et sombre en même temps que le système."
+  de: "Automatisch zwischen hellem und dunklem Design wechseln, wenn Ihr System wechselt."
+  it: "Passa automaticamente dal tema chiaro a quello scuro quando lo fa il sistema."
+  uk: "Автоматично перемикати світлу й темну теми разом із системою."
+  ja: "システムに合わせてライトテーマとダークテーマを自動で切り替えます。"
+  zh-Hans: "跟随系统自动切换浅色和深色主题。"
+
+"Backdrop is not visible at opacity 100%":
+  es: "El fondo no es visible con una opacidad del 100 %"
+  pt: "O fundo não fica visível com opacidade de 100%"
+  fr: "L'arrière-plan n'est pas visible à une opacité de 100 %"
+  de: "Der Hintergrund ist bei 100 % Deckkraft nicht sichtbar"
+  it: "Lo sfondo non è visibile con opacità al 100%"
+  uk: "Фон не видно при непрозорості 100%"
+  ja: "不透明度 100% では背景は表示されません"
+  zh-Hans: "不透明度为 100% 时背景不可见"
+
+"Blinking cursor":
+  es: "Cursor parpadeante"
+  pt: "Cursor piscante"
+  fr: "Curseur clignotant"
+  de: "Blinkender Cursor"
+  it: "Cursore lampeggiante"
+  uk: "Блимаючий курсор"
+  ja: "カーソルの点滅"
+  zh-Hans: "光标闪烁"
+
+"Columns":
+  es: "Columnas"
+  pt: "Colunas"
+  fr: "Colonnes"
+  de: "Spalten"
+  it: "Colonne"
+  uk: "Стовпці"
+  ja: "列数"
+  zh-Hans: "列数"
+
+"Compact mode":
+  es: "Modo compacto"
+  pt: "Modo compacto"
+  fr: "Mode compact"
+  de: "Kompaktmodus"
+  it: "Modalità compatta"
+  uk: "Компактний режим"
+  ja: "コンパクトモード"
+  zh-Hans: "紧凑模式"
+
+"Current theme":
+  es: "Tema actual"
+  pt: "Tema atual"
+  fr: "Thème actuel"
+  de: "Aktuelles Design"
+  it: "Tema attuale"
+  uk: "Поточна тема"
+  ja: "現在のテーマ"
+  zh-Hans: "当前主题"
+
+"Cursor":
+  es: "Cursor"
+  pt: "Cursor"
+  fr: "Curseur"
+  de: "Cursor"
+  it: "Cursore"
+  uk: "Курсор"
+  ja: "カーソル"
+  zh-Hans: "光标"
+
+"Cursor type":
+  es: "Tipo de cursor"
+  pt: "Tipo de cursor"
+  fr: "Type de curseur"
+  de: "Cursortyp"
+  it: "Tipo di cursore"
+  uk: "Тип курсора"
+  ja: "カーソルの種類"
+  zh-Hans: "光标类型"
+
+"Cursor type is disabled in Vim mode":
+  es: "El tipo de cursor está desactivado en el modo Vim"
+  pt: "O tipo de cursor fica desativado no modo Vim"
+  fr: "Le type de curseur est désactivé en mode Vim"
+  de: "Der Cursortyp ist im Vim-Modus deaktiviert"
+  it: "Il tipo di cursore è disattivato in modalità Vim"
+  uk: "Тип курсора вимкнено в режимі Vim"
+  ja: "Vim モードではカーソルの種類は無効です"
+  zh-Hans: "Vim 模式下光标类型不可用"
+
+"Dark":
+  es: "Oscuro"
+  pt: "Escuro"
+  fr: "Sombre"
+  de: "Dunkel"
+  it: "Scuro"
+  uk: "Темна"
+  ja: "ダーク"
+  zh-Hans: "深色"
+
+"Default (no color)":
+  es: "Predeterminado (sin color)"
+  pt: "Padrão (sem cor)"
+  fr: "Par défaut (sans couleur)"
+  de: "Standard (keine Farbe)"
+  it: "Predefinito (nessun colore)"
+  uk: "Типово (без кольору)"
+  ja: "既定（色なし）"
+  zh-Hans: "默认（无颜色）"
+
+"Dim inactive panes":
+  es: "Atenuar paneles inactivos"
+  pt: "Escurecer painéis inativos"
+  fr: "Atténuer les volets inactifs"
+  de: "Inaktive Bereiche abdunkeln"
+  it: "Attenua i riquadri inattivi"
+  uk: "Затемнювати неактивні панелі"
+  ja: "非アクティブなペインを暗くする"
+  zh-Hans: "调暗非活动窗格"
+
+"Directory tab colors":
+  es: "Colores de pestaña por directorio"
+  pt: "Cores de aba por diretório"
+  fr: "Couleurs d'onglet par répertoire"
+  de: "Tabfarben nach Verzeichnis"
+  it: "Colori delle schede per directory"
+  uk: "Кольори вкладок за каталогом"
+  ja: "ディレクトリ別のタブの色"
+  zh-Hans: "按目录设置标签页颜色"
+
+"Enforce minimum contrast":
+  es: "Forzar contraste mínimo"
+  pt: "Impor contraste mínimo"
+  fr: "Imposer un contraste minimal"
+  de: "Mindestkontrast erzwingen"
+  it: "Imponi contrasto minimo"
+  uk: "Забезпечувати мінімальний контраст"
+  ja: "最小コントラストを適用"
+  zh-Hans: "强制最低对比度"
+
+"Focus follows mouse":
+  es: "El foco sigue al ratón"
+  pt: "O foco segue o mouse"
+  fr: "Le focus suit la souris"
+  de: "Fokus folgt der Maus"
+  it: "Lo stato attivo segue il mouse"
+  uk: "Фокус слідує за мишею"
+  ja: "フォーカスをマウスに追従"
+  zh-Hans: "焦点跟随鼠标"
+
+"Font size (px)":
+  es: "Tamaño de fuente (px)"
+  pt: "Tamanho da fonte (px)"
+  fr: "Taille de police (px)"
+  de: "Schriftgröße (px)"
+  it: "Dimensione carattere (px)"
+  uk: "Розмір шрифту (px)"
+  ja: "フォントサイズ (px)"
+  zh-Hans: "字号 (px)"
+
+"Font weight":
+  es: "Grosor de fuente"
+  pt: "Peso da fonte"
+  fr: "Graisse de police"
+  de: "Schriftstärke"
+  it: "Spessore carattere"
+  uk: "Товщина шрифту"
+  ja: "フォントの太さ"
+  zh-Hans: "字重"
+
+"Full-screen Apps":
+  es: "Aplicaciones a pantalla completa"
+  pt: "Apps em tela cheia"
+  fr: "Applications plein écran"
+  de: "Vollbild-Apps"
+  it: "App a schermo intero"
+  uk: "Повноекранні застосунки"
+  ja: "フルスクリーンアプリ"
+  zh-Hans: "全屏应用"
+
+"Global search":
+  es: "Búsqueda global"
+  pt: "Pesquisa global"
+  fr: "Recherche globale"
+  de: "Globale Suche"
+  it: "Ricerca globale"
+  uk: "Глобальний пошук"
+  ja: "グローバル検索"
+  zh-Hans: "全局搜索"
+
+"Header toolbar layout":
+  es: "Diseño de la barra de herramientas superior"
+  pt: "Layout da barra de ferramentas superior"
+  fr: "Disposition de la barre d'outils d'en-tête"
+  de: "Layout der Kopfzeilen-Symbolleiste"
+  it: "Layout della barra degli strumenti superiore"
+  uk: "Макет верхньої панелі інструментів"
+  ja: "ヘッダーツールバーのレイアウト"
+  zh-Hans: "顶部工具栏布局"
+
+"Hide search bar in vertical tab layout":
+  es: "Ocultar la barra de búsqueda con pestañas verticales"
+  pt: "Ocultar a barra de pesquisa no layout de abas verticais"
+  fr: "Masquer la barre de recherche avec les onglets verticaux"
+  de: "Suchleiste bei vertikalen Tabs ausblenden"
+  it: "Nascondi la barra di ricerca con le schede verticali"
+  uk: "Приховувати рядок пошуку з вертикальними вкладками"
+  ja: "縦タブレイアウトで検索バーを隠す"
+  zh-Hans: "垂直标签页布局下隐藏搜索栏"
+
+"Icon":
+  es: "Icono"
+  pt: "Ícone"
+  fr: "Icône"
+  de: "Symbol"
+  it: "Icona"
+  uk: "Значок"
+  ja: "アイコン"
+  zh-Hans: "图标"
+
+"Input position":
+  es: "Posición de la entrada"
+  pt: "Posição da entrada"
+  fr: "Position de la saisie"
+  de: "Eingabeposition"
+  it: "Posizione dell'input"
+  uk: "Положення введення"
+  ja: "入力の位置"
+  zh-Hans: "输入位置"
+
+"Input type":
+  es: "Tipo de entrada"
+  pt: "Tipo de entrada"
+  fr: "Type de saisie"
+  de: "Eingabetyp"
+  it: "Tipo di input"
+  uk: "Тип введення"
+  ja: "入力の種類"
+  zh-Hans: "输入类型"
+
+"Left":
+  es: "Izquierda"
+  pt: "Esquerda"
+  fr: "Gauche"
+  de: "Links"
+  it: "Sinistra"
+  uk: "Ліворуч"
+  ja: "左"
+  zh-Hans: "左侧"
+
+"Ligatures may reduce performance":
+  es: "Las ligaduras pueden reducir el rendimiento"
+  pt: "As ligaduras podem reduzir o desempenho"
+  fr: "Les ligatures peuvent réduire les performances"
+  de: "Ligaturen können die Leistung verringern"
+  it: "Le legature possono ridurre le prestazioni"
+  uk: "Лігатури можуть знизити продуктивність"
+  ja: "合字はパフォーマンスを低下させる場合があります"
+  zh-Hans: "连字可能会降低性能"
+
+"Light":
+  es: "Claro"
+  pt: "Claro"
+  fr: "Clair"
+  de: "Hell"
+  it: "Chiaro"
+  uk: "Світла"
+  ja: "ライト"
+  zh-Hans: "浅色"
+
+"Line height":
+  es: "Altura de línea"
+  pt: "Altura da linha"
+  fr: "Hauteur de ligne"
+  de: "Zeilenhöhe"
+  it: "Altezza riga"
+  uk: "Висота рядка"
+  ja: "行の高さ"
+  zh-Hans: "行高"
+
+"Match terminal":
+  es: "Igual que la terminal"
+  pt: "Igual ao terminal"
+  fr: "Comme le terminal"
+  de: "Wie Terminal"
+  it: "Come il terminale"
+  uk: "Як у терміналі"
+  ja: "ターミナルに合わせる"
+  zh-Hans: "与终端一致"
+
+"Never":
+  es: "Nunca"
+  pt: "Nunca"
+  fr: "Jamais"
+  de: "Nie"
+  it: "Mai"
+  uk: "Ніколи"
+  ja: "しない"
+  zh-Hans: "从不"
+
+"No material":
+  es: "Sin material"
+  pt: "Sem material"
+  fr: "Aucun matériau"
+  de: "Kein Material"
+  it: "Nessun materiale"
+  uk: "Без матеріалу"
+  ja: "マテリアルなし"
+  zh-Hans: "无材质"
+
+"Notebook font size":
+  es: "Tamaño de fuente del cuaderno"
+  pt: "Tamanho da fonte do notebook"
+  fr: "Taille de police du notebook"
+  de: "Schriftgröße für Notebooks"
+  it: "Dimensione carattere del notebook"
+  uk: "Розмір шрифту блокнота"
+  ja: "ノートブックのフォントサイズ"
+  zh-Hans: "笔记本字号"
+
+"On high-DPI displays":
+  es: "En pantallas de alta densidad (DPI)"
+  pt: "Em telas de alto DPI"
+  fr: "Sur les écrans haute densité"
+  de: "Auf Displays mit hoher DPI"
+  it: "Su schermi ad alta densità"
+  uk: "На екранах з високою DPI"
+  ja: "高 DPI ディスプレイ"
+  zh-Hans: "在高 DPI 显示器上"
+
+"On low-DPI displays":
+  es: "En pantallas de baja densidad (DPI)"
+  pt: "Em telas de baixo DPI"
+  fr: "Sur les écrans basse densité"
+  de: "Auf Displays mit niedriger DPI"
+  it: "Su schermi a bassa densità"
+  uk: "На екранах з низькою DPI"
+  ja: "低 DPI ディスプレイ"
+  zh-Hans: "在低 DPI 显示器上"
+
+"Only for named colors":
+  es: "Solo para colores con nombre"
+  pt: "Apenas para cores nomeadas"
+  fr: "Uniquement pour les couleurs nommées"
+  de: "Nur für benannte Farben"
+  it: "Solo per i colori con nome"
+  uk: "Лише для іменованих кольорів"
+  ja: "名前付きの色のみ"
+  zh-Hans: "仅限命名颜色"
+
+"Only on hover":
+  es: "Solo al pasar el cursor"
+  pt: "Somente ao passar o mouse"
+  fr: "Uniquement au survol"
+  de: "Nur beim Darüberfahren"
+  it: "Solo al passaggio del mouse"
+  uk: "Лише при наведенні"
+  ja: "ホバー時のみ"
+  zh-Hans: "仅悬停时"
+
+"Open new windows with custom size":
+  es: "Abrir ventanas nuevas con tamaño personalizado"
+  pt: "Abrir novas janelas com tamanho personalizado"
+  fr: "Ouvrir les nouvelles fenêtres avec une taille personnalisée"
+  de: "Neue Fenster in benutzerdefinierter Größe öffnen"
+  it: "Apri le nuove finestre con dimensioni personalizzate"
+  uk: "Відкривати нові вікна з власним розміром"
+  ja: "新しいウィンドウをカスタムサイズで開く"
+  zh-Hans: "以自定义尺寸打开新窗口"
+
+"Panes":
+  es: "Paneles"
+  pt: "Painéis"
+  fr: "Volets"
+  de: "Bereiche"
+  it: "Riquadri"
+  uk: "Панелі"
+  ja: "ペイン"
+  zh-Hans: "窗格"
+
+"Pin to the bottom (Termloc mode)":
+  es: "Fijar abajo (modo Termloc)"
+  pt: "Fixar na parte inferior (modo Termloc)"
+  fr: "Épingler en bas (mode Termloc)"
+  de: "Unten anheften (Termloc-Modus)"
+  it: "Fissa in basso (modalità Termloc)"
+  uk: "Закріпити внизу (режим Termloc)"
+  ja: "下部に固定（Termloc モード）"
+  zh-Hans: "固定在底部（Termloc 模式）"
+
+"Pin to the top (Reverse mode)":
+  es: "Fijar arriba (modo inverso)"
+  pt: "Fixar na parte superior (modo invertido)"
+  fr: "Épingler en haut (mode inversé)"
+  de: "Oben anheften (umgekehrter Modus)"
+  it: "Fissa in alto (modalità inversa)"
+  uk: "Закріпити вгорі (зворотний режим)"
+  ja: "上部に固定（リバースモード）"
+  zh-Hans: "固定在顶部（反向模式）"
+
+"Preserve active tab color for new tabs":
+  es: "Conservar el color de la pestaña activa en las nuevas"
+  pt: "Manter a cor da aba ativa nas novas abas"
+  fr: "Conserver la couleur de l'onglet actif pour les nouveaux onglets"
+  de: "Farbe des aktiven Tabs für neue Tabs übernehmen"
+  it: "Mantieni il colore della scheda attiva per le nuove schede"
+  uk: "Зберігати колір активної вкладки для нових вкладок"
+  ja: "新しいタブにアクティブなタブの色を引き継ぐ"
+  zh-Hans: "新标签页沿用当前标签页颜色"
+
+"Project explorer":
+  es: "Explorador del proyecto"
+  pt: "Explorador do projeto"
+  fr: "Explorateur de projet"
+  de: "Projekt-Explorer"
+  it: "Esplora progetto"
+  uk: "Провідник проєкту"
+  ja: "プロジェクトエクスプローラー"
+  zh-Hans: "项目资源管理器"
+
+"Reset to default":
+  es: "Restablecer valores predeterminados"
+  pt: "Restaurar padrão"
+  fr: "Rétablir la valeur par défaut"
+  de: "Auf Standard zurücksetzen"
+  it: "Ripristina predefinito"
+  uk: "Скинути до типового"
+  ja: "既定値に戻す"
+  zh-Hans: "恢复默认值"
+
+"Right":
+  es: "Derecha"
+  pt: "Direita"
+  fr: "Droite"
+  de: "Rechts"
+  it: "Destra"
+  uk: "Праворуч"
+  ja: "右"
+  zh-Hans: "右侧"
+
+"Rows":
+  es: "Filas"
+  pt: "Linhas"
+  fr: "Lignes"
+  de: "Zeilen"
+  it: "Righe"
+  uk: "Рядки"
+  ja: "行数"
+  zh-Hans: "行数"
+
+"Show Jump to Bottom of Block button":
+  es: "Mostrar el botón Ir al final del bloque"
+  pt: "Mostrar o botão Ir para o fim do bloco"
+  fr: "Afficher le bouton Aller à la fin du bloc"
+  de: "Schaltfläche „Zum Blockende springen“ anzeigen"
+  it: "Mostra il pulsante Vai alla fine del blocco"
+  uk: "Показувати кнопку «Перейти в кінець блоку»"
+  ja: "「ブロックの末尾へ移動」ボタンを表示"
+  zh-Hans: "显示“跳到块底部”按钮"
+
+"Show Termloc in Dock":
+  es: "Mostrar Termloc en el Dock"
+  pt: "Mostrar o Termloc no Dock"
+  fr: "Afficher Termloc dans le Dock"
+  de: "Termloc im Dock anzeigen"
+  it: "Mostra Termloc nel Dock"
+  uk: "Показувати Termloc у Dock"
+  ja: "Dock に Termloc を表示"
+  zh-Hans: "在程序坞中显示 Termloc"
+
+"Show block dividers":
+  es: "Mostrar separadores de bloques"
+  pt: "Mostrar divisórias de blocos"
+  fr: "Afficher les séparateurs de blocs"
+  de: "Blocktrenner anzeigen"
+  it: "Mostra i divisori dei blocchi"
+  uk: "Показувати роздільники блоків"
+  ja: "ブロックの区切り線を表示"
+  zh-Hans: "显示块分隔线"
+
+"Show ligatures in terminal":
+  es: "Mostrar ligaduras en la terminal"
+  pt: "Mostrar ligaduras no terminal"
+  fr: "Afficher les ligatures dans le terminal"
+  de: "Ligaturen im Terminal anzeigen"
+  it: "Mostra le legature nel terminale"
+  uk: "Показувати лігатури в терміналі"
+  ja: "ターミナルで合字を表示"
+  zh-Hans: "在终端中显示连字"
+
+"Show tab indicators":
+  es: "Mostrar indicadores de pestaña"
+  pt: "Mostrar indicadores de aba"
+  fr: "Afficher les indicateurs d'onglet"
+  de: "Tab-Indikatoren anzeigen"
+  it: "Mostra gli indicatori delle schede"
+  uk: "Показувати індикатори вкладок"
+  ja: "タブのインジケーターを表示"
+  zh-Hans: "显示标签页指示器"
+
+"Show the Drive tab in the tools panel.":
+  es: "Muestra la pestaña Drive en el panel de herramientas."
+  pt: "Mostra a aba Drive no painel de ferramentas."
+  fr: "Afficher l'onglet Drive dans le panneau d'outils."
+  de: "Den Tab „Drive“ im Werkzeugbereich anzeigen."
+  it: "Mostra la scheda Drive nel pannello strumenti."
+  uk: "Показувати вкладку Drive на панелі інструментів."
+  ja: "ツールパネルに Drive タブを表示します。"
+  zh-Hans: "在工具面板中显示 Drive 标签页。"
+
+"Show the agent conversation history tab in the tools panel.":
+  es: "Muestra la pestaña del historial de conversaciones del agente en el panel de herramientas."
+  pt: "Mostra a aba de histórico de conversas do agente no painel de ferramentas."
+  fr: "Afficher l'onglet de l'historique des conversations de l'agent dans le panneau d'outils."
+  de: "Den Tab mit dem Verlauf der Agent-Unterhaltungen im Werkzeugbereich anzeigen."
+  it: "Mostra la scheda della cronologia delle conversazioni dell'agente nel pannello strumenti."
+  uk: "Показувати вкладку історії розмов агента на панелі інструментів."
+  ja: "ツールパネルにエージェントの会話履歴タブを表示します。"
+  zh-Hans: "在工具面板中显示智能体对话历史标签页。"
+
+"Show the global file search tab in the tools panel.":
+  es: "Muestra la pestaña de búsqueda global de archivos en el panel de herramientas."
+  pt: "Mostra a aba de pesquisa global de arquivos no painel de ferramentas."
+  fr: "Afficher l'onglet de recherche globale de fichiers dans le panneau d'outils."
+  de: "Den Tab für die globale Dateisuche im Werkzeugbereich anzeigen."
+  it: "Mostra la scheda della ricerca globale dei file nel pannello strumenti."
+  uk: "Показувати вкладку глобального пошуку файлів на панелі інструментів."
+  ja: "ツールパネルにグローバルファイル検索タブを表示します。"
+  zh-Hans: "在工具面板中显示全局文件搜索标签页。"
+
+"Show the latest user prompt instead of the generated conversation title for the Local Agent and third-party agent sessions in vertical tabs.":
+  es: "Muestra el último prompt del usuario en lugar del título generado de la conversación para el agente local y las sesiones de agentes de terceros en las pestañas verticales."
+  pt: "Mostra o último prompt do usuário em vez do título gerado da conversa para o Agente Local e sessões de agentes de terceiros nas abas verticais."
+  fr: "Afficher la dernière invite de l'utilisateur au lieu du titre de conversation généré pour l'agent local et les sessions d'agents tiers dans les onglets verticaux."
+  de: "In vertikalen Tabs für den lokalen Agenten und Sitzungen von Drittanbieter-Agenten den letzten Benutzer-Prompt statt des generierten Unterhaltungstitels anzeigen."
+  it: "Mostra l'ultimo prompt dell'utente al posto del titolo generato della conversazione per l'agente locale e le sessioni di agenti di terze parti nelle schede verticali."
+  uk: "Показувати останній запит користувача замість згенерованої назви розмови для локального агента й сеансів сторонніх агентів у вертикальних вкладках."
+  ja: "縦タブで、ローカルエージェントとサードパーティ製エージェントのセッションに、生成された会話タイトルではなく最新のユーザープロンプトを表示します。"
+  zh-Hans: "在垂直标签页中，为本地智能体和第三方智能体会话显示最新的用户提示，而不是生成的对话标题。"
+
+"Show the project explorer / file tree tab in the tools panel.":
+  es: "Muestra la pestaña del explorador del proyecto o árbol de archivos en el panel de herramientas."
+  pt: "Mostra a aba do explorador do projeto / árvore de arquivos no painel de ferramentas."
+  fr: "Afficher l'onglet de l'explorateur de projet / arborescence des fichiers dans le panneau d'outils."
+  de: "Den Tab für Projekt-Explorer / Dateibaum im Werkzeugbereich anzeigen."
+  it: "Mostra la scheda Esplora progetto / albero dei file nel pannello strumenti."
+  uk: "Показувати вкладку провідника проєкту / дерева файлів на панелі інструментів."
+  ja: "ツールパネルにプロジェクトエクスプローラー／ファイルツリーのタブを表示します。"
+  zh-Hans: "在工具面板中显示项目资源管理器/文件树标签页。"
+
+"Show the tab bar":
+  es: "Mostrar la barra de pestañas"
+  pt: "Mostrar a barra de abas"
+  fr: "Afficher la barre d'onglets"
+  de: "Tableiste anzeigen"
+  it: "Mostra la barra delle schede"
+  uk: "Показувати панель вкладок"
+  ja: "タブバーを表示"
+  zh-Hans: "显示标签栏"
+
+"Show vertical tabs panel in restored windows":
+  es: "Mostrar el panel de pestañas verticales en ventanas restauradas"
+  pt: "Mostrar o painel de abas verticais em janelas restauradas"
+  fr: "Afficher le panneau des onglets verticaux dans les fenêtres restaurées"
+  de: "Bereich für vertikale Tabs in wiederhergestellten Fenstern anzeigen"
+  it: "Mostra il pannello delle schede verticali nelle finestre ripristinate"
+  uk: "Показувати панель вертикальних вкладок у відновлених вікнах"
+  ja: "復元したウィンドウで縦タブパネルを表示"
+  zh-Hans: "在恢复的窗口中显示垂直标签页面板"
+
+"Start at the top (Classic mode)":
+  es: "Empezar arriba (modo clásico)"
+  pt: "Começar no topo (modo clássico)"
+  fr: "Commencer en haut (mode classique)"
+  de: "Oben beginnen (klassischer Modus)"
+  it: "Inizia in alto (modalità classica)"
+  uk: "Починати вгорі (класичний режим)"
+  ja: "上部から開始（クラシックモード）"
+  zh-Hans: "从顶部开始（经典模式）"
+
+"Sync with OS":
+  es: "Sincronizar con el sistema"
+  pt: "Sincronizar com o sistema"
+  fr: "Synchroniser avec le système"
+  de: "Mit System synchronisieren"
+  it: "Sincronizza con il sistema"
+  uk: "Синхронізувати із системою"
+  ja: "OS と同期"
+  zh-Hans: "与系统同步"
+
+"Tab close button position":
+  es: "Posición del botón de cerrar pestaña"
+  pt: "Posição do botão de fechar aba"
+  fr: "Position du bouton de fermeture d'onglet"
+  de: "Position der Schaltfläche zum Schließen von Tabs"
+  it: "Posizione del pulsante di chiusura scheda"
+  uk: "Положення кнопки закриття вкладки"
+  ja: "タブの閉じるボタンの位置"
+  zh-Hans: "标签页关闭按钮位置"
+
+"Tabs":
+  es: "Pestañas"
+  pt: "Abas"
+  fr: "Onglets"
+  de: "Tabs"
+  it: "Schede"
+  uk: "Вкладки"
+  ja: "タブ"
+  zh-Hans: "标签页"
+
+"Terminal font":
+  es: "Fuente de la terminal"
+  pt: "Fonte do terminal"
+  fr: "Police du terminal"
+  de: "Terminal-Schriftart"
+  it: "Carattere del terminale"
+  uk: "Шрифт термінала"
+  ja: "ターミナルのフォント"
+  zh-Hans: "终端字体"
+
+"Text":
+  es: "Texto"
+  pt: "Texto"
+  fr: "Texte"
+  de: "Text"
+  it: "Testo"
+  uk: "Текст"
+  ja: "テキスト"
+  zh-Hans: "文本"
+
+"The selected graphics settings may not support rendering transparent windows.":
+  es: "Es posible que la configuración gráfica seleccionada no admita ventanas transparentes."
+  pt: "As configurações gráficas selecionadas podem não ser compatíveis com janelas transparentes."
+  fr: "Les paramètres graphiques sélectionnés peuvent ne pas prendre en charge les fenêtres transparentes."
+  de: "Die gewählten Grafikeinstellungen unterstützen möglicherweise keine transparenten Fenster."
+  it: "Le impostazioni grafiche selezionate potrebbero non supportare le finestre trasparenti."
+  uk: "Вибрані налаштування графіки можуть не підтримувати прозорі вікна."
+  ja: "選択したグラフィック設定では透明なウィンドウを描画できない場合があります。"
+  zh-Hans: "所选图形设置可能不支持渲染透明窗口。"
+
+"The selected hardware may not support rendering transparent windows.":
+  es: "Es posible que el hardware seleccionado no admita ventanas transparentes."
+  pt: "O hardware selecionado pode não ser compatível com janelas transparentes."
+  fr: "Le matériel sélectionné peut ne pas prendre en charge les fenêtres transparentes."
+  de: "Die gewählte Hardware unterstützt möglicherweise keine transparenten Fenster."
+  it: "L'hardware selezionato potrebbe non supportare le finestre trasparenti."
+  uk: "Вибране обладнання може не підтримувати прозорі вікна."
+  ja: "選択したハードウェアでは透明なウィンドウを描画できない場合があります。"
+  zh-Hans: "所选硬件可能不支持渲染透明窗口。"
+
+"Tools panel":
+  es: "Panel de herramientas"
+  pt: "Painel de ferramentas"
+  fr: "Panneau d'outils"
+  de: "Werkzeugbereich"
+  it: "Pannello strumenti"
+  uk: "Панель інструментів"
+  ja: "ツールパネル"
+  zh-Hans: "工具面板"
+
+"Tools panel visibility is consistent across tabs":
+  es: "La visibilidad del panel de herramientas es la misma en todas las pestañas"
+  pt: "A visibilidade do painel de ferramentas é a mesma em todas as abas"
+  fr: "La visibilité du panneau d'outils est identique dans tous les onglets"
+  de: "Sichtbarkeit des Werkzeugbereichs ist in allen Tabs gleich"
+  it: "La visibilità del pannello strumenti è uguale in tutte le schede"
+  uk: "Видимість панелі інструментів однакова в усіх вкладках"
+  ja: "ツールパネルの表示状態をタブ間で統一"
+  zh-Hans: "工具面板的显示状态在所有标签页中保持一致"
+
+"Transparency is not supported with your graphics drivers.":
+  es: "Tus controladores gráficos no admiten transparencia."
+  pt: "Seus drivers gráficos não são compatíveis com transparência."
+  fr: "Vos pilotes graphiques ne prennent pas en charge la transparence."
+  de: "Ihre Grafiktreiber unterstützen keine Transparenz."
+  it: "I driver grafici in uso non supportano la trasparenza."
+  uk: "Ваші графічні драйвери не підтримують прозорість."
+  ja: "お使いのグラフィックドライバーは透明化に対応していません。"
+  zh-Hans: "你的显卡驱动不支持透明效果。"
+
+"Try changing the settings for the graphics backend or integrated GPU in Features > System.":
+  es: "Prueba a cambiar la configuración del backend gráfico o de la GPU integrada en Funciones > Sistema."
+  pt: "Tente alterar as configurações do back-end gráfico ou da GPU integrada em Recursos > Sistema."
+  fr: "Essayez de modifier les paramètres du moteur graphique ou du GPU intégré dans Fonctionnalités > Système."
+  de: "Ändern Sie die Einstellungen für das Grafik-Backend oder die integrierte GPU unter Funktionen > System."
+  it: "Prova a modificare le impostazioni del backend grafico o della GPU integrata in Funzionalità > Sistema."
+  uk: "Спробуйте змінити налаштування графічного бекенда або вбудованого GPU в розділі Функції > Система."
+  ja: "機能 > システムでグラフィックバックエンドまたは内蔵 GPU の設定を変更してみてください。"
+  zh-Hans: "请尝试在“功能 > 系统”中更改图形后端或集成 GPU 的设置。"
+
+"Uniform padding (px)":
+  es: "Relleno uniforme (px)"
+  pt: "Preenchimento uniforme (px)"
+  fr: "Marge intérieure uniforme (px)"
+  de: "Einheitlicher Innenabstand (px)"
+  it: "Spaziatura interna uniforme (px)"
+  uk: "Рівномірний відступ (px)"
+  ja: "均一な余白 (px)"
+  zh-Hans: "统一内边距 (px)"
+
+"Use custom padding in alt-screen":
+  es: "Usar relleno personalizado en la pantalla alternativa"
+  pt: "Usar preenchimento personalizado na tela alternativa"
+  fr: "Utiliser une marge intérieure personnalisée sur l'écran alternatif"
+  de: "Benutzerdefinierten Innenabstand im Alternativbildschirm verwenden"
+  it: "Usa spaziatura interna personalizzata nello schermo alternativo"
+  uk: "Використовувати власний відступ в альтернативному екрані"
+  ja: "代替画面でカスタム余白を使用"
+  zh-Hans: "在备用屏幕中使用自定义内边距"
+
+"Use latest user prompt as conversation title in tab names":
+  es: "Usar el último prompt del usuario como título de conversación en las pestañas"
+  pt: "Usar o último prompt do usuário como título da conversa nos nomes das abas"
+  fr: "Utiliser la dernière invite de l'utilisateur comme titre de conversation dans les onglets"
+  de: "Letzten Benutzer-Prompt als Unterhaltungstitel in Tabnamen verwenden"
+  it: "Usa l'ultimo prompt dell'utente come titolo della conversazione nei nomi delle schede"
+  uk: "Використовувати останній запит користувача як назву розмови у вкладках"
+  ja: "タブ名の会話タイトルに最新のユーザープロンプトを使用"
+  zh-Hans: "在标签页名称中使用最新用户提示作为对话标题"
+
+"Use thin strokes":
+  es: "Usar trazos finos"
+  pt: "Usar traços finos"
+  fr: "Utiliser des traits fins"
+  de: "Dünne Striche verwenden"
+  it: "Usa tratti sottili"
+  uk: "Використовувати тонкі штрихи"
+  ja: "細いストロークを使用"
+  zh-Hans: "使用细笔画"
+
+"Use vertical tab layout":
+  es: "Usar pestañas verticales"
+  pt: "Usar layout de abas verticais"
+  fr: "Utiliser des onglets verticaux"
+  de: "Vertikales Tab-Layout verwenden"
+  it: "Usa il layout a schede verticali"
+  uk: "Використовувати вертикальні вкладки"
+  ja: "縦タブレイアウトを使用"
+  zh-Hans: "使用垂直标签页布局"
+
+"View all available system fonts":
+  es: "Ver todas las fuentes del sistema disponibles"
+  pt: "Ver todas as fontes do sistema disponíveis"
+  fr: "Afficher toutes les polices système disponibles"
+  de: "Alle verfügbaren Systemschriften anzeigen"
+  it: "Mostra tutti i caratteri di sistema disponibili"
+  uk: "Показати всі доступні системні шрифти"
+  ja: "利用可能なすべてのシステムフォントを表示"
+  zh-Hans: "显示所有可用的系统字体"
+
+"When enabled, reopening or restoring a window opens the vertical tabs panel even if it was closed when the window was last saved.":
+  es: "Si está activado, al reabrir o restaurar una ventana se abre el panel de pestañas verticales aunque estuviera cerrado cuando se guardó la ventana por última vez."
+  pt: "Quando ativado, reabrir ou restaurar uma janela abre o painel de abas verticais mesmo que ele estivesse fechado quando a janela foi salva pela última vez."
+  fr: "Lorsque cette option est activée, la réouverture ou la restauration d'une fenêtre ouvre le panneau des onglets verticaux, même s'il était fermé lors du dernier enregistrement de la fenêtre."
+  de: "Wenn aktiviert, wird beim erneuten Öffnen oder Wiederherstellen eines Fensters der Bereich für vertikale Tabs geöffnet, auch wenn er beim letzten Speichern des Fensters geschlossen war."
+  it: "Se attivata, la riapertura o il ripristino di una finestra apre il pannello delle schede verticali anche se era chiuso all'ultimo salvataggio della finestra."
+  uk: "Якщо ввімкнено, під час повторного відкриття або відновлення вікна панель вертикальних вкладок відкривається, навіть якщо її було закрито під час останнього збереження вікна."
+  ja: "有効にすると、ウィンドウを再度開くか復元したときに、前回保存時に閉じていても縦タブパネルが開きます。"
+  zh-Hans: "启用后，重新打开或恢复窗口时会打开垂直标签页面板，即使上次保存窗口时它处于关闭状态。"
+
+"When using the vertical tab layout, hide the search bar in the title bar. Search stays available via the command palette and keyboard shortcuts.":
+  es: "Con las pestañas verticales, oculta la barra de búsqueda de la barra de título. La búsqueda sigue disponible desde la paleta de comandos y los atajos de teclado."
+  pt: "Ao usar o layout de abas verticais, oculta a barra de pesquisa na barra de título. A pesquisa continua disponível pela paleta de comandos e pelos atalhos de teclado."
+  fr: "Avec les onglets verticaux, masquer la barre de recherche dans la barre de titre. La recherche reste accessible depuis la palette de commandes et les raccourcis clavier."
+  de: "Bei vertikalen Tabs die Suchleiste in der Titelleiste ausblenden. Die Suche bleibt über die Befehlspalette und Tastenkürzel verfügbar."
+  it: "Con il layout a schede verticali, nasconde la barra di ricerca nella barra del titolo. La ricerca resta disponibile dalla tavolozza dei comandi e con le scorciatoie da tastiera."
+  uk: "У разі вертикальних вкладок приховує рядок пошуку на панелі заголовка. Пошук і далі доступний через палітру команд і сполучення клавіш."
+  ja: "縦タブレイアウトの使用時に、タイトルバーの検索バーを隠します。検索はコマンドパレットとキーボードショートカットから引き続き使用できます。"
+  zh-Hans: "使用垂直标签页布局时，隐藏标题栏中的搜索栏。仍可通过命令面板和键盘快捷键进行搜索。"
+
+"When windowed":
+  es: "En modo ventana"
+  pt: "No modo janela"
+  fr: "En mode fenêtré"
+  de: "Im Fenstermodus"
+  it: "In modalità finestra"
+  uk: "У віконному режимі"
+  ja: "ウィンドウ表示時"
+  zh-Hans: "窗口模式时"
+
+"Window Blur Radius: {blur_value}":
+  es: "Radio de desenfoque de la ventana: {blur_value}"
+  pt: "Raio de desfoque da janela: {blur_value}"
+  fr: "Rayon de flou de la fenêtre : {blur_value}"
+  de: "Unschärferadius des Fensters: {blur_value}"
+  it: "Raggio di sfocatura della finestra: {blur_value}"
+  uk: "Радіус розмиття вікна: {blur_value}"
+  ja: "ウィンドウのぼかし半径: {blur_value}"
+  zh-Hans: "窗口模糊半径：{blur_value}"
+
+"Window Opacity:":
+  es: "Opacidad de la ventana:"
+  pt: "Opacidade da janela:"
+  fr: "Opacité de la fenêtre :"
+  de: "Deckkraft des Fensters:"
+  it: "Opacità della finestra:"
+  uk: "Непрозорість вікна:"
+  ja: "ウィンドウの不透明度:"
+  zh-Hans: "窗口不透明度："
+
+"Window Opacity: {opacity_value}":
+  es: "Opacidad de la ventana: {opacity_value}"
+  pt: "Opacidade da janela: {opacity_value}"
+  fr: "Opacité de la fenêtre : {opacity_value}"
+  de: "Deckkraft des Fensters: {opacity_value}"
+  it: "Opacità della finestra: {opacity_value}"
+  uk: "Непрозорість вікна: {opacity_value}"
+  ja: "ウィンドウの不透明度: {opacity_value}"
+  zh-Hans: "窗口不透明度：{opacity_value}"
+
+"Window backdrop":
+  es: "Fondo de la ventana"
+  pt: "Fundo da janela"
+  fr: "Arrière-plan de la fenêtre"
+  de: "Fensterhintergrund"
+  it: "Sfondo della finestra"
+  uk: "Фон вікна"
+  ja: "ウィンドウの背景"
+  zh-Hans: "窗口背景"
+
+"{font} (default)":
+  es: "{font} (predeterminada)"
+  pt: "{font} (padrão)"
+  fr: "{font} (par défaut)"
+  de: "{font} (Standard)"
+  it: "{font} (predefinito)"
+  uk: "{font} (типово)"
+  ja: "{font}（既定）"
+  zh-Hans: "{font}（默认）"
+
+"Keyboard shortcuts":
+  es: "Atajos de teclado"
+  pt: "Atalhos de teclado"
+  fr: "Raccourcis clavier"
+  de: "Tastenkombinationen"
+  it: "Scorciatoie da tastiera"
+  uk: "Комбінації клавіш"
+  ja: "キーボードショートカット"
+  zh-Hans: "键盘快捷键"
+
+"Scripting":
+  es: "Scripts"
+  pt: "Scripts"
+  fr: "Scripts"
+  de: "Skripte"
+  it: "Script"
+  uk: "Скрипти"
+  ja: "スクリプト"
+  zh-Hans: "脚本"
+
+"Shell integration":
+  es: "Integración con el shell"
+  pt: "Integração com o shell"
+  fr: "Intégration du shell"
+  de: "Shell-Integration"
+  it: "Integrazione con la shell"
+  uk: "Інтеграція з оболонкою"
+  ja: "シェル統合"
+  zh-Hans: "Shell 集成"
+
+"MCP servers":
+  es: "Servidores MCP"
+  pt: "Servidores MCP"
+  fr: "Serveurs MCP"
+  de: "MCP-Server"
+  it: "Server MCP"
+  uk: "Сервери MCP"
+  ja: "MCP サーバー"
+  zh-Hans: "MCP 服务器"
+
+"Knowledge":
+  es: "Conocimiento"
+  pt: "Conhecimento"
+  fr: "Connaissances"
+  de: "Wissen"
+  it: "Conoscenza"
+  uk: "Знання"
+  ja: "ナレッジ"
+  zh-Hans: "知识"
+
+"Indexing and projects":
+  es: "Indexación y proyectos"
+  pt: "Indexação e projetos"
+  fr: "Indexation et projets"
+  de: "Indizierung und Projekte"
+  it: "Indicizzazione e progetti"
+  uk: "Індексування та проєкти"
+  ja: "インデックスとプロジェクト"
+  zh-Hans: "索引和项目"
+
+"Editor and Code Review":
+  es: "Editor y revisión de código"
+  pt: "Editor e revisão de código"
+  fr: "Éditeur et revue de code"
+  de: "Editor und Code-Review"
+  it: "Editor e revisione del codice"
+  uk: "Редактор і рецензування коду"
+  ja: "エディタとコードレビュー"
+  zh-Hans: "编辑器和代码审查"
+
+"About":
+  es: "Acerca de"
+  pt: "Sobre"
+  fr: "À propos"
+  de: "Über"
+  it: "Informazioni"
+  uk: "Про програму"
+  ja: "情報"
+  zh-Hans: "关于"
+
+"Appearance":
+  es: "Apariencia"
+  pt: "Aparência"
+  fr: "Apparence"
+  de: "Darstellung"
+  it: "Aspetto"
+  uk: "Вигляд"
+  ja: "外観"
+  zh-Hans: "外观"
+
+"Features":
+  es: "Funciones"
+  pt: "Recursos"
+  fr: "Fonctionnalités"
+  de: "Funktionen"
+  it: "Funzionalità"
+  uk: "Функції"
+  ja: "機能"
+  zh-Hans: "功能"
+
+"Privacy":
+  es: "Privacidad"
+  pt: "Privacidade"
+  fr: "Confidentialité"
+  de: "Datenschutz"
+  it: "Privacy"
+  uk: "Конфіденційність"
+  ja: "プライバシー"
+  zh-Hans: "隐私"
+
+"BETA":
+  es: "BETA"
+  pt: "BETA"
+  fr: "BÊTA"
+  de: "BETA"
+  it: "BETA"
+  uk: "БЕТА"
+  ja: "ベータ"
+  zh-Hans: "测试版"
+
+"Close pane":
+  es: "Cerrar panel"
+  pt: "Fechar painel"
+  fr: "Fermer le volet"
+  de: "Bereich schließen"
+  it: "Chiudi riquadro"
+  uk: "Закрити панель"
+  ja: "ペインを閉じる"
+  zh-Hans: "关闭窗格"
+
+"No settings match your search.":
+  es: "Ningún ajuste coincide con tu búsqueda."
+  pt: "Nenhuma configuração corresponde à sua pesquisa."
+  fr: "Aucun paramètre ne correspond à votre recherche."
+  de: "Keine Einstellungen entsprechen Ihrer Suche."
+  it: "Nessuna impostazione corrisponde alla ricerca."
+  uk: "Жодне налаштування не відповідає вашому запиту."
+  ja: "検索に一致する設定はありません。"
+  zh-Hans: "没有与搜索匹配的设置。"
+
+"You may want to try using different keywords or checking for any possible typos.":
+  es: "Prueba con otras palabras clave o revisa si hay errores de escritura."
+  pt: "Tente usar outras palavras-chave ou verifique se há erros de digitação."
+  fr: "Essayez d'autres mots-clés ou vérifiez l'orthographe."
+  de: "Versuchen Sie andere Suchbegriffe oder prüfen Sie die Schreibweise."
+  it: "Prova a usare parole chiave diverse o controlla eventuali errori di battitura."
+  uk: "Спробуйте інші ключові слова або перевірте, чи немає помилок."
+  ja: "別のキーワードを試すか、入力ミスがないか確認してください。"
+  zh-Hans: "请尝试使用其他关键字，或检查是否有拼写错误。"
+
+"This setting is not synced to your other devices":
+  es: "Este ajuste no se sincroniza con tus otros dispositivos"
+  pt: "Esta configuração não é sincronizada com seus outros dispositivos"
+  fr: "Ce paramètre n'est pas synchronisé avec vos autres appareils"
+  de: "Diese Einstellung wird nicht mit Ihren anderen Geräten synchronisiert"
+  it: "Questa impostazione non viene sincronizzata con gli altri dispositivi"
+  uk: "Це налаштування не синхронізується з іншими вашими пристроями"
+  ja: "この設定は他のデバイスと同期されません"
+  zh-Hans: "此设置不会同步到你的其他设备"
+
+"Add regex pattern":
+  es: "Añadir patrón regex"
+  pt: "Adicionar padrão regex"
+  fr: "Ajouter un motif regex"
+  de: "Regex-Muster hinzufügen"
+  it: "Aggiungi pattern regex"
+  uk: "Додати шаблон regex"
+  ja: "正規表現パターンを追加"
+  zh-Hans: "添加正则表达式模式"
+
+"Personal":
+  es: "Personal"
+  pt: "Pessoal"
+  fr: "Personnel"
+  de: "Persönlich"
+  it: "Personale"
+  uk: "Особисті"
+  ja: "個人"
+  zh-Hans: "个人"
+
+"Enterprise":
+  es: "Empresa"
+  pt: "Empresa"
+  fr: "Entreprise"
+  de: "Unternehmen"
+  it: "Azienda"
+  uk: "Корпоративні"
+  ja: "エンタープライズ"
+  zh-Hans: "企业"
+
+"Enterprise secret redaction cannot be modified.":
+  es: "La ocultación de secretos de empresa no se puede modificar."
+  pt: "A ocultação de segredos corporativa não pode ser modificada."
+  fr: "Le masquage des secrets d'entreprise ne peut pas être modifié."
+  de: "Die Unternehmens-Geheimnisschwärzung kann nicht geändert werden."
+  it: "L'oscuramento dei segreti aziendale non può essere modificato."
+  uk: "Корпоративне приховування секретів не можна змінити."
+  ja: "エンタープライズのシークレット秘匿は変更できません。"
+  zh-Hans: "企业密钥隐藏无法修改。"
+
+"No enterprise regexes have been configured by your organization.":
+  es: "Tu organización no ha configurado ninguna regex de empresa."
+  pt: "Sua organização não configurou nenhuma regex corporativa."
+  fr: "Votre organisation n'a configuré aucune regex d'entreprise."
+  de: "Ihre Organisation hat keine Unternehmens-Regexes konfiguriert."
+  it: "L'organizzazione non ha configurato alcuna regex aziendale."
+  uk: "Ваша організація не налаштувала жодного корпоративного regex."
+  ja: "組織によるエンタープライズ正規表現は設定されていません。"
+  zh-Hans: "你的组织尚未配置任何企业正则表达式。"
+
+"Recommended":
+  es: "Recomendados"
+  pt: "Recomendados"
+  fr: "Recommandés"
+  de: "Empfohlen"
+  it: "Consigliati"
+  uk: "Рекомендовані"
+  ja: "おすすめ"
+  zh-Hans: "推荐"
+
+"Add all":
+  es: "Añadir todos"
+  pt: "Adicionar todos"
+  fr: "Tout ajouter"
+  de: "Alle hinzufügen"
+  it: "Aggiungi tutti"
+  uk: "Додати всі"
+  ja: "すべて追加"
+  zh-Hans: "全部添加"
+
+"Secret redaction":
+  es: "Ocultación de secretos"
+  pt: "Ocultação de segredos"
+  fr: "Masquage des secrets"
+  de: "Geheimnisschwärzung"
+  it: "Oscuramento dei segreti"
+  uk: "Приховування секретів"
+  ja: "シークレットの秘匿"
+  zh-Hans: "密钥隐藏"
+
+"When this setting is enabled, Termloc will scan blocks, the contents of Drive objects, and Local Agent prompts for potential sensitive information and prevent saving or sending this data to any servers. You can customize this list via regexes.":
+  es: "Cuando este ajuste está activado, Termloc analiza los bloques, el contenido de los objetos de Drive y las solicitudes al agente local en busca de información potencialmente confidencial, y evita que estos datos se guarden o se envíen a ningún servidor. Puedes personalizar esta lista con regex."
+  pt: "Quando esta configuração está ativada, o Termloc verifica blocos, o conteúdo de objetos do Drive e os prompts do agente local em busca de informações potencialmente confidenciais e impede que esses dados sejam salvos ou enviados a qualquer servidor. Você pode personalizar esta lista com regexes."
+  fr: "Lorsque ce paramètre est activé, Termloc analyse les blocs, le contenu des objets Drive et les invites de l'agent local à la recherche d'informations potentiellement sensibles, et empêche l'enregistrement ou l'envoi de ces données à un serveur. Vous pouvez personnaliser cette liste à l'aide de regex."
+  de: "Wenn diese Einstellung aktiviert ist, durchsucht Termloc Blöcke, den Inhalt von Drive-Objekten und Prompts des lokalen Agenten nach möglicherweise vertraulichen Informationen und verhindert, dass diese Daten gespeichert oder an Server gesendet werden. Sie können diese Liste mit Regexes anpassen."
+  it: "Quando questa impostazione è attiva, Termloc analizza i blocchi, il contenuto degli oggetti di Drive e i prompt dell'agente locale alla ricerca di informazioni potenzialmente sensibili e impedisce che questi dati vengano salvati o inviati a qualsiasi server. Puoi personalizzare questo elenco tramite regex."
+  uk: "Коли це налаштування ввімкнено, Termloc перевіряє блоки, вміст об'єктів Drive і запити до локального агента на наявність потенційно конфіденційної інформації та не дає зберігати чи надсилати ці дані на будь-які сервери. Цей список можна налаштувати за допомогою regex."
+  ja: "この設定を有効にすると、Termloc はブロック、Drive オブジェクトの内容、ローカルエージェントへのプロンプトに機密情報が含まれていないかをスキャンし、そのデータの保存やサーバーへの送信を防ぎます。このリストは正規表現でカスタマイズできます。"
+  zh-Hans: "启用此设置后，Termloc 会扫描块、Drive 对象的内容以及本地智能体提示词中可能存在的敏感信息，并阻止保存这些数据或将其发送到任何服务器。你可以通过正则表达式自定义此列表。"
+
+"Enabled by your organization.":
+  es: "Activado por tu organización."
+  pt: "Ativado pela sua organização."
+  fr: "Activé par votre organisation."
+  de: "Von Ihrer Organisation aktiviert."
+  it: "Attivato dall'organizzazione."
+  uk: "Увімкнено вашою організацією."
+  ja: "組織によって有効化されています。"
+  zh-Hans: "已由你的组织启用。"
+
+"Secret visual redaction mode":
+  es: "Modo de ocultación visual de secretos"
+  pt: "Modo de ocultação visual de segredos"
+  fr: "Mode de masquage visuel des secrets"
+  de: "Modus für visuelle Geheimnisschwärzung"
+  it: "Modalità di oscuramento visivo dei segreti"
+  uk: "Режим візуального приховування секретів"
+  ja: "シークレットの表示方法"
+  zh-Hans: "密钥视觉隐藏模式"
+
+"Choose how secrets are visually presented in the block list while keeping them searchable. This setting only affects what you see in the block list.":
+  es: "Elige cómo se muestran los secretos en la lista de bloques sin dejar de poder buscarlos. Este ajuste solo afecta a lo que ves en la lista de bloques."
+  pt: "Escolha como os segredos são exibidos na lista de blocos, mantendo-os pesquisáveis. Esta configuração afeta apenas o que você vê na lista de blocos."
+  fr: "Choisissez comment les secrets sont affichés dans la liste des blocs tout en restant consultables par recherche. Ce paramètre n'affecte que ce que vous voyez dans la liste des blocs."
+  de: "Legen Sie fest, wie Geheimnisse in der Blockliste angezeigt werden, ohne dass sie unauffindbar werden. Diese Einstellung wirkt sich nur auf die Anzeige in der Blockliste aus."
+  it: "Scegli come vengono mostrati i segreti nell'elenco dei blocchi, mantenendoli ricercabili. Questa impostazione influisce solo su ciò che vedi nell'elenco dei blocchi."
+  uk: "Виберіть, як секрети відображаються у списку блоків, зберігаючи можливість пошуку. Це налаштування впливає лише на те, що ви бачите у списку блоків."
+  ja: "ブロックリストでのシークレットの表示方法を選択します（検索は引き続き可能です）。この設定はブロックリストの表示にのみ影響します。"
+  zh-Hans: "选择密钥在块列表中的显示方式，同时仍可搜索。此设置只影响你在块列表中看到的内容。"
+
+"Custom secret redaction":
+  es: "Ocultación de secretos personalizada"
+  pt: "Ocultação de segredos personalizada"
+  fr: "Masquage personnalisé des secrets"
+  de: "Benutzerdefinierte Geheimnisschwärzung"
+  it: "Oscuramento dei segreti personalizzato"
+  uk: "Власне приховування секретів"
+  ja: "カスタムのシークレット秘匿"
+  zh-Hans: "自定义密钥隐藏"
+
+"Use regex to define additional secrets or data you'd like to redact. This will take effect when the next command runs. You can use the inline (?i) flag as a prefix to your regex to make it case-insensitive.":
+  es: "Usa regex para definir otros secretos o datos que quieras ocultar. Se aplicará al ejecutar el siguiente comando. Puedes usar el indicador en línea (?i) como prefijo de la regex para que no distinga mayúsculas de minúsculas."
+  pt: "Use regex para definir segredos ou dados adicionais que você deseja ocultar. Isso entrará em vigor quando o próximo comando for executado. Você pode usar a flag inline (?i) como prefixo da regex para ignorar maiúsculas e minúsculas."
+  fr: "Utilisez des regex pour définir d'autres secrets ou données à masquer. Cela prendra effet à l'exécution de la prochaine commande. Vous pouvez préfixer votre regex de l'indicateur (?i) pour ignorer la casse."
+  de: "Definieren Sie mit Regex weitere Geheimnisse oder Daten, die geschwärzt werden sollen. Dies wird beim nächsten ausgeführten Befehl wirksam. Mit dem Inline-Flag (?i) als Präfix wird die Groß-/Kleinschreibung ignoriert."
+  it: "Usa le regex per definire altri segreti o dati da oscurare. La modifica avrà effetto all'esecuzione del comando successivo. Puoi usare il flag inline (?i) come prefisso della regex per ignorare maiuscole e minuscole."
+  uk: "Використовуйте regex, щоб визначити додаткові секрети або дані, які потрібно приховувати. Зміни набудуть чинності під час виконання наступної команди. Щоб ігнорувати регістр, додайте до regex префікс-прапорець (?i)."
+  ja: "正規表現を使って、秘匿したいシークレットやデータを追加で定義します。次のコマンドの実行時から適用されます。正規表現の先頭にインラインフラグ (?i) を付けると大文字と小文字を区別しなくなります。"
+  zh-Hans: "使用正则表达式定义要隐藏的其他密钥或数据。将在下一条命令运行时生效。你可以在正则表达式前加上内联标志 (?i) 以忽略大小写。"
+
+"Add regex":
+  es: "Añadir regex"
+  pt: "Adicionar regex"
+  fr: "Ajouter une regex"
+  de: "Regex hinzufügen"
+  it: "Aggiungi regex"
+  uk: "Додати regex"
+  ja: "正規表現を追加"
+  zh-Hans: "添加正则表达式"
+
+"Network log console":
+  es: "Consola de registro de red"
+  pt: "Console de log de rede"
+  fr: "Console du journal réseau"
+  de: "Netzwerkprotokoll-Konsole"
+  it: "Console del log di rete"
+  uk: "Консоль мережевого журналу"
+  ja: "ネットワークログコンソール"
+  zh-Hans: "网络日志控制台"
+
+"We've built a native console that allows you to view all communications from Termloc to external servers to ensure you feel comfortable that your work is always kept safe.":
+  es: "Hemos creado una consola nativa que te permite ver todas las comunicaciones de Termloc con servidores externos, para que tengas la tranquilidad de que tu trabajo siempre está protegido."
+  pt: "Criamos um console nativo que permite ver todas as comunicações do Termloc com servidores externos, para que você tenha a tranquilidade de que seu trabalho está sempre protegido."
+  fr: "Nous avons créé une console native qui vous permet de voir toutes les communications de Termloc avec des serveurs externes, pour vous assurer que votre travail reste toujours protégé."
+  de: "Wir haben eine native Konsole entwickelt, in der Sie die gesamte Kommunikation von Termloc mit externen Servern einsehen können – damit Sie sicher sein können, dass Ihre Arbeit stets geschützt ist."
+  it: "Abbiamo creato una console nativa che ti permette di vedere tutte le comunicazioni di Termloc verso server esterni, così puoi essere sicuro che il tuo lavoro sia sempre protetto."
+  uk: "Ми створили вбудовану консоль, у якій можна переглянути всі звернення Termloc до зовнішніх серверів, щоб ви були певні, що ваша робота завжди в безпеці."
+  ja: "Termloc から外部サーバーへのすべての通信を確認できるネイティブコンソールを用意しています。作業内容が常に安全に保たれていることを確認できます。"
+  zh-Hans: "我们构建了一个原生控制台，可让你查看 Termloc 与外部服务器之间的所有通信，确保你的工作始终安全。"
+
+"View network logging":
+  es: "Ver registro de red"
+  pt: "Ver log de rede"
+  fr: "Afficher le journal réseau"
+  de: "Netzwerkprotokoll anzeigen"
+  it: "Visualizza log di rete"
+  uk: "Переглянути мережевий журнал"
+  ja: "ネットワークログを表示"
+  zh-Hans: "查看网络日志"
+
+"Asterisks":
+  es: "Asteriscos"
+  pt: "Asteriscos"
+  fr: "Astérisques"
+  de: "Sternchen"
+  it: "Asterischi"
+  uk: "Зірочки"
+  ja: "アスタリスク"
+  zh-Hans: "星号"
+
+"Strikethrough":
+  es: "Tachado"
+  pt: "Tachado"
+  fr: "Barré"
+  de: "Durchgestrichen"
+  it: "Barrato"
+  uk: "Закреслення"
+  ja: "取り消し線"
+  zh-Hans: "删除线"
+
+"Always show secrets":
+  es: "Mostrar siempre los secretos"
+  pt: "Sempre mostrar segredos"
+  fr: "Toujours afficher les secrets"
+  de: "Geheimnisse immer anzeigen"
+  it: "Mostra sempre i segreti"
+  uk: "Завжди показувати секрети"
+  ja: "シークレットを常に表示"
+  zh-Hans: "始终显示密钥"
+
+"e.g. \"Google API Key\"":
+  es: "p. ej., \"Google API Key\""
+  pt: "ex.: \"Google API Key\""
+  fr: "ex. : « Google API Key »"
+  de: "z. B. „Google API Key“"
+  it: "ad es. \"Google API Key\""
+  uk: "напр., «Google API Key»"
+  ja: "例: \"Google API Key\""
+  zh-Hans: "例如“Google API Key”"
+
+"Name (optional)":
+  es: "Nombre (opcional)"
+  pt: "Nome (opcional)"
+  fr: "Nom (facultatif)"
+  de: "Name (optional)"
+  it: "Nome (facoltativo)"
+  uk: "Назва (необов'язково)"
+  ja: "名前（任意）"
+  zh-Hans: "名称（可选）"
+
+"Regex pattern":
+  es: "Patrón regex"
+  pt: "Padrão regex"
+  fr: "Motif regex"
+  de: "Regex-Muster"
+  it: "Pattern regex"
+  uk: "Шаблон regex"
+  ja: "正規表現パターン"
+  zh-Hans: "正则表达式模式"
+
+"Invalid regex":
+  es: "Regex no válida"
+  pt: "Regex inválida"
+  fr: "Regex non valide"
+  de: "Ungültige Regex"
+  it: "Regex non valida"
+  uk: "Неприпустимий regex"
+  ja: "無効な正規表現"
+  zh-Hans: "无效的正则表达式"
+
+"10 million":
+  es: "10 millones"
+  pt: "10 milhões"
+  fr: "10 millions"
+  de: "10 Millionen"
+  it: "10 milioni"
+  uk: "10 мільйонів"
+  ja: "1,000万"
+  zh-Hans: "1000 万"
+
+"1 million":
+  es: "1 millón"
+  pt: "1 milhão"
+  fr: "1 million"
+  de: "1 Million"
+  it: "1 milione"
+  uk: "1 мільйон"
+  ja: "100万"
+  zh-Hans: "100 万"
+
+"Setting the limit above 100k lines may impact performance. Maximum rows supported is {max_rows}.":
+  es: "Un límite superior a 100k líneas puede afectar al rendimiento. El máximo de filas admitido es {max_rows}."
+  pt: "Definir o limite acima de 100 mil linhas pode afetar o desempenho. O máximo de linhas suportado é {max_rows}."
+  fr: "Une limite supérieure à 100k lignes peut affecter les performances. Le nombre maximal de lignes pris en charge est de {max_rows}."
+  de: "Ein Limit über 100k Zeilen kann die Leistung beeinträchtigen. Maximal unterstützt werden {max_rows} Zeilen."
+  it: "Impostare il limite oltre 100k righe può influire sulle prestazioni. Il numero massimo di righe supportato è {max_rows}."
+  uk: "Ліміт понад 100 тис. рядків може вплинути на продуктивність. Максимально підтримується {max_rows} рядків."
+  ja: "上限を 10 万行より大きくするとパフォーマンスに影響する場合があります。サポートされる最大行数は {max_rows} です。"
+  zh-Hans: "将上限设置为超过 10 万行可能会影响性能。支持的最大行数为 {max_rows}。"
+
+"Pin to top":
+  es: "Fijar arriba"
+  pt: "Fixar no topo"
+  fr: "Épingler en haut"
+  de: "Oben anheften"
+  it: "Fissa in alto"
+  uk: "Закріпити зверху"
+  ja: "上に固定"
+  zh-Hans: "固定到顶部"
+
+"Pin to bottom":
+  es: "Fijar abajo"
+  pt: "Fixar embaixo"
+  fr: "Épingler en bas"
+  de: "Unten anheften"
+  it: "Fissa in basso"
+  uk: "Закріпити знизу"
+  ja: "下に固定"
+  zh-Hans: "固定到底部"
+
+"Pin to left":
+  es: "Fijar a la izquierda"
+  pt: "Fixar à esquerda"
+  fr: "Épingler à gauche"
+  de: "Links anheften"
+  it: "Fissa a sinistra"
+  uk: "Закріпити ліворуч"
+  ja: "左に固定"
+  zh-Hans: "固定到左侧"
+
+"Pin to right":
+  es: "Fijar a la derecha"
+  pt: "Fixar à direita"
+  fr: "Épingler à droite"
+  de: "Rechts anheften"
+  it: "Fissa a destra"
+  uk: "Закріпити праворуч"
+  ja: "右に固定"
+  zh-Hans: "固定到右侧"
+
+"General":
+  es: "General"
+  pt: "Geral"
+  fr: "Général"
+  de: "Allgemein"
+  it: "Generali"
+  uk: "Загальні"
+  ja: "一般"
+  zh-Hans: "通用"
+
+"Session":
+  es: "Sesión"
+  pt: "Sessão"
+  fr: "Session"
+  de: "Sitzung"
+  it: "Sessione"
+  uk: "Сеанс"
+  ja: "セッション"
+  zh-Hans: "会话"
+
+"Keys":
+  es: "Teclas"
+  pt: "Teclas"
+  fr: "Touches"
+  de: "Tasten"
+  it: "Tasti"
+  uk: "Клавіші"
+  ja: "キー"
+  zh-Hans: "按键"
+
+"Text Editing":
+  es: "Edición de texto"
+  pt: "Edição de texto"
+  fr: "Édition de texte"
+  de: "Textbearbeitung"
+  it: "Modifica del testo"
+  uk: "Редагування тексту"
+  ja: "テキスト編集"
+  zh-Hans: "文本编辑"
+
+"Terminal Input":
+  es: "Entrada del terminal"
+  pt: "Entrada do terminal"
+  fr: "Saisie du terminal"
+  de: "Terminaleingabe"
+  it: "Input del terminale"
+  uk: "Введення в терміналі"
+  ja: "ターミナル入力"
+  zh-Hans: "终端输入"
+
+"Terminal":
+  es: "Terminal"
+  pt: "Terminal"
+  fr: "Terminal"
+  de: "Terminal"
+  it: "Terminale"
+  uk: "Термінал"
+  ja: "ターミナル"
+  zh-Hans: "终端"
+
+"System":
+  es: "Sistema"
+  pt: "Sistema"
+  fr: "Système"
+  de: "System"
+  it: "Sistema"
+  uk: "Система"
+  ja: "システム"
+  zh-Hans: "系统"
+
+"Default":
+  es: "Predeterminado"
+  pt: "Padrão"
+  fr: "Par défaut"
+  de: "Standard"
+  it: "Predefinito"
+  uk: "За замовчуванням"
+  ja: "デフォルト"
+  zh-Hans: "默认"
+
+"After all tabs":
+  es: "Después de todas las pestañas"
+  pt: "Depois de todas as abas"
+  fr: "Après tous les onglets"
+  de: "Nach allen Tabs"
+  it: "Dopo tutte le schede"
+  uk: "Після всіх вкладок"
+  ja: "すべてのタブの後"
+  zh-Hans: "所有标签页之后"
+
+"After current tab":
+  es: "Después de la pestaña actual"
+  pt: "Depois da aba atual"
+  fr: "Après l'onglet actuel"
+  de: "Nach dem aktuellen Tab"
+  it: "Dopo la scheda corrente"
+  uk: "Після поточної вкладки"
+  ja: "現在のタブの後"
+  zh-Hans: "当前标签页之后"
+
+"Width %":
+  es: "Ancho %"
+  pt: "Largura %"
+  fr: "Largeur %"
+  de: "Breite %"
+  it: "Larghezza %"
+  uk: "Ширина %"
+  ja: "幅 %"
+  zh-Hans: "宽度 %"
+
+"Height %":
+  es: "Alto %"
+  pt: "Altura %"
+  fr: "Hauteur %"
+  de: "Höhe %"
+  it: "Altezza %"
+  uk: "Висота %"
+  ja: "高さ %"
+  zh-Hans: "高度 %"
+
+"Autohides on loss of keyboard focus":
+  es: "Se oculta automáticamente al perder el foco del teclado"
+  pt: "Oculta automaticamente ao perder o foco do teclado"
+  fr: "Se masque automatiquement à la perte du focus clavier"
+  de: "Wird bei Verlust des Tastaturfokus automatisch ausgeblendet"
+  it: "Si nasconde automaticamente quando perde il focus della tastiera"
+  uk: "Автоматично ховається при втраті фокуса клавіатури"
+  ja: "キーボードフォーカスを失うと自動的に隠す"
+  zh-Hans: "失去键盘焦点时自动隐藏"
+
+"When a command takes longer than":
+  es: "Cuando un comando tarda más de"
+  pt: "Quando um comando demora mais de"
+  fr: "Lorsqu'une commande prend plus de"
+  de: "Wenn ein Befehl länger als"
+  it: "Quando un comando impiega più di"
+  uk: "Коли команда виконується довше ніж"
+  ja: "コマンドの完了に"
+  zh-Hans: "当命令完成耗时超过"
+
+"seconds to complete":
+  es: "segundos en completarse"
+  pt: "segundos para concluir"
+  fr: "secondes"
+  de: "Sekunden dauert"
+  it: "secondi per completarsi"
+  uk: "секунд"
+  ja: "秒以上かかったとき"
+  zh-Hans: "秒时"
+
+"Keybinding":
+  es: "Atajo de teclado"
+  pt: "Atalho de teclado"
+  fr: "Raccourci clavier"
+  de: "Tastenkombination"
+  it: "Scorciatoia da tastiera"
+  uk: "Сполучення клавіш"
+  ja: "キーバインド"
+  zh-Hans: "快捷键"
+
+"Click to set global hotkey":
+  es: "Haz clic para definir el atajo global"
+  pt: "Clique para definir o atalho global"
+  fr: "Cliquez pour définir le raccourci global"
+  de: "Klicken, um globalen Hotkey festzulegen"
+  it: "Fai clic per impostare la scorciatoia globale"
+  uk: "Натисніть, щоб задати глобальну гарячу клавішу"
+  ja: "クリックしてグローバルホットキーを設定"
+  zh-Hans: "点击设置全局快捷键"
+
+"Save":
+  es: "Guardar"
+  pt: "Salvar"
+  fr: "Enregistrer"
+  de: "Speichern"
+  it: "Salva"
+  uk: "Зберегти"
+  ja: "保存"
+  zh-Hans: "保存"
+
+"Press new keyboard shortcut":
+  es: "Pulsa el nuevo atajo de teclado"
+  pt: "Pressione o novo atalho de teclado"
+  fr: "Appuyez sur le nouveau raccourci clavier"
+  de: "Neue Tastenkombination drücken"
+  it: "Premi la nuova scorciatoia da tastiera"
+  uk: "Натисніть нове сполучення клавіш"
+  ja: "新しいキーボードショートカットを押してください"
+  zh-Hans: "按下新的键盘快捷键"
+
+"Change keybinding":
+  es: "Cambiar atajo"
+  pt: "Alterar atalho"
+  fr: "Modifier le raccourci"
+  de: "Tastenkombination ändern"
+  it: "Cambia scorciatoia"
+  uk: "Змінити сполучення клавіш"
+  ja: "キーバインドを変更"
+  zh-Hans: "更改快捷键"
+
+"Main Screen":
+  es: "Pantalla principal"
+  pt: "Tela principal"
+  fr: "Écran principal"
+  de: "Hauptbildschirm"
+  it: "Schermo principale"
+  uk: "Основний екран"
+  ja: "メイン画面"
+  zh-Hans: "主屏幕"
+
+"Screen {number}":
+  es: "Pantalla {number}"
+  pt: "Tela {number}"
+  fr: "Écran {number}"
+  de: "Bildschirm {number}"
+  it: "Schermo {number}"
+  uk: "Екран {number}"
+  ja: "画面 {number}"
+  zh-Hans: "屏幕 {number}"
+
+"Active Screen":
+  es: "Pantalla activa"
+  pt: "Tela ativa"
+  fr: "Écran actif"
+  de: "Aktiver Bildschirm"
+  it: "Schermo attivo"
+  uk: "Активний екран"
+  ja: "アクティブな画面"
+  zh-Hans: "当前屏幕"
+
+"Open links in desktop app":
+  es: "Abrir enlaces en la app de escritorio"
+  pt: "Abrir links no app para desktop"
+  fr: "Ouvrir les liens dans l'application de bureau"
+  de: "Links in der Desktop-App öffnen"
+  it: "Apri i link nell'app desktop"
+  uk: "Відкривати посилання в настільному застосунку"
+  ja: "デスクトップアプリでリンクを開く"
+  zh-Hans: "在桌面应用中打开链接"
+
+"Automatically open links in desktop app whenever possible.":
+  es: "Abre automáticamente los enlaces en la app de escritorio siempre que sea posible."
+  pt: "Abre links automaticamente no app para desktop sempre que possível."
+  fr: "Ouvre automatiquement les liens dans l'application de bureau lorsque c'est possible."
+  de: "Links nach Möglichkeit automatisch in der Desktop-App öffnen."
+  it: "Apri automaticamente i link nell'app desktop quando possibile."
+  uk: "Автоматично відкривати посилання в настільному застосунку, коли це можливо."
+  ja: "可能な場合はリンクを自動的にデスクトップアプリで開きます。"
+  zh-Hans: "尽可能自动在桌面应用中打开链接。"
+
+"Restore windows, tabs, and panes on startup":
+  es: "Restaurar ventanas, pestañas y paneles al iniciar"
+  pt: "Restaurar janelas, abas e painéis ao iniciar"
+  fr: "Restaurer les fenêtres, onglets et volets au démarrage"
+  de: "Fenster, Tabs und Bereiche beim Start wiederherstellen"
+  it: "Ripristina finestre, schede e riquadri all'avvio"
+  uk: "Відновлювати вікна, вкладки й панелі під час запуску"
+  ja: "起動時にウィンドウ、タブ、ペインを復元"
+  zh-Hans: "启动时恢复窗口、标签页和窗格"
+
+"Window positions won't be restored on Wayland.":
+  es: "Las posiciones de las ventanas no se restauran en Wayland."
+  pt: "As posições das janelas não serão restauradas no Wayland."
+  fr: "La position des fenêtres ne sera pas restaurée sous Wayland."
+  de: "Fensterpositionen werden unter Wayland nicht wiederhergestellt."
+  it: "Le posizioni delle finestre non verranno ripristinate su Wayland."
+  uk: "Положення вікон не відновлюються у Wayland."
+  ja: "Wayland ではウィンドウの位置は復元されません。"
+  zh-Hans: "在 Wayland 上不会恢复窗口位置。"
+
+"Show sticky command header":
+  es: "Mostrar encabezado de comando fijo"
+  pt: "Mostrar cabeçalho de comando fixo"
+  fr: "Afficher l'en-tête de commande épinglé"
+  de: "Fixierte Befehlskopfzeile anzeigen"
+  it: "Mostra intestazione del comando fissa"
+  uk: "Показувати закріплений заголовок команди"
+  ja: "コマンドヘッダーを固定表示"
+  zh-Hans: "显示固定命令标题"
+
+"Show tooltip on click on links":
+  es: "Mostrar información al hacer clic en enlaces"
+  pt: "Mostrar dica ao clicar em links"
+  fr: "Afficher une info-bulle au clic sur les liens"
+  de: "Tooltip beim Klicken auf Links anzeigen"
+  it: "Mostra suggerimento al clic sui link"
+  uk: "Показувати підказку під час натискання на посилання"
+  ja: "リンクのクリック時にツールチップを表示"
+  zh-Hans: "点击链接时显示提示"
+
+"Show warning before quitting/logging out":
+  es: "Mostrar aviso antes de salir o cerrar sesión"
+  pt: "Mostrar aviso antes de sair/encerrar sessão"
+  fr: "Afficher un avertissement avant de quitter ou de se déconnecter"
+  de: "Vor dem Beenden/Abmelden warnen"
+  it: "Mostra avviso prima di uscire o disconnettersi"
+  uk: "Попереджати перед виходом"
+  ja: "終了/ログアウト前に警告を表示"
+  zh-Hans: "退出/注销前显示警告"
+
+"Start Termloc at login (requires macOS 13+)":
+  es: "Abrir Termloc al iniciar sesión (requiere macOS 13+)"
+  pt: "Iniciar o Termloc no login (requer macOS 13+)"
+  fr: "Lancer Termloc à l'ouverture de session (macOS 13+ requis)"
+  de: "Termloc bei der Anmeldung starten (erfordert macOS 13+)"
+  it: "Avvia Termloc all'accesso (richiede macOS 13+)"
+  uk: "Запускати Termloc під час входу (потрібна macOS 13+)"
+  ja: "ログイン時に Termloc を起動（macOS 13 以降が必要）"
+  zh-Hans: "登录时启动 Termloc（需要 macOS 13+）"
+
+"Start Termloc at login":
+  es: "Abrir Termloc al iniciar sesión"
+  pt: "Iniciar o Termloc no login"
+  fr: "Lancer Termloc à l'ouverture de session"
+  de: "Termloc bei der Anmeldung starten"
+  it: "Avvia Termloc all'accesso"
+  uk: "Запускати Termloc під час входу"
+  ja: "ログイン時に Termloc を起動"
+  zh-Hans: "登录时启动 Termloc"
+
+"Quit when all windows are closed":
+  es: "Salir al cerrar todas las ventanas"
+  pt: "Sair quando todas as janelas forem fechadas"
+  fr: "Quitter lorsque toutes les fenêtres sont fermées"
+  de: "Beenden, wenn alle Fenster geschlossen sind"
+  it: "Esci quando tutte le finestre sono chiuse"
+  uk: "Виходити, коли всі вікна закрито"
+  ja: "すべてのウィンドウを閉じたら終了"
+  zh-Hans: "关闭所有窗口后退出"
+
+"Allowed Values: 1-20":
+  es: "Valores permitidos: 1-20"
+  pt: "Valores permitidos: 1-20"
+  fr: "Valeurs autorisées : 1-20"
+  de: "Zulässige Werte: 1–20"
+  it: "Valori consentiti: 1-20"
+  uk: "Допустимі значення: 1–20"
+  ja: "許容値: 1～20"
+  zh-Hans: "允许的值：1-20"
+
+"Lines scrolled by mouse wheel interval":
+  es: "Líneas desplazadas por paso de la rueda del ratón"
+  pt: "Linhas roladas por passo da roda do mouse"
+  fr: "Lignes défilées par cran de molette"
+  de: "Pro Mausradschritt gescrollte Zeilen"
+  it: "Righe scorse per scatto della rotellina"
+  uk: "Рядків прокрутки за крок коліщатка миші"
+  ja: "マウスホイール 1 回あたりのスクロール行数"
+  zh-Hans: "每次滚动鼠标滚轮的行数"
+
+"Supports floating point values between 1 and 20.":
+  es: "Admite valores decimales entre 1 y 20."
+  pt: "Suporta valores decimais entre 1 e 20."
+  fr: "Accepte les valeurs décimales entre 1 et 20."
+  de: "Unterstützt Dezimalwerte zwischen 1 und 20."
+  it: "Supporta valori decimali tra 1 e 20."
+  uk: "Підтримує дробові значення від 1 до 20."
+  ja: "1～20 の小数値に対応しています。"
+  zh-Hans: "支持 1 到 20 之间的小数值。"
+
+"Termloc is the default terminal":
+  es: "Termloc es el terminal predeterminado"
+  pt: "O Termloc é o terminal padrão"
+  fr: "Termloc est le terminal par défaut"
+  de: "Termloc ist das Standardterminal"
+  it: "Termloc è il terminale predefinito"
+  uk: "Termloc — термінал за замовчуванням"
+  ja: "Termloc はデフォルトのターミナルです"
+  zh-Hans: "Termloc 是默认终端"
+
+"Maximum rows in a block":
+  es: "Máximo de filas en un bloque"
+  pt: "Máximo de linhas em um bloco"
+  fr: "Nombre maximal de lignes par bloc"
+  de: "Maximale Zeilen pro Block"
+  it: "Righe massime in un blocco"
+  uk: "Максимум рядків у блоці"
+  ja: "ブロック内の最大行数"
+  zh-Hans: "块中的最大行数"
+
+"Receive desktop notifications from Termloc":
+  es: "Recibir notificaciones de escritorio de Termloc"
+  pt: "Receber notificações na área de trabalho do Termloc"
+  fr: "Recevoir les notifications de bureau de Termloc"
+  de: "Desktop-Benachrichtigungen von Termloc erhalten"
+  it: "Ricevi notifiche desktop da Termloc"
+  uk: "Отримувати сповіщення Termloc на робочому столі"
+  ja: "Termloc からデスクトップ通知を受け取る"
+  zh-Hans: "接收来自 Termloc 的桌面通知"
+
+"Notify when an agent completes a task":
+  es: "Notificar cuando un agente complete una tarea"
+  pt: "Notificar quando um agente concluir uma tarefa"
+  fr: "Notifier lorsqu'un agent termine une tâche"
+  de: "Benachrichtigen, wenn ein Agent eine Aufgabe abschließt"
+  it: "Notifica quando un agente completa un'attività"
+  uk: "Сповіщати, коли агент завершує завдання"
+  ja: "エージェントがタスクを完了したら通知"
+  zh-Hans: "代理完成任务时通知"
+
+"Notify when a command or agent needs your attention to continue":
+  es: "Notificar cuando un comando o agente necesite tu atención para continuar"
+  pt: "Notificar quando um comando ou agente precisar da sua atenção para continuar"
+  fr: "Notifier lorsqu'une commande ou un agent a besoin de votre attention pour continuer"
+  de: "Benachrichtigen, wenn ein Befehl oder Agent Ihre Aufmerksamkeit benötigt"
+  it: "Notifica quando un comando o un agente richiede la tua attenzione per continuare"
+  uk: "Сповіщати, коли команда чи агент потребує вашої уваги, щоб продовжити"
+  ja: "コマンドやエージェントの続行に操作が必要なときに通知"
+  zh-Hans: "命令或代理需要你处理才能继续时通知"
+
+"Play notification sounds":
+  es: "Reproducir sonidos de notificación"
+  pt: "Reproduzir sons de notificação"
+  fr: "Émettre des sons de notification"
+  de: "Benachrichtigungstöne abspielen"
+  it: "Riproduci suoni di notifica"
+  uk: "Відтворювати звуки сповіщень"
+  ja: "通知音を鳴らす"
+  zh-Hans: "播放通知声音"
+
+"Show in-app agent notifications":
+  es: "Mostrar notificaciones de agentes en la app"
+  pt: "Mostrar notificações de agentes no app"
+  fr: "Afficher les notifications d'agent dans l'application"
+  de: "Agent-Benachrichtigungen in der App anzeigen"
+  it: "Mostra notifiche degli agenti nell'app"
+  uk: "Показувати сповіщення агентів у застосунку"
+  ja: "アプリ内でエージェント通知を表示"
+  zh-Hans: "显示应用内代理通知"
+
+"Toast notifications stay visible for":
+  es: "Las notificaciones emergentes permanecen visibles durante"
+  pt: "As notificações pop-up ficam visíveis por"
+  fr: "Les notifications restent visibles pendant"
+  de: "Pop-up-Benachrichtigungen bleiben sichtbar für"
+  it: "Le notifiche popup restano visibili per"
+  uk: "Спливаючі сповіщення видно протягом"
+  ja: "トースト通知の表示時間"
+  zh-Hans: "弹出通知显示时长"
+
+"seconds":
+  es: "segundos"
+  pt: "segundos"
+  fr: "secondes"
+  de: "Sekunden"
+  it: "secondi"
+  uk: "секунд"
+  ja: "秒"
+  zh-Hans: "秒"
+
+"Default shell for new sessions":
+  es: "Shell predeterminado para nuevas sesiones"
+  pt: "Shell padrão para novas sessões"
+  fr: "Shell par défaut pour les nouvelles sessions"
+  de: "Standard-Shell für neue Sitzungen"
+  it: "Shell predefinita per le nuove sessioni"
+  uk: "Типова оболонка для нових сеансів"
+  ja: "新しいセッションのデフォルトシェル"
+  zh-Hans: "新会话的默认 Shell"
+
+"Working directory for new sessions":
+  es: "Directorio de trabajo para nuevas sesiones"
+  pt: "Diretório de trabalho para novas sessões"
+  fr: "Répertoire de travail pour les nouvelles sessions"
+  de: "Arbeitsverzeichnis für neue Sitzungen"
+  it: "Directory di lavoro per le nuove sessioni"
+  uk: "Робочий каталог для нових сеансів"
+  ja: "新しいセッションの作業ディレクトリ"
+  zh-Hans: "新会话的工作目录"
+
+"Global hotkey:":
+  es: "Atajo global:"
+  pt: "Atalho global:"
+  fr: "Raccourci global :"
+  de: "Globaler Hotkey:"
+  it: "Scorciatoia globale:"
+  uk: "Глобальна гаряча клавіша:"
+  ja: "グローバルホットキー:"
+  zh-Hans: "全局快捷键："
+
+"Not supported on Wayland.":
+  es: "No compatible con Wayland."
+  pt: "Não suportado no Wayland."
+  fr: "Non pris en charge sous Wayland."
+  de: "Unter Wayland nicht unterstützt."
+  it: "Non supportato su Wayland."
+  uk: "Не підтримується у Wayland."
+  ja: "Wayland では対応していません。"
+  zh-Hans: "Wayland 上不受支持。"
+
+"Autocomplete quotes, parentheses, and brackets":
+  es: "Autocompletar comillas, paréntesis y corchetes"
+  pt: "Autocompletar aspas, parênteses e colchetes"
+  fr: "Compléter automatiquement les guillemets, parenthèses et crochets"
+  de: "Anführungszeichen und Klammern automatisch schließen"
+  it: "Completa automaticamente virgolette e parentesi"
+  uk: "Автоматично закривати лапки й дужки"
+  ja: "引用符と括弧を自動補完"
+  zh-Hans: "自动补全引号和括号"
+
+"Error underlining for commands":
+  es: "Subrayar errores en comandos"
+  pt: "Sublinhar erros nos comandos"
+  fr: "Souligner les erreurs dans les commandes"
+  de: "Fehler in Befehlen unterstreichen"
+  it: "Sottolinea gli errori nei comandi"
+  uk: "Підкреслювати помилки в командах"
+  ja: "コマンドのエラーに下線を表示"
+  zh-Hans: "为命令中的错误加下划线"
+
+"Syntax highlighting for commands":
+  es: "Resaltado de sintaxis para comandos"
+  pt: "Realce de sintaxe para comandos"
+  fr: "Coloration syntaxique des commandes"
+  de: "Syntaxhervorhebung für Befehle"
+  it: "Evidenziazione della sintassi per i comandi"
+  uk: "Підсвічування синтаксису команд"
+  ja: "コマンドのシンタックスハイライト"
+  zh-Hans: "命令语法高亮"
+
+"Open completions menu as you type":
+  es: "Abrir el menú de autocompletado mientras escribes"
+  pt: "Abrir o menu de autocompletar enquanto digita"
+  fr: "Ouvrir le menu de complétion pendant la saisie"
+  de: "Vervollständigungsmenü beim Tippen öffnen"
+  it: "Apri il menu dei completamenti durante la digitazione"
+  uk: "Відкривати меню доповнень під час введення"
+  ja: "入力中に補完メニューを開く"
+  zh-Hans: "输入时打开补全菜单"
+
+"Termloc completions":
+  es: "Autocompletado de Termloc"
+  pt: "Autocompletar do Termloc"
+  fr: "Complétions Termloc"
+  de: "Termloc-Vervollständigungen"
+  it: "Completamenti di Termloc"
+  uk: "Доповнення Termloc"
+  ja: "Termloc の補完"
+  zh-Hans: "Termloc 补全"
+
+"Native shell completions aren't generated as you type; press {keystroke} to fetch them.":
+  es: "El autocompletado nativo del shell no se genera mientras escribes; pulsa {keystroke} para obtenerlo."
+  pt: "O autocompletar nativo do shell não é gerado enquanto você digita; pressione {keystroke} para obtê-lo."
+  fr: "Les complétions natives du shell ne sont pas générées pendant la saisie ; appuyez sur {keystroke} pour les obtenir."
+  de: "Native Shell-Vervollständigungen werden beim Tippen nicht erzeugt; drücken Sie {keystroke}, um sie abzurufen."
+  it: "I completamenti nativi della shell non vengono generati durante la digitazione; premi {keystroke} per ottenerli."
+  uk: "Нативні доповнення оболонки не створюються під час введення; натисніть {keystroke}, щоб отримати їх."
+  ja: "シェル標準の補完は入力中には生成されません。{keystroke} を押して取得してください。"
+  zh-Hans: "输入时不会生成原生 Shell 补全；按 {keystroke} 获取。"
+
+"Native shell completions":
+  es: "Autocompletado nativo del shell"
+  pt: "Autocompletar nativo do shell"
+  fr: "Complétions natives du shell"
+  de: "Native Shell-Vervollständigungen"
+  it: "Completamenti nativi della shell"
+  uk: "Нативні доповнення оболонки"
+  ja: "シェル標準の補完"
+  zh-Hans: "原生 Shell 补全"
+
+"Suggest corrected commands":
+  es: "Sugerir comandos corregidos"
+  pt: "Sugerir comandos corrigidos"
+  fr: "Suggérer des commandes corrigées"
+  de: "Korrigierte Befehle vorschlagen"
+  it: "Suggerisci comandi corretti"
+  uk: "Пропонувати виправлені команди"
+  ja: "修正したコマンドを提案"
+  zh-Hans: "建议更正后的命令"
+
+"Expand aliases as you type":
+  es: "Expandir alias mientras escribes"
+  pt: "Expandir aliases enquanto digita"
+  fr: "Développer les alias pendant la saisie"
+  de: "Aliase beim Tippen erweitern"
+  it: "Espandi gli alias durante la digitazione"
+  uk: "Розгортати псевдоніми під час введення"
+  ja: "入力中にエイリアスを展開"
+  zh-Hans: "输入时展开别名"
+
+"Middle-click to paste":
+  es: "Clic central para pegar"
+  pt: "Clique do meio para colar"
+  fr: "Clic du milieu pour coller"
+  de: "Mit mittlerer Maustaste einfügen"
+  it: "Clic centrale per incollare"
+  uk: "Вставляти середньою кнопкою миші"
+  ja: "中クリックで貼り付け"
+  zh-Hans: "中键点击粘贴"
+
+"Right-click:":
+  es: "Clic derecho:"
+  pt: "Clique direito:"
+  fr: "Clic droit :"
+  de: "Rechtsklick:"
+  it: "Clic destro:"
+  uk: "Правий клік:"
+  ja: "右クリック:"
+  zh-Hans: "右键点击："
+
+"Shift+right-click to open the context menu.":
+  es: "Mayús+clic derecho para abrir el menú contextual."
+  pt: "Shift+clique direito para abrir o menu de contexto."
+  fr: "Maj+clic droit pour ouvrir le menu contextuel."
+  de: "Umschalt+Rechtsklick öffnet das Kontextmenü."
+  it: "Maiusc+clic destro per aprire il menu contestuale."
+  uk: "Shift+правий клік відкриває контекстне меню."
+  ja: "Shift+右クリックでコンテキストメニューを開きます。"
+  zh-Hans: "Shift+右键点击打开上下文菜单。"
+
+"Edit code and commands with Vim keybindings":
+  es: "Editar código y comandos con atajos de Vim"
+  pt: "Editar código e comandos com atalhos do Vim"
+  fr: "Modifier le code et les commandes avec les raccourcis Vim"
+  de: "Code und Befehle mit Vim-Tastenbelegung bearbeiten"
+  it: "Modifica codice e comandi con le scorciatoie di Vim"
+  uk: "Редагувати код і команди з клавішами Vim"
+  ja: "Vim のキーバインドでコードとコマンドを編集"
+  zh-Hans: "使用 Vim 快捷键编辑代码和命令"
+
+"Set unnamed register as system clipboard":
+  es: "Usar el registro sin nombre como portapapeles del sistema"
+  pt: "Usar o registro sem nome como área de transferência do sistema"
+  fr: "Utiliser le registre sans nom comme presse-papiers système"
+  de: "Unbenanntes Register als System-Zwischenablage verwenden"
+  it: "Usa il registro senza nome come appunti di sistema"
+  uk: "Використовувати безіменний регістр як системний буфер обміну"
+  ja: "無名レジスタをシステムクリップボードとして使用"
+  zh-Hans: "将无名寄存器设为系统剪贴板"
+
+"Show Vim status bar":
+  es: "Mostrar barra de estado de Vim"
+  pt: "Mostrar barra de status do Vim"
+  fr: "Afficher la barre d'état Vim"
+  de: "Vim-Statusleiste anzeigen"
+  it: "Mostra barra di stato di Vim"
+  uk: "Показувати рядок стану Vim"
+  ja: "Vim ステータスバーを表示"
+  zh-Hans: "显示 Vim 状态栏"
+
+"Outline codebase symbols for '@' context menu":
+  es: "Indexar símbolos del código para el menú contextual '@'"
+  pt: "Indexar símbolos do código para o menu de contexto '@'"
+  fr: "Indexer les symboles du code pour le menu contextuel « @ »"
+  de: "Codebasis-Symbole für das Kontextmenü '@' erfassen"
+  it: "Indicizza i simboli del codice per il menu contestuale '@'"
+  uk: "Індексувати символи кодової бази для контекстного меню '@'"
+  ja: "'@' コンテキストメニュー用にコードベースのシンボルを抽出"
+  zh-Hans: "为“@”上下文菜单提取代码库符号"
+
+"Show terminal input message line":
+  es: "Mostrar línea de mensajes de la entrada del terminal"
+  pt: "Mostrar linha de mensagens da entrada do terminal"
+  fr: "Afficher la ligne de message de la saisie du terminal"
+  de: "Meldungszeile der Terminaleingabe anzeigen"
+  it: "Mostra riga dei messaggi dell'input del terminale"
+  uk: "Показувати рядок повідомлень введення термінала"
+  ja: "ターミナル入力のメッセージ行を表示"
+  zh-Hans: "显示终端输入消息行"
+
+"Preserve input focus on block selection":
+  es: "Mantener el foco en la entrada al seleccionar bloques"
+  pt: "Manter o foco na entrada ao selecionar blocos"
+  fr: "Conserver le focus de saisie lors de la sélection d'un bloc"
+  de: "Eingabefokus bei Blockauswahl beibehalten"
+  it: "Mantieni il focus sull'input alla selezione dei blocchi"
+  uk: "Зберігати фокус введення під час вибору блока"
+  ja: "ブロック選択時に入力のフォーカスを維持"
+  zh-Hans: "选择块时保持输入焦点"
+
+"Show autosuggestion keybinding hint":
+  es: "Mostrar atajo de las autosugerencias"
+  pt: "Mostrar atalho das sugestões automáticas"
+  fr: "Afficher le raccourci des suggestions automatiques"
+  de: "Tastenkürzel-Hinweis für Autovorschläge anzeigen"
+  it: "Mostra suggerimento della scorciatoia per i suggerimenti automatici"
+  uk: "Показувати підказку клавіш для автопідказок"
+  ja: "自動候補のキーバインドヒントを表示"
+  zh-Hans: "显示自动建议快捷键提示"
+
+"Show autosuggestion ignore button":
+  es: "Mostrar botón para ignorar autosugerencias"
+  pt: "Mostrar botão para ignorar sugestões automáticas"
+  fr: "Afficher le bouton pour ignorer les suggestions automatiques"
+  de: "Schaltfläche zum Ignorieren von Autovorschlägen anzeigen"
+  it: "Mostra pulsante per ignorare i suggerimenti automatici"
+  uk: "Показувати кнопку ігнорування автопідказок"
+  ja: "自動候補を無視するボタンを表示"
+  zh-Hans: "显示忽略自动建议按钮"
+
+"→ accepts autosuggestions.":
+  es: "→ acepta las autosugerencias."
+  pt: "→ aceita sugestões automáticas."
+  fr: "→ accepte les suggestions automatiques."
+  de: "→ übernimmt Autovorschläge."
+  it: "→ accetta i suggerimenti automatici."
+  uk: "→ приймає автопідказки."
+  ja: "→ で自動候補を確定します。"
+  zh-Hans: "→ 接受自动建议。"
+
+"{keystroke} accepts autosuggestions.":
+  es: "{keystroke} acepta las autosugerencias."
+  pt: "{keystroke} aceita sugestões automáticas."
+  fr: "{keystroke} accepte les suggestions automatiques."
+  de: "{keystroke} übernimmt Autovorschläge."
+  it: "{keystroke} accetta i suggerimenti automatici."
+  uk: "{keystroke} приймає автопідказки."
+  ja: "{keystroke} で自動候補を確定します。"
+  zh-Hans: "{keystroke} 接受自动建议。"
+
+"Completions open as you type.":
+  es: "El autocompletado se abre mientras escribes."
+  pt: "O autocompletar abre enquanto você digita."
+  fr: "Les complétions s'ouvrent pendant la saisie."
+  de: "Vervollständigungen öffnen sich beim Tippen."
+  it: "I completamenti si aprono durante la digitazione."
+  uk: "Доповнення відкриваються під час введення."
+  ja: "入力中に補完が表示されます。"
+  zh-Hans: "输入时会打开补全。"
+
+"Completions open as you type (or {keystroke}).":
+  es: "El autocompletado se abre mientras escribes (o con {keystroke})."
+  pt: "O autocompletar abre enquanto você digita (ou com {keystroke})."
+  fr: "Les complétions s'ouvrent pendant la saisie (ou avec {keystroke})."
+  de: "Vervollständigungen öffnen sich beim Tippen (oder mit {keystroke})."
+  it: "I completamenti si aprono durante la digitazione (o con {keystroke})."
+  uk: "Доповнення відкриваються під час введення (або {keystroke})."
+  ja: "入力中に補完が表示されます（または {keystroke}）。"
+  zh-Hans: "输入时会打开补全（或按 {keystroke}）。"
+
+"Opening the completion menu is unbound.":
+  es: "Abrir el menú de autocompletado no tiene atajo asignado."
+  pt: "Abrir o menu de autocompletar não tem atalho atribuído."
+  fr: "L'ouverture du menu de complétion n'a pas de raccourci."
+  de: "Zum Öffnen des Vervollständigungsmenüs ist keine Taste belegt."
+  it: "L'apertura del menu dei completamenti non ha una scorciatoia."
+  uk: "Відкриття меню доповнень не має сполучення клавіш."
+  ja: "補完メニューを開くキーは割り当てられていません。"
+  zh-Hans: "打开补全菜单未绑定快捷键。"
+
+"{keystroke} opens completion menu.":
+  es: "{keystroke} abre el menú de autocompletado."
+  pt: "{keystroke} abre o menu de autocompletar."
+  fr: "{keystroke} ouvre le menu de complétion."
+  de: "{keystroke} öffnet das Vervollständigungsmenü."
+  it: "{keystroke} apre il menu dei completamenti."
+  uk: "{keystroke} відкриває меню доповнень."
+  ja: "{keystroke} で補完メニューを開きます。"
+  zh-Hans: "{keystroke} 打开补全菜单。"
+
+"Tab key behavior":
+  es: "Comportamiento de la tecla Tab"
+  pt: "Comportamento da tecla Tab"
+  fr: "Comportement de la touche Tab"
+  de: "Verhalten der Tab-Taste"
+  it: "Comportamento del tasto Tab"
+  uk: "Поведінка клавіші Tab"
+  ja: "Tab キーの動作"
+  zh-Hans: "Tab 键行为"
+
+"Ctrl+Tab behavior:":
+  es: "Comportamiento de Ctrl+Tab:"
+  pt: "Comportamento de Ctrl+Tab:"
+  fr: "Comportement de Ctrl+Tab :"
+  de: "Verhalten von Ctrl+Tab:"
+  it: "Comportamento di Ctrl+Tab:"
+  uk: "Поведінка Ctrl+Tab:"
+  ja: "Ctrl+Tab の動作:"
+  zh-Hans: "Ctrl+Tab 行为："
+
+"Enable Mouse Reporting":
+  es: "Activar informe del ratón"
+  pt: "Ativar relatório do mouse"
+  fr: "Activer le signalement de la souris"
+  de: "Maus-Reporting aktivieren"
+  it: "Attiva segnalazione del mouse"
+  uk: "Увімкнути передавання подій миші"
+  ja: "マウスレポートを有効化"
+  zh-Hans: "启用鼠标报告"
+
+"Enable Scroll Reporting":
+  es: "Activar informe del desplazamiento"
+  pt: "Ativar relatório de rolagem"
+  fr: "Activer le signalement du défilement"
+  de: "Scroll-Reporting aktivieren"
+  it: "Attiva segnalazione dello scorrimento"
+  uk: "Увімкнути передавання прокручування"
+  ja: "スクロールレポートを有効化"
+  zh-Hans: "启用滚动报告"
+
+"Enable Focus Reporting":
+  es: "Activar informe del foco"
+  pt: "Ativar relatório de foco"
+  fr: "Activer le signalement du focus"
+  de: "Fokus-Reporting aktivieren"
+  it: "Attiva segnalazione del focus"
+  uk: "Увімкнути передавання фокуса"
+  ja: "フォーカスレポートを有効化"
+  zh-Hans: "启用焦点报告"
+
+"Use Audible Bell":
+  es: "Usar campana audible"
+  pt: "Usar sinal sonoro"
+  fr: "Utiliser la sonnerie audible"
+  de: "Akustische Glocke verwenden"
+  it: "Usa campanello acustico"
+  uk: "Звуковий сигнал"
+  ja: "ベル音を使用"
+  zh-Hans: "使用声音提示铃"
+
+"Characters considered part of a word":
+  es: "Caracteres que forman parte de una palabra"
+  pt: "Caracteres considerados parte de uma palavra"
+  fr: "Caractères considérés comme faisant partie d'un mot"
+  de: "Zeichen, die als Teil eines Wortes gelten"
+  it: "Caratteri considerati parte di una parola"
+  uk: "Символи, що вважаються частиною слова"
+  ja: "単語の一部とみなす文字"
+  zh-Hans: "视为单词组成部分的字符"
+
+"Double-click smart selection":
+  es: "Selección inteligente con doble clic"
+  pt: "Seleção inteligente com clique duplo"
+  fr: "Sélection intelligente par double-clic"
+  de: "Intelligente Auswahl per Doppelklick"
+  it: "Selezione intelligente con doppio clic"
+  uk: "Розумне виділення подвійним кліком"
+  ja: "ダブルクリックでスマート選択"
+  zh-Hans: "双击智能选择"
+
+"Show help block in new sessions":
+  es: "Mostrar bloque de ayuda en nuevas sesiones"
+  pt: "Mostrar bloco de ajuda em novas sessões"
+  fr: "Afficher le bloc d'aide dans les nouvelles sessions"
+  de: "Hilfeblock in neuen Sitzungen anzeigen"
+  it: "Mostra blocco di aiuto nelle nuove sessioni"
+  uk: "Показувати блок довідки в нових сеансах"
+  ja: "新しいセッションでヘルプブロックを表示"
+  zh-Hans: "在新会话中显示帮助块"
+
+"Copy on select":
+  es: "Copiar al seleccionar"
+  pt: "Copiar ao selecionar"
+  fr: "Copier lors de la sélection"
+  de: "Beim Auswählen kopieren"
+  it: "Copia alla selezione"
+  uk: "Копіювати під час виділення"
+  ja: "選択時にコピー"
+  zh-Hans: "选中即复制"
+
+"Clipboard access (OSC 52)":
+  es: "Acceso al portapapeles (OSC 52)"
+  pt: "Acesso à área de transferência (OSC 52)"
+  fr: "Accès au presse-papiers (OSC 52)"
+  de: "Zugriff auf die Zwischenablage (OSC 52)"
+  it: "Accesso agli appunti (OSC 52)"
+  uk: "Доступ до буфера обміну (OSC 52)"
+  ja: "クリップボードへのアクセス（OSC 52）"
+  zh-Hans: "剪贴板访问（OSC 52）"
+
+"Controls whether programs running in the terminal can read or write your system clipboard.":
+  es: "Controla si los programas que se ejecutan en el terminal pueden leer o escribir en el portapapeles del sistema."
+  pt: "Controla se os programas executados no terminal podem ler ou gravar na área de transferência do sistema."
+  fr: "Détermine si les programmes exécutés dans le terminal peuvent lire ou écrire dans le presse-papiers système."
+  de: "Legt fest, ob im Terminal laufende Programme die System-Zwischenablage lesen oder beschreiben dürfen."
+  it: "Controlla se i programmi eseguiti nel terminale possono leggere o scrivere negli appunti di sistema."
+  uk: "Визначає, чи можуть програми в терміналі читати системний буфер обміну або записувати в нього."
+  ja: "ターミナルで実行中のプログラムがシステムクリップボードを読み書きできるかどうかを設定します。"
+  zh-Hans: "控制在终端中运行的程序能否读取或写入系统剪贴板。"
+
+"New tab placement":
+  es: "Posición de las pestañas nuevas"
+  pt: "Posição das novas abas"
+  fr: "Emplacement des nouveaux onglets"
+  de: "Position neuer Tabs"
+  it: "Posizione delle nuove schede"
+  uk: "Розташування нових вкладок"
+  ja: "新しいタブの位置"
+  zh-Hans: "新标签页位置"
+
+"Default mode for new sessions":
+  es: "Modo predeterminado para nuevas sesiones"
+  pt: "Modo padrão para novas sessões"
+  fr: "Mode par défaut des nouvelles sessions"
+  de: "Standardmodus für neue Sitzungen"
+  it: "Modalità predefinita per le nuove sessioni"
+  uk: "Типовий режим для нових сеансів"
+  ja: "新しいセッションのデフォルトモード"
+  zh-Hans: "新会话的默认模式"
+
+"Show Global Workflows in Command Search (ctrl-r)":
+  es: "Mostrar flujos de trabajo globales en la búsqueda de comandos (ctrl-r)"
+  pt: "Mostrar fluxos de trabalho globais na busca de comandos (ctrl-r)"
+  fr: "Afficher les workflows globaux dans la recherche de commandes (ctrl-r)"
+  de: "Globale Workflows in der Befehlssuche anzeigen (ctrl-r)"
+  it: "Mostra i flussi di lavoro globali nella ricerca comandi (ctrl-r)"
+  uk: "Показувати глобальні робочі процеси в пошуку команд (ctrl-r)"
+  ja: "コマンド検索（ctrl-r）にグローバルワークフローを表示"
+  zh-Hans: "在命令搜索（ctrl-r）中显示全局工作流"
+
+"Honor linux selection clipboard":
+  es: "Usar el portapapeles de selección de Linux"
+  pt: "Usar a área de transferência de seleção do Linux"
+  fr: "Utiliser le presse-papiers de sélection Linux"
+  de: "Linux-Auswahlzwischenablage verwenden"
+  it: "Usa gli appunti di selezione di Linux"
+  uk: "Використовувати буфер виділення Linux"
+  ja: "Linux の選択クリップボードを使用"
+  zh-Hans: "使用 Linux 选择剪贴板"
+
+"Whether the Linux primary clipboard should be supported.":
+  es: "Indica si se admite el portapapeles primario de Linux."
+  pt: "Define se a área de transferência primária do Linux deve ser suportada."
+  fr: "Indique si le presse-papiers primaire de Linux doit être pris en charge."
+  de: "Ob die primäre Linux-Zwischenablage unterstützt werden soll."
+  it: "Indica se supportare gli appunti primari di Linux."
+  uk: "Чи підтримувати основний буфер обміну Linux."
+  ja: "Linux のプライマリクリップボードに対応するかどうか。"
+  zh-Hans: "是否支持 Linux 主剪贴板。"
+
+"Prefer rendering new windows with integrated GPU (low power)":
+  es: "Preferir la GPU integrada para nuevas ventanas (bajo consumo)"
+  pt: "Preferir a GPU integrada para novas janelas (baixo consumo)"
+  fr: "Privilégier le GPU intégré pour les nouvelles fenêtres (basse consommation)"
+  de: "Neue Fenster bevorzugt mit integrierter GPU rendern (Energiesparen)"
+  it: "Preferisci la GPU integrata per le nuove finestre (basso consumo)"
+  uk: "Віддавати перевагу вбудованому GPU для нових вікон (енергоощадно)"
+  ja: "新しいウィンドウを内蔵 GPU で描画（省電力）"
+  zh-Hans: "新窗口优先使用集成 GPU 渲染（低功耗）"
+
+"Changes will apply to new windows.":
+  es: "Los cambios se aplicarán a las ventanas nuevas."
+  pt: "As alterações serão aplicadas a novas janelas."
+  fr: "Les modifications s'appliqueront aux nouvelles fenêtres."
+  de: "Änderungen gelten für neue Fenster."
+  it: "Le modifiche verranno applicate alle nuove finestre."
+  uk: "Зміни застосуються до нових вікон."
+  ja: "変更は新しいウィンドウに適用されます。"
+  zh-Hans: "更改将应用于新窗口。"
+
+"Use Wayland for window management":
+  es: "Usar Wayland para gestionar ventanas"
+  pt: "Usar Wayland para gerenciar janelas"
+  fr: "Utiliser Wayland pour la gestion des fenêtres"
+  de: "Wayland für die Fensterverwaltung verwenden"
+  it: "Usa Wayland per la gestione delle finestre"
+  uk: "Використовувати Wayland для керування вікнами"
+  ja: "ウィンドウ管理に Wayland を使用"
+  zh-Hans: "使用 Wayland 管理窗口"
+
+"Enables the use of Wayland":
+  es: "Activa el uso de Wayland"
+  pt: "Ativa o uso do Wayland"
+  fr: "Active l'utilisation de Wayland"
+  de: "Aktiviert die Verwendung von Wayland"
+  it: "Attiva l'uso di Wayland"
+  uk: "Вмикає використання Wayland"
+  ja: "Wayland を使用します"
+  zh-Hans: "启用 Wayland"
+
+"Enabling this setting disables global hotkey support. When disabled, text may be blurry if your Wayland compositor is using fraction scaling (ex: 125%).":
+  es: "Activar este ajuste desactiva los atajos globales. Si está desactivado, el texto puede verse borroso si tu compositor de Wayland usa escalado fraccionario (p. ej., 125 %)."
+  pt: "Ativar esta configuração desativa os atalhos globais. Quando desativada, o texto pode ficar borrado se o compositor do Wayland usar escala fracionária (ex.: 125%)."
+  fr: "Activer ce paramètre désactive les raccourcis globaux. S'il est désactivé, le texte peut être flou si votre compositeur Wayland utilise une mise à l'échelle fractionnaire (ex. : 125 %)."
+  de: "Diese Einstellung deaktiviert globale Hotkeys. Ist sie deaktiviert, kann Text unscharf sein, wenn Ihr Wayland-Compositor eine gebrochene Skalierung verwendet (z. B. 125 %)."
+  it: "Attivare questa impostazione disabilita le scorciatoie globali. Se disattivata, il testo potrebbe apparire sfocato se il compositor Wayland usa un ridimensionamento frazionario (es. 125%)."
+  uk: "Увімкнення цього параметра вимикає глобальні гарячі клавіші. Якщо його вимкнено, текст може бути розмитим, коли компоновник Wayland використовує дробове масштабування (напр., 125%)."
+  ja: "この設定を有効にするとグローバルホットキーは使用できません。無効の場合、Wayland コンポジタが小数倍率（例: 125%）を使用していると文字がぼやけることがあります。"
+  zh-Hans: "启用此设置会禁用全局快捷键。禁用时，如果 Wayland 合成器使用小数缩放（例如 125%），文本可能会模糊。"
+
+"Restart Termloc for changes to take effect.":
+  es: "Reinicia Termloc para aplicar los cambios."
+  pt: "Reinicie o Termloc para aplicar as alterações."
+  fr: "Redémarrez Termloc pour appliquer les modifications."
+  de: "Starten Sie Termloc neu, damit die Änderungen wirksam werden."
+  it: "Riavvia Termloc per applicare le modifiche."
+  uk: "Перезапустіть Termloc, щоб застосувати зміни."
+  ja: "変更を反映するには Termloc を再起動してください。"
+  zh-Hans: "重启 Termloc 以使更改生效。"
+
+"Preferred graphics backend":
+  es: "Backend gráfico preferido"
+  pt: "Backend gráfico preferido"
+  fr: "Moteur graphique préféré"
+  de: "Bevorzugtes Grafik-Backend"
+  it: "Backend grafico preferito"
+  uk: "Бажаний графічний бекенд"
+  ja: "優先するグラフィックバックエンド"
+  zh-Hans: "首选图形后端"
+
+"Current backend: {backend}":
+  es: "Backend actual: {backend}"
+  pt: "Backend atual: {backend}"
+  fr: "Moteur actuel : {backend}"
+  de: "Aktuelles Backend: {backend}"
+  it: "Backend attuale: {backend}"
+  uk: "Поточний бекенд: {backend}"
+  ja: "現在のバックエンド: {backend}"
+  zh-Hans: "当前后端：{backend}"
+
+"Asynchronous find":
+  es: "Búsqueda asíncrona"
+  pt: "Busca assíncrona"
+  fr: "Recherche asynchrone"
+  de: "Asynchrone Suche"
+  it: "Ricerca asincrona"
+  uk: "Асинхронний пошук"
+  ja: "非同期検索"
+  zh-Hans: "异步查找"
+
+"Use an improved implementation of find to keep the UI responsive while searching for matches on large outputs.":
+  es: "Usa una implementación mejorada de la búsqueda para que la interfaz siga respondiendo al buscar en salidas grandes."
+  pt: "Usa uma implementação aprimorada da busca para manter a interface responsiva ao procurar em saídas grandes."
+  fr: "Utilise une implémentation améliorée de la recherche pour que l'interface reste réactive sur les sorties volumineuses."
+  de: "Verwendet eine verbesserte Suche, damit die Oberfläche bei großen Ausgaben reaktionsfähig bleibt."
+  it: "Usa un'implementazione migliorata della ricerca per mantenere l'interfaccia reattiva con output di grandi dimensioni."
+  uk: "Використовує вдосконалений пошук, щоб інтерфейс не зависав під час пошуку у великому виводі."
+  ja: "改良された検索処理を使い、大きな出力を検索している間も UI の応答性を保ちます。"
+  zh-Hans: "使用改进的查找实现，在大型输出中搜索时保持界面响应。"
+
+"Executable path":
+  es: "Ruta del ejecutable"
+  pt: "Caminho do executável"
+  fr: "Chemin de l'exécutable"
+  de: "Pfad zur ausführbaren Datei"
+  it: "Percorso dell'eseguibile"
+  uk: "Шлях до виконуваного файлу"
+  ja: "実行ファイルのパス"
+  zh-Hans: "可执行文件路径"
+
+"Custom":
+  es: "Personalizado"
+  pt: "Personalizado"
+  fr: "Personnalisé"
+  de: "Benutzerdefiniert"
+  it: "Personalizzato"
+  uk: "Власний"
+  ja: "カスタム"
+  zh-Hans: "自定义"
+
+"Default App":
+  es: "App predeterminada"
+  pt: "App padrão"
+  fr: "Application par défaut"
+  de: "Standard-App"
+  it: "App predefinita"
+  uk: "Типовий застосунок"
+  ja: "デフォルトのアプリ"
+  zh-Hans: "默认应用"
+
+"Choose an editor to open file links":
+  es: "Elige un editor para abrir enlaces a archivos"
+  pt: "Escolha um editor para abrir links de arquivos"
+  fr: "Choisissez un éditeur pour ouvrir les liens de fichiers"
+  de: "Editor zum Öffnen von Dateilinks wählen"
+  it: "Scegli un editor per aprire i link ai file"
+  uk: "Виберіть редактор для відкриття посилань на файли"
+  ja: "ファイルリンクを開くエディタを選択"
+  zh-Hans: "选择用于打开文件链接的编辑器"
+
+"Choose an editor to open files from the code review panel, project explorer, and global search":
+  es: "Elige un editor para abrir archivos desde el panel de revisión de código, el explorador del proyecto y la búsqueda global"
+  pt: "Escolha um editor para abrir arquivos do painel de revisão de código, do explorador do projeto e da busca global"
+  fr: "Choisissez un éditeur pour ouvrir les fichiers depuis le panneau de revue de code, l'explorateur de projet et la recherche globale"
+  de: "Editor zum Öffnen von Dateien aus Code-Review-Bereich, Projekt-Explorer und globaler Suche wählen"
+  it: "Scegli un editor per aprire i file dal pannello di revisione del codice, dall'esplora progetto e dalla ricerca globale"
+  uk: "Виберіть редактор для відкриття файлів із панелі перевірки коду, провідника проєкту та глобального пошуку"
+  ja: "コードレビューパネル、プロジェクトエクスプローラー、グローバル検索からファイルを開くエディタを選択"
+  zh-Hans: "选择用于从代码审查面板、项目资源管理器和全局搜索打开文件的编辑器"
+
+"Choose a layout to open files in Termloc":
+  es: "Elige un diseño para abrir archivos en Termloc"
+  pt: "Escolha um layout para abrir arquivos no Termloc"
+  fr: "Choisissez une disposition pour ouvrir les fichiers dans Termloc"
+  de: "Layout zum Öffnen von Dateien in Termloc wählen"
+  it: "Scegli un layout per aprire i file in Termloc"
+  uk: "Виберіть розташування для відкриття файлів у Termloc"
+  ja: "Termloc でファイルを開くレイアウトを選択"
+  zh-Hans: "选择在 Termloc 中打开文件的布局"
+
+"Open Markdown files in Termloc's Markdown Viewer by default":
+  es: "Abrir archivos Markdown en el visor de Markdown de Termloc por defecto"
+  pt: "Abrir arquivos Markdown no visualizador de Markdown do Termloc por padrão"
+  fr: "Ouvrir les fichiers Markdown dans le visualiseur Markdown de Termloc par défaut"
+  de: "Markdown-Dateien standardmäßig im Markdown-Viewer von Termloc öffnen"
+  it: "Apri i file Markdown nel visualizzatore Markdown di Termloc per impostazione predefinita"
+  uk: "За замовчуванням відкривати файли Markdown у переглядачі Markdown Termloc"
+  ja: "Markdown ファイルをデフォルトで Termloc の Markdown ビューアで開く"
+  zh-Hans: "默认在 Termloc 的 Markdown 查看器中打开 Markdown 文件"
+
+"Grace period (seconds)":
+  es: "Período de gracia (segundos)"
+  pt: "Período de carência (segundos)"
+  fr: "Délai de grâce (secondes)"
+  de: "Karenzzeit (Sekunden)"
+  it: "Periodo di tolleranza (secondi)"
+  uk: "Пільговий період (секунди)"
+  ja: "猶予期間（秒）"
+  zh-Hans: "宽限期（秒）"
+
+"Enable reopening of closed sessions":
+  es: "Permitir reabrir sesiones cerradas"
+  pt: "Permitir reabrir sessões fechadas"
+  fr: "Permettre de rouvrir les sessions fermées"
+  de: "Wiederöffnen geschlossener Sitzungen aktivieren"
+  it: "Consenti di riaprire le sessioni chiuse"
+  uk: "Дозволити повторне відкриття закритих сеансів"
+  ja: "閉じたセッションを再び開けるようにする"
+  zh-Hans: "允许重新打开已关闭的会话"
+
+"New window":
+  es: "Ventana nueva"
+  pt: "Nova janela"
+  fr: "Nouvelle fenêtre"
+  de: "Neues Fenster"
+  it: "Nuova finestra"
+  uk: "Нове вікно"
+  ja: "新しいウィンドウ"
+  zh-Hans: "新窗口"
+
+"New tab":
+  es: "Pestaña nueva"
+  pt: "Nova aba"
+  fr: "Nouvel onglet"
+  de: "Neuer Tab"
+  it: "Nuova scheda"
+  uk: "Нова вкладка"
+  ja: "新しいタブ"
+  zh-Hans: "新标签页"
+
+"Split pane":
+  es: "Panel dividido"
+  pt: "Painel dividido"
+  fr: "Volet partagé"
+  de: "Geteilter Bereich"
+  it: "Riquadro diviso"
+  uk: "Розділена панель"
+  ja: "分割ペイン"
+  zh-Hans: "拆分窗格"
+
+"Advanced":
+  es: "Avanzado"
+  pt: "Avançado"
+  fr: "Avancé"
+  de: "Erweitert"
+  it: "Avanzate"
+  uk: "Розширені"
+  ja: "詳細"
+  zh-Hans: "高级"
+
+"Directory path":
+  es: "Ruta del directorio"
+  pt: "Caminho do diretório"
+  fr: "Chemin du répertoire"
+  de: "Verzeichnispfad"
+  it: "Percorso della directory"
+  uk: "Шлях до каталогу"
+  ja: "ディレクトリのパス"
+  zh-Hans: "目录路径"
+
+"Left Option key is Meta":
+  es: "La tecla Opción izquierda es Meta"
+  pt: "A tecla Option esquerda é Meta"
+  fr: "La touche Option gauche sert de Meta"
+  de: "Linke Wahltaste ist Meta"
+  it: "Il tasto Opzione sinistro è Meta"
+  uk: "Ліва клавіша Option працює як Meta"
+  ja: "左 Option キーを Meta として使用"
+  zh-Hans: "左 Option 键作为 Meta"
+
+"Right Option key is Meta":
+  es: "La tecla Opción derecha es Meta"
+  pt: "A tecla Option direita é Meta"
+  fr: "La touche Option droite sert de Meta"
+  de: "Rechte Wahltaste ist Meta"
+  it: "Il tasto Opzione destro è Meta"
+  uk: "Права клавіша Option працює як Meta"
+  ja: "右 Option キーを Meta として使用"
+  zh-Hans: "右 Option 键作为 Meta"
+
+"Left Alt key is Meta":
+  es: "La tecla Alt izquierda es Meta"
+  pt: "A tecla Alt esquerda é Meta"
+  fr: "La touche Alt gauche sert de Meta"
+  de: "Linke Alt-Taste ist Meta"
+  it: "Il tasto Alt sinistro è Meta"
+  uk: "Ліва клавіша Alt працює як Meta"
+  ja: "左 Alt キーを Meta として使用"
+  zh-Hans: "左 Alt 键作为 Meta"
+
+"Right Alt key is Meta":
+  es: "La tecla Alt derecha es Meta"
+  pt: "A tecla Alt direita é Meta"
+  fr: "La touche Alt droite sert de Meta"
+  de: "Rechte Alt-Taste ist Meta"
+  it: "Il tasto Alt destro è Meta"
+  uk: "Права клавіша Alt працює як Meta"
+  ja: "右 Alt キーを Meta として使用"
+  zh-Hans: "右 Alt 键作为 Meta"
+
+"Group files into single editor pane":
+  es: "Agrupar archivos en un solo panel de editor"
+  pt: "Agrupar arquivos em um único painel de editor"
+  fr: "Regrouper les fichiers dans un seul volet d'éditeur"
+  de: "Dateien in einem einzigen Editorbereich gruppieren"
+  it: "Raggruppa i file in un unico riquadro dell'editor"
+  uk: "Групувати файли в одній панелі редактора"
+  ja: "ファイルを 1 つのエディタペインにまとめる"
+  zh-Hans: "将文件分组到单个编辑器窗格"
+
+"When this setting is on, any files opened in the same tab will be automatically grouped into a single editor pane.":
+  es: "Con este ajuste activado, los archivos abiertos en la misma pestaña se agrupan automáticamente en un solo panel de editor."
+  pt: "Com esta configuração ativada, os arquivos abertos na mesma aba são agrupados automaticamente em um único painel de editor."
+  fr: "Lorsque ce paramètre est activé, les fichiers ouverts dans le même onglet sont automatiquement regroupés dans un seul volet d'éditeur."
+  de: "Wenn diese Einstellung aktiv ist, werden im selben Tab geöffnete Dateien automatisch in einem Editorbereich gruppiert."
+  it: "Con questa impostazione attiva, i file aperti nella stessa scheda vengono raggruppati automaticamente in un unico riquadro dell'editor."
+  uk: "Якщо цей параметр увімкнено, файли, відкриті в одній вкладці, автоматично групуються в одній панелі редактора."
+  ja: "この設定をオンにすると、同じタブで開いたファイルは自動的に 1 つのエディタペインにまとめられます。"
+  zh-Hans: "开启此设置后，在同一标签页中打开的文件会自动分组到单个编辑器窗格中。"
+
+"Activate previous/next tab":
+  es: "Activar pestaña anterior/siguiente"
+  pt: "Ativar aba anterior/próxima"
+  fr: "Activer l'onglet précédent/suivant"
+  de: "Vorherigen/nächsten Tab aktivieren"
+  it: "Attiva scheda precedente/successiva"
+  uk: "Перейти до попередньої/наступної вкладки"
+  ja: "前/次のタブをアクティブにする"
+  zh-Hans: "激活上一个/下一个标签页"
+
+"Cycle most recent session":
+  es: "Alternar entre sesiones recientes"
+  pt: "Alternar entre sessões recentes"
+  fr: "Parcourir les sessions récentes"
+  de: "Zuletzt verwendete Sitzungen durchlaufen"
+  it: "Scorri tra le sessioni recenti"
+  uk: "Перемикати нещодавні сеанси"
+  ja: "最近使用したセッションを切り替え"
+  zh-Hans: "循环切换最近的会话"
+
+"Cycle most recent tab":
+  es: "Alternar entre pestañas recientes"
+  pt: "Alternar entre abas recentes"
+  fr: "Parcourir les onglets récents"
+  de: "Zuletzt verwendete Tabs durchlaufen"
+  it: "Scorri tra le schede recenti"
+  uk: "Перемикати нещодавні вкладки"
+  ja: "最近使用したタブを切り替え"
+  zh-Hans: "循环切换最近的标签页"
+
+"Disabled":
+  es: "Desactivado"
+  pt: "Desativado"
+  fr: "Désactivé"
+  de: "Deaktiviert"
+  it: "Disattivato"
+  uk: "Вимкнено"
+  ja: "無効"
+  zh-Hans: "已禁用"
+
+"Dedicated hotkey window":
+  es: "Ventana dedicada con atajo"
+  pt: "Janela dedicada com atalho"
+  fr: "Fenêtre dédiée au raccourci"
+  de: "Eigenes Hotkey-Fenster"
+  it: "Finestra dedicata alla scorciatoia"
+  uk: "Окреме вікно за гарячою клавішею"
+  ja: "専用ホットキーウィンドウ"
+  zh-Hans: "专用快捷键窗口"
+
+"Show/hide all windows":
+  es: "Mostrar/ocultar todas las ventanas"
+  pt: "Mostrar/ocultar todas as janelas"
+  fr: "Afficher/masquer toutes les fenêtres"
+  de: "Alle Fenster ein-/ausblenden"
+  it: "Mostra/nascondi tutte le finestre"
+  uk: "Показати/сховати всі вікна"
+  ja: "すべてのウィンドウを表示/非表示"
+  zh-Hans: "显示/隐藏所有窗口"
+
+"Open the context menu":
+  es: "Abrir el menú contextual"
+  pt: "Abrir o menu de contexto"
+  fr: "Ouvrir le menu contextuel"
+  de: "Kontextmenü öffnen"
+  it: "Apri il menu contestuale"
+  uk: "Відкрити контекстне меню"
+  ja: "コンテキストメニューを開く"
+  zh-Hans: "打开上下文菜单"
+
+"Paste from the clipboard":
+  es: "Pegar desde el portapapeles"
+  pt: "Colar da área de transferência"
+  fr: "Coller depuis le presse-papiers"
+  de: "Aus der Zwischenablage einfügen"
+  it: "Incolla dagli appunti"
+  uk: "Вставити з буфера обміну"
+  ja: "クリップボードから貼り付け"
+  zh-Hans: "从剪贴板粘贴"
+
+"Deny":
+  es: "Denegar"
+  pt: "Negar"
+  fr: "Refuser"
+  de: "Verweigern"
+  it: "Nega"
+  uk: "Заборонити"
+  ja: "拒否"
+  zh-Hans: "拒绝"
+
+"Write only":
+  es: "Solo escritura"
+  pt: "Somente gravação"
+  fr: "Écriture seule"
+  de: "Nur schreiben"
+  it: "Solo scrittura"
+  uk: "Лише запис"
+  ja: "書き込みのみ"
+  zh-Hans: "仅写入"
+
+"Read and write":
+  es: "Lectura y escritura"
+  pt: "Leitura e gravação"
+  fr: "Lecture et écriture"
+  de: "Lesen und schreiben"
+  it: "Lettura e scrittura"
+  uk: "Читання і запис"
+  ja: "読み取りと書き込み"
+  zh-Hans: "读写"
+
+"Open completions menu":
+  es: "Abrir menú de autocompletado"
+  pt: "Abrir menu de autocompletar"
+  fr: "Ouvrir le menu de complétion"
+  de: "Vervollständigungsmenü öffnen"
+  it: "Apri menu dei completamenti"
+  uk: "Відкрити меню доповнень"
+  ja: "補完メニューを開く"
+  zh-Hans: "打开补全菜单"
+
+"Accept autosuggestion":
+  es: "Aceptar autosugerencia"
+  pt: "Aceitar sugestão automática"
+  fr: "Accepter la suggestion automatique"
+  de: "Autovorschlag übernehmen"
+  it: "Accetta suggerimento automatico"
+  uk: "Прийняти автопідказку"
+  ja: "自動候補を確定"
+  zh-Hans: "接受自动建议"
+
+"User defined":
+  es: "Definido por el usuario"
+  pt: "Definido pelo usuário"
+  fr: "Défini par l'utilisateur"
+  de: "Benutzerdefiniert"
+  it: "Definito dall'utente"
+  uk: "Визначено користувачем"
+  ja: "ユーザー定義"
+  zh-Hans: "用户定义"
+
+"Home directory":
+  es: "Directorio personal"
+  pt: "Diretório pessoal"
+  fr: "Répertoire personnel"
+  de: "Home-Verzeichnis"
+  it: "Directory home"
+  uk: "Домашній каталог"
+  ja: "ホームディレクトリ"
+  zh-Hans: "主目录"
+
+"Previous session's directory":
+  es: "Directorio de la sesión anterior"
+  pt: "Diretório da sessão anterior"
+  fr: "Répertoire de la session précédente"
+  de: "Verzeichnis der vorherigen Sitzung"
+  it: "Directory della sessione precedente"
+  uk: "Каталог попереднього сеансу"
+  ja: "前のセッションのディレクトリ"
+  zh-Hans: "上一个会话的目录"
+
+"Custom directory":
+  es: "Directorio personalizado"
+  pt: "Diretório personalizado"
+  fr: "Répertoire personnalisé"
+  de: "Benutzerdefiniertes Verzeichnis"
+  it: "Directory personalizzata"
+  uk: "Власний каталог"
+  ja: "カスタムディレクトリ"
+  zh-Hans: "自定义目录"
+
+"Agent":
+  es: "Agente"
+  pt: "Agente"
+  fr: "Agent"
+  de: "Agent"
+  it: "Agente"
+  uk: "Агент"
+  ja: "エージェント"
+  zh-Hans: "代理"
+
+"Local Docker Sandbox":
+  es: "Sandbox local de Docker"
+  pt: "Sandbox local do Docker"
+  fr: "Sandbox Docker locale"
+  de: "Lokale Docker-Sandbox"
+  it: "Sandbox Docker locale"
+  uk: "Локальна пісочниця Docker"
+  ja: "ローカル Docker サンドボックス"
+  zh-Hans: "本地 Docker 沙盒"
+
+"Derived from Warp. Copyright 2020-2026 Denver Technologies, Inc.":
+  es: "Derivado de Warp. Copyright 2020-2026 Denver Technologies, Inc."
+  pt: "Derivado do Warp. Copyright 2020-2026 Denver Technologies, Inc."
+  fr: "Dérivé de Warp. Copyright 2020-2026 Denver Technologies, Inc."
+  de: "Abgeleitet von Warp. Copyright 2020-2026 Denver Technologies, Inc."
+  it: "Derivato da Warp. Copyright 2020-2026 Denver Technologies, Inc."
+  uk: "Створено на основі Warp. Copyright 2020-2026 Denver Technologies, Inc."
+  ja: "Warp から派生。Copyright 2020-2026 Denver Technologies, Inc."
+  zh-Hans: "派生自 Warp。Copyright 2020-2026 Denver Technologies, Inc."
+
+"Drive is a workspace in your terminal where you can save Workflows, Notebooks, Prompts, and Environment Variables for personal use or to share with a team.":
+  es: "Drive es un espacio de trabajo en tu terminal donde puedes guardar flujos de trabajo, cuadernos, prompts y variables de entorno para uso personal o para compartir con un equipo."
+  pt: "O Drive é um espaço de trabalho no seu terminal onde você pode salvar fluxos de trabalho, notebooks, prompts e variáveis de ambiente para uso pessoal ou para compartilhar com uma equipe."
+  fr: "Drive est un espace de travail dans votre terminal où vous pouvez enregistrer des workflows, des notebooks, des prompts et des variables d'environnement pour un usage personnel ou pour les partager avec une équipe."
+  de: "Drive ist ein Arbeitsbereich in Ihrem Terminal, in dem Sie Workflows, Notebooks, Prompts und Umgebungsvariablen für den persönlichen Gebrauch speichern oder mit einem Team teilen können."
+  it: "Drive è uno spazio di lavoro nel terminale in cui puoi salvare workflow, notebook, prompt e variabili d'ambiente per uso personale o da condividere con un team."
+  uk: "Drive — це робочий простір у вашому терміналі, де можна зберігати робочі процеси, блокноти, промпти та змінні середовища для особистого використання або спільного доступу з командою."
+  ja: "Drive はターミナル内のワークスペースで、ワークフロー、ノートブック、プロンプト、環境変数を保存して個人で使ったりチームと共有したりできます。"
+  zh-Hans: "Drive 是终端中的工作区，可用于保存工作流、笔记本、提示词和环境变量，供个人使用或与团队共享。"
+
+"Successfully installed the Termloc Control CLI! You can now run '{command_name}' from the command line.":
+  es: "¡Termloc Control CLI se instaló correctamente! Ya puedes ejecutar '{command_name}' desde la línea de comandos."
+  pt: "Termloc Control CLI instalado com sucesso! Agora você pode executar '{command_name}' na linha de comando."
+  fr: "Termloc Control CLI a été installé ! Vous pouvez maintenant exécuter '{command_name}' depuis la ligne de commande."
+  de: "Termloc Control CLI wurde erfolgreich installiert! Sie können jetzt '{command_name}' in der Befehlszeile ausführen."
+  it: "Termloc Control CLI installato correttamente! Ora puoi eseguire '{command_name}' dalla riga di comando."
+  uk: "Termloc Control CLI успішно встановлено! Тепер можна запускати '{command_name}' з командного рядка."
+  ja: "Termloc Control CLI をインストールしました。コマンドラインから '{command_name}' を実行できます。"
+  zh-Hans: "已成功安装 Termloc Control CLI！现在可以在命令行中运行 '{command_name}'。"
+
+"Failed to install Termloc Control command: {error}":
+  es: "No se pudo instalar el comando de Termloc Control: {error}"
+  pt: "Falha ao instalar o comando do Termloc Control: {error}"
+  fr: "Impossible d'installer la commande Termloc Control : {error}"
+  de: "Termloc Control-Befehl konnte nicht installiert werden: {error}"
+  it: "Impossibile installare il comando Termloc Control: {error}"
+  uk: "Не вдалося встановити команду Termloc Control: {error}"
+  ja: "Termloc Control コマンドをインストールできませんでした: {error}"
+  zh-Hans: "无法安装 Termloc Control 命令：{error}"
+
+"Installing…":
+  es: "Instalando…"
+  pt: "Instalando…"
+  fr: "Installation…"
+  de: "Wird installiert…"
+  it: "Installazione…"
+  uk: "Встановлення…"
+  ja: "インストール中…"
+  zh-Hans: "正在安装…"
+
+"Install":
+  es: "Instalar"
+  pt: "Instalar"
+  fr: "Installer"
+  de: "Installieren"
+  it: "Installa"
+  uk: "Встановити"
+  ja: "インストール"
+  zh-Hans: "安装"
+
+"Termloc Control CLI command":
+  es: "Comando de Termloc Control CLI"
+  pt: "Comando do Termloc Control CLI"
+  fr: "Commande Termloc Control CLI"
+  de: "Termloc Control CLI-Befehl"
+  it: "Comando Termloc Control CLI"
+  uk: "Команда Termloc Control CLI"
+  ja: "Termloc Control CLI コマンド"
+  zh-Hans: "Termloc Control CLI 命令"
+
+"Install the termlocctrl command for scripting Termloc from your terminal.":
+  es: "Instala el comando termlocctrl para automatizar Termloc desde tu terminal."
+  pt: "Instale o comando termlocctrl para automatizar o Termloc pelo seu terminal."
+  fr: "Installez la commande termlocctrl pour piloter Termloc par script depuis votre terminal."
+  de: "Installieren Sie den Befehl termlocctrl, um Termloc aus Ihrem Terminal per Skript zu steuern."
+  it: "Installa il comando termlocctrl per controllare Termloc tramite script dal terminale."
+  uk: "Установіть команду termlocctrl, щоб керувати Termloc за допомогою скриптів із термінала."
+  ja: "ターミナルから Termloc をスクリプトで操作するための termlocctrl コマンドをインストールします。"
+  zh-Hans: "安装 termlocctrl 命令，以便在终端中通过脚本控制 Termloc。"
+
+"termlocctrl allows for scripting Termloc's UI. Use with care.":
+  es: "termlocctrl permite automatizar la interfaz de Termloc. Úsalo con cuidado."
+  pt: "O termlocctrl permite automatizar a interface do Termloc. Use com cuidado."
+  fr: "termlocctrl permet de piloter l'interface de Termloc par script. À utiliser avec précaution."
+  de: "termlocctrl ermöglicht die Skriptsteuerung der Termloc-Oberfläche. Mit Vorsicht verwenden."
+  it: "termlocctrl consente di controllare l'interfaccia di Termloc tramite script. Usalo con cautela."
+  uk: "termlocctrl дає змогу керувати інтерфейсом Termloc за допомогою скриптів. Використовуйте обережно."
+  ja: "termlocctrl を使うと Termloc の UI をスクリプトで操作できます。注意して使用してください。"
+  zh-Hans: "termlocctrl 可通过脚本控制 Termloc 的界面。请谨慎使用。"
+
+"Enabled":
+  es: "Activado"
+  pt: "Ativado"
+  fr: "Activé"
+  de: "Aktiviert"
+  it: "Attivato"
+  uk: "Увімкнено"
+  ja: "有効"
+  zh-Hans: "已启用"
+
+"Subshells":
+  es: "Subshells"
+  pt: "Subshells"
+  fr: "Sous-shells"
+  de: "Subshells"
+  it: "Subshell"
+  uk: "Підоболонки"
+  ja: "サブシェル"
+  zh-Hans: "子 Shell"
+
+"Subshells supported: bash, zsh, and fish.":
+  es: "Subshells compatibles: bash, zsh y fish."
+  pt: "Subshells compatíveis: bash, zsh e fish."
+  fr: "Sous-shells pris en charge : bash, zsh et fish."
+  de: "Unterstützte Subshells: bash, zsh und fish."
+  it: "Subshell supportate: bash, zsh e fish."
+  uk: "Підтримувані підоболонки: bash, zsh і fish."
+  ja: "対応しているサブシェル: bash、zsh、fish。"
+  zh-Hans: "支持的子 Shell：bash、zsh 和 fish。"
+
+"Enable shell integration in your interactive SSH sessions.":
+  es: "Activa la integración con el shell en tus sesiones SSH interactivas."
+  pt: "Ative a integração com o shell nas suas sessões SSH interativas."
+  fr: "Activez l'intégration du shell dans vos sessions SSH interactives."
+  de: "Aktivieren Sie die Shell-Integration in Ihren interaktiven SSH-Sitzungen."
+  it: "Attiva l'integrazione della shell nelle sessioni SSH interattive."
+  uk: "Увімкніть інтеграцію з оболонкою в інтерактивних сеансах SSH."
+  ja: "対話型 SSH セッションでシェル統合を有効にします。"
+  zh-Hans: "在交互式 SSH 会话中启用 Shell 集成。"
+
+"Configure whether Termloc enables shell integration (support for blocks, input modes, etc) in certain shells.":
+  es: "Configura si Termloc activa la integración con el shell (compatibilidad con bloques, modos de entrada, etc.) en determinados shells."
+  pt: "Configure se o Termloc ativa a integração com o shell (suporte a blocos, modos de entrada etc.) em determinados shells."
+  fr: "Indiquez si Termloc active l'intégration du shell (prise en charge des blocs, modes de saisie, etc.) dans certains shells."
+  de: "Legen Sie fest, ob Termloc in bestimmten Shells die Shell-Integration (Unterstützung für Blöcke, Eingabemodi usw.) aktiviert."
+  it: "Configura se Termloc attiva l'integrazione della shell (supporto per blocchi, modalità di input, ecc.) in determinate shell."
+  uk: "Налаштуйте, чи вмикає Termloc інтеграцію з оболонкою (підтримку блоків, режимів введення тощо) у певних оболонках."
+  ja: "特定のシェルで Termloc がシェル統合（ブロックや入力モードなどのサポート）を有効にするかどうかを設定します。"
+  zh-Hans: "配置 Termloc 是否在特定 Shell 中启用 Shell 集成（支持块、输入模式等）。"
+
+"Added commands":
+  es: "Comandos añadidos"
+  pt: "Comandos adicionados"
+  fr: "Commandes ajoutées"
+  de: "Hinzugefügte Befehle"
+  it: "Comandi aggiunti"
+  uk: "Додані команди"
+  ja: "追加したコマンド"
+  zh-Hans: "已添加的命令"
+
+"Denylisted commands":
+  es: "Comandos bloqueados"
+  pt: "Comandos bloqueados"
+  fr: "Commandes exclues"
+  de: "Gesperrte Befehle"
+  it: "Comandi esclusi"
+  uk: "Заблоковані команди"
+  ja: "除外するコマンド"
+  zh-Hans: "已屏蔽的命令"
+
+"Enable shell integration in SSH sessions":
+  es: "Activar la integración con el shell en sesiones SSH"
+  pt: "Ativar integração com o shell em sessões SSH"
+  fr: "Activer l'intégration du shell dans les sessions SSH"
+  de: "Shell-Integration in SSH-Sitzungen aktivieren"
+  it: "Attiva l'integrazione della shell nelle sessioni SSH"
+  uk: "Увімкнути інтеграцію з оболонкою в сеансах SSH"
+  ja: "SSH セッションでシェル統合を有効にする"
+  zh-Hans: "在 SSH 会话中启用 Shell 集成"
+
+"Reuse existing SSH ControlMaster":
+  es: "Reutilizar el ControlMaster de SSH existente"
+  pt: "Reutilizar o ControlMaster SSH existente"
+  fr: "Réutiliser le ControlMaster SSH existant"
+  de: "Vorhandenen SSH-ControlMaster wiederverwenden"
+  it: "Riutilizza il ControlMaster SSH esistente"
+  uk: "Повторно використовувати наявний SSH ControlMaster"
+  ja: "既存の SSH ControlMaster を再利用"
+  zh-Hans: "复用现有的 SSH ControlMaster"
+
+"Attach to a live SSH ControlMaster you already have configured for the destination host instead of creating a Termloc-owned one. Takes effect in new tabs.":
+  es: "Se conecta a un ControlMaster de SSH activo que ya tengas configurado para el host de destino en lugar de crear uno propio de Termloc. Se aplica en las pestañas nuevas."
+  pt: "Conecta-se a um ControlMaster SSH ativo que você já configurou para o host de destino, em vez de criar um próprio do Termloc. Vale para novas abas."
+  fr: "Se connecte à un ControlMaster SSH actif déjà configuré pour l'hôte de destination au lieu d'en créer un propre à Termloc. S'applique aux nouveaux onglets."
+  de: "Verbindet sich mit einem aktiven SSH-ControlMaster, den Sie bereits für den Zielhost konfiguriert haben, statt einen eigenen für Termloc zu erstellen. Gilt für neue Tabs."
+  it: "Si collega a un ControlMaster SSH attivo già configurato per l'host di destinazione invece di crearne uno di Termloc. Ha effetto nelle nuove schede."
+  uk: "Під'єднується до активного SSH ControlMaster, який ви вже налаштували для цільового хоста, замість створення власного для Termloc. Діє в нових вкладках."
+  ja: "Termloc 独自の ControlMaster を作成せず、接続先ホスト用に設定済みの稼働中の SSH ControlMaster に接続します。新しいタブで有効になります。"
+  zh-Hans: "连接到你已为目标主机配置的活动 SSH ControlMaster，而不是创建 Termloc 自己的。在新标签页中生效。"
+
+"Fix with Local Agent":
+  es: "Corregir con el agente local"
+  pt: "Corrigir com o agente local"
+  fr: "Corriger avec l'agent local"
+  de: "Mit lokalem Agenten beheben"
+  it: "Correggi con l'agente locale"
+  uk: "Виправити за допомогою локального агента"
+  ja: "ローカルエージェントで修正"
+  zh-Hans: "使用本地智能体修复"
+
+"Add directory color":
+  es: "Añadir color de directorio"
+  pt: "Adicionar cor de diretório"
+  fr: "Ajouter une couleur de dossier"
+  de: "Verzeichnisfarbe hinzufügen"
+  it: "Aggiungi colore cartella"
+  uk: "Додати колір каталогу"
+  ja: "ディレクトリの色を追加"
+  zh-Hans: "添加目录颜色"
+
+"+ Add directory…":
+  es: "+ Añadir directorio…"
+  pt: "+ Adicionar diretório…"
+  fr: "+ Ajouter un dossier…"
+  de: "+ Verzeichnis hinzufügen…"
+  it: "+ Aggiungi cartella…"
+  uk: "+ Додати каталог…"
+  ja: "+ ディレクトリを追加…"
+  zh-Hans: "+ 添加目录…"
+
+"This shortcut conflicts with other keybinds":
+  es: "Este atajo entra en conflicto con otros atajos"
+  pt: "Este atalho entra em conflito com outros atalhos"
+  fr: "Ce raccourci est en conflit avec d'autres raccourcis"
+  de: "Dieses Tastenkürzel steht in Konflikt mit anderen Tastenkürzeln"
+  it: "Questa scorciatoia è in conflitto con altre scorciatoie"
+  uk: "Це сполучення клавіш конфліктує з іншими"
+  ja: "このショートカットは他のキー割り当てと競合しています"
+  zh-Hans: "此快捷键与其他快捷键冲突"
+
+"Clear":
+  es: "Borrar"
+  pt: "Limpar"
+  fr: "Effacer"
+  de: "Löschen"
+  it: "Cancella"
+  uk: "Очистити"
+  ja: "クリア"
+  zh-Hans: "清除"
+
+"Search by name or by keys (ex. \"cmd d\")":
+  es: "Buscar por nombre o por teclas (p. ej., \"cmd d\")"
+  pt: "Pesquisar por nome ou por teclas (ex.: \"cmd d\")"
+  fr: "Rechercher par nom ou par touches (ex. « cmd d »)"
+  de: "Nach Name oder Tasten suchen (z. B. „cmd d“)"
+  it: "Cerca per nome o per tasti (es. \"cmd d\")"
+  uk: "Шукати за назвою або клавішами (напр., \"cmd d\")"
+  ja: "名前またはキーで検索（例: \"cmd d\"）"
+  zh-Hans: "按名称或按键搜索（例如 \"cmd d\"）"
+
+"Add your own custom keybindings to existing actions below.":
+  es: "Añade tus propios atajos de teclado a las acciones existentes a continuación."
+  pt: "Adicione seus próprios atalhos de teclado às ações existentes abaixo."
+  fr: "Ajoutez vos propres raccourcis clavier aux actions existantes ci-dessous."
+  de: "Fügen Sie den vorhandenen Aktionen unten eigene Tastenkürzel hinzu."
+  it: "Aggiungi le tue scorciatoie da tastiera alle azioni esistenti qui sotto."
+  uk: "Додайте власні сполучення клавіш до наявних дій нижче."
+  ja: "以下の既存のアクションに独自のキー割り当てを追加できます。"
+  zh-Hans: "在下方为现有操作添加你自己的快捷键。"
+
+"Use":
+  es: "Usa"
+  pt: "Use"
+  fr: "Utilisez"
+  de: "Verwenden Sie"
+  it: "Usa"
+  uk: "Використовуйте"
+  ja: "ショートカット"
+  zh-Hans: "使用"
+
+"to reference these keybindings in a side pane at anytime.":
+  es: "para consultar estos atajos en un panel lateral en cualquier momento."
+  pt: "para consultar estes atalhos em um painel lateral a qualquer momento."
+  fr: "pour consulter ces raccourcis dans un panneau latéral à tout moment."
+  de: ", um diese Tastenkürzel jederzeit in einem Seitenbereich nachzuschlagen."
+  it: "per consultare queste scorciatoie in un pannello laterale in qualsiasi momento."
+  uk: ", щоб будь-коли переглянути ці сполучення клавіш на бічній панелі."
+  ja: "でいつでもサイドパネルにこれらのキー割り当てを表示できます。"
+  zh-Hans: "可随时在侧边面板中查看这些快捷键。"
+
+"Keyboard shortcuts are not synced to the cloud":
+  es: "Los atajos de teclado no se sincronizan con la nube"
+  pt: "Os atalhos de teclado não são sincronizados com a nuvem"
+  fr: "Les raccourcis clavier ne sont pas synchronisés avec le cloud"
+  de: "Tastenkürzel werden nicht mit der Cloud synchronisiert"
+  it: "Le scorciatoie da tastiera non vengono sincronizzate con il cloud"
+  uk: "Сполучення клавіш не синхронізуються з хмарою"
+  ja: "キーボードショートカットはクラウドに同期されません"
+  zh-Hans: "键盘快捷键不会同步到云端"
+
+"Configure keyboard shortcuts":
+  es: "Configurar atajos de teclado"
+  pt: "Configurar atalhos de teclado"
+  fr: "Configurer les raccourcis clavier"
+  de: "Tastenkürzel konfigurieren"
+  it: "Configura scorciatoie da tastiera"
+  uk: "Налаштувати сполучення клавіш"
+  ja: "キーボードショートカットを設定"
+  zh-Hans: "配置键盘快捷键"
+
+"Command":
+  es: "Comando"
+  pt: "Comando"
+  fr: "Commande"
+  de: "Befehl"
+  it: "Comando"
+  uk: "Команда"
+  ja: "コマンド"
+  zh-Hans: "命令"

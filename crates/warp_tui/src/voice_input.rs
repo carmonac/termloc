@@ -2,6 +2,7 @@
 
 use std::time::Duration;
 
+use i18n::t;
 use warp::settings::{AISettings, TuiVoiceSettings};
 pub(crate) use warp::tui_export::VoiceInputLifecycleState as TuiVoiceInputState;
 use warp::tui_export::{
@@ -130,7 +131,7 @@ impl TuiVoiceInputModel {
 
         if !AISettings::as_ref(ctx).is_voice_input_enabled(ctx) {
             ctx.emit(TuiVoiceInputEvent::Failed(
-                "Voice input is unavailable".to_owned(),
+                t!("Voice input is unavailable").to_owned(),
             ));
             return false;
         }
@@ -142,9 +143,9 @@ impl TuiVoiceInputModel {
             Ok(session) => session,
             Err(error) => {
                 let hint = match error {
-                    StartListeningError::AccessDenied => "Microphone access denied",
+                    StartListeningError::AccessDenied => t!("Microphone access denied"),
                     StartListeningError::AlreadyRunning | StartListeningError::Other(_) => {
-                        "Unable to start voice input"
+                        t!("Unable to start voice input")
                     }
                 };
                 ctx.emit(TuiVoiceInputEvent::Failed(hint.to_owned()));
@@ -173,7 +174,7 @@ impl TuiVoiceInputModel {
             VoiceInput::handle(ctx).update(ctx, |voice_input, _| {
                 voice_input.abort_listening();
             });
-            self.fail("Failed to stop voice input", ctx);
+            self.fail(t!("Failed to stop voice input"), ctx);
             report_error!(error.context("Failed to stop TUI voice input"));
             return;
         }
@@ -266,12 +267,12 @@ impl TuiVoiceInputModel {
         let wav_base64 = match result {
             VoiceSessionResult::Audio { wav_base64 } => wav_base64,
             VoiceSessionResult::Aborted => {
-                self.fail("Voice input stopped", ctx);
+                self.fail(t!("Voice input stopped"), ctx);
                 return;
             }
         };
         let Some(transcriber) = VoiceTranscriber::as_ref(ctx).transcriber().cloned() else {
-            self.fail("Voice transcription is unavailable", ctx);
+            self.fail(t!("Voice transcription is unavailable"), ctx);
             return;
         };
         let language = AISettings::as_ref(ctx)
@@ -308,8 +309,8 @@ impl TuiVoiceInputModel {
             Ok(text) => ctx.emit(TuiVoiceInputEvent::Completed(text)),
             Err(error) => {
                 let hint = match error {
-                    TranscribeError::ServerOverloaded => "Voice transcription is unavailable",
-                    _ => "Failed to transcribe voice input",
+                    TranscribeError::ServerOverloaded => t!("Voice transcription is unavailable"),
+                    _ => t!("Failed to transcribe voice input"),
                 };
                 ctx.emit(TuiVoiceInputEvent::Failed(hint.to_owned()));
             }

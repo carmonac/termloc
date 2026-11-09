@@ -1,3 +1,4 @@
+use i18n::t;
 use std::borrow::Cow;
 use std::sync::Arc;
 
@@ -106,9 +107,9 @@ impl WarpifySuccessBlock {
         let auto_warpify_snippet = auto_warpify_snippet.map(|(output_grid, can_write_to_rc)| {
             AutoWarpifySnippet {
                 description: (if !output_grid.is_empty() {
-                    "Run the following to automatically enable shell integration in the future:"
+                    t!("Run the following to automatically enable shell integration in the future:")
                 } else {
-                    "In remote subshells, Termloc runs commands in the background to power completions, syntax highlighting, and other features."
+                    t!("In remote subshells, Termloc runs commands in the background to power completions, syntax highlighting, and other features.")
                 }).into(),
                 output_grid: output_grid.into(),
                 selection_handle: Default::default(),
@@ -144,7 +145,7 @@ impl WarpifySuccessBlock {
 
     pub fn render_title_ui(&self, theme: &WarpTheme, appearance: &Appearance) -> Box<dyn Element> {
         let header_contents = render::build_header_row(
-            "Shell integration enabled",
+            t!("Shell integration enabled"),
             Icon::new(UiIcon::Warp.into(), theme.active_ui_detail()),
             theme,
             appearance,

@@ -1,3 +1,4 @@
+use i18n::t;
 use std::sync::Arc;
 
 use indexmap::IndexMap;
@@ -241,7 +242,7 @@ impl ProfileModelSelector {
                 ),
                 is_blurred: false,
             })
-            .with_tooltip(PROFILE_PICKER_TOOLTIP)
+            .with_tooltip(t!(PROFILE_PICKER_TOOLTIP))
             .with_size(ButtonSize::UDIButton)
             .with_icon(Icon::Psychology)
         });
@@ -269,14 +270,14 @@ impl ProfileModelSelector {
                 ),
                 is_blurred: false,
             })
-            .with_tooltip(MODEL_PICKER_TOOLTIP)
+            .with_tooltip(t!(MODEL_PICKER_TOOLTIP))
             .with_size(ButtonSize::UDIButton)
         });
 
         let profile_compact_button = ctx.add_typed_action_view(|_| {
             ActionButton::new("", PromptIconButtonTheme::new(false))
                 .with_icon(Icon::Psychology)
-                .with_tooltip(PROFILE_PICKER_TOOLTIP)
+                .with_tooltip(t!(PROFILE_PICKER_TOOLTIP))
                 .with_size(ButtonSize::UDIButton)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(ProfileModelSelectorAction::ToggleProfileMenu);
@@ -286,7 +287,7 @@ impl ProfileModelSelector {
         let model_compact_button = ctx.add_typed_action_view(|_| {
             ActionButton::new("", PromptIconButtonTheme::new(false))
                 .with_icon(Icon::Neurology)
-                .with_tooltip(MODEL_PICKER_TOOLTIP)
+                .with_tooltip(t!(MODEL_PICKER_TOOLTIP))
                 .with_size(ButtonSize::UDIButton)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(ProfileModelSelectorAction::ToggleModelMenu);
@@ -323,7 +324,7 @@ impl ProfileModelSelector {
                         .iter()
                         .map(|name| {
                             if *name == "auto" {
-                                "auto-select the best model for the task"
+                                t!("auto-select the best model for the task")
                             } else {
                                 name
                             }
@@ -335,7 +336,7 @@ impl ProfileModelSelector {
                     }
                     label
                 } else {
-                    "New models available".to_string()
+                    t!("New models available").to_string()
                 }
             })))
         });
@@ -682,7 +683,7 @@ impl ProfileModelSelector {
         let appearance = Appearance::as_ref(ctx);
         let mut menu_items = vec![
             MenuItem::Header {
-                fields: MenuItemFields::new("Profiles").with_override_text_color(
+                fields: MenuItemFields::new(t!("Profiles")).with_override_text_color(
                     appearance
                         .theme()
                         .sub_text_color(appearance.theme().background())
@@ -713,7 +714,7 @@ impl ProfileModelSelector {
 
         menu_items.push(MenuItem::Separator);
         menu_items.push(MenuItem::Item(
-            MenuItemFields::new("Manage profiles")
+            MenuItemFields::new(t!("Manage profiles"))
                 .with_icon(Icon::Gear)
                 .with_on_select_action(ProfileModelSelectorAction::ManageProfiles),
         ));
@@ -1355,7 +1356,7 @@ impl ProfileModelSelector {
 
                 let tooltip = appearance
                     .ui_builder()
-                    .tool_tip(PROFILE_PICKER_TOOLTIP.to_owned());
+                    .tool_tip(t!(PROFILE_PICKER_TOOLTIP).to_owned());
                 let mut stack = Stack::new();
                 stack.add_child(button_with_hover);
                 stack.add_positioned_overlay_child(
@@ -1469,7 +1470,7 @@ impl ProfileModelSelector {
 
                 let tooltip = appearance
                     .ui_builder()
-                    .tool_tip(MODEL_PICKER_TOOLTIP.to_owned());
+                    .tool_tip(t!(MODEL_PICKER_TOOLTIP).to_owned());
                 let mut stack = Stack::new();
                 stack.add_child(button_with_hover);
                 stack.add_positioned_overlay_child(
@@ -1485,7 +1486,7 @@ impl ProfileModelSelector {
             } else if state.is_hovered() {
                 let tooltip = appearance
                     .ui_builder()
-                    .tool_tip(MODEL_REQUIRES_EDIT_ACCESS_TOOLTIP.to_owned());
+                    .tool_tip(t!(MODEL_REQUIRES_EDIT_ACCESS_TOOLTIP).to_owned());
                 let mut stack = Stack::new();
                 stack.add_child(button_with_save_position);
                 stack.add_positioned_overlay_child(
@@ -1639,13 +1640,13 @@ impl ProfileModelSelector {
     ) -> Box<dyn Element> {
         let spec_values = vec![
             self.render_model_spec_value(
-                "Intelligence".to_string(),
+                t!("Intelligence").to_string(),
                 spec.quality,
                 bg_bar_color,
                 app,
             ),
-            self.render_model_spec_value("Speed".to_string(), spec.speed, bg_bar_color, app),
-            self.render_model_spec_value("Cost".to_string(), spec.cost, bg_bar_color, app),
+            self.render_model_spec_value(t!("Speed").to_string(), spec.speed, bg_bar_color, app),
+            self.render_model_spec_value(t!("Cost").to_string(), spec.cost, bg_bar_color, app),
         ];
         Flex::column().with_children(spec_values).finish()
     }
@@ -1654,8 +1655,8 @@ impl ProfileModelSelector {
     fn render_model_spec(&self, spec: &LLMSpec, app: &AppContext) -> Box<dyn Element> {
         let theme = Appearance::as_ref(app).theme();
         let header = self.render_model_spec_header(
-            "Model Specs".to_string(),
-            "Termloc’s benchmarks for how well a model performs in our harness, the rate at which it consumes credits, and task speed.".to_string(),
+            t!("Model Specs").to_string(),
+            t!("Termloc’s benchmarks for how well a model performs in our harness, the rate at which it consumes credits, and task speed.").to_string(),
             app,
         );
         let spec = self.render_all_model_spec_values(spec, internal_colors::neutral_3(theme), app);
@@ -1669,8 +1670,8 @@ impl ProfileModelSelector {
         app: &AppContext,
     ) -> Box<dyn Element> {
         let header = self.render_model_spec_header(
-            model_spec_scores::LOCAL_MODEL_DETAILS_TITLE.to_string(),
-            model_spec_scores::LOCAL_MODEL_DETAILS_DESCRIPTION.to_string(),
+            t!(model_spec_scores::LOCAL_MODEL_DETAILS_TITLE).to_string(),
+            t!(model_spec_scores::LOCAL_MODEL_DETAILS_DESCRIPTION).to_string(),
             app,
         );
         let details = Container::new(model_spec_scores::render_local_model_details(model, app))
@@ -1715,12 +1716,16 @@ impl ProfileModelSelector {
 
         let (title, description) = match kind {
             ModelSpecSidecarKind::Auto => (
-                "Auto mode",
-                "Auto will select the best model for the task. Cost-efficiency optimizes for cost, Responsiveness optimizes for response speed.",
+                t!("Auto mode"),
+                t!(
+                    "Auto will select the best model for the task. Cost-efficiency optimizes for cost, Responsiveness optimizes for response speed."
+                ),
             ),
             ModelSpecSidecarKind::Reasoning => (
-                "Reasoning level",
-                "Increased reasoning levels consume more credits and have higher latency, but higher performance for complicated tasks.",
+                t!("Reasoning level"),
+                t!(
+                    "Increased reasoning levels consume more credits and have higher latency, but higher performance for complicated tasks."
+                ),
             ),
         };
 

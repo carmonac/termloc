@@ -1,3 +1,4 @@
+use i18n::t;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -168,7 +169,7 @@ impl PtyRecorder {
                 let path_str = path.to_string_lossy().into_owned();
                 toast = toast
                     .with_link(
-                        ToastLink::new("Open".to_string())
+                        ToastLink::new(t!("Open").to_string())
                             .with_onclick_action(WorkspaceAction::OpenInExplorer { path }),
                     )
                     .with_on_body_click(move |ctx| {

@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::TimeDelta;
+use i18n::t;
 use itertools::Itertools;
 use markdown_parser::{FormattedTable, FormattedText};
 use parking_lot::FairMutex;
@@ -1280,7 +1281,7 @@ impl TuiAIBlock {
                 .get(key)
                 .map(|view| TuiChildView::new(view).finish())
                 .unwrap_or_else(|| {
-                    TuiText::new("[Code block unavailable]")
+                    TuiText::new(t!("[Code block unavailable]"))
                         .with_style(palette.fallback)
                         .finish()
                 }),
@@ -1296,9 +1297,9 @@ impl TuiAIBlock {
                 .finish(),
             TuiRichTextSection::Image { alt_text, source } => {
                 let label = if alt_text.is_empty() {
-                    "Image".to_owned()
+                    t!("Image").to_owned()
                 } else {
-                    format!("Image: {alt_text}")
+                    t!("Image: {description}", description = alt_text)
                 };
                 TuiText::from_spans([
                     (label, palette.fallback),

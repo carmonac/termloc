@@ -1,3 +1,4 @@
+use i18n::t;
 use warpui::assets::asset_cache::AssetSource;
 use warpui::elements::{
     Align, CacheOption, ConstrainedBox, Container, CrossAxisAlignment, Element, Flex, Image,
@@ -118,7 +119,9 @@ impl SettingsWidget for AboutPageWidget {
                 .with_child(version_row.finish())
                 .with_child(
                     ui_builder
-                        .span("Derived from Warp. Copyright 2020-2026 Denver Technologies, Inc.")
+                        .span(t!(
+                            "Derived from Warp. Copyright 2020-2026 Denver Technologies, Inc."
+                        ))
                         .build()
                         .with_margin_top(16.)
                         .finish(),

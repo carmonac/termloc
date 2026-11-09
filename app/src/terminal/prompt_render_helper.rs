@@ -1,3 +1,4 @@
+use i18n::t;
 use std::fmt;
 use std::num::NonZeroUsize;
 
@@ -238,7 +239,7 @@ impl PromptRenderHelper {
 
     fn bootstrapping_shell_message(&self, model: &TerminalModel, sessions: &Sessions) -> String {
         if !sessions.is_empty() {
-            "Starting shell...".to_string()
+            t!("Starting shell...").to_string()
         } else {
             format!("Starting {}...", model.shell_launch_state().display_name())
         }
@@ -399,7 +400,7 @@ impl PromptRenderHelper {
             let prompt = PromptAndPadding {
                 element: PromptAndPaddingElement::Text(Box::new(
                     Text::new_inline(
-                        "Loading prompt...",
+                        t!("Loading prompt..."),
                         appearance.monospace_font_family(),
                         appearance.monospace_font_size(),
                     )

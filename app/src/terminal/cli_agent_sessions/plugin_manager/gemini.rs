@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
@@ -106,11 +107,11 @@ impl CliAgentPluginManager for GeminiPluginManager {
     }
 
     fn install_success_message(&self) -> &'static str {
-        "Agent plugin installed. Please restart Gemini CLI to activate."
+        t!("Agent plugin installed. Please restart Gemini CLI to activate.")
     }
 
     fn update_success_message(&self) -> &'static str {
-        "Agent plugin updated. Please restart Gemini CLI to activate."
+        t!("Agent plugin updated. Please restart Gemini CLI to activate.")
     }
 
     fn install_instructions(&self) -> &'static PluginInstructions {

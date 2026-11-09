@@ -1,3 +1,4 @@
+use i18n::t;
 use std::path::PathBuf;
 
 use warpui::Element;
@@ -51,7 +52,7 @@ pub fn render_agent_mode_setup_banner(
     appearance: &Appearance,
 ) -> Box<dyn Element> {
     let open_button = InlineBannerTextButton {
-        text: ALLOW_BUTTON_TEXT.to_string(),
+        text: t!(ALLOW_BUTTON_TEXT).to_string(),
         text_color: appearance.theme().active_ui_text_color().into_solid(),
         button_state: InlineBannerButtonState {
             on_click_event: TerminalAction::AgentModeSetupSpeedbumpBanner(
@@ -75,7 +76,7 @@ pub fn render_agent_mode_setup_banner(
         InlineBannerStyle::Recommendation,
         appearance,
         InlineBannerContent {
-            title: SPEEDBUMP_HEADER.to_string(),
+            title: t!(SPEEDBUMP_HEADER).to_string(),
             buttons: vec![open_button],
             close_button: Some(close_button),
             header_icon: Some(InlineBannerIcon {
@@ -85,7 +86,7 @@ pub fn render_agent_mode_setup_banner(
             }),
             content: Some(vec![
                 Text::new(
-                    SPEEDBUMP_TEXT,
+                    t!(SPEEDBUMP_TEXT),
                     appearance.ui_font_family(),
                     appearance.monospace_font_size() - 2.,
                 )

@@ -40,6 +40,7 @@ use async_channel::Sender;
 use diesel::SqliteConnection;
 use futures::FutureExt as _;
 use futures::stream::AbortHandle;
+use i18n::t;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 use ordered_float::Float;
@@ -4978,11 +4979,14 @@ impl Input {
             input_model.should_run_input_autodetection(app),
         ) {
             (InputType::Shell, false) => {
-                AGENT_MODE_AI_DISABLED_AUTODETECTION_DISABLED_HINT_TEXT.to_owned()
+                t!(AGENT_MODE_AI_DISABLED_AUTODETECTION_DISABLED_HINT_TEXT).to_owned()
             }
             (InputType::Shell, true) => {
                 // Ensure hint text is cached for new conversations
-                get_stable_agent_mode_hint_text(&mut self.cached_agent_mode_hint_text).to_owned()
+                t!(get_stable_agent_mode_hint_text(
+                    &mut self.cached_agent_mode_hint_text
+                ))
+                .to_owned()
             }
             (InputType::AI, _) => {
                 // Follow the `agent_indicator` pattern (see `app/src/tab.rs`):
@@ -4997,27 +5001,29 @@ impl Input {
                     Some(status) if status.is_in_progress() => {
                         if is_queue_next_prompt_enabled {
                             if is_udi_enabled {
-                                AGENT_MODE_AI_ENABLED_QUEUE_HINT_TEXT_UDI.to_owned()
+                                t!(AGENT_MODE_AI_ENABLED_QUEUE_HINT_TEXT_UDI).to_owned()
                             } else {
-                                AGENT_MODE_AI_ENABLED_QUEUE_HINT_TEXT_CLASSIC.to_owned()
+                                t!(AGENT_MODE_AI_ENABLED_QUEUE_HINT_TEXT_CLASSIC).to_owned()
                             }
                         } else if is_udi_enabled {
-                            AGENT_MODE_AI_ENABLED_STEER_HINT_TEXT_UDI.to_owned()
+                            t!(AGENT_MODE_AI_ENABLED_STEER_HINT_TEXT_UDI).to_owned()
                         } else {
-                            AGENT_MODE_AI_ENABLED_STEER_HINT_TEXT_CLASSIC.to_owned()
+                            t!(AGENT_MODE_AI_ENABLED_STEER_HINT_TEXT_CLASSIC).to_owned()
                         }
                     }
                     Some(_) => {
                         if is_udi_enabled {
-                            AGENT_MODE_AI_ENABLED_FOLLOW_UP_HINT_TEXT_UDI.to_owned()
+                            t!(AGENT_MODE_AI_ENABLED_FOLLOW_UP_HINT_TEXT_UDI).to_owned()
                         } else {
-                            AGENT_MODE_AI_ENABLED_FOLLOW_UP_HINT_TEXT_CLASSIC.to_owned()
+                            t!(AGENT_MODE_AI_ENABLED_FOLLOW_UP_HINT_TEXT_CLASSIC).to_owned()
                         }
                     }
                     None => {
                         // Ensure hint text is cached for new conversations
-                        get_stable_agent_mode_hint_text(&mut self.cached_agent_mode_hint_text)
-                            .to_owned()
+                        t!(get_stable_agent_mode_hint_text(
+                            &mut self.cached_agent_mode_hint_text
+                        ))
+                        .to_owned()
                     }
                 }
             }
@@ -5425,19 +5431,19 @@ impl Input {
     }
     fn cli_agent_rich_input_hint_text(&self, ctx: &ViewContext<Self>) -> Cow<'static, str> {
         if self.is_locked_in_shell_mode(ctx) {
-            return Cow::Borrowed(AGENT_MODE_AI_DISABLED_AUTODETECTION_DISABLED_HINT_TEXT);
+            return Cow::Borrowed(t!(AGENT_MODE_AI_DISABLED_AUTODETECTION_DISABLED_HINT_TEXT));
         }
 
         CLIAgentSessionsModel::as_ref(ctx)
             .session(self.terminal_view_id)
             .map(|session| match session.agent {
-                CLIAgent::Unknown => Cow::Borrowed(CLI_AGENT_RICH_INPUT_HINT_TEXT),
-                _ => Cow::Owned(format!(
-                    "Enter prompt for {}...",
-                    session.agent.display_name()
+                CLIAgent::Unknown => Cow::Borrowed(t!(CLI_AGENT_RICH_INPUT_HINT_TEXT)),
+                _ => Cow::Owned(t!(
+                    "Enter prompt for {agent}...",
+                    agent = session.agent.display_name()
                 )),
             })
-            .unwrap_or(Cow::Borrowed(CLI_AGENT_RICH_INPUT_HINT_TEXT))
+            .unwrap_or(Cow::Borrowed(t!(CLI_AGENT_RICH_INPUT_HINT_TEXT)))
     }
 
     pub fn set_zero_state_hint_text(&mut self, ctx: &mut ViewContext<Self>) {
@@ -5512,7 +5518,7 @@ impl Input {
                 });
             } else if *InputSettings::as_ref(ctx).enable_ai_command_search_hash_trigger {
                 self.editor.update(ctx, |editor, ctx| {
-                    editor.set_placeholder_text(AI_COMMAND_SEARCH_HINT_TEXT, ctx);
+                    editor.set_placeholder_text(t!(AI_COMMAND_SEARCH_HINT_TEXT), ctx);
                 });
             } else {
                 // Don't advertise the '#' shorthand when the user has disabled it;
@@ -9135,9 +9141,9 @@ impl Input {
                     // Show voice status as placeholder when the buffer is empty.
                     if self.editor.as_ref(ctx).is_empty(ctx) {
                         let placeholder = if *is_listening {
-                            "Listening..."
+                            t!("Listening...")
                         } else {
-                            "Transcribing..."
+                            t!("Transcribing...")
                         };
                         self.editor.update(ctx, |editor, ctx| {
                             editor.set_placeholder_text(placeholder, ctx);

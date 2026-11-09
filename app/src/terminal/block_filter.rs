@@ -1,3 +1,4 @@
+use i18n::t;
 use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::vec2f;
 use warp_editor::editor::NavigationKey;
@@ -134,7 +135,7 @@ impl BlockFilterEditor {
                 },
                 ctx,
             );
-            editor.set_placeholder_text(FILTER_BLOCK_PLACEHOLDER_TEXT, ctx);
+            editor.set_placeholder_text(t!(FILTER_BLOCK_PLACEHOLDER_TEXT), ctx);
             editor
         });
 
@@ -456,7 +457,7 @@ impl View for BlockFilterEditor {
             self.mouse_state_handles.regex_mouse_state_handle.clone(),
             BlockFilterEditorAction::ToggleRegex,
             editor_height,
-            Some(REGEX_TOOLTIP_LABEL),
+            Some(t!(REGEX_TOOLTIP_LABEL)),
         );
         let case_sensitive_icon = self.render_hoverable_icon(
             appearance,
@@ -467,7 +468,7 @@ impl View for BlockFilterEditor {
                 .clone(),
             BlockFilterEditorAction::ToggleCaseSensitivity,
             editor_height,
-            Some(CASE_SENSITIVITY_TOOLTIP_LABEL),
+            Some(t!(CASE_SENSITIVITY_TOOLTIP_LABEL)),
         );
         let invert_filter_icon = self.render_hoverable_icon(
             appearance,
@@ -478,7 +479,7 @@ impl View for BlockFilterEditor {
                 .clone(),
             BlockFilterEditorAction::ToggleInvertFilter,
             editor_height,
-            Some(INVERT_FILTER_TOOLTIP_LABEL),
+            Some(t!(INVERT_FILTER_TOOLTIP_LABEL)),
         );
 
         let query_editor = Shrinkable::new(
@@ -578,7 +579,7 @@ impl View for BlockFilterEditor {
                 if state.is_hovered() {
                     let tool_tip = appearance
                         .ui_builder()
-                        .tool_tip(CONTEXT_LINE_EDITOR_TOOLTIP_LABEL.to_string())
+                        .tool_tip(t!(CONTEXT_LINE_EDITOR_TOOLTIP_LABEL).to_string())
                         .build()
                         .finish();
                     stack.add_positioned_child(

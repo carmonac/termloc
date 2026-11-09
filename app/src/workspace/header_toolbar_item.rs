@@ -1,3 +1,4 @@
+use i18n::t;
 use serde::{Deserialize, Serialize};
 use settings::Setting as _;
 use warpui::{AppContext, SingletonEntity};
@@ -36,11 +37,11 @@ pub enum HeaderToolbarItemKind {
 impl HeaderToolbarItemKind {
     pub fn display_label(&self) -> &'static str {
         match self {
-            Self::TabsPanel => "Tabs Panel",
-            Self::ToolsPanel => "Tools Panel",
-            Self::AgentManagement => "Agent Management",
-            Self::CodeReview => "Code Review",
-            Self::NotificationsMailbox => "Notifications",
+            Self::TabsPanel => t!("Tabs Panel"),
+            Self::ToolsPanel => t!("Tools Panel"),
+            Self::AgentManagement => t!("Agent Management"),
+            Self::CodeReview => t!("Code Review"),
+            Self::NotificationsMailbox => t!("Notifications"),
         }
     }
 

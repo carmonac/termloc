@@ -52,6 +52,7 @@ pub enum SlashCommandKind {
     Voice,
     NaturalLanguageDetection,
     Theme,
+    Language,
     Exit,
     CreateDockerSandbox,
     CreateNewProject,

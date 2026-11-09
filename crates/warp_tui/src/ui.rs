@@ -1,6 +1,8 @@
 //! Small presentation helpers for the `warp-tui` front-end's TUI views.
 use std::time::Duration;
 
+use i18n::t;
+use unicode_width::UnicodeWidthStr;
 use warpui_core::AppContext;
 use warpui_core::elements::CrossAxisAlignment;
 use warpui_core::elements::animation::AnimationClock;
@@ -57,7 +59,7 @@ pub(crate) fn compact_footer_path(path: &str) -> String {
 /// Placeholder shown while a requested conversation is restored.
 pub(crate) fn conversation_restoring(app: &AppContext) -> Box<dyn TuiElement> {
     let muted = TuiUiBuilder::from_app(app).muted_text_style();
-    let hint = "Esc or Ctrl-C to cancel and start a new session";
+    let hint = t!("Esc or Ctrl-C to cancel and start a new session");
 
     centered_in_viewport(
         TuiConstrainedBox::new(
@@ -67,7 +69,7 @@ pub(crate) fn conversation_restoring(app: &AppContext) -> Box<dyn TuiElement> {
                     muted,
                 ))
                 .child(
-                    TuiText::new("Loading session...")
+                    TuiText::new(t!("Loading session..."))
                         .with_style(muted)
                         .truncate()
                         .finish(),
@@ -76,7 +78,7 @@ pub(crate) fn conversation_restoring(app: &AppContext) -> Box<dyn TuiElement> {
                 .with_cross_axis_alignment(CrossAxisAlignment::Center)
                 .finish(),
         )
-        .with_max_cols(hint.len() as u16)
+        .with_max_cols(u16::try_from(hint.width()).unwrap_or(u16::MAX))
         .finish(),
     )
 }
@@ -87,12 +89,15 @@ pub(crate) fn conversation_restore_failed(message: &str) -> Box<dyn TuiElement> 
     vertically_centered(
         TuiFlex::column()
             .child(
-                TuiText::new(format!("Could not restore conversation: {message}"))
-                    .truncate()
-                    .finish(),
+                TuiText::new(t!(
+                    "Could not restore conversation: {message}",
+                    message = message
+                ))
+                .truncate()
+                .finish(),
             )
             .child(
-                TuiText::new("Press Ctrl-C to exit.")
+                TuiText::new(t!("Press Ctrl-C to exit."))
                     .with_style(dim)
                     .truncate()
                     .finish(),
@@ -128,7 +133,7 @@ pub(crate) fn centered_in_viewport(content: Box<dyn TuiElement>) -> Box<dyn TuiE
 }
 
 pub(crate) fn render_welcome_title(builder: &TuiUiBuilder) -> Box<dyn TuiElement> {
-    TuiText::new("Welcome to Termloc")
+    TuiText::new(t!("Welcome to Termloc"))
         .with_style(builder.brand_primary_style().add_modifier(Modifier::BOLD))
         .truncate()
         .finish()
@@ -139,16 +144,16 @@ pub(crate) fn append_welcome_capability_section(
     builder: &TuiUiBuilder,
 ) -> TuiFlex {
     column = column.child(
-        TuiText::new("What’s different about Termloc")
+        TuiText::new(t!("What’s different about Termloc"))
             .with_style(builder.muted_text_style())
             .truncate()
             .finish(),
     );
     for description in [
-        "State of the art coding agents",
-        "Frontier and open-weight models",
-        "Fully customizable model routers",
-        "Better shell command support",
+        t!("State of the art coding agents"),
+        t!("Frontier and open-weight models"),
+        t!("Fully customizable model routers"),
+        t!("Better shell command support"),
     ] {
         column = column.child(capability_row(
             "✶",
@@ -178,7 +183,7 @@ pub(crate) fn terminal_starting() -> Box<dyn TuiElement> {
     let dim = TuiStyle::default().add_modifier(Modifier::DIM);
     vertically_centered(
         TuiFlex::column().child(
-            TuiText::new("Starting terminal…")
+            TuiText::new(t!("Starting terminal…"))
                 .with_style(dim)
                 .truncate()
                 .finish(),

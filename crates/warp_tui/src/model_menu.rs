@@ -1,5 +1,6 @@
 //! Searchable TUI model picker state.
 
+use i18n::t;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::settings::AISettings;
 #[cfg(test)]
@@ -221,7 +222,7 @@ impl TuiModelMenuModel {
         };
         Some(TuiInlineMenuSnapshot {
             header: Some(TuiInlineMenuHeader {
-                title: Some("Models".to_owned()),
+                title: Some(t!("Models").to_owned()),
                 tabs: Vec::new(),
             }),
             rows: list.rows().iter().map(snapshot_row).collect(),
@@ -232,7 +233,7 @@ impl TuiModelMenuModel {
             status: list
                 .rows()
                 .is_empty()
-                .then(|| TuiInlineMenuStatus::Empty("No models found".to_owned())),
+                .then(|| TuiInlineMenuStatus::Empty(t!("No models found").to_owned())),
         })
     }
 
@@ -281,11 +282,11 @@ fn model_menu_row(choice: ModelPickerChoice, profile_default_id: &LLMId) -> TuiM
 }
 
 fn snapshot_row(row: &TuiModelMenuRow) -> TuiInlineMenuRow {
-    let state_suffix = row.is_profile_default.then(|| "(default)".to_owned());
+    let state_suffix = row.is_profile_default.then(|| t!("(default)").to_owned());
     TuiInlineMenuRow {
         title: row.title.clone(),
         prefix: None,
-        description: (!row.is_selectable).then(|| "disabled".to_owned()),
+        description: (!row.is_selectable).then(|| t!("disabled").to_owned()),
         state_suffix,
         promotional_suffix: discount_label(row.discount_percentage),
         is_selectable: row.is_selectable,
@@ -296,7 +297,7 @@ fn snapshot_row(row: &TuiModelMenuRow) -> TuiInlineMenuRow {
 fn discount_label(discount_percentage: Option<f32>) -> Option<String> {
     discount_percentage
         .filter(|percentage| *percentage > 0.)
-        .map(|percentage| format!("{}% off", percentage.round() as u32))
+        .map(|percentage| t!("{percentage}% off", percentage = percentage.round() as u32))
 }
 
 fn preferred_selection_index(

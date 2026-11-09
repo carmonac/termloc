@@ -5,6 +5,7 @@
 //! composable TUI element tree, with an optional hook for stateful code-block
 //! child views.
 
+use i18n::t;
 use markdown_parser::{
     CodeBlockText, FormattedImage, FormattedText, FormattedTextFragment, FormattedTextInline,
     FormattedTextLine, Hyperlink,
@@ -342,11 +343,20 @@ fn image_fallback(image: &FormattedImage, palette: TuiMarkdownPalette) -> Box<dy
         image.title.as_deref()
     };
     let mut spans = if let Some(description) = description {
-        vec![(format!("Image: {description}"), palette.fallback)]
+        vec![(
+            t!("Image: {description}", description = description),
+            palette.fallback,
+        )]
     } else if !image.source.is_empty() {
-        vec![(format!("Image: {}", image.source), palette.link)]
+        vec![(
+            t!("Image: {description}", description = image.source),
+            palette.link,
+        )]
     } else {
-        vec![("[Image without description]".to_owned(), palette.fallback)]
+        vec![(
+            t!("[Image without description]").to_owned(),
+            palette.fallback,
+        )]
     };
     if description.is_some() && !image.source.is_empty() {
         spans.push((format!(" ({})", image.source), palette.link));

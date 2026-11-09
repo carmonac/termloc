@@ -4,6 +4,7 @@
 //! decorations into [`TuiEditorElement`] character overlays, and falls back to
 //! lightweight text for pathological inputs.
 
+use i18n::t;
 use rangemap::RangeSet;
 use string_offset::CharOffset;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
@@ -225,7 +226,7 @@ fn bounded_fallback_text(code: &str) -> Option<String> {
         if !fallback_text.ends_with('\n') {
             fallback_text.push('\n');
         }
-        fallback_text.push_str(TRUNCATION_NOTICE);
+        fallback_text.push_str(t!(TRUNCATION_NOTICE));
     }
     Some(fallback_text)
 }

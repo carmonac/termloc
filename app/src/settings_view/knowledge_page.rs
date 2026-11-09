@@ -3,6 +3,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use i18n::t;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use warp_core::features::FeatureFlag;
 use warp_core::settings::ToggleableSetting as _;
@@ -53,7 +54,7 @@ impl KnowledgePageView {
                 Box::new(WarpDriveContextWidget::default()),
             ]);
         }
-        PageType::new_uncategorized(widgets, Some(PageTitle::new(PAGE_TITLE)))
+        PageType::new_uncategorized(widgets, Some(PageTitle::new(t!(PAGE_TITLE))))
     }
 }
 
@@ -207,7 +208,7 @@ impl SettingsWidget for RulesWidget {
     ) -> Box<dyn Element> {
         let ai_settings = AISettings::as_ref(app);
         let toggle = render_ai_setting_toggle::<MemoryEnabled>(
-            "Rules",
+            t!("Rules"),
             KnowledgePageAction::ToggleRules,
             *ai_settings.memory_enabled,
             ai_settings.is_any_ai_enabled(app),
@@ -216,9 +217,9 @@ impl SettingsWidget for RulesWidget {
             app,
         );
 
-        let rules_description = vec![FormattedTextFragment::plain_text(
-            "Rules help the Local Agent follow your conventions, whether for codebases or specific workflows.",
-        )];
+        let rules_description = vec![FormattedTextFragment::plain_text(t!(
+            "Rules help the Local Agent follow your conventions, whether for codebases or specific workflows."
+        ))];
         let description = Container::new(
             FormattedTextElement::new(
                 FormattedText::new([FormattedTextLine::Line(rules_description)]),
@@ -262,7 +263,7 @@ impl SettingsWidget for SuggestedRulesWidget {
     ) -> Box<dyn Element> {
         let ai_settings = AISettings::as_ref(app);
         let toggle = render_ai_setting_toggle::<RuleSuggestionsEnabled>(
-            "Suggested Rules",
+            t!("Suggested Rules"),
             KnowledgePageAction::ToggleRuleSuggestions,
             *ai_settings.rule_suggestions_enabled_internal,
             ai_settings.is_any_ai_enabled(app),
@@ -272,7 +273,7 @@ impl SettingsWidget for SuggestedRulesWidget {
         );
 
         let description = render_ai_setting_description(
-            "Let AI suggest rules to save based on your interactions.",
+            t!("Let AI suggest rules to save based on your interactions."),
             ai_settings.is_any_ai_enabled(app),
             app,
         );
@@ -303,7 +304,7 @@ impl SettingsWidget for ManageRulesWidget {
         app: &AppContext,
     ) -> Box<dyn Element> {
         render_full_pane_width_ai_button(
-            "Manage rules",
+            t!("Manage rules"),
             AISettings::as_ref(app).is_any_ai_enabled(app),
             self.manage_rules_button.clone(),
             KnowledgePageAction::OpenAIFactCollection,
@@ -332,7 +333,7 @@ impl SettingsWidget for WarpDriveContextWidget {
     ) -> Box<dyn Element> {
         let ai_settings = AISettings::as_ref(app);
         let toggle = render_ai_setting_toggle::<WarpDriveContextEnabled>(
-            "Drive as agent context",
+            t!("Drive as agent context"),
             KnowledgePageAction::ToggleWarpDriveContext,
             *ai_settings.warp_drive_context_enabled,
             ai_settings.is_any_ai_enabled(app),
@@ -342,7 +343,9 @@ impl SettingsWidget for WarpDriveContextWidget {
         );
 
         let description = render_ai_setting_description(
-            "The Local Agent can leverage your Drive contents to tailor responses to your personal and team developer workflows and environments. This includes any Workflows, Notebooks, and Environment Variables.",
+            t!(
+                "The Local Agent can leverage your Drive contents to tailor responses to your personal and team developer workflows and environments. This includes any Workflows, Notebooks, and Environment Variables."
+            ),
             ai_settings.is_any_ai_enabled(app),
             app,
         );

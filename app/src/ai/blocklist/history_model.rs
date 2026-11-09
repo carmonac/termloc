@@ -9,6 +9,7 @@ use anyhow::anyhow;
 use chrono::{DateTime, Local, NaiveDateTime};
 #[cfg(feature = "local_fs")]
 use diesel::SqliteConnection;
+use i18n::t;
 use itertools::Itertools as _;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -2733,10 +2734,10 @@ impl AIQueryHistoryOutputStatus {
     /// Returns a string representation of the output status.
     pub(crate) fn display_text(&self) -> &'static str {
         match self {
-            AIQueryHistoryOutputStatus::Completed => "Completed successfully",
-            AIQueryHistoryOutputStatus::Pending => "Pending",
-            AIQueryHistoryOutputStatus::Cancelled => "Cancelled by user",
-            AIQueryHistoryOutputStatus::Failed => "Failed",
+            AIQueryHistoryOutputStatus::Completed => t!("Completed successfully"),
+            AIQueryHistoryOutputStatus::Pending => t!("Pending"),
+            AIQueryHistoryOutputStatus::Cancelled => t!("Cancelled by user"),
+            AIQueryHistoryOutputStatus::Failed => t!("Failed"),
         }
     }
 

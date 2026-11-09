@@ -1,3 +1,4 @@
+use i18n::t;
 use std::path::Path;
 use std::sync::LazyLock;
 use std::time::Duration;
@@ -34,7 +35,7 @@ pub trait AITip: Clone {
     /// Converts the tip to formatted text fragments for rendering.
     /// Default implementation adds "Tip: " prefix and parses backtick-wrapped text as inline code.
     fn to_formatted_text(&self, _app: &AppContext) -> Vec<FormattedTextFragment> {
-        let text = format!("Tip: {}", self.description());
+        let text = format!("{} {}", t!("Tip:"), t!(self.description()));
 
         // Style backtick-wrapped text as inline code
         let parts: Vec<&str> = text.split('`').collect();
@@ -317,7 +318,7 @@ impl AITip for AgentTip {
     }
 
     fn to_formatted_text(&self, app: &AppContext) -> Vec<FormattedTextFragment> {
-        let mut text = format!("Tip: {}", self.description);
+        let mut text = format!("{} {}", t!("Tip:"), t!(self.description.as_str()));
 
         // Replace <keybinding> with the actual keybinding string
         if let Some(keystroke) = self.keystroke(app) {
@@ -368,9 +369,9 @@ impl AITip for AgentTip {
 impl WorkspaceAction {
     pub fn display_text(&self) -> Option<String> {
         match self {
-            WorkspaceAction::OpenPalette { .. } => Some("Open palette".to_string()),
+            WorkspaceAction::OpenPalette { .. } => Some(t!("Open palette").to_string()),
             WorkspaceAction::OpenWarpDrive => Some("Drive.".to_string()),
-            WorkspaceAction::ToggleRightPanel => Some("Show diff view".to_string()),
+            WorkspaceAction::ToggleRightPanel => Some(t!("Show diff view").to_string()),
             _ => None,
         }
     }

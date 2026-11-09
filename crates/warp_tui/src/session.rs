@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use clap::error::ErrorKind;
 use clap::{Parser, Subcommand};
+use i18n::t;
 use warp::settings::{TuiThemeSettings, TuiZeroStateSettings, TuiZeroStateSettingsChangedEvent};
 #[cfg(feature = "voice_input")]
 use warp::settings::{TuiVoiceSettings, TuiVoiceSettingsChangedEvent};
@@ -119,7 +120,7 @@ pub fn run() -> Result<()> {
         && let Some(token) = exit_summary.token()
     {
         let token = token.as_str();
-        println!("To continue this conversation, run:");
+        println!("{}", t!("To continue this conversation, run:"));
         let command = tui_resume_shell_command(ChannelState::channel(), token);
         println!("{command}");
     }

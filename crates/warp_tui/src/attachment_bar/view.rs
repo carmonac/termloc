@@ -1,3 +1,4 @@
+use i18n::t;
 use warp::tui_export::AttachmentType;
 use warpui_core::elements::MouseStateHandle;
 use warpui_core::elements::tui::{TuiElement, TuiFlex, TuiHoverable, TuiText};
@@ -202,8 +203,8 @@ fn render_attachment_snapshot(
         return TuiFlex::row().finish();
     };
     let kind = match selected.attachment_type {
-        AttachmentType::Image => "[image]",
-        AttachmentType::File => "[file]",
+        AttachmentType::Image => t!("[image]"),
+        AttachmentType::File => t!("[file]"),
     };
     if snapshot.selected_is_processing {
         return TuiFlex::row()
@@ -220,7 +221,7 @@ fn render_attachment_snapshot(
                     .finish(),
             )
             .child(
-                TuiText::new(" · loading…")
+                TuiText::new(t!(" · loading…"))
                     .with_style(builder.dim_text_style())
                     .truncate()
                     .finish(),
@@ -291,7 +292,7 @@ fn render_attachment_snapshot(
     }
     if snapshot.is_processing {
         row = row.child(
-            TuiText::new(" · loading…")
+            TuiText::new(t!(" · loading…"))
                 .with_style(builder.dim_text_style())
                 .truncate()
                 .finish(),

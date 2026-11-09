@@ -2,6 +2,7 @@
 //! Renders two lines: query text and code changes summary.
 
 use fuzzy_match::FuzzyMatchResult;
+use i18n::t;
 use ordered_float::OrderedFloat;
 use warp_core::ui::Icon;
 use warp_core::ui::color::coloru_with_opacity;
@@ -43,7 +44,7 @@ impl RewindSearchItem {
     pub fn new_current() -> Self {
         Self {
             exchange_id: None,
-            query_text: "Current".to_string(),
+            query_text: t!("Current").to_string(),
             file_changes: FileChangesInfo::default(),
             query_match_result: None,
             score: OrderedFloat(0.0),
@@ -141,7 +142,7 @@ impl SearchItem for RewindSearchItem {
         let changes_element: Box<dyn Element> = if self.is_current {
             // "Current" item shows "No code to be restored"
             Text::new_inline(
-                "No code to be restored".to_string(),
+                t!("No code to be restored").to_string(),
                 appearance.ui_font_family(),
                 secondary_font_size,
             )
@@ -174,7 +175,7 @@ impl SearchItem for RewindSearchItem {
             row.finish()
         } else {
             Text::new_inline(
-                "No code to be restored".to_string(),
+                t!("No code to be restored").to_string(),
                 appearance.ui_font_family(),
                 secondary_font_size,
             )

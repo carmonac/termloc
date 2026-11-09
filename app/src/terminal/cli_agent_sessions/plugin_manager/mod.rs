@@ -3,6 +3,7 @@ pub(crate) mod codex;
 pub(crate) mod gemini;
 pub(crate) mod opencode;
 
+use i18n::t;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -182,12 +183,12 @@ pub(crate) trait CliAgentPluginManager: Send + Sync {
 
     /// Toast message shown after a successful auto-install.
     fn install_success_message(&self) -> &'static str {
-        "Agent plugin installed. Please restart the session to activate."
+        t!("Agent plugin installed. Please restart the session to activate.")
     }
 
     /// Toast message shown after a successful auto-update.
     fn update_success_message(&self) -> &'static str {
-        "Agent plugin updated. Please restart the session to activate."
+        t!("Agent plugin updated. Please restart the session to activate.")
     }
 
     /// Manual installation instructions for the modal UI.

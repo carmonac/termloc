@@ -1,5 +1,6 @@
 //! Stateless active-TODO projection for the shared read-only menu component.
 
+use i18n::t;
 use warp::tui_export::{AIConversation, TodoStatus};
 use warpui_core::elements::tui::Modifier;
 
@@ -44,7 +45,11 @@ pub(super) fn active_todo_menu(
         })
         .collect();
     Some(TuiReadOnlyMenu::new(vec![TuiReadOnlyMenuSection::new(
-        format!("Tasks {completed}/{}", todo_list.len()),
+        t!(
+            "Tasks {completed}/{total}",
+            completed = completed,
+            total = todo_list.len()
+        ),
         rows,
     )]))
 }

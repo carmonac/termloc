@@ -299,7 +299,7 @@ unsafe fn apply_changes(changes: MenuItemPropertyChanges, item: id) {
     autoreleasepool(|_| unsafe {
         let menu_item = &*item.cast::<NSMenuItem>();
         if let Some(name) = changes.name {
-            menu_item.setTitle(&NSString::from_str(&name));
+            menu_item.setTitle(&NSString::from_str(i18n::translate(&name)));
         }
         if let Some(keystroke) = changes.keystroke {
             let (key_equivalent, modifiers) = resolve_key_equivalent(keystroke.as_ref());
@@ -365,6 +365,8 @@ unsafe fn make_menu_item(menu_item: MenuItem) -> id {
                     Some(properties.action),
                     properties.shortcut,
                 );
+                let title = properties.title.to_string();
+                nsmenu_item.setTitle(&NSString::from_str(i18n::translate(&title)));
                 nsmenu_item.setKeyEquivalentModifierMask(properties.modifiers);
                 nsmenu_item.setTag(standard_action as NSInteger);
                 Retained::autorelease_ptr(nsmenu_item) as id
@@ -382,7 +384,9 @@ unsafe fn make_menu_item(menu_item: MenuItem) -> id {
 unsafe fn make_top_level_menu_item(menu: Menu) -> id {
     unsafe {
         let mtm = MainThreadMarker::new_unchecked();
-        let nsmenu = make_delegated_menu(Retained::as_ptr(&NSString::from_str(&menu.title)) as id);
+        let nsmenu = make_delegated_menu(Retained::as_ptr(&NSString::from_str(i18n::translate(
+            &menu.title,
+        ))) as id);
         let nsmenu = &*nsmenu.cast::<NSMenu>();
 
         if menu.is_window_menu() {

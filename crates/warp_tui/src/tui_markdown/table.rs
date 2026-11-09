@@ -1,3 +1,4 @@
+use i18n::t;
 use markdown_parser::{FormattedTable, FormattedTextInline, Hyperlink, TableAlignment};
 use unicode_width::UnicodeWidthStr;
 use warpui_core::AppContext;
@@ -45,7 +46,7 @@ impl TuiMarkdownTable {
         let (headers, rows, alignments) = normalized_table(&self.table);
         if headers.is_empty() {
             return TuiFlex::column().child(
-                TuiText::new("[Empty table]")
+                TuiText::new(t!("[Empty table]"))
                     .with_style(self.palette.fallback)
                     .finish(),
             );
@@ -94,7 +95,7 @@ impl TuiMarkdownTable {
         let mut table = TuiFlex::column();
         if rows.is_empty() {
             table.add_child(
-                TuiText::new("[Table has no rows]")
+                TuiText::new(t!("[Table has no rows]"))
                     .with_style(self.palette.fallback)
                     .finish(),
             );

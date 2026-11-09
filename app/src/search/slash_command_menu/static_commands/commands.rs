@@ -119,6 +119,20 @@ pub const THEME: StaticCommand = StaticCommand {
     }),
 };
 
+pub const LANGUAGE: StaticCommand = StaticCommand {
+    name: "/language",
+    description: "Set interface language",
+    kind: SlashCommandKind::Language,
+    supported_surfaces: SlashCommandSurfaces::TuiOnly,
+    availability: Availability::ALWAYS,
+    auto_enter_ai_mode: false,
+    argument: Some(Argument {
+        hint_text: Some("<system|en|es|pt|fr|de|it|uk|ja|zh>"),
+        is_optional: false,
+        should_execute_on_selection: false,
+    }),
+};
+
 pub const EXIT: StaticCommand = StaticCommand {
     name: "/exit",
     description: "Exit Termloc",
@@ -742,6 +756,7 @@ fn all_commands_for_all_surfaces() -> Vec<StaticCommand> {
         RESET_STATUSLINE,
         NATURAL_LANGUAGE_DETECTION,
         THEME,
+        LANGUAGE,
         VIM_MODE,
         CONVERSATIONS,
         EXPORT_TO_CLIPBOARD,

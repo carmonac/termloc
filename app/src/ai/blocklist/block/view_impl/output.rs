@@ -12,6 +12,7 @@ use ai::agent::action::{RequestComputerUseRequest, SuggestPromptRequest, UseComp
 use ai::agent::document_action_presentation::DocumentActionPresentation;
 use ai::agent::file_locations::group_file_contexts_for_display;
 use ai::skills::{ParsedSkill, SkillReference};
+use i18n::t;
 use indexmap::IndexMap;
 use itertools::Itertools;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
@@ -345,9 +346,12 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                             && props.thinking_display_mode.should_render() =>
                         {
                             let header_text = if let Some(dur) = finished_duration {
-                                format!("Thought for {}", format_elapsed_seconds(*dur))
+                                t!(
+                                    "Thought for {duration}",
+                                    duration = format_elapsed_seconds(*dur)
+                                )
                             } else {
-                                "Thinking".to_string()
+                                t!("Thinking").to_string()
                             };
                             if let Some(element) = render_collapsible_block(
                                 output_message,
@@ -446,7 +450,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                             // action so the user sees the error instead
                                             // of an empty box.
                                             let formatted_text = render_requested_action_body_text(
-                                                "Failed to read files".into(),
+                                                t!("Failed to read files").into(),
                                                 appearance.ui_font_family(),
                                                 app,
                                             );
@@ -803,7 +807,7 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                             SummarizationType::ConversationSummary
                         ) && !are_all_text_sections_empty(&text.sections) =>
                         {
-                            let header_text = "Conversation summarized".to_string();
+                            let header_text = t!("Conversation summarized").to_string();
                             if let Some(element) = render_collapsible_block(
                                 output_message,
                                 header_text,
@@ -924,17 +928,21 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                         .and_then(|c| c.title())
                                         .map(|q| truncate_from_end(&q, 40));
                                     Some((
-                                        "conversation",
+                                        t!("conversation"),
                                         title.unwrap_or_else(|| target_id.clone()),
                                     ))
                                 })
                                 .or_else(|| {
                                     let target_id = agent_run_id.as_ref()?;
-                                    Some(("agent run", truncate_from_end(target_id, 40)))
+                                    Some((t!("agent run"), truncate_from_end(target_id, 40)))
                                 });
 
                             let done = is_finished || is_cancelled;
-                            let verb = if done { "Searched" } else { "Searching" };
+                            let verb = if done {
+                                t!("Searched")
+                            } else {
+                                t!("Searching")
+                            };
 
                             let mut fragments: Vec<FormattedTextFragment> =
                                 vec![FormattedTextFragment::plain_text(format!("{verb} "))];
@@ -949,9 +957,9 @@ pub(super) fn render(props: Props, app: &AppContext) -> Box<dyn Element> {
                                     ));
                                 }
                                 None => {
-                                    fragments.push(FormattedTextFragment::plain_text(
-                                        "this conversation",
-                                    ));
+                                    fragments.push(FormattedTextFragment::plain_text(t!(
+                                        "this conversation"
+                                    )));
                                 }
                             };
                             match query {
@@ -1239,10 +1247,12 @@ fn render_search_codebase(
                                     .codebase_search_speedbump_option_handles
                                     .clone(),
                                 vec![
-                                    RadioButtonItem::text(
-                                        "Always allow file access for coding tasks",
-                                    ),
-                                    RadioButtonItem::text("Always allow file access for this repo"),
+                                    RadioButtonItem::text(t!(
+                                        "Always allow file access for coding tasks"
+                                    )),
+                                    RadioButtonItem::text(t!(
+                                        "Always allow file access for this repo"
+                                    )),
                                 ],
                                 props
                                     .state_handles
@@ -1284,7 +1294,7 @@ fn render_search_codebase(
                                 appearance
                                     .ui_builder()
                                     .link(
-                                        "Manage AI Autonomy permissions".into(),
+                                        t!("Manage AI Autonomy permissions").into(),
                                         None,
                                         Some(Box::new(move |ctx| {
                                             ctx.dispatch_typed_action(
@@ -1332,7 +1342,8 @@ fn render_search_codebase(
                         renderable_action(
                             props,
                             id,
-                            format!("Search in {}", root_repo_path.to_string_lossy()).as_str(),
+                            t!("Search in {path}", path = root_repo_path.to_string_lossy())
+                                .as_str(),
                             app,
                             footer,
                             appearance,
@@ -1362,7 +1373,7 @@ fn render_search_codebase(
                 )
                 .with_header(blocked_action_header(
                     id.clone(),
-                    BLOCKED_ACTION_MESSAGE_FOR_SEARCHING_CODEBASE,
+                    t!(BLOCKED_ACTION_MESSAGE_FOR_SEARCHING_CODEBASE),
                     buttons.run_button.clone(),
                     buttons.cancel_button.clone(),
                     props.action_model,
@@ -1382,7 +1393,11 @@ fn render_search_codebase(
                     renderable_action(
                         props,
                         id,
-                        format!("Searching in {}", root_repo_path.to_string_lossy()).as_str(),
+                        t!(
+                            "Searching in {path}",
+                            path = root_repo_path.to_string_lossy()
+                        )
+                        .as_str(),
                         app,
                         footer,
                         appearance,
@@ -1408,7 +1423,7 @@ fn render_search_codebase(
                                 renderable_action(
                                     props,
                                     id,
-                                    "No relevant files found.",
+                                    t!("No relevant files found."),
                                     app,
                                     footer,
                                     appearance,
@@ -1444,12 +1459,15 @@ fn render_search_codebase(
                         SearchCodebaseResult::Failed { reason, .. } => {
                             let root_repo_path = root_repo_path?;
                             let message = match reason {
-                                SearchCodebaseFailureReason::CodebaseNotIndexed => format!(
-                                    "Search in {} failed because the codebase isn't indexed",
-                                    root_repo_path.to_string_lossy(),
+                                SearchCodebaseFailureReason::CodebaseNotIndexed => t!(
+                                    "Search in {path} failed because the codebase isn't indexed",
+                                    path = root_repo_path.to_string_lossy(),
                                 ),
                                 _ => {
-                                    format!("Search in {} failed", root_repo_path.to_string_lossy())
+                                    t!(
+                                        "Search in {path} failed",
+                                        path = root_repo_path.to_string_lossy()
+                                    )
                                 }
                             };
                             renderable_action(
@@ -1469,8 +1487,11 @@ fn render_search_codebase(
                             renderable_action(
                                 props,
                                 id,
-                                format!("Search in {} cancelled", root_repo_path.to_string_lossy())
-                                    .as_str(),
+                                t!(
+                                    "Search in {path} cancelled",
+                                    path = root_repo_path.to_string_lossy()
+                                )
+                                .as_str(),
                                 app,
                                 footer,
                                 appearance,
@@ -1488,7 +1509,7 @@ fn render_search_codebase(
             renderable_action(
                 props,
                 id,
-                format!("Search in {}", root_repo_path.to_string_lossy()).as_str(),
+                t!("Search in {path}", path = root_repo_path.to_string_lossy()).as_str(),
                 app,
                 footer,
                 appearance,
@@ -1689,7 +1710,7 @@ fn render_read_skill(
 
         let skill_icon_override = icon_override_for_skill_name(&skill.name);
         let open_button = render_skill_button(
-            "Open skill",
+            t!("Open skill"),
             button_handle,
             appearance,
             skill.provider,
@@ -1856,7 +1877,7 @@ fn render_read_files(
         renderable_action = renderable_action
             .with_header(blocked_action_header(
                 id.clone(),
-                BLOCKED_ACTION_MESSAGE_FOR_READING_FILES,
+                t!(BLOCKED_ACTION_MESSAGE_FOR_READING_FILES),
                 buttons.run_button.clone(),
                 buttons.cancel_button.clone(),
                 props.action_model,
@@ -1888,7 +1909,7 @@ fn render_read_files(
             *shown.lock() = true;
             renderable_action =
                 renderable_action.with_footer(render_autonomy_checkbox_setting_speedbump_footer(
-                    "Always allow file access for coding tasks",
+                    t!("Always allow file access for coding tasks"),
                     *checked,
                     AIBlockAction::ToggleAutoreadFilesSpeedbumpCheckbox,
                     props
@@ -2000,19 +2021,19 @@ fn render_stopped_output(props: Props, app: &AppContext) -> Box<dyn Element> {
                         .map(|index| (item, index))
                 })
             {
-                return Some(format!(
-                    "Stopped task {}/{}: \"{}\"",
-                    item_index + 1,
-                    todo_list.len(),
-                    item.title
+                return Some(t!(
+                    "Stopped task {index}/{total}: \"{title}\"",
+                    index = item_index + 1,
+                    total = todo_list.len(),
+                    title = item.title
                 ));
             }
 
             conversation
                 .initial_query()
-                .map(|task_name| format!("Stopped task: \"{task_name}\""))
+                .map(|task_name| t!("Stopped task: \"{task_name}\"", task_name = task_name))
         })
-        .unwrap_or_else(|| "Stopped task".to_string());
+        .unwrap_or_else(|| t!("Stopped task").to_string());
 
     let stop_icon = Container::new(
         ConstrainedBox::new(gray_stop_icon(appearance).finish())
@@ -2107,7 +2128,7 @@ fn render_stopped_output(props: Props, app: &AppContext) -> Box<dyn Element> {
         .with_custom_label(button_content)
         .with_tooltip(move || {
             ui_builder
-                .tool_tip("Resume conversation".to_string())
+                .tool_tip(t!("Resume conversation").to_string())
                 .build()
                 .finish()
         })
@@ -2160,7 +2181,7 @@ fn render_requested_edits_output_message(
             .view
             .as_ref(app)
             .title()
-            .unwrap_or("Could not apply changes to file.");
+            .unwrap_or(t!("Could not apply changes to file."));
         RenderableAction::new(title, app)
             .with_icon(inline_action_icons::cancelled_icon(appearance).finish())
             .render(app)
@@ -2169,7 +2190,7 @@ fn render_requested_edits_output_message(
         match requested_edit.view.as_ref(app).display_mode() {
             DisplayMode::FullPane => Align::new(
                 Text::new_inline(
-                    "This suggestion is being edited in another tab.",
+                    t!("This suggestion is being edited in another tab."),
                     appearance.ui_font_family(),
                     appearance.monospace_font_size(),
                 )
@@ -2279,11 +2300,11 @@ fn render_suggest_new_conversation(
         };
         let (label, status_icon) = match result {
             SuggestNewConversationResult::Accepted { .. } => (
-                "New conversation started",
+                t!("New conversation started"),
                 inline_action_icons::green_check_icon(appearance).finish(),
             ),
             SuggestNewConversationResult::Rejected => (
-                "Continuing current conversation",
+                t!("Continuing current conversation"),
                 warpui::elements::Icon::new(
                     Icon::FlipForward.into(),
                     internal_colors::neutral_6(theme),
@@ -2291,7 +2312,7 @@ fn render_suggest_new_conversation(
                 .finish(),
             ),
             SuggestNewConversationResult::Cancelled => (
-                "New conversation suggestion cancelled",
+                t!("New conversation suggestion cancelled"),
                 inline_action_icons::cancelled_icon(appearance).finish(),
             ),
         };
@@ -2315,7 +2336,7 @@ fn render_suggest_new_conversation(
     let mut content = Flex::column().with_cross_axis_alignment(CrossAxisAlignment::Stretch);
 
     let new_conversation_header_text =
-        "It seems like the topic changed. Would you like to make a new conversation?";
+        t!("It seems like the topic changed. Would you like to make a new conversation?");
     let new_conversation_header_element = HeaderConfig::new(new_conversation_header_text, app)
         .with_icon(yellow_stop_icon(appearance))
         .with_corner_radius_override(CornerRadius::with_top(Radius::Pixels(8.)))
@@ -2362,7 +2383,7 @@ fn create_formatted_text_for_grep(
         .is_some_and(|status| status.is_queued());
 
     let display_path = if path == "." {
-        "the current directory".to_string()
+        t!("the current directory").to_string()
     } else {
         shell_native_absolute_path(
             path,
@@ -2377,19 +2398,19 @@ fn create_formatted_text_for_grep(
             .expect("Queries slice should have an element");
         let mut fragments = if is_cancelled || is_queued {
             vec![
-                FormattedTextFragment::plain_text("Grep for "),
+                FormattedTextFragment::plain_text(t!("Grep for ")),
                 FormattedTextFragment::inline_code(query),
             ]
         } else {
             vec![
-                FormattedTextFragment::plain_text("Grepping for "),
+                FormattedTextFragment::plain_text(t!("Grepping for ")),
                 FormattedTextFragment::inline_code(query),
             ]
         };
         fragments.push(if is_cancelled {
-            FormattedTextFragment::plain_text(format!(" in {display_path} cancelled"))
+            FormattedTextFragment::plain_text(t!(" in {path} cancelled", path = display_path))
         } else {
-            FormattedTextFragment::plain_text(format!(" in {display_path}"))
+            FormattedTextFragment::plain_text(t!(" in {path}", path = display_path))
         });
         FormattedText::new([FormattedTextLine::Line(fragments)])
     } else {
@@ -2397,18 +2418,21 @@ fn create_formatted_text_for_grep(
 
         if is_cancelled {
             lines.push(FormattedTextLine::Line(vec![
-                FormattedTextFragment::plain_text(format!(
-                    "Cancelled grep for the following patterns in {display_path}"
+                FormattedTextFragment::plain_text(t!(
+                    "Cancelled grep for the following patterns in {path}",
+                    path = display_path
                 )),
             ]));
         } else {
             lines.push(FormattedTextLine::Line(vec![if is_queued {
-                FormattedTextFragment::plain_text(format!(
-                    "Grep for the following patterns in {display_path}"
+                FormattedTextFragment::plain_text(t!(
+                    "Grep for the following patterns in {path}",
+                    path = display_path
                 ))
             } else {
-                FormattedTextFragment::plain_text(format!(
-                    "Grepping for the following patterns in {display_path}"
+                FormattedTextFragment::plain_text(t!(
+                    "Grepping for the following patterns in {path}",
+                    path = display_path
                 ))
             }]));
         }
@@ -2473,7 +2497,7 @@ fn create_formatted_text_for_file_glob(
                 props.current_working_directory,
             )
         })
-        .unwrap_or_else(|| "the current directory".to_string());
+        .unwrap_or_else(|| t!("the current directory").to_string());
 
     let formatted_text = if patterns.len() == 1 {
         let pattern = patterns
@@ -2482,19 +2506,19 @@ fn create_formatted_text_for_file_glob(
 
         let mut fragments = if is_cancelled || is_queued {
             vec![
-                FormattedTextFragment::plain_text("Search for files that match "),
+                FormattedTextFragment::plain_text(t!("Search for files that match ")),
                 FormattedTextFragment::inline_code(pattern),
             ]
         } else {
             vec![
-                FormattedTextFragment::plain_text("Finding files that match "),
+                FormattedTextFragment::plain_text(t!("Finding files that match ")),
                 FormattedTextFragment::inline_code(pattern),
             ]
         };
         fragments.push(if is_cancelled {
-            FormattedTextFragment::plain_text(format!(" in {path} cancelled"))
+            FormattedTextFragment::plain_text(t!(" in {path} cancelled", path = path))
         } else {
-            FormattedTextFragment::plain_text(format!(" in {path}"))
+            FormattedTextFragment::plain_text(t!(" in {path}", path = path))
         });
         FormattedText::new([FormattedTextLine::Line(fragments)])
     } else {
@@ -2502,18 +2526,21 @@ fn create_formatted_text_for_file_glob(
 
         if is_cancelled {
             lines.push(FormattedTextLine::Line(vec![
-                FormattedTextFragment::plain_text(format!(
-                    "Cancelled search for files that match the following patterns in {path}"
+                FormattedTextFragment::plain_text(t!(
+                    "Cancelled search for files that match the following patterns in {path}",
+                    path = path
                 )),
             ]));
         } else {
             lines.push(FormattedTextLine::Line(vec![if is_queued {
-                FormattedTextFragment::plain_text(format!(
-                    "Find files that match the following patterns in {path}"
+                FormattedTextFragment::plain_text(t!(
+                    "Find files that match the following patterns in {path}",
+                    path = path
                 ))
             } else {
-                FormattedTextFragment::plain_text(format!(
-                    "Finding files that match the following patterns in {path}"
+                FormattedTextFragment::plain_text(t!(
+                    "Finding files that match the following patterns in {path}",
+                    path = path
                 ))
             }]));
         }
@@ -2571,7 +2598,7 @@ fn render_file_retrieval_tool(
         config = config
             .with_header(blocked_action_header(
                 action_id.clone(),
-                BLOCKED_ACTION_MESSAGE_FOR_GREP_OR_FILE_GLOB,
+                t!(BLOCKED_ACTION_MESSAGE_FOR_GREP_OR_FILE_GLOB),
                 buttons.run_button.clone(),
                 buttons.cancel_button.clone(),
                 props.action_model,
@@ -2642,7 +2669,7 @@ fn render_comment_addressed_header(comment: &ReviewComment, app: &AppContext) ->
         Shrinkable::new(
             1.,
             Text::new_inline(
-                format!("Comment addressed: \"{content}\""),
+                t!("Comment addressed: \"{content}\"", content = content),
                 appearance.ui_font_family(),
                 appearance.monospace_font_size(),
             )
@@ -2688,7 +2715,7 @@ fn render_read_mcp_resource(
         renderable_action = renderable_action
             .with_header(blocked_action_header(
                 action_id.clone(),
-                "OK if I read this MCP resource?",
+                t!("OK if I read this MCP resource?"),
                 buttons.run_button.clone(),
                 buttons.cancel_button.clone(),
                 props.action_model,
@@ -2724,7 +2751,7 @@ fn recording_summary(props: Props, agent_summary: Option<&str>, app: &AppContext
         .filter(|s| !s.is_empty())
         .or_else(|| title.as_deref().map(str::trim).filter(|s| !s.is_empty()))
         .map(ToString::to_string)
-        .unwrap_or_else(|| "Recording computer-use session".to_string())
+        .unwrap_or_else(|| t!("Recording computer-use session").to_string())
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -2739,19 +2766,19 @@ fn start_recording_card_text(
 ) -> RecordingCardText {
     match result {
         Some(StartRecordingResult::Success(_)) => RecordingCardText {
-            primary: "Recording started".to_string(),
+            primary: t!("Recording started").to_string(),
             subtext: Some(description.to_string()),
         },
         Some(StartRecordingResult::Error(error)) => RecordingCardText {
-            primary: "Recording failed to start".to_string(),
+            primary: t!("Recording failed to start").to_string(),
             subtext: Some(error.clone()),
         },
         Some(StartRecordingResult::Cancelled) => RecordingCardText {
-            primary: "Recording cancelled".to_string(),
+            primary: t!("Recording cancelled").to_string(),
             subtext: None,
         },
         None => RecordingCardText {
-            primary: "Starting recording".to_string(),
+            primary: t!("Starting recording").to_string(),
             subtext: Some(description.to_string()),
         },
     }
@@ -2768,25 +2795,25 @@ fn stop_recording_card_text(result: Option<&StopRecordingResult>) -> RecordingCa
                 duration
             } else {
                 // TODO(vkodithala): Switch to typed, user-facing termination copy once finalization emits structured reasons.
-                format!("Partial recording • {duration}")
+                t!("Partial recording • {duration}", duration = duration)
             };
             RecordingCardText {
-                primary: "Recording saved".to_string(),
+                primary: t!("Recording saved").to_string(),
                 subtext: Some(subtext),
             }
         }
         Some(StopRecordingResult::Error(_)) | Some(StopRecordingResult::Cancelled) => {
             RecordingCardText {
-                primary: "Recording could not be saved".to_string(),
+                primary: t!("Recording could not be saved").to_string(),
                 subtext: None,
             }
         }
         Some(StopRecordingResult::Discarded) => RecordingCardText {
-            primary: "Recording discarded".to_string(),
+            primary: t!("Recording discarded").to_string(),
             subtext: None,
         },
         None => RecordingCardText {
-            primary: "Saving recording".to_string(),
+            primary: t!("Saving recording").to_string(),
             subtext: None,
         },
     }
@@ -2866,8 +2893,8 @@ fn render_recording_footer(status: RecordingSpanStatus, app: &AppContext) -> Box
     let icon_offset =
         icon_size(app) + crate::ai::blocklist::inline_action::inline_action_header::ICON_MARGIN;
     let text = match status {
-        RecordingSpanStatus::Active => "Recording active",
-        RecordingSpanStatus::Captured => "Captured in recording",
+        RecordingSpanStatus::Active => t!("Recording active"),
+        RecordingSpanStatus::Captured => t!("Captured in recording"),
     };
     Container::new(
         Text::new(
@@ -2905,7 +2932,7 @@ fn render_stop_recording(
             render_inline_action_secondary_button(
                 appearance,
                 btn,
-                "Open recording",
+                t!("Open recording"),
                 Box::new(move |ctx, _, _| {
                     ctx.dispatch_typed_action(AIBlockAction::OpenRecordingArtifact {
                         artifact_uid: artifact_uid.clone(),
@@ -2998,7 +3025,7 @@ fn render_request_computer_use(
         renderable_action = renderable_action
             .with_header(blocked_action_header(
                 action_id.clone(),
-                "OK if I use computer control for this task?",
+                t!("OK if I use computer control for this task?"),
                 buttons.run_button.clone(),
                 buttons.cancel_button.clone(),
                 props.action_model,
@@ -3044,7 +3071,7 @@ fn render_references_footer(
     )?;
 
     let title = Text::new_inline(
-        "References",
+        t!("References"),
         appearance.ui_font_family(),
         appearance.monospace_font_size(),
     )
@@ -3129,7 +3156,7 @@ fn render_suggested_rules_and_prompts_footer(
     let theme = appearance.theme();
     let title_row_color = theme.sub_text_color(theme.background());
     let title_text = Text::new_inline(
-        "Suggestions:",
+        t!("Suggestions:"),
         appearance.ui_font_family(),
         appearance.monospace_font_size(),
     )
@@ -3241,7 +3268,7 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         )
         .with_tooltip(move || {
             ui_builder
-                .tool_tip("Good response".to_string())
+                .tool_tip(t!("Good response").to_string())
                 .build()
                 .finish()
         })
@@ -3262,7 +3289,7 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         .with_tooltip(move || {
             ui_builder
                 .clone()
-                .tool_tip("Bad response".to_string())
+                .tool_tip(t!("Bad response").to_string())
                 .build()
                 .finish()
         })
@@ -3334,7 +3361,7 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         )
         .with_tooltip(move || {
             ui_builder
-                .tool_tip("Continue conversation".to_string())
+                .tool_tip(t!("Continue conversation").to_string())
                 .build()
                 .finish()
         })
@@ -3359,7 +3386,7 @@ fn render_response_footer(props: Props, app: &AppContext) -> Option<Box<dyn Elem
         )
         .with_tooltip(move || {
             ui_builder
-                .tool_tip("Fork conversation".to_string())
+                .tool_tip(t!("Fork conversation").to_string())
                 .build()
                 .finish()
         })
@@ -3712,7 +3739,7 @@ fn render_collapsible_debug_output(
         // "Debug output" label
         row.add_child(
             Text::new(
-                "Debug output".to_string(),
+                t!("Debug output").to_string(),
                 appearance.ai_font_family(),
                 appearance.monospace_font_size(),
             )
@@ -3855,16 +3882,16 @@ fn conversation_search_phase(task: &crate::ai::agent::task::Task) -> Conversatio
 
 fn format_conversation_search_phase(phase: &ConversationSearchPhase) -> String {
     match phase {
-        ConversationSearchPhase::ListingMessages => "Listing messages".to_string(),
+        ConversationSearchPhase::ListingMessages => t!("Listing messages").to_string(),
         ConversationSearchPhase::Grepping { patterns } => {
             if patterns.is_empty() {
-                return "Grepping for patterns".to_string();
+                return t!("Grepping for patterns").to_string();
             }
             let joined = truncate_from_end(&patterns.join(", "), 60);
-            format!("Grepping for patterns: {joined}")
+            t!("Grepping for patterns: {patterns}", patterns = joined)
         }
         ConversationSearchPhase::ReadingMessages { count } => {
-            format!("Reading {count} messages")
+            t!("Reading {count} messages", count = count)
         }
     }
 }

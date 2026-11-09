@@ -1,0 +1,15 @@
+[package]
+name = "i18n"
+version = "0.1.0"
+edition = "2024"
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+log.workspace = true
+serde_yaml.workspace = true
+sys-locale.workspace = true
+
+[dev-dependencies]
+regex.workspace = true
+walkdir.workspace = true

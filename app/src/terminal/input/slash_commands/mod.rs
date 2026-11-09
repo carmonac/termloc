@@ -3,6 +3,7 @@ mod mixer;
 mod search_item;
 pub(super) mod view;
 
+use i18n::t;
 #[cfg(feature = "local_fs")]
 use std::path::PathBuf;
 
@@ -427,9 +428,9 @@ impl Input {
                 {
                     self.ephemeral_message_model.update(ctx, |model, ctx| {
                         let appearance = Appearance::handle(ctx).as_ref(ctx);
-                        let message = Message::from_text(
-                            "cannot start new conversation while terminal command is running",
-                        )
+                        let message = Message::from_text(t!(
+                            "cannot start new conversation while terminal command is running"
+                        ))
                         .with_text_color(appearance.theme().ansi_fg_red());
                         model.show_ephemeral_message(
                             EphemeralMessage::new(
@@ -488,7 +489,7 @@ impl Input {
                     .filter(|name| !name.is_empty())
                 else {
                     show_error_toast(
-                        "Please provide a tab name after /rename-tab".to_owned(),
+                        t!("Please provide a tab name after /rename-tab").to_owned(),
                         ctx,
                     );
                     return true;
@@ -503,7 +504,7 @@ impl Input {
                     .selected_conversation_id(ctx)
                 else {
                     show_error_toast(
-                        "/rename-conversation requires an active conversation".to_owned(),
+                        t!("/rename-conversation requires an active conversation").to_owned(),
                         ctx,
                     );
                     return true;
@@ -525,9 +526,9 @@ impl Input {
                     .filter(|name| !name.is_empty())
                 else {
                     show_error_toast(
-                        format!(
-                            "Please provide a color after /set-tab-color ({})",
-                            supported_options()
+                        t!(
+                            "Please provide a color after /set-tab-color ({options})",
+                            options = supported_options()
                         ),
                         ctx,
                     );
@@ -545,9 +546,10 @@ impl Input {
                         Some(c) => SelectedTabColor::Color(c),
                         None => {
                             show_error_toast(
-                                format!(
-                                    "Unknown tab color '{arg}'. Use one of: {}.",
-                                    supported_options()
+                                t!(
+                                    "Unknown tab color '{arg}'. Use one of: {options}.",
+                                    arg = arg,
+                                    options = supported_options()
                                 ),
                                 ctx,
                             );
@@ -561,7 +563,7 @@ impl Input {
             SlashCommandKind::CreateNewProject => {
                 if argument.is_none_or(|args| args.is_empty()) {
                     show_error_toast(
-                        "Please describe the project you want to create after /create-new-project"
+                        t!("Please describe the project you want to create after /create-new-project")
                             .to_owned(),
                         ctx,
                     );
@@ -588,7 +590,7 @@ impl Input {
                             ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                                 toast_stack.add_ephemeral_toast(
                                     DismissibleToast::error(
-                                        "The /open-file command is only available for local sessions"
+                                        t!("The /open-file command is only available for local sessions")
                                             .to_owned(),
                                     ),
                                     window_id,
@@ -623,7 +625,7 @@ impl Input {
                             }
                             Ok(_) => {
                                 show_error_toast(
-                                    "The /open-file command only works for files, not directories"
+                                    t!("The /open-file command only works for files, not directories")
                                         .to_owned(),
                                     ctx,
                                 );
@@ -649,7 +651,7 @@ impl Input {
                 #[cfg(not(feature = "local_fs"))]
                 {
                     show_error_toast(
-                        "The /open-file command is not supported in this build".to_owned(),
+                        t!("The /open-file command is not supported in this build").to_owned(),
                         ctx,
                     );
                     return true;
@@ -661,7 +663,7 @@ impl Input {
                     .as_ref(ctx)
                     .active_conversation(self.terminal_view_id)
                 else {
-                    show_error_toast("No active conversation to export".to_owned(), ctx);
+                    show_error_toast(t!("No active conversation to export").to_owned(), ctx);
                     return true;
                 };
 
@@ -674,9 +676,9 @@ impl Input {
                 // Show a toast to confirm the export
                 let window_id = ctx.window_id();
                 ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
-                    let toast = DismissibleToast::default(String::from(
-                        "Conversation exported to clipboard",
-                    ));
+                    let toast = DismissibleToast::default(String::from(t!(
+                        "Conversation exported to clipboard"
+                    )));
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
             }
@@ -699,7 +701,7 @@ impl Input {
                         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                             toast_stack.add_ephemeral_toast(
                                 DismissibleToast::default(
-                                    "Debugging information copied to clipboard".to_owned(),
+                                    t!("Debugging information copied to clipboard").to_owned(),
                                 ),
                                 window_id,
                                 ctx,
@@ -707,7 +709,7 @@ impl Input {
                         });
                     }
                     None => show_error_toast(
-                        "No debugging ID available for this conversation yet.".to_owned(),
+                        t!("No debugging ID available for this conversation yet.").to_owned(),
                         ctx,
                     ),
                 }
@@ -723,7 +725,7 @@ impl Input {
                 #[cfg(target_family = "wasm")]
                 {
                     show_error_toast(
-                        "Export conversation to file unsupported in web".to_owned(),
+                        t!("Export conversation to file unsupported in web").to_owned(),
                         ctx,
                     );
                     return true;
@@ -809,7 +811,7 @@ impl Input {
                     .as_ref(ctx)
                     .selected_conversation_id(ctx)
                 else {
-                    show_error_toast("/fork requires an active conversation".to_owned(), ctx);
+                    show_error_toast(t!("/fork requires an active conversation").to_owned(), ctx);
                     return true;
                 };
 
@@ -844,7 +846,7 @@ impl Input {
                     .selected_conversation_id(ctx)
                 else {
                     show_error_toast(
-                        "/fork-and-compact requires an active conversation".to_owned(),
+                        t!("/fork-and-compact requires an active conversation").to_owned(),
                         ctx,
                     );
                     return true;
@@ -877,7 +879,7 @@ impl Input {
                         .selected_conversation_id(ctx)
                     else {
                         show_error_toast(
-                            "/compact-and requires an active conversation".to_owned(),
+                            t!("/compact-and requires an active conversation").to_owned(),
                             ctx,
                         );
                         return true;
@@ -910,12 +912,12 @@ impl Input {
                     .as_ref(ctx)
                     .selected_conversation_id(ctx)
                 else {
-                    show_error_toast("/queue requires an active conversation".to_owned(), ctx);
+                    show_error_toast(t!("/queue requires an active conversation").to_owned(), ctx);
                     return true;
                 };
 
                 let Some(prompt) = argument.filter(|a| !a.is_empty()).cloned() else {
-                    show_error_toast("/queue requires a prompt argument".to_owned(), ctx);
+                    show_error_toast(t!("/queue requires a prompt argument").to_owned(), ctx);
                     return true;
                 };
 
@@ -969,6 +971,7 @@ impl Input {
             | SlashCommandKind::Voice
             | SlashCommandKind::NaturalLanguageDetection
             | SlashCommandKind::Theme
+            | SlashCommandKind::Language
             | SlashCommandKind::VimMode
             | SlashCommandKind::Exit
             | SlashCommandKind::Clear

@@ -1,0 +1,5021 @@
+# English source text -> translation per language code.
+
+"Interface language set to {language}.":
+  es: Idioma de la interfaz cambiado a {language}.
+  pt: Idioma da interface definido como {language}.
+  fr: Langue de l'interface définie sur {language}.
+  de: Sprache der Oberfläche auf {language} gesetzt.
+  it: Lingua dell'interfaccia impostata su {language}.
+  uk: Мову інтерфейсу змінено на {language}.
+  ja: 表示言語を {language} に設定しました。
+  zh-Hans: 界面语言已设置为 {language}。
+
+"Language must be system, en, es, pt, fr, de, it, uk, ja, or zh.":
+  es: El idioma debe ser system, en, es, pt, fr, de, it, uk, ja o zh.
+  pt: O idioma deve ser system, en, es, pt, fr, de, it, uk, ja ou zh.
+  fr: La langue doit être system, en, es, pt, fr, de, it, uk, ja ou zh.
+  de: Die Sprache muss system, en, es, pt, fr, de, it, uk, ja oder zh sein.
+  it: La lingua deve essere system, en, es, pt, fr, de, it, uk, ja o zh.
+  uk: Мова має бути system, en, es, pt, fr, de, it, uk, ja або zh.
+  ja: 言語は system、en、es、pt、fr、de、it、uk、ja、zh のいずれかを指定してください。
+  zh-Hans: 语言必须是 system、en、es、pt、fr、de、it、uk、ja 或 zh。
+
+"Could not save the language setting.":
+  es: No se pudo guardar el ajuste de idioma.
+  pt: Não foi possível salvar a configuração de idioma.
+  fr: Impossible d'enregistrer le paramètre de langue.
+  de: Die Spracheinstellung konnte nicht gespeichert werden.
+  it: Impossibile salvare l'impostazione della lingua.
+  uk: Не вдалося зберегти налаштування мови.
+  ja: 言語設定を保存できませんでした。
+  zh-Hans: 无法保存语言设置。
+
+"[Code block unavailable]":
+  es: "[Bloque de código no disponible]"
+  pt: "[Bloco de código indisponível]"
+  fr: "[Bloc de code indisponible]"
+  de: "[Codeblock nicht verfügbar]"
+  it: "[Blocco di codice non disponibile]"
+  uk: "[Блок коду недоступний]"
+  ja: "[コードブロックを表示できません]"
+  zh-Hans: "[代码块不可用]"
+
+"Image":
+  es: "Imagen"
+  pt: "Imagem"
+  fr: "Image"
+  de: "Bild"
+  it: "Immagine"
+  uk: "Зображення"
+  ja: "画像"
+  zh-Hans: "图片"
+
+"Image: {description}":
+  es: "Imagen: {description}"
+  pt: "Imagem: {description}"
+  fr: "Image : {description}"
+  de: "Bild: {description}"
+  it: "Immagine: {description}"
+  uk: "Зображення: {description}"
+  ja: "画像: {description}"
+  zh-Hans: "图片：{description}"
+
+"Thinking...":
+  es: "Pensando..."
+  pt: "Pensando..."
+  fr: "Réflexion..."
+  de: "Denkt nach..."
+  it: "Sto pensando..."
+  uk: "Думає..."
+  ja: "思考中..."
+  zh-Hans: "正在思考..."
+
+"Conversation summary":
+  es: "Resumen de la conversación"
+  pt: "Resumo da conversa"
+  fr: "Résumé de la conversation"
+  de: "Zusammenfassung der Unterhaltung"
+  it: "Riepilogo della conversazione"
+  uk: "Підсумок розмови"
+  ja: "会話の要約"
+  zh-Hans: "对话摘要"
+
+"Tasks {count}":
+  es: "Tareas {count}"
+  pt: "Tarefas {count}"
+  fr: "Tâches {count}"
+  de: "Aufgaben {count}"
+  it: "Attività {count}"
+  uk: "Завдання {count}"
+  ja: "タスク {count}"
+  zh-Hans: "任务 {count}"
+
+"Completed {item}":
+  es: "Completado: {item}"
+  pt: "Concluído: {item}"
+  fr: "Terminé : {item}"
+  de: "Erledigt: {item}"
+  it: "Completato: {item}"
+  uk: "Виконано: {item}"
+  ja: "完了: {item}"
+  zh-Hans: "已完成：{item}"
+
+"Could not read image {path}.":
+  es: "No se pudo leer la imagen {path}."
+  pt: "Não foi possível ler a imagem {path}."
+  fr: "Impossible de lire l'image {path}."
+  de: "Bild {path} konnte nicht gelesen werden."
+  it: "Impossibile leggere l'immagine {path}."
+  uk: "Не вдалося прочитати зображення {path}."
+  ja: "画像 {path} を読み込めませんでした。"
+  zh-Hans: "无法读取图片 {path}。"
+
+"Image path is not a file: {path}.":
+  es: "La ruta de la imagen no es un archivo: {path}."
+  pt: "O caminho da imagem não é um arquivo: {path}."
+  fr: "Le chemin de l'image n'est pas un fichier : {path}."
+  de: "Der Bildpfad ist keine Datei: {path}."
+  it: "Il percorso dell'immagine non è un file: {path}."
+  uk: "Шлях до зображення не є файлом: {path}."
+  ja: "画像のパスがファイルではありません: {path}。"
+  zh-Hans: "图片路径不是文件：{path}。"
+
+"Image is too large: {path}.":
+  es: "La imagen es demasiado grande: {path}."
+  pt: "A imagem é grande demais: {path}."
+  fr: "L'image est trop volumineuse : {path}."
+  de: "Das Bild ist zu groß: {path}."
+  it: "L'immagine è troppo grande: {path}."
+  uk: "Зображення завелике: {path}."
+  ja: "画像が大きすぎます: {path}。"
+  zh-Hans: "图片过大：{path}。"
+
+"Unsupported image type for {path}. Use PNG, JPG, GIF, or WebP.":
+  es: "Tipo de imagen no compatible para {path}. Usa PNG, JPG, GIF o WebP."
+  pt: "Tipo de imagem não suportado para {path}. Use PNG, JPG, GIF ou WebP."
+  fr: "Type d'image non pris en charge pour {path}. Utilisez PNG, JPG, GIF ou WebP."
+  de: "Nicht unterstützter Bildtyp für {path}. Verwenden Sie PNG, JPG, GIF oder WebP."
+  it: "Tipo di immagine non supportato per {path}. Usa PNG, JPG, GIF o WebP."
+  uk: "Непідтримуваний тип зображення для {path}. Використовуйте PNG, JPG, GIF або WebP."
+  ja: "{path} は対応していない画像形式です。PNG、JPG、GIF、WebP を使用してください。"
+  zh-Hans: "{path} 的图片类型不受支持。请使用 PNG、JPG、GIF 或 WebP。"
+
+"Could not process image {path}.":
+  es: "No se pudo procesar la imagen {path}."
+  pt: "Não foi possível processar a imagem {path}."
+  fr: "Impossible de traiter l'image {path}."
+  de: "Bild {path} konnte nicht verarbeitet werden."
+  it: "Impossibile elaborare l'immagine {path}."
+  uk: "Не вдалося обробити зображення {path}."
+  ja: "画像 {path} を処理できませんでした。"
+  zh-Hans: "无法处理图片 {path}。"
+
+"Image has no valid filename: {path}.":
+  es: "La imagen no tiene un nombre de archivo válido: {path}."
+  pt: "A imagem não tem um nome de arquivo válido: {path}."
+  fr: "L'image n'a pas de nom de fichier valide : {path}."
+  de: "Das Bild hat keinen gültigen Dateinamen: {path}."
+  it: "L'immagine non ha un nome file valido: {path}."
+  uk: "Зображення не має дійсної назви файлу: {path}."
+  ja: "画像に有効なファイル名がありません: {path}。"
+  zh-Hans: "图片没有有效的文件名：{path}。"
+
+"The system clipboard is unavailable.":
+  es: "El portapapeles del sistema no está disponible."
+  pt: "A área de transferência do sistema não está disponível."
+  fr: "Le presse-papiers du système est indisponible."
+  de: "Die Systemzwischenablage ist nicht verfügbar."
+  it: "Gli appunti di sistema non sono disponibili."
+  uk: "Системний буфер обміну недоступний."
+  ja: "システムのクリップボードを利用できません。"
+  zh-Hans: "系统剪贴板不可用。"
+
+"Clipboard image data is unavailable.":
+  es: "Los datos de imagen del portapapeles no están disponibles."
+  pt: "Os dados de imagem da área de transferência não estão disponíveis."
+  fr: "Les données d'image du presse-papiers sont indisponibles."
+  de: "Bilddaten in der Zwischenablage sind nicht verfügbar."
+  it: "I dati dell'immagine negli appunti non sono disponibili."
+  uk: "Дані зображення в буфері обміну недоступні."
+  ja: "クリップボードの画像データを利用できません。"
+  zh-Hans: "剪贴板图片数据不可用。"
+
+"The clipboard does not contain a supported image.":
+  es: "El portapapeles no contiene una imagen compatible."
+  pt: "A área de transferência não contém uma imagem compatível."
+  fr: "Le presse-papiers ne contient pas d'image prise en charge."
+  de: "Die Zwischenablage enthält kein unterstütztes Bild."
+  it: "Gli appunti non contengono un'immagine supportata."
+  uk: "Буфер обміну не містить підтримуваного зображення."
+  ja: "クリップボードに対応している画像がありません。"
+  zh-Hans: "剪贴板中没有受支持的图片。"
+
+"The clipboard image is too large.":
+  es: "La imagen del portapapeles es demasiado grande."
+  pt: "A imagem da área de transferência é grande demais."
+  fr: "L'image du presse-papiers est trop volumineuse."
+  de: "Das Bild in der Zwischenablage ist zu groß."
+  it: "L'immagine negli appunti è troppo grande."
+  uk: "Зображення в буфері обміну завелике."
+  ja: "クリップボードの画像が大きすぎます。"
+  zh-Hans: "剪贴板图片过大。"
+
+"The clipboard image could not be processed.":
+  es: "No se pudo procesar la imagen del portapapeles."
+  pt: "Não foi possível processar a imagem da área de transferência."
+  fr: "Impossible de traiter l'image du presse-papiers."
+  de: "Das Bild in der Zwischenablage konnte nicht verarbeitet werden."
+  it: "Impossibile elaborare l'immagine negli appunti."
+  uk: "Не вдалося обробити зображення з буфера обміну."
+  ja: "クリップボードの画像を処理できませんでした。"
+  zh-Hans: "无法处理剪贴板图片。"
+
+"Image attachments are unavailable.":
+  es: "Los archivos adjuntos de imagen no están disponibles."
+  pt: "Anexos de imagem não estão disponíveis."
+  fr: "Les pièces jointes d'image sont indisponibles."
+  de: "Bildanhänge sind nicht verfügbar."
+  it: "Gli allegati immagine non sono disponibili."
+  uk: "Вкладення зображень недоступні."
+  ja: "画像の添付は利用できません。"
+  zh-Hans: "图片附件不可用。"
+
+"Wait for the current image attachment to finish.":
+  es: "Espera a que termine el archivo adjunto de imagen actual."
+  pt: "Aguarde o anexo de imagem atual terminar."
+  fr: "Attendez la fin de la pièce jointe d'image en cours."
+  de: "Warten Sie, bis der aktuelle Bildanhang fertig ist."
+  it: "Attendi il completamento dell'allegato immagine corrente."
+  uk: "Зачекайте, доки завершиться поточне вкладення зображення."
+  ja: "現在の画像の添付が完了するまでお待ちください。"
+  zh-Hans: "请等待当前图片附件处理完成。"
+
+"Image attachment limit is {limit} per query.":
+  es: "El límite de imágenes adjuntas es {limit} por consulta."
+  pt: "O limite de anexos de imagem é {limit} por consulta."
+  fr: "La limite de pièces jointes d'image est de {limit} par requête."
+  de: "Das Limit für Bildanhänge liegt bei {limit} pro Anfrage."
+  it: "Il limite di allegati immagine è {limit} per richiesta."
+  uk: "Ліміт вкладень зображень — {limit} на запит."
+  ja: "画像の添付は 1 回のクエリにつき {limit} 件までです。"
+  zh-Hans: "每次查询最多可附加 {limit} 张图片。"
+
+"The selected model does not support image attachments.":
+  es: "El modelo seleccionado no admite imágenes adjuntas."
+  pt: "O modelo selecionado não suporta anexos de imagem."
+  fr: "Le modèle sélectionné ne prend pas en charge les pièces jointes d'image."
+  de: "Das ausgewählte Modell unterstützt keine Bildanhänge."
+  it: "Il modello selezionato non supporta gli allegati immagine."
+  uk: "Вибрана модель не підтримує вкладення зображень."
+  ja: "選択したモデルは画像の添付に対応していません。"
+  zh-Hans: "所选模型不支持图片附件。"
+
+"[image]":
+  es: "[imagen]"
+  pt: "[imagem]"
+  fr: "[image]"
+  de: "[Bild]"
+  it: "[immagine]"
+  uk: "[зображення]"
+  ja: "[画像]"
+  zh-Hans: "[图片]"
+
+"[file]":
+  es: "[archivo]"
+  pt: "[arquivo]"
+  fr: "[fichier]"
+  de: "[Datei]"
+  it: "[file]"
+  uk: "[файл]"
+  ja: "[ファイル]"
+  zh-Hans: "[文件]"
+
+" · loading…":
+  es: " · cargando…"
+  pt: " · carregando…"
+  fr: " · chargement…"
+  de: " · wird geladen…"
+  it: " · caricamento…"
+  uk: " · завантаження…"
+  ja: " · 読み込み中…"
+  zh-Hans: " · 正在加载…"
+
+"Local Agent session started.":
+  es: "Sesión de Local Agent iniciada."
+  pt: "Sessão do Local Agent iniciada."
+  fr: "Session Local Agent démarrée."
+  de: "Local Agent-Sitzung gestartet."
+  it: "Sessione di Local Agent avviata."
+  uk: "Сеанс Local Agent розпочато."
+  ja: "Local Agent のセッションを開始しました。"
+  zh-Hans: "Local Agent 会话已开始。"
+
+"Local Agent is working on your request.":
+  es: "Local Agent está trabajando en tu solicitud."
+  pt: "O Local Agent está trabalhando na sua solicitação."
+  fr: "Local Agent traite votre demande."
+  de: "Local Agent bearbeitet Ihre Anfrage."
+  it: "Local Agent sta elaborando la tua richiesta."
+  uk: "Local Agent працює над вашим запитом."
+  ja: "Local Agent がリクエストを処理しています。"
+  zh-Hans: "Local Agent 正在处理你的请求。"
+
+"Local Agent completed your request.":
+  es: "Local Agent completó tu solicitud."
+  pt: "O Local Agent concluiu sua solicitação."
+  fr: "Local Agent a terminé votre demande."
+  de: "Local Agent hat Ihre Anfrage abgeschlossen."
+  it: "Local Agent ha completato la tua richiesta."
+  uk: "Local Agent виконав ваш запит."
+  ja: "Local Agent がリクエストを完了しました。"
+  zh-Hans: "Local Agent 已完成你的请求。"
+
+"Local Agent encountered an error.":
+  es: "Local Agent encontró un error."
+  pt: "O Local Agent encontrou um erro."
+  fr: "Local Agent a rencontré une erreur."
+  de: "Bei Local Agent ist ein Fehler aufgetreten."
+  it: "Local Agent ha riscontrato un errore."
+  uk: "Local Agent виявив помилку."
+  ja: "Local Agent でエラーが発生しました。"
+  zh-Hans: "Local Agent 遇到错误。"
+
+"Local Agent was cancelled.":
+  es: "Local Agent se canceló."
+  pt: "O Local Agent foi cancelado."
+  fr: "Local Agent a été annulé."
+  de: "Local Agent wurde abgebrochen."
+  it: "Local Agent è stato annullato."
+  uk: "Local Agent скасовано."
+  ja: "Local Agent はキャンセルされました。"
+  zh-Hans: "Local Agent 已取消。"
+
+"Local Agent is waiting for your input.":
+  es: "Local Agent está esperando tu respuesta."
+  pt: "O Local Agent está aguardando sua resposta."
+  fr: "Local Agent attend votre réponse."
+  de: "Local Agent wartet auf Ihre Eingabe."
+  it: "Local Agent è in attesa del tuo input."
+  uk: "Local Agent чекає на вашу відповідь."
+  ja: "Local Agent が入力を待っています。"
+  zh-Hans: "Local Agent 正在等待你的输入。"
+
+"Local Agent is reconnecting.":
+  es: "Local Agent se está reconectando."
+  pt: "O Local Agent está se reconectando."
+  fr: "Local Agent se reconnecte."
+  de: "Local Agent stellt die Verbindung wieder her."
+  it: "Local Agent si sta riconnettendo."
+  uk: "Local Agent перепідключається."
+  ja: "Local Agent が再接続しています。"
+  zh-Hans: "Local Agent 正在重新连接。"
+
+"Local Agent is waiting for events.":
+  es: "Local Agent está esperando eventos."
+  pt: "O Local Agent está aguardando eventos."
+  fr: "Local Agent attend des événements."
+  de: "Local Agent wartet auf Ereignisse."
+  it: "Local Agent è in attesa di eventi."
+  uk: "Local Agent чекає на події."
+  ja: "Local Agent がイベントを待っています。"
+  zh-Hans: "Local Agent 正在等待事件。"
+
+"The task was cancelled before completion.":
+  es: "La tarea se canceló antes de completarse."
+  pt: "A tarefa foi cancelada antes de ser concluída."
+  fr: "La tâche a été annulée avant la fin."
+  de: "Die Aufgabe wurde vor dem Abschluss abgebrochen."
+  it: "L'attività è stata annullata prima del completamento."
+  uk: "Завдання скасовано до завершення."
+  ja: "タスクは完了前にキャンセルされました。"
+  zh-Hans: "任务在完成前已取消。"
+
+"Loading conversations…":
+  es: "Cargando conversaciones…"
+  pt: "Carregando conversas…"
+  fr: "Chargement des conversations…"
+  de: "Unterhaltungen werden geladen…"
+  it: "Caricamento delle conversazioni…"
+  uk: "Завантаження розмов…"
+  ja: "会話を読み込み中…"
+  zh-Hans: "正在加载对话…"
+
+"No conversations found":
+  es: "No se encontraron conversaciones"
+  pt: "Nenhuma conversa encontrada"
+  fr: "Aucune conversation trouvée"
+  de: "Keine Unterhaltungen gefunden"
+  it: "Nessuna conversazione trovata"
+  uk: "Розмов не знайдено"
+  ja: "会話が見つかりません"
+  zh-Hans: "未找到对话"
+
+"Conversations":
+  es: "Conversaciones"
+  pt: "Conversas"
+  fr: "Conversations"
+  de: "Unterhaltungen"
+  it: "Conversazioni"
+  uk: "Розмови"
+  ja: "会話"
+  zh-Hans: "对话"
+
+"… {count} lines":
+  es: "… {count} líneas"
+  pt: "… {count} linhas"
+  fr: "… {count} lignes"
+  de: "… {count} Zeilen"
+  it: "… {count} righe"
+  uk: "… рядків: {count}"
+  ja: "… {count} 行"
+  zh-Hans: "… {count} 行"
+
+"{key}  to use agent":
+  es: "{key}  para usar el agente"
+  pt: "{key}  para usar o agente"
+  fr: "{key}  pour utiliser l'agent"
+  de: "{key}  um den Agenten zu verwenden"
+  it: "{key}  per usare l'agente"
+  uk: "{key}  щоб скористатися агентом"
+  ja: "{key}  でエージェントを使用"
+  zh-Hans: "{key}  使用智能体"
+
+"The MCP installation flow is no longer active":
+  es: "El flujo de instalación de MCP ya no está activo"
+  pt: "O fluxo de instalação do MCP não está mais ativo"
+  fr: "Le processus d'installation MCP n'est plus actif"
+  de: "Der MCP-Installationsablauf ist nicht mehr aktiv"
+  it: "Il flusso di installazione MCP non è più attivo"
+  uk: "Процес встановлення MCP більше не активний"
+  ja: "MCP のインストールフローは終了しています"
+  zh-Hans: "MCP 安装流程已不再活动"
+
+"The MCP installation flow is not collecting a variable":
+  es: "El flujo de instalación de MCP no está solicitando una variable"
+  pt: "O fluxo de instalação do MCP não está coletando uma variável"
+  fr: "Le processus d'installation MCP ne demande pas de variable"
+  de: "Der MCP-Installationsablauf fragt gerade keine Variable ab"
+  it: "Il flusso di installazione MCP non sta raccogliendo una variabile"
+  uk: "Процес встановлення MCP зараз не запитує змінну"
+  ja: "MCP のインストールフローは変数の入力待ちではありません"
+  zh-Hans: "MCP 安装流程当前未在收集变量"
+
+"The MCP variable is no longer available":
+  es: "La variable de MCP ya no está disponible"
+  pt: "A variável do MCP não está mais disponível"
+  fr: "La variable MCP n'est plus disponible"
+  de: "Die MCP-Variable ist nicht mehr verfügbar"
+  it: "La variabile MCP non è più disponibile"
+  uk: "Змінна MCP більше не доступна"
+  ja: "MCP 変数は利用できなくなりました"
+  zh-Hans: "MCP 变量已不可用"
+
+"Enter a value for the required MCP variable":
+  es: "Introduce un valor para la variable de MCP obligatoria"
+  pt: "Insira um valor para a variável obrigatória do MCP"
+  fr: "Saisissez une valeur pour la variable MCP requise"
+  de: "Geben Sie einen Wert für die erforderliche MCP-Variable ein"
+  it: "Inserisci un valore per la variabile MCP obbligatoria"
+  uk: "Введіть значення обов'язкової змінної MCP"
+  ja: "必須の MCP 変数の値を入力してください"
+  zh-Hans: "请输入必需 MCP 变量的值"
+
+"Select one of the listed values":
+  es: "Selecciona uno de los valores de la lista"
+  pt: "Selecione um dos valores listados"
+  fr: "Sélectionnez l'une des valeurs proposées"
+  de: "Wählen Sie einen der aufgeführten Werte"
+  it: "Seleziona uno dei valori elencati"
+  uk: "Виберіть одне зі значень зі списку"
+  ja: "一覧の値から選択してください"
+  zh-Hans: "请选择列出的值之一"
+
+"to install and enable":
+  es: "para instalar y activar"
+  pt: "para instalar e ativar"
+  fr: "pour installer et activer"
+  de: "zum Installieren und Aktivieren"
+  it: "per installare e attivare"
+  uk: "щоб встановити й увімкнути"
+  ja: "でインストールして有効化"
+  zh-Hans: "安装并启用"
+
+"to continue":
+  es: "para continuar"
+  pt: "para continuar"
+  fr: "pour continuer"
+  de: "zum Fortfahren"
+  it: "per continuare"
+  uk: "щоб продовжити"
+  ja: "で続行"
+  zh-Hans: "继续"
+
+"Enter value…":
+  es: "Introduce un valor…"
+  pt: "Insira um valor…"
+  fr: "Saisissez une valeur…"
+  de: "Wert eingeben…"
+  it: "Inserisci un valore…"
+  uk: "Введіть значення…"
+  ja: "値を入力…"
+  zh-Hans: "输入值…"
+
+"Install and enable {name}":
+  es: "Instalar y activar {name}"
+  pt: "Instalar e ativar {name}"
+  fr: "Installer et activer {name}"
+  de: "{name} installieren und aktivieren"
+  it: "Installa e attiva {name}"
+  uk: "Встановити й увімкнути {name}"
+  ja: "{name} をインストールして有効化"
+  zh-Hans: "安装并启用 {name}"
+
+"Enter a value for {name} ({position}/{total})":
+  es: "Introduce un valor para {name} ({position}/{total})"
+  pt: "Insira um valor para {name} ({position}/{total})"
+  fr: "Saisissez une valeur pour {name} ({position}/{total})"
+  de: "Wert für {name} eingeben ({position}/{total})"
+  it: "Inserisci un valore per {name} ({position}/{total})"
+  uk: "Введіть значення для {name} ({position}/{total})"
+  ja: "{name} の値を入力してください ({position}/{total})"
+  zh-Hans: "请输入 {name} 的值（{position}/{total}）"
+
+"Search MCP servers…":
+  es: "Buscar servidores MCP…"
+  pt: "Pesquisar servidores MCP…"
+  fr: "Rechercher des serveurs MCP…"
+  de: "MCP-Server durchsuchen…"
+  it: "Cerca server MCP…"
+  uk: "Пошук серверів MCP…"
+  ja: "MCP サーバーを検索…"
+  zh-Hans: "搜索 MCP 服务器…"
+
+"No matching MCP servers":
+  es: "No hay servidores MCP que coincidan"
+  pt: "Nenhum servidor MCP correspondente"
+  fr: "Aucun serveur MCP correspondant"
+  de: "Keine passenden MCP-Server"
+  it: "Nessun server MCP corrispondente"
+  uk: "Немає відповідних серверів MCP"
+  ja: "一致する MCP サーバーはありません"
+  zh-Hans: "没有匹配的 MCP 服务器"
+
+"No MCP servers available":
+  es: "No hay servidores MCP disponibles"
+  pt: "Nenhum servidor MCP disponível"
+  fr: "Aucun serveur MCP disponible"
+  de: "Keine MCP-Server verfügbar"
+  it: "Nessun server MCP disponibile"
+  uk: "Немає доступних серверів MCP"
+  ja: "利用可能な MCP サーバーはありません"
+  zh-Hans: "没有可用的 MCP 服务器"
+
+"{provider} config error":
+  es: "Error de configuración de {provider}"
+  pt: "Erro de configuração do {provider}"
+  fr: "Erreur de configuration {provider}"
+  de: "{provider}-Konfigurationsfehler"
+  it: "Errore di configurazione di {provider}"
+  uk: "Помилка конфігурації {provider}"
+  ja: "{provider} の設定エラー"
+  zh-Hans: "{provider} 配置错误"
+
+"available":
+  es: "disponible"
+  pt: "disponível"
+  fr: "disponible"
+  de: "verfügbar"
+  it: "disponibile"
+  uk: "доступний"
+  ja: "利用可能"
+  zh-Hans: "可用"
+
+"offline":
+  es: "sin conexión"
+  pt: "offline"
+  fr: "hors ligne"
+  de: "offline"
+  it: "offline"
+  uk: "офлайн"
+  ja: "オフライン"
+  zh-Hans: "离线"
+
+"starting…":
+  es: "iniciando…"
+  pt: "iniciando…"
+  fr: "démarrage…"
+  de: "wird gestartet…"
+  it: "avvio…"
+  uk: "запуск…"
+  ja: "起動中…"
+  zh-Hans: "正在启动…"
+
+"authentication required":
+  es: "se requiere autenticación"
+  pt: "autenticação necessária"
+  fr: "authentification requise"
+  de: "Authentifizierung erforderlich"
+  it: "autenticazione richiesta"
+  uk: "потрібна автентифікація"
+  ja: "認証が必要"
+  zh-Hans: "需要身份验证"
+
+"running · {count} tools":
+  es: "en ejecución · {count} herramientas"
+  pt: "em execução · {count} ferramentas"
+  fr: "en cours · {count} outils"
+  de: "läuft · {count} Tools"
+  it: "in esecuzione · {count} strumenti"
+  uk: "працює · інструментів: {count}"
+  ja: "実行中 · ツール {count} 個"
+  zh-Hans: "运行中 · {count} 个工具"
+
+"stopping…":
+  es: "deteniendo…"
+  pt: "parando…"
+  fr: "arrêt…"
+  de: "wird beendet…"
+  it: "arresto…"
+  uk: "зупинка…"
+  ja: "停止中…"
+  zh-Hans: "正在停止…"
+
+"failed · {message}":
+  es: "error · {message}"
+  pt: "falhou · {message}"
+  fr: "échec · {message}"
+  de: "fehlgeschlagen · {message}"
+  it: "non riuscito · {message}"
+  uk: "помилка · {message}"
+  ja: "失敗 · {message}"
+  zh-Hans: "失败 · {message}"
+
+"No models found":
+  es: "No se encontraron modelos"
+  pt: "Nenhum modelo encontrado"
+  fr: "Aucun modèle trouvé"
+  de: "Keine Modelle gefunden"
+  it: "Nessun modello trovato"
+  uk: "Моделей не знайдено"
+  ja: "モデルが見つかりません"
+  zh-Hans: "未找到模型"
+
+"(default)":
+  es: "(predeterminado)"
+  pt: "(padrão)"
+  fr: "(par défaut)"
+  de: "(Standard)"
+  it: "(predefinito)"
+  uk: "(типова)"
+  ja: "(デフォルト)"
+  zh-Hans: "（默认）"
+
+"disabled":
+  es: "desactivado"
+  pt: "desativado"
+  fr: "désactivé"
+  de: "deaktiviert"
+  it: "disattivato"
+  uk: "вимкнено"
+  ja: "無効"
+  zh-Hans: "已禁用"
+
+"{percentage}% off":
+  es: "{percentage}% de descuento"
+  pt: "{percentage}% de desconto"
+  fr: "-{percentage} %"
+  de: "{percentage} % Rabatt"
+  it: "{percentage}% di sconto"
+  uk: "знижка {percentage}%"
+  ja: "{percentage}% オフ"
+  zh-Hans: "{percentage}% 折扣"
+
+"recommended":
+  es: "recomendado"
+  pt: "recomendado"
+  fr: "recommandé"
+  de: "empfohlen"
+  it: "consigliato"
+  uk: "рекомендовано"
+  ja: "おすすめ"
+  zh-Hans: "推荐"
+
+"No matches":
+  es: "Sin coincidencias"
+  pt: "Nenhuma correspondência"
+  fr: "Aucun résultat"
+  de: "Keine Treffer"
+  it: "Nessuna corrispondenza"
+  uk: "Немає збігів"
+  ja: "一致する項目はありません"
+  zh-Hans: "无匹配项"
+
+"No history":
+  es: "Sin historial"
+  pt: "Sem histórico"
+  fr: "Aucun historique"
+  de: "Kein Verlauf"
+  it: "Nessuna cronologia"
+  uk: "Історія порожня"
+  ja: "履歴はありません"
+  zh-Hans: "暂无历史记录"
+
+"No matching history":
+  es: "No hay historial que coincida"
+  pt: "Nenhum histórico correspondente"
+  fr: "Aucun historique correspondant"
+  de: "Kein passender Verlauf"
+  it: "Nessuna voce corrispondente nella cronologia"
+  uk: "Немає відповідних записів в історії"
+  ja: "一致する履歴はありません"
+  zh-Hans: "没有匹配的历史记录"
+
+"History":
+  es: "Historial"
+  pt: "Histórico"
+  fr: "Historique"
+  de: "Verlauf"
+  it: "Cronologia"
+  uk: "Історія"
+  ja: "履歴"
+  zh-Hans: "历史记录"
+
+"To continue this conversation, run:":
+  es: "Para continuar esta conversación, ejecuta:"
+  pt: "Para continuar esta conversa, execute:"
+  fr: "Pour poursuivre cette conversation, exécutez :"
+  de: "Um diese Unterhaltung fortzusetzen, führen Sie Folgendes aus:"
+  it: "Per continuare questa conversazione, esegui:"
+  uk: "Щоб продовжити цю розмову, виконайте:"
+  ja: "この会話を続けるには、次を実行してください:"
+  zh-Hans: "要继续此对话，请运行："
+
+"Skills":
+  es: "Habilidades"
+  pt: "Habilidades"
+  fr: "Compétences"
+  de: "Skills"
+  it: "Skill"
+  uk: "Навички"
+  ja: "スキル"
+  zh-Hans: "技能"
+
+"No skills found":
+  es: "No se encontraron habilidades"
+  pt: "Nenhuma habilidade encontrada"
+  fr: "Aucune compétence trouvée"
+  de: "Keine Skills gefunden"
+  it: "Nessuna skill trovata"
+  uk: "Навичок не знайдено"
+  ja: "スキルが見つかりません"
+  zh-Hans: "未找到技能"
+
+"Loading slash commands…":
+  es: "Cargando comandos de barra…"
+  pt: "Carregando comandos de barra…"
+  fr: "Chargement des commandes slash…"
+  de: "Slash-Befehle werden geladen…"
+  it: "Caricamento dei comandi slash…"
+  uk: "Завантаження слеш-команд…"
+  ja: "スラッシュコマンドを読み込み中…"
+  zh-Hans: "正在加载斜杠命令…"
+
+"No slash commands found":
+  es: "No se encontraron comandos de barra"
+  pt: "Nenhum comando de barra encontrado"
+  fr: "Aucune commande slash trouvée"
+  de: "Keine Slash-Befehle gefunden"
+  it: "Nessun comando slash trovato"
+  uk: "Слеш-команд не знайдено"
+  ja: "スラッシュコマンドが見つかりません"
+  zh-Hans: "未找到斜杠命令"
+
+"(currently auto: {theme})":
+  es: "(actualmente automático: {theme})"
+  pt: "(atualmente automático: {theme})"
+  fr: "(actuellement automatique : {theme})"
+  de: "(derzeit automatisch: {theme})"
+  it: "(attualmente automatico: {theme})"
+  uk: "(зараз автоматично: {theme})"
+  ja: "(現在は自動: {theme})"
+  zh-Hans: "（当前为自动：{theme}）"
+
+"(currently {state})":
+  es: "(actualmente {state})"
+  pt: "(atualmente {state})"
+  fr: "(actuellement {state})"
+  de: "(derzeit {state})"
+  it: "(attualmente {state})"
+  uk: "(зараз {state})"
+  ja: "(現在: {state})"
+  zh-Hans: "（当前：{state}）"
+
+"(currently on)":
+  es: "(actualmente activado)"
+  pt: "(atualmente ativado)"
+  fr: "(actuellement activé)"
+  de: "(derzeit an)"
+  it: "(attualmente attivo)"
+  uk: "(зараз увімкнено)"
+  ja: "(現在オン)"
+  zh-Hans: "（当前已开启）"
+
+"(currently off)":
+  es: "(actualmente desactivado)"
+  pt: "(atualmente desativado)"
+  fr: "(actuellement désactivé)"
+  de: "(derzeit aus)"
+  it: "(attualmente disattivo)"
+  uk: "(зараз вимкнено)"
+  ja: "(現在オフ)"
+  zh-Hans: "（当前已关闭）"
+
+"to toggle  ":
+  es: "para alternar  "
+  pt: "para alternar  "
+  fr: "pour basculer  "
+  de: "zum Umschalten  "
+  it: "per attivare/disattivare  "
+  uk: "щоб перемкнути  "
+  ja: "で切り替え  "
+  zh-Hans: "切换"
+
+"to save and close  ":
+  es: "para guardar y cerrar  "
+  pt: "para salvar e fechar  "
+  fr: "pour enregistrer et fermer  "
+  de: "zum Speichern und Schließen  "
+  it: "per salvare e chiudere  "
+  uk: "щоб зберегти й закрити  "
+  ja: "で保存して閉じる  "
+  zh-Hans: "保存并关闭"
+
+"to reorder":
+  es: "para reordenar"
+  pt: "para reordenar"
+  fr: "pour réorganiser"
+  de: "zum Neuordnen"
+  it: "per riordinare"
+  uk: "щоб змінити порядок"
+  ja: "で並べ替え"
+  zh-Hans: "重新排序"
+
+"Configure statusline":
+  es: "Configurar la barra de estado"
+  pt: "Configurar a barra de status"
+  fr: "Configurer la barre d'état"
+  de: "Statuszeile konfigurieren"
+  it: "Configura la barra di stato"
+  uk: "Налаштувати рядок стану"
+  ja: "ステータスラインを設定"
+  zh-Hans: "配置状态栏"
+
+"Teams":
+  es: "Equipos"
+  pt: "Equipes"
+  fr: "Équipes"
+  de: "Teams"
+  it: "Team"
+  uk: "Команди"
+  ja: "チーム"
+  zh-Hans: "团队"
+
+"No teams found":
+  es: "No se encontraron equipos"
+  pt: "Nenhuma equipe encontrada"
+  fr: "Aucune équipe trouvée"
+  de: "Keine Teams gefunden"
+  it: "Nessun team trovato"
+  uk: "Команд не знайдено"
+  ja: "チームが見つかりません"
+  zh-Hans: "未找到团队"
+
+"(active)":
+  es: "(activo)"
+  pt: "(ativa)"
+  fr: "(active)"
+  de: "(aktiv)"
+  it: "(attivo)"
+  uk: "(активна)"
+  ja: "(アクティブ)"
+  zh-Hans: "（当前）"
+
+" to cancel":
+  es: " para cancelar"
+  pt: " para cancelar"
+  fr: " pour annuler"
+  de: " zum Abbrechen"
+  it: " per annullare"
+  uk: " щоб скасувати"
+  ja: " でキャンセル"
+  zh-Hans: " 取消"
+
+"Log bundle saved to {path}":
+  es: "Paquete de registros guardado en {path}"
+  pt: "Pacote de logs salvo em {path}"
+  fr: "Archive des journaux enregistrée dans {path}"
+  de: "Log-Paket gespeichert unter {path}"
+  it: "Pacchetto di log salvato in {path}"
+  uk: "Пакет журналів збережено в {path}"
+  ja: "ログバンドルを {path} に保存しました"
+  zh-Hans: "日志包已保存到 {path}"
+
+"to start":
+  es: "para iniciar"
+  pt: "para iniciar"
+  fr: "pour démarrer"
+  de: "zum Starten"
+  it: "per avviare"
+  uk: "щоб запустити"
+  ja: "で起動"
+  zh-Hans: "启动"
+
+"to stop":
+  es: "para detener"
+  pt: "para parar"
+  fr: "pour arrêter"
+  de: "zum Beenden"
+  it: "per arrestare"
+  uk: "щоб зупинити"
+  ja: "で停止"
+  zh-Hans: "停止"
+
+"to retry":
+  es: "para reintentar"
+  pt: "para tentar novamente"
+  fr: "pour réessayer"
+  de: "zum Wiederholen"
+  it: "per riprovare"
+  uk: "щоб повторити"
+  ja: "で再試行"
+  zh-Hans: "重试"
+
+"to authenticate":
+  es: "para autenticarte"
+  pt: "para autenticar"
+  fr: "pour vous authentifier"
+  de: "zum Authentifizieren"
+  it: "per autenticarti"
+  uk: "щоб автентифікуватися"
+  ja: "で認証"
+  zh-Hans: "进行身份验证"
+
+" to log out & remove credentials  ":
+  es: " para cerrar sesión y quitar las credenciales  "
+  pt: " para sair e remover as credenciais  "
+  fr: " pour vous déconnecter et supprimer les identifiants  "
+  de: " zum Abmelden und Entfernen der Anmeldedaten  "
+  it: " per disconnetterti e rimuovere le credenziali  "
+  uk: " щоб вийти й видалити облікові дані  "
+  ja: " でログアウトして認証情報を削除  "
+  zh-Hans: " 退出并移除凭据"
+
+" to close":
+  es: " para cerrar"
+  pt: " para fechar"
+  fr: " pour fermer"
+  de: " zum Schließen"
+  it: " per chiudere"
+  uk: " щоб закрити"
+  ja: " で閉じる"
+  zh-Hans: " 关闭"
+
+"Conversation exported to {path} (overwrote existing file)":
+  es: "Conversación exportada a {path} (se sobrescribió el archivo existente)"
+  pt: "Conversa exportada para {path} (arquivo existente substituído)"
+  fr: "Conversation exportée vers {path} (fichier existant remplacé)"
+  de: "Unterhaltung nach {path} exportiert (vorhandene Datei überschrieben)"
+  it: "Conversazione esportata in {path} (file esistente sovrascritto)"
+  uk: "Розмову експортовано до {path} (наявний файл перезаписано)"
+  ja: "会話を {path} にエクスポートしました (既存のファイルを上書き)"
+  zh-Hans: "对话已导出到 {path}（已覆盖现有文件）"
+
+"Conversation exported to {path}":
+  es: "Conversación exportada a {path}"
+  pt: "Conversa exportada para {path}"
+  fr: "Conversation exportée vers {path}"
+  de: "Unterhaltung nach {path} exportiert"
+  it: "Conversazione esportata in {path}"
+  uk: "Розмову експортовано до {path}"
+  ja: "会話を {path} にエクスポートしました"
+  zh-Hans: "对话已导出到 {path}"
+
+"{name} installed and starting":
+  es: "{name} instalado e iniciándose"
+  pt: "{name} instalado e iniciando"
+  fr: "{name} installé, démarrage en cours"
+  de: "{name} installiert und wird gestartet"
+  it: "{name} installato e in avvio"
+  uk: "{name} встановлено, запуск"
+  ja: "{name} をインストールし、起動しています"
+  zh-Hans: "{name} 已安装，正在启动"
+
+"Termloc TUI only supports Local Agent conversations.":
+  es: "Termloc TUI solo admite conversaciones de Local Agent."
+  pt: "O Termloc TUI só suporta conversas do Local Agent."
+  fr: "Termloc TUI ne prend en charge que les conversations Local Agent."
+  de: "Termloc TUI unterstützt nur Local Agent-Unterhaltungen."
+  it: "Termloc TUI supporta solo le conversazioni di Local Agent."
+  uk: "Termloc TUI підтримує лише розмови Local Agent."
+  ja: "Termloc TUI は Local Agent の会話のみに対応しています。"
+  zh-Hans: "Termloc TUI 仅支持 Local Agent 对话。"
+
+"The conversation could not be loaded.":
+  es: "No se pudo cargar la conversación."
+  pt: "Não foi possível carregar a conversa."
+  fr: "Impossible de charger la conversation."
+  de: "Die Unterhaltung konnte nicht geladen werden."
+  it: "Impossibile caricare la conversazione."
+  uk: "Не вдалося завантажити розмову."
+  ja: "会話を読み込めませんでした。"
+  zh-Hans: "无法加载对话。"
+
+"The restored conversation did not match the requested conversation.":
+  es: "La conversación restaurada no coincide con la solicitada."
+  pt: "A conversa restaurada não corresponde à conversa solicitada."
+  fr: "La conversation restaurée ne correspond pas à celle demandée."
+  de: "Die wiederhergestellte Unterhaltung entspricht nicht der angeforderten."
+  it: "La conversazione ripristinata non corrisponde a quella richiesta."
+  uk: "Відновлена розмова не відповідає запитаній."
+  ja: "復元された会話がリクエストされた会話と一致しません。"
+  zh-Hans: "恢复的对话与请求的对话不匹配。"
+
+"▶▶ Auto approve on":
+  es: "▶▶ Aprobación automática activada"
+  pt: "▶▶ Aprovação automática ativada"
+  fr: "▶▶ Approbation automatique activée"
+  de: "▶▶ Automatische Genehmigung an"
+  it: "▶▶ Approvazione automatica attiva"
+  uk: "▶▶ Автосхвалення увімкнено"
+  ja: "▶▶ 自動承認オン"
+  zh-Hans: "▶▶ 自动批准已开启"
+
+"▶▶ Auto approve off":
+  es: "▶▶ Aprobación automática desactivada"
+  pt: "▶▶ Aprovação automática desativada"
+  fr: "▶▶ Approbation automatique désactivée"
+  de: "▶▶ Automatische Genehmigung aus"
+  it: "▶▶ Approvazione automatica disattiva"
+  uk: "▶▶ Автосхвалення вимкнено"
+  ja: "▶▶ 自動承認オフ"
+  zh-Hans: "▶▶ 自动批准已关闭"
+
+"Voice input cancelled":
+  es: "Entrada de voz cancelada"
+  pt: "Entrada de voz cancelada"
+  fr: "Saisie vocale annulée"
+  de: "Spracheingabe abgebrochen"
+  it: "Input vocale annullato"
+  uk: "Голосове введення скасовано"
+  ja: "音声入力をキャンセルしました"
+  zh-Hans: "语音输入已取消"
+
+"Unable to open the MCP installation flow":
+  es: "No se pudo abrir el flujo de instalación de MCP"
+  pt: "Não foi possível abrir o fluxo de instalação do MCP"
+  fr: "Impossible d'ouvrir le processus d'installation MCP"
+  de: "Der MCP-Installationsablauf konnte nicht geöffnet werden"
+  it: "Impossibile aprire il flusso di installazione MCP"
+  uk: "Не вдалося відкрити процес встановлення MCP"
+  ja: "MCP のインストールフローを開けませんでした"
+  zh-Hans: "无法打开 MCP 安装流程"
+
+"Forked conversation. To resume the original in another session, run: {resume_command}":
+  es: "Conversación bifurcada. Para reanudar la original en otra sesión, ejecuta: {resume_command}"
+  pt: "Conversa bifurcada. Para retomar a original em outra sessão, execute: {resume_command}"
+  fr: "Conversation dupliquée. Pour reprendre l'originale dans une autre session, exécutez : {resume_command}"
+  de: "Unterhaltung abgezweigt. Um das Original in einer anderen Sitzung fortzusetzen, führen Sie aus: {resume_command}"
+  it: "Conversazione duplicata. Per riprendere l'originale in un'altra sessione, esegui: {resume_command}"
+  uk: "Розмову розгалужено. Щоб відновити оригінал в іншому сеансі, виконайте: {resume_command}"
+  ja: "会話をフォークしました。元の会話を別のセッションで再開するには、次を実行してください: {resume_command}"
+  zh-Hans: "已分叉对话。要在另一个会话中恢复原对话，请运行：{resume_command}"
+
+"Please describe the project you want to create after /create-new-project":
+  es: "Describe el proyecto que quieres crear después de /create-new-project"
+  pt: "Descreva o projeto que você quer criar após /create-new-project"
+  fr: "Décrivez le projet à créer après /create-new-project"
+  de: "Beschreiben Sie nach /create-new-project das Projekt, das Sie erstellen möchten"
+  it: "Descrivi il progetto che vuoi creare dopo /create-new-project"
+  uk: "Опишіть проєкт, який хочете створити, після /create-new-project"
+  ja: "/create-new-project の後に作成したいプロジェクトを入力してください"
+  zh-Hans: "请在 /create-new-project 后描述你要创建的项目"
+
+"Conversation copied to clipboard":
+  es: "Conversación copiada al portapapeles"
+  pt: "Conversa copiada para a área de transferência"
+  fr: "Conversation copiée dans le presse-papiers"
+  de: "Unterhaltung in die Zwischenablage kopiert"
+  it: "Conversazione copiata negli appunti"
+  uk: "Розмову скопійовано в буфер обміну"
+  ja: "会話をクリップボードにコピーしました"
+  zh-Hans: "对话已复制到剪贴板"
+
+"No active conversation to export":
+  es: "No hay una conversación activa para exportar"
+  pt: "Nenhuma conversa ativa para exportar"
+  fr: "Aucune conversation active à exporter"
+  de: "Keine aktive Unterhaltung zum Exportieren"
+  it: "Nessuna conversazione attiva da esportare"
+  uk: "Немає активної розмови для експорту"
+  ja: "エクスポートするアクティブな会話がありません"
+  zh-Hans: "没有可导出的活动对话"
+
+"Theme set to auto mode (currently {theme}).":
+  es: "Tema configurado en modo automático (actualmente {theme})."
+  pt: "Tema definido como automático (atualmente {theme})."
+  fr: "Thème défini sur le mode automatique (actuellement {theme})."
+  de: "Design auf automatischen Modus gesetzt (derzeit {theme})."
+  it: "Tema impostato sulla modalità automatica (attualmente {theme})."
+  uk: "Тему встановлено в автоматичний режим (зараз {theme})."
+  ja: "テーマを自動モードに設定しました (現在: {theme})。"
+  zh-Hans: "主题已设置为自动模式（当前：{theme}）。"
+
+"Theme set to {theme} mode.":
+  es: "Tema configurado en modo {theme}."
+  pt: "Tema definido como modo {theme}."
+  fr: "Thème défini sur le mode {theme}."
+  de: "Design auf {theme} gesetzt."
+  it: "Tema impostato sulla modalità {theme}."
+  uk: "Тему встановлено: {theme}."
+  ja: "テーマを{theme}モードに設定しました。"
+  zh-Hans: "主题已设置为{theme}模式。"
+
+"Summarizing conversation":
+  es: "Resumiendo la conversación"
+  pt: "Resumindo a conversa"
+  fr: "Résumé de la conversation en cours"
+  de: "Unterhaltung wird zusammengefasst"
+  it: "Riepilogo della conversazione in corso"
+  uk: "Підсумовування розмови"
+  ja: "会話を要約中"
+  zh-Hans: "正在总结对话"
+
+"interrupt command":
+  es: "interrumpir comando"
+  pt: "interromper comando"
+  fr: "interrompre la commande"
+  de: "Befehl unterbrechen"
+  it: "interrompi comando"
+  uk: "перервати команду"
+  ja: "コマンドを中断"
+  zh-Hans: "中断命令"
+
+"hand back control":
+  es: "devolver el control"
+  pt: "devolver o controle"
+  fr: "rendre le contrôle"
+  de: "Kontrolle zurückgeben"
+  it: "restituisci il controllo"
+  uk: "повернути керування"
+  ja: "操作を戻す"
+  zh-Hans: "交还控制权"
+
+"shortcuts":
+  es: "atajos"
+  pt: "atalhos"
+  fr: "raccourcis"
+  de: "Tastenkürzel"
+  it: "scorciatoie"
+  uk: "комбінації клавіш"
+  ja: "ショートカット"
+  zh-Hans: "快捷键"
+
+"commands":
+  es: "comandos"
+  pt: "comandos"
+  fr: "commandes"
+  de: "Befehle"
+  it: "comandi"
+  uk: "команди"
+  ja: "コマンド"
+  zh-Hans: "命令"
+
+"shell mode":
+  es: "modo shell"
+  pt: "modo shell"
+  fr: "mode shell"
+  de: "Shell-Modus"
+  it: "modalità shell"
+  uk: "режим оболонки"
+  ja: "シェルモード"
+  zh-Hans: "Shell 模式"
+
+"conversations":
+  es: "conversaciones"
+  pt: "conversas"
+  fr: "conversations"
+  de: "Unterhaltungen"
+  it: "conversazioni"
+  uk: "розмови"
+  ja: "会話"
+  zh-Hans: "对话"
+
+"agent mode":
+  es: "modo agente"
+  pt: "modo agente"
+  fr: "mode agent"
+  de: "Agentenmodus"
+  it: "modalità agente"
+  uk: "режим агента"
+  ja: "エージェントモード"
+  zh-Hans: "智能体模式"
+
+"input history":
+  es: "historial de entradas"
+  pt: "histórico de entradas"
+  fr: "historique des saisies"
+  de: "Eingabeverlauf"
+  it: "cronologia input"
+  uk: "історія введення"
+  ja: "入力履歴"
+  zh-Hans: "输入历史"
+
+"toggle auto-approve":
+  es: "alternar aprobación automática"
+  pt: "alternar aprovação automática"
+  fr: "activer/désactiver l'approbation automatique"
+  de: "automatische Genehmigung umschalten"
+  it: "attiva/disattiva approvazione automatica"
+  uk: "перемкнути автосхвалення"
+  ja: "自動承認を切り替え"
+  zh-Hans: "切换自动批准"
+
+"expand/collapse plans":
+  es: "expandir/contraer planes"
+  pt: "expandir/recolher planos"
+  fr: "développer/réduire les plans"
+  de: "Pläne ein-/ausklappen"
+  it: "espandi/comprimi piani"
+  uk: "розгорнути/згорнути плани"
+  ja: "プランを展開/折りたたむ"
+  zh-Hans: "展开/折叠计划"
+
+"Shortcuts":
+  es: "Atajos"
+  pt: "Atalhos"
+  fr: "Raccourcis"
+  de: "Tastenkürzel"
+  it: "Scorciatoie"
+  uk: "Комбінації клавіш"
+  ja: "ショートカット"
+  zh-Hans: "快捷键"
+
+"Terminal use":
+  es: "Uso del terminal"
+  pt: "Uso do terminal"
+  fr: "Utilisation du terminal"
+  de: "Terminalnutzung"
+  it: "Uso del terminale"
+  uk: "Використання термінала"
+  ja: "ターミナルの使用"
+  zh-Hans: "终端使用"
+
+"take control":
+  es: "tomar el control"
+  pt: "assumir o controle"
+  fr: "prendre le contrôle"
+  de: "Kontrolle übernehmen"
+  it: "prendi il controllo"
+  uk: "взяти керування"
+  ja: "操作を引き継ぐ"
+  zh-Hans: "接管控制"
+
+"return control to command":
+  es: "devolver el control al comando"
+  pt: "devolver o controle ao comando"
+  fr: "rendre le contrôle à la commande"
+  de: "Kontrolle an den Befehl zurückgeben"
+  it: "restituisci il controllo al comando"
+  uk: "повернути керування команді"
+  ja: "コマンドに操作を戻す"
+  zh-Hans: "将控制权交还给命令"
+
+"Version":
+  es: "Versión"
+  pt: "Versão"
+  fr: "Version"
+  de: "Version"
+  it: "Versione"
+  uk: "Версія"
+  ja: "バージョン"
+  zh-Hans: "版本"
+
+"Working directory":
+  es: "Directorio de trabajo"
+  pt: "Diretório de trabalho"
+  fr: "Répertoire de travail"
+  de: "Arbeitsverzeichnis"
+  it: "Directory di lavoro"
+  uk: "Робочий каталог"
+  ja: "作業ディレクトリ"
+  zh-Hans: "工作目录"
+
+"Org":
+  es: "Organización"
+  pt: "Organização"
+  fr: "Organisation"
+  de: "Organisation"
+  it: "Organizzazione"
+  uk: "Організація"
+  ja: "組織"
+  zh-Hans: "组织"
+
+"Email":
+  es: "Correo electrónico"
+  pt: "E-mail"
+  fr: "E-mail"
+  de: "E-Mail"
+  it: "Email"
+  uk: "Ел. пошта"
+  ja: "メール"
+  zh-Hans: "电子邮件"
+
+"context remaining":
+  es: "de contexto restante"
+  pt: "de contexto restante"
+  fr: "de contexte restant"
+  de: "Kontext verbleibend"
+  it: "di contesto rimanente"
+  uk: "контексту залишилось"
+  ja: "コンテキスト残り"
+  zh-Hans: "上下文剩余"
+
+"listening to voice input... · release key to stop":
+  es: "escuchando la entrada de voz... · suelta la tecla para detener"
+  pt: "ouvindo a entrada de voz... · solte a tecla para parar"
+  fr: "écoute de la saisie vocale... · relâchez la touche pour arrêter"
+  de: "Spracheingabe wird aufgenommen... · Taste loslassen zum Beenden"
+  it: "ascolto dell'input vocale... · rilascia il tasto per interrompere"
+  uk: "слухаю голосове введення... · відпустіть клавішу, щоб зупинити"
+  ja: "音声入力を聞き取り中... · キーを離すと停止"
+  zh-Hans: "正在听取语音输入... · 松开按键以停止"
+
+"listening to voice input... · esc or enter to stop":
+  es: "escuchando la entrada de voz... · esc o enter para detener"
+  pt: "ouvindo a entrada de voz... · esc ou enter para parar"
+  fr: "écoute de la saisie vocale... · esc ou entrée pour arrêter"
+  de: "Spracheingabe wird aufgenommen... · Esc oder Enter zum Beenden"
+  it: "ascolto dell'input vocale... · esc o invio per interrompere"
+  uk: "слухаю голосове введення... · esc або enter, щоб зупинити"
+  ja: "音声入力を聞き取り中... · esc または enter で停止"
+  zh-Hans: "正在听取语音输入... · 按 esc 或 enter 停止"
+
+"Transcribing... · esc to cancel":
+  es: "Transcribiendo... · esc para cancelar"
+  pt: "Transcrevendo... · esc para cancelar"
+  fr: "Transcription... · esc pour annuler"
+  de: "Wird transkribiert... · Esc zum Abbrechen"
+  it: "Trascrizione... · esc per annullare"
+  uk: "Транскрибування... · esc, щоб скасувати"
+  ja: "文字起こし中... · esc でキャンセル"
+  zh-Hans: "正在转写... · 按 esc 取消"
+
+"◉ Voice":
+  es: "◉ Voz"
+  pt: "◉ Voz"
+  fr: "◉ Voix"
+  de: "◉ Sprache"
+  it: "◉ Voce"
+  uk: "◉ Голос"
+  ja: "◉ 音声"
+  zh-Hans: "◉ 语音"
+
+"… Transcribing":
+  es: "… Transcribiendo"
+  pt: "… Transcrevendo"
+  fr: "… Transcription"
+  de: "… Wird transkribiert"
+  it: "… Trascrizione"
+  uk: "… Транскрибування"
+  ja: "… 文字起こし中"
+  zh-Hans: "… 正在转写"
+
+"Tasks {completed}/{total}":
+  es: "Tareas {completed}/{total}"
+  pt: "Tarefas {completed}/{total}"
+  fr: "Tâches {completed}/{total}"
+  de: "Aufgaben {completed}/{total}"
+  it: "Attività {completed}/{total}"
+  uk: "Завдання {completed}/{total}"
+  ja: "タスク {completed}/{total}"
+  zh-Hans: "任务 {completed}/{total}"
+
+"{label} (awaiting approval)":
+  es: "{label} (esperando aprobación)"
+  pt: "{label} (aguardando aprovação)"
+  fr: "{label} (en attente d'approbation)"
+  de: "{label} (wartet auf Genehmigung)"
+  it: "{label} (in attesa di approvazione)"
+  uk: "{label} (очікує схвалення)"
+  ja: "{label} (承認待ち)"
+  zh-Hans: "{label}（等待批准）"
+
+"Generating command…":
+  es: "Generando comando…"
+  pt: "Gerando comando…"
+  fr: "Génération de la commande…"
+  de: "Befehl wird generiert…"
+  it: "Generazione del comando…"
+  uk: "Створення команди…"
+  ja: "コマンドを生成中…"
+  zh-Hans: "正在生成命令…"
+
+"Run `{cmd}`":
+  es: "Ejecutar `{cmd}`"
+  pt: "Executar `{cmd}`"
+  fr: "Exécuter `{cmd}`"
+  de: "`{cmd}` ausführen"
+  it: "Esegui `{cmd}`"
+  uk: "Виконати `{cmd}`"
+  ja: "`{cmd}` を実行"
+  zh-Hans: "运行 `{cmd}`"
+
+"Running `{cmd}`":
+  es: "Ejecutando `{cmd}`"
+  pt: "Executando `{cmd}`"
+  fr: "Exécution de `{cmd}`"
+  de: "`{cmd}` wird ausgeführt"
+  it: "Esecuzione di `{cmd}`"
+  uk: "Виконується `{cmd}`"
+  ja: "`{cmd}` を実行中"
+  zh-Hans: "正在运行 `{cmd}`"
+
+"Ran `{cmd}`":
+  es: "Se ejecutó `{cmd}`"
+  pt: "`{cmd}` executado"
+  fr: "`{cmd}` exécuté"
+  de: "`{cmd}` ausgeführt"
+  it: "`{cmd}` eseguito"
+  uk: "Виконано `{cmd}`"
+  ja: "`{cmd}` を実行しました"
+  zh-Hans: "已运行 `{cmd}`"
+
+"`{cmd}` is still running":
+  es: "`{cmd}` sigue en ejecución"
+  pt: "`{cmd}` ainda está em execução"
+  fr: "`{cmd}` est toujours en cours d'exécution"
+  de: "`{cmd}` läuft noch"
+  it: "`{cmd}` è ancora in esecuzione"
+  uk: "`{cmd}` досі виконується"
+  ja: "`{cmd}` はまだ実行中です"
+  zh-Hans: "`{cmd}` 仍在运行"
+
+"`{cmd}` exited with code {code}":
+  es: "`{cmd}` terminó con el código {code}"
+  pt: "`{cmd}` saiu com o código {code}"
+  fr: "`{cmd}` s'est terminé avec le code {code}"
+  de: "`{cmd}` wurde mit Code {code} beendet"
+  it: "`{cmd}` è terminato con il codice {code}"
+  uk: "`{cmd}` завершився з кодом {code}"
+  ja: "`{cmd}` はコード {code} で終了しました"
+  zh-Hans: "`{cmd}` 已退出，代码 {code}"
+
+"`{cmd}` denied (denylisted)":
+  es: "`{cmd}` denegado (en la lista de bloqueo)"
+  pt: "`{cmd}` negado (na lista de bloqueio)"
+  fr: "`{cmd}` refusé (liste de blocage)"
+  de: "`{cmd}` abgelehnt (auf der Sperrliste)"
+  it: "`{cmd}` negato (nella lista di blocco)"
+  uk: "`{cmd}` відхилено (у списку заборонених)"
+  ja: "`{cmd}` は拒否されました (拒否リスト)"
+  zh-Hans: "`{cmd}` 已拒绝（在拒绝列表中）"
+
+"`{cmd}` not started (terminal busy)":
+  es: "`{cmd}` no se inició (terminal ocupado)"
+  pt: "`{cmd}` não iniciado (terminal ocupado)"
+  fr: "`{cmd}` non démarré (terminal occupé)"
+  de: "`{cmd}` nicht gestartet (Terminal belegt)"
+  it: "`{cmd}` non avviato (terminale occupato)"
+  uk: "`{cmd}` не запущено (термінал зайнятий)"
+  ja: "`{cmd}` は開始されませんでした (ターミナルが使用中)"
+  zh-Hans: "`{cmd}` 未启动（终端忙）"
+
+"`{cmd}` failed":
+  es: "`{cmd}` falló"
+  pt: "`{cmd}` falhou"
+  fr: "`{cmd}` a échoué"
+  de: "`{cmd}` fehlgeschlagen"
+  it: "`{cmd}` non riuscito"
+  uk: "`{cmd}` завершився помилкою"
+  ja: "`{cmd}` が失敗しました"
+  zh-Hans: "`{cmd}` 失败"
+
+"Cancelled `{cmd}`":
+  es: "Se canceló `{cmd}`"
+  pt: "`{cmd}` cancelado"
+  fr: "`{cmd}` annulé"
+  de: "`{cmd}` abgebrochen"
+  it: "`{cmd}` annullato"
+  uk: "Скасовано `{cmd}`"
+  ja: "`{cmd}` をキャンセルしました"
+  zh-Hans: "已取消 `{cmd}`"
+
+"Writing command input…":
+  es: "Escribiendo la entrada del comando…"
+  pt: "Escrevendo a entrada do comando…"
+  fr: "Écriture de l'entrée de la commande…"
+  de: "Befehlseingabe wird geschrieben…"
+  it: "Scrittura dell'input del comando…"
+  uk: "Запис введення команди…"
+  ja: "コマンド入力を書き込み中…"
+  zh-Hans: "正在写入命令输入…"
+
+"Write input to running command":
+  es: "Escribir entrada en el comando en ejecución"
+  pt: "Escrever entrada no comando em execução"
+  fr: "Écrire une entrée dans la commande en cours"
+  de: "Eingabe an laufenden Befehl senden"
+  it: "Scrivi input nel comando in esecuzione"
+  uk: "Записати введення в запущену команду"
+  ja: "実行中のコマンドに入力を書き込む"
+  zh-Hans: "向运行中的命令写入输入"
+
+"Writing input to running command…":
+  es: "Escribiendo entrada en el comando en ejecución…"
+  pt: "Escrevendo entrada no comando em execução…"
+  fr: "Écriture d'une entrée dans la commande en cours…"
+  de: "Eingabe wird an laufenden Befehl gesendet…"
+  it: "Scrittura dell'input nel comando in esecuzione…"
+  uk: "Запис введення в запущену команду…"
+  ja: "実行中のコマンドに入力を書き込み中…"
+  zh-Hans: "正在向运行中的命令写入输入…"
+
+"Wrote input to running command":
+  es: "Se escribió la entrada en el comando en ejecución"
+  pt: "Entrada escrita no comando em execução"
+  fr: "Entrée écrite dans la commande en cours"
+  de: "Eingabe an laufenden Befehl gesendet"
+  it: "Input scritto nel comando in esecuzione"
+  uk: "Введення записано в запущену команду"
+  ja: "実行中のコマンドに入力を書き込みました"
+  zh-Hans: "已向运行中的命令写入输入"
+
+"Failed to write to running command":
+  es: "No se pudo escribir en el comando en ejecución"
+  pt: "Falha ao escrever no comando em execução"
+  fr: "Impossible d'écrire dans la commande en cours"
+  de: "Schreiben an laufenden Befehl fehlgeschlagen"
+  it: "Impossibile scrivere nel comando in esecuzione"
+  uk: "Не вдалося записати в запущену команду"
+  ja: "実行中のコマンドへの書き込みに失敗しました"
+  zh-Hans: "无法写入运行中的命令"
+
+"Write to running command cancelled":
+  es: "Escritura en el comando en ejecución cancelada"
+  pt: "Escrita no comando em execução cancelada"
+  fr: "Écriture dans la commande en cours annulée"
+  de: "Schreiben an laufenden Befehl abgebrochen"
+  it: "Scrittura nel comando in esecuzione annullata"
+  uk: "Запис у запущену команду скасовано"
+  ja: "実行中のコマンドへの書き込みをキャンセルしました"
+  zh-Hans: "已取消向运行中的命令写入"
+
+"Reading files…":
+  es: "Leyendo archivos…"
+  pt: "Lendo arquivos…"
+  fr: "Lecture des fichiers…"
+  de: "Dateien werden gelesen…"
+  it: "Lettura dei file…"
+  uk: "Читання файлів…"
+  ja: "ファイルを読み込み中…"
+  zh-Hans: "正在读取文件…"
+
+"Read {files}":
+  es: "Leer {files}"
+  pt: "Ler {files}"
+  fr: "Lire {files}"
+  de: "{files} lesen"
+  it: "Leggi {files}"
+  uk: "Прочитати {files}"
+  ja: "{files} を読み込む"
+  zh-Hans: "读取 {files}"
+
+"Reading {files}":
+  es: "Leyendo {files}"
+  pt: "Lendo {files}"
+  fr: "Lecture de {files}"
+  de: "{files} wird gelesen"
+  it: "Lettura di {files}"
+  uk: "Читання {files}"
+  ja: "{files} を読み込み中"
+  zh-Hans: "正在读取 {files}"
+
+"Failed to read {files}":
+  es: "No se pudo leer {files}"
+  pt: "Falha ao ler {files}"
+  fr: "Impossible de lire {files}"
+  de: "{files} konnte nicht gelesen werden"
+  it: "Impossibile leggere {files}"
+  uk: "Не вдалося прочитати {files}"
+  ja: "{files} を読み込めませんでした"
+  zh-Hans: "无法读取 {files}"
+
+"Cancelled reading {files}":
+  es: "Se canceló la lectura de {files}"
+  pt: "Leitura de {files} cancelada"
+  fr: "Lecture de {files} annulée"
+  de: "Lesen von {files} abgebrochen"
+  it: "Lettura di {files} annullata"
+  uk: "Читання {files} скасовано"
+  ja: "{files} の読み込みをキャンセルしました"
+  zh-Hans: "已取消读取 {files}"
+
+"Searching codebase…":
+  es: "Buscando en el código…"
+  pt: "Pesquisando no código…"
+  fr: "Recherche dans le code…"
+  de: "Codebasis wird durchsucht…"
+  it: "Ricerca nel codice…"
+  uk: "Пошук у кодовій базі…"
+  ja: "コードベースを検索中…"
+  zh-Hans: "正在搜索代码库…"
+
+"Search for \"{query}\"{scope}":
+  es: "Buscar \"{query}\"{scope}"
+  pt: "Pesquisar \"{query}\"{scope}"
+  fr: "Rechercher « {query} »{scope}"
+  de: "Nach „{query}“ suchen{scope}"
+  it: "Cerca \"{query}\"{scope}"
+  uk: "Шукати «{query}»{scope}"
+  ja: "「{query}」を検索{scope}"
+  zh-Hans: "搜索“{query}”{scope}"
+
+"Searching for \"{query}\"{scope}":
+  es: "Buscando \"{query}\"{scope}"
+  pt: "Pesquisando \"{query}\"{scope}"
+  fr: "Recherche de « {query} »{scope}"
+  de: "Suche nach „{query}“{scope}"
+  it: "Ricerca di \"{query}\"{scope}"
+  uk: "Пошук «{query}»{scope}"
+  ja: "「{query}」を検索中{scope}"
+  zh-Hans: "正在搜索“{query}”{scope}"
+
+"Searched for \"{query}\"{scope}, no results":
+  es: "Se buscó \"{query}\"{scope}, sin resultados"
+  pt: "Pesquisa por \"{query}\"{scope}, nenhum resultado"
+  fr: "Recherche de « {query} »{scope}, aucun résultat"
+  de: "Nach „{query}“ gesucht{scope}, keine Ergebnisse"
+  it: "Cercato \"{query}\"{scope}, nessun risultato"
+  uk: "Пошук «{query}»{scope}, результатів немає"
+  ja: "「{query}」を検索しました{scope}、結果なし"
+  zh-Hans: "已搜索“{query}”{scope}，无结果"
+
+"Searched for \"{query}\"{scope}, {results}":
+  es: "Se buscó \"{query}\"{scope}, {results}"
+  pt: "Pesquisa por \"{query}\"{scope}, {results}"
+  fr: "Recherche de « {query} »{scope}, {results}"
+  de: "Nach „{query}“ gesucht{scope}, {results}"
+  it: "Cercato \"{query}\"{scope}, {results}"
+  uk: "Пошук «{query}»{scope}, {results}"
+  ja: "「{query}」を検索しました{scope}、{results}"
+  zh-Hans: "已搜索“{query}”{scope}，{results}"
+
+"Searched for \"{query}\"{scope}":
+  es: "Se buscó \"{query}\"{scope}"
+  pt: "Pesquisa por \"{query}\"{scope}"
+  fr: "Recherche de « {query} »{scope} effectuée"
+  de: "Nach „{query}“ gesucht{scope}"
+  it: "Cercato \"{query}\"{scope}"
+  uk: "Пошук «{query}»{scope} виконано"
+  ja: "「{query}」を検索しました{scope}"
+  zh-Hans: "已搜索“{query}”{scope}"
+
+"Search for \"{query}\"{scope} failed because the codebase isn't indexed":
+  es: "La búsqueda de \"{query}\"{scope} falló porque el código no está indexado"
+  pt: "A pesquisa por \"{query}\"{scope} falhou porque o código não está indexado"
+  fr: "La recherche de « {query} »{scope} a échoué, car le code n'est pas indexé"
+  de: "Suche nach „{query}“{scope} fehlgeschlagen, da die Codebasis nicht indiziert ist"
+  it: "Ricerca di \"{query}\"{scope} non riuscita perché il codice non è indicizzato"
+  uk: "Пошук «{query}»{scope} не вдався, бо кодову базу не проіндексовано"
+  ja: "コードベースがインデックスされていないため、「{query}」の検索{scope}に失敗しました"
+  zh-Hans: "搜索“{query}”{scope}失败，因为代码库尚未建立索引"
+
+"Search for \"{query}\"{scope} failed":
+  es: "La búsqueda de \"{query}\"{scope} falló"
+  pt: "A pesquisa por \"{query}\"{scope} falhou"
+  fr: "La recherche de « {query} »{scope} a échoué"
+  de: "Suche nach „{query}“{scope} fehlgeschlagen"
+  it: "Ricerca di \"{query}\"{scope} non riuscita"
+  uk: "Пошук «{query}»{scope} не вдався"
+  ja: "「{query}」の検索{scope}に失敗しました"
+  zh-Hans: "搜索“{query}”{scope}失败"
+
+"Search for \"{query}\"{scope} cancelled":
+  es: "Búsqueda de \"{query}\"{scope} cancelada"
+  pt: "Pesquisa por \"{query}\"{scope} cancelada"
+  fr: "Recherche de « {query} »{scope} annulée"
+  de: "Suche nach „{query}“{scope} abgebrochen"
+  it: "Ricerca di \"{query}\"{scope} annullata"
+  uk: "Пошук «{query}»{scope} скасовано"
+  ja: "「{query}」の検索{scope}をキャンセルしました"
+  zh-Hans: "已取消搜索“{query}”{scope}"
+
+"Grepping…":
+  es: "Buscando con grep…"
+  pt: "Executando grep…"
+  fr: "Recherche grep…"
+  de: "Grep läuft…"
+  it: "Ricerca con grep…"
+  uk: "Пошук grep…"
+  ja: "grep を実行中…"
+  zh-Hans: "正在 grep…"
+
+"Grep for {queries} in {path}":
+  es: "Buscar {queries} con grep en {path}"
+  pt: "Executar grep por {queries} em {path}"
+  fr: "Rechercher {queries} avec grep dans {path}"
+  de: "Mit grep nach {queries} in {path} suchen"
+  it: "Cerca {queries} con grep in {path}"
+  uk: "Шукати {queries} через grep у {path}"
+  ja: "{path} で {queries} を grep"
+  zh-Hans: "在 {path} 中 grep {queries}"
+
+"Grepping for {queries} in {path}":
+  es: "Buscando {queries} con grep en {path}"
+  pt: "Executando grep por {queries} em {path}"
+  fr: "Recherche grep de {queries} dans {path}"
+  de: "Grep nach {queries} in {path}"
+  it: "Ricerca con grep di {queries} in {path}"
+  uk: "Пошук grep {queries} у {path}"
+  ja: "{path} で {queries} を grep 中"
+  zh-Hans: "正在 {path} 中 grep {queries}"
+
+"Grepped for {queries} in {path}, {matches}":
+  es: "Se buscó {queries} con grep en {path}, {matches}"
+  pt: "Grep por {queries} em {path}, {matches}"
+  fr: "Recherche grep de {queries} dans {path}, {matches}"
+  de: "Mit grep nach {queries} in {path} gesucht, {matches}"
+  it: "Cercato {queries} con grep in {path}, {matches}"
+  uk: "Пошук grep {queries} у {path}, {matches}"
+  ja: "{path} で {queries} を grep しました、{matches}"
+  zh-Hans: "已在 {path} 中 grep {queries}，{matches}"
+
+"Grepped for {queries} in {path}":
+  es: "Se buscó {queries} con grep en {path}"
+  pt: "Grep por {queries} em {path} concluído"
+  fr: "Recherche grep de {queries} dans {path} effectuée"
+  de: "Mit grep nach {queries} in {path} gesucht"
+  it: "Cercato {queries} con grep in {path}"
+  uk: "Пошук grep {queries} у {path} виконано"
+  ja: "{path} で {queries} を grep しました"
+  zh-Hans: "已在 {path} 中 grep {queries}"
+
+"Grep for {queries} failed":
+  es: "La búsqueda con grep de {queries} falló"
+  pt: "O grep por {queries} falhou"
+  fr: "La recherche grep de {queries} a échoué"
+  de: "Grep nach {queries} fehlgeschlagen"
+  it: "Ricerca con grep di {queries} non riuscita"
+  uk: "Пошук grep {queries} не вдався"
+  ja: "{queries} の grep に失敗しました"
+  zh-Hans: "grep {queries} 失败"
+
+"Grep for {queries} cancelled":
+  es: "Búsqueda con grep de {queries} cancelada"
+  pt: "Grep por {queries} cancelado"
+  fr: "Recherche grep de {queries} annulée"
+  de: "Grep nach {queries} abgebrochen"
+  it: "Ricerca con grep di {queries} annullata"
+  uk: "Пошук grep {queries} скасовано"
+  ja: "{queries} の grep をキャンセルしました"
+  zh-Hans: "已取消 grep {queries}"
+
+"Reading MCP resource…":
+  es: "Leyendo recurso MCP…"
+  pt: "Lendo recurso MCP…"
+  fr: "Lecture de la ressource MCP…"
+  de: "MCP-Ressource wird gelesen…"
+  it: "Lettura della risorsa MCP…"
+  uk: "Читання ресурсу MCP…"
+  ja: "MCP リソースを読み込み中…"
+  zh-Hans: "正在读取 MCP 资源…"
+
+"Reading \"{name}\" MCP resource…":
+  es: "Leyendo el recurso MCP \"{name}\"…"
+  pt: "Lendo o recurso MCP \"{name}\"…"
+  fr: "Lecture de la ressource MCP « {name} »…"
+  de: "MCP-Ressource „{name}“ wird gelesen…"
+  it: "Lettura della risorsa MCP \"{name}\"…"
+  uk: "Читання ресурсу MCP «{name}»…"
+  ja: "MCP リソース「{name}」を読み込み中…"
+  zh-Hans: "正在读取 MCP 资源“{name}”…"
+
+"Read MCP resource {resource}":
+  es: "Leer recurso MCP {resource}"
+  pt: "Ler recurso MCP {resource}"
+  fr: "Lire la ressource MCP {resource}"
+  de: "MCP-Ressource {resource} lesen"
+  it: "Leggi risorsa MCP {resource}"
+  uk: "Прочитати ресурс MCP {resource}"
+  ja: "MCP リソース {resource} を読み込む"
+  zh-Hans: "读取 MCP 资源 {resource}"
+
+"Reading MCP resource {resource}":
+  es: "Leyendo recurso MCP {resource}"
+  pt: "Lendo recurso MCP {resource}"
+  fr: "Lecture de la ressource MCP {resource}"
+  de: "MCP-Ressource {resource} wird gelesen"
+  it: "Lettura della risorsa MCP {resource}"
+  uk: "Читання ресурсу MCP {resource}"
+  ja: "MCP リソース {resource} を読み込み中"
+  zh-Hans: "正在读取 MCP 资源 {resource}"
+
+"MCP resource {resource} failed":
+  es: "El recurso MCP {resource} falló"
+  pt: "O recurso MCP {resource} falhou"
+  fr: "La ressource MCP {resource} a échoué"
+  de: "MCP-Ressource {resource} fehlgeschlagen"
+  it: "Risorsa MCP {resource} non riuscita"
+  uk: "Ресурс MCP {resource}: помилка"
+  ja: "MCP リソース {resource} が失敗しました"
+  zh-Hans: "MCP 资源 {resource} 失败"
+
+"MCP resource {resource} cancelled":
+  es: "Recurso MCP {resource} cancelado"
+  pt: "Recurso MCP {resource} cancelado"
+  fr: "Ressource MCP {resource} annulée"
+  de: "MCP-Ressource {resource} abgebrochen"
+  it: "Risorsa MCP {resource} annullata"
+  uk: "Ресурс MCP {resource} скасовано"
+  ja: "MCP リソース {resource} をキャンセルしました"
+  zh-Hans: "已取消 MCP 资源 {resource}"
+
+" on {server}":
+  es: " en {server}"
+  pt: " em {server}"
+  fr: " sur {server}"
+  de: " auf {server}"
+  it: " su {server}"
+  uk: " на {server}"
+  ja: " ({server})"
+  zh-Hans: "（{server}）"
+
+"Calling MCP tool{suffix}…":
+  es: "Llamando a la herramienta MCP{suffix}…"
+  pt: "Chamando a ferramenta MCP{suffix}…"
+  fr: "Appel de l'outil MCP{suffix}…"
+  de: "MCP-Tool wird aufgerufen{suffix}…"
+  it: "Chiamata dello strumento MCP{suffix}…"
+  uk: "Виклик інструмента MCP{suffix}…"
+  ja: "MCP ツールを呼び出し中{suffix}…"
+  zh-Hans: "正在调用 MCP 工具{suffix}…"
+
+"Calling \"{name}\" MCP tool{suffix}…":
+  es: "Llamando a la herramienta MCP \"{name}\"{suffix}…"
+  pt: "Chamando a ferramenta MCP \"{name}\"{suffix}…"
+  fr: "Appel de l'outil MCP « {name} »{suffix}…"
+  de: "MCP-Tool „{name}“ wird aufgerufen{suffix}…"
+  it: "Chiamata dello strumento MCP \"{name}\"{suffix}…"
+  uk: "Виклик інструмента MCP «{name}»{suffix}…"
+  ja: "MCP ツール「{name}」を呼び出し中{suffix}…"
+  zh-Hans: "正在调用 MCP 工具“{name}”{suffix}…"
+
+"Call MCP tool {name}{suffix}":
+  es: "Llamar a la herramienta MCP {name}{suffix}"
+  pt: "Chamar a ferramenta MCP {name}{suffix}"
+  fr: "Appeler l'outil MCP {name}{suffix}"
+  de: "MCP-Tool {name} aufrufen{suffix}"
+  it: "Chiama lo strumento MCP {name}{suffix}"
+  uk: "Викликати інструмент MCP {name}{suffix}"
+  ja: "MCP ツール {name} を呼び出す{suffix}"
+  zh-Hans: "调用 MCP 工具 {name}{suffix}"
+
+"Calling MCP tool {name}{suffix}":
+  es: "Llamando a la herramienta MCP {name}{suffix}"
+  pt: "Chamando a ferramenta MCP {name}{suffix}"
+  fr: "Appel de l'outil MCP {name}{suffix}"
+  de: "MCP-Tool {name} wird aufgerufen{suffix}"
+  it: "Chiamata dello strumento MCP {name}{suffix}"
+  uk: "Виклик інструмента MCP {name}{suffix}"
+  ja: "MCP ツール {name} を呼び出し中{suffix}"
+  zh-Hans: "正在调用 MCP 工具 {name}{suffix}"
+
+"Called MCP tool {name}{suffix}":
+  es: "Se llamó a la herramienta MCP {name}{suffix}"
+  pt: "Ferramenta MCP {name} chamada{suffix}"
+  fr: "Outil MCP {name} appelé{suffix}"
+  de: "MCP-Tool {name} aufgerufen{suffix}"
+  it: "Strumento MCP {name} chiamato{suffix}"
+  uk: "Інструмент MCP {name} викликано{suffix}"
+  ja: "MCP ツール {name} を呼び出しました{suffix}"
+  zh-Hans: "已调用 MCP 工具 {name}{suffix}"
+
+"MCP tool {name}{suffix} failed":
+  es: "La herramienta MCP {name}{suffix} falló"
+  pt: "A ferramenta MCP {name}{suffix} falhou"
+  fr: "L'outil MCP {name}{suffix} a échoué"
+  de: "MCP-Tool {name}{suffix} fehlgeschlagen"
+  it: "Strumento MCP {name}{suffix} non riuscito"
+  uk: "Інструмент MCP {name}{suffix}: помилка"
+  ja: "MCP ツール {name}{suffix} が失敗しました"
+  zh-Hans: "MCP 工具 {name}{suffix} 失败"
+
+"MCP tool {name}{suffix} cancelled":
+  es: "Herramienta MCP {name}{suffix} cancelada"
+  pt: "Ferramenta MCP {name}{suffix} cancelada"
+  fr: "Outil MCP {name}{suffix} annulé"
+  de: "MCP-Tool {name}{suffix} abgebrochen"
+  it: "Strumento MCP {name}{suffix} annullato"
+  uk: "Інструмент MCP {name}{suffix} скасовано"
+  ja: "MCP ツール {name}{suffix} をキャンセルしました"
+  zh-Hans: "已取消 MCP 工具 {name}{suffix}"
+
+"Suggesting a new conversation…":
+  es: "Sugiriendo una nueva conversación…"
+  pt: "Sugerindo uma nova conversa…"
+  fr: "Suggestion d'une nouvelle conversation…"
+  de: "Neue Unterhaltung wird vorgeschlagen…"
+  it: "Suggerimento di una nuova conversazione…"
+  uk: "Пропозиція нової розмови…"
+  ja: "新しい会話を提案中…"
+  zh-Hans: "正在建议新对话…"
+
+"Suggested starting a new conversation":
+  es: "Se sugirió iniciar una nueva conversación"
+  pt: "Sugeriu iniciar uma nova conversa"
+  fr: "Nouvelle conversation suggérée"
+  de: "Neue Unterhaltung vorgeschlagen"
+  it: "Suggerito di iniziare una nuova conversazione"
+  uk: "Запропоновано почати нову розмову"
+  ja: "新しい会話の開始を提案しました"
+  zh-Hans: "已建议开始新对话"
+
+"Reading documents…":
+  es: "Leyendo documentos…"
+  pt: "Lendo documentos…"
+  fr: "Lecture des documents…"
+  de: "Dokumente werden gelesen…"
+  it: "Lettura dei documenti…"
+  uk: "Читання документів…"
+  ja: "ドキュメントを読み込み中…"
+  zh-Hans: "正在读取文档…"
+
+"Read {documents}":
+  es: "Leer {documents}"
+  pt: "Ler {documents}"
+  fr: "Lire {documents}"
+  de: "{documents} lesen"
+  it: "Leggi {documents}"
+  uk: "Прочитати {documents}"
+  ja: "{documents} を読み込む"
+  zh-Hans: "读取 {documents}"
+
+"Reading {documents}":
+  es: "Leyendo {documents}"
+  pt: "Lendo {documents}"
+  fr: "Lecture de {documents}"
+  de: "{documents} werden gelesen"
+  it: "Lettura di {documents}"
+  uk: "Читання: {documents}"
+  ja: "{documents} を読み込み中"
+  zh-Hans: "正在读取 {documents}"
+
+"Failed to read documents":
+  es: "No se pudieron leer los documentos"
+  pt: "Falha ao ler os documentos"
+  fr: "Impossible de lire les documents"
+  de: "Dokumente konnten nicht gelesen werden"
+  it: "Impossibile leggere i documenti"
+  uk: "Не вдалося прочитати документи"
+  ja: "ドキュメントを読み込めませんでした"
+  zh-Hans: "无法读取文档"
+
+"Cancelled reading documents":
+  es: "Se canceló la lectura de documentos"
+  pt: "Leitura de documentos cancelada"
+  fr: "Lecture des documents annulée"
+  de: "Lesen der Dokumente abgebrochen"
+  it: "Lettura dei documenti annullata"
+  uk: "Читання документів скасовано"
+  ja: "ドキュメントの読み込みをキャンセルしました"
+  zh-Hans: "已取消读取文档"
+
+"Update plan":
+  es: "Actualizar plan"
+  pt: "Atualizar plano"
+  fr: "Mettre à jour le plan"
+  de: "Plan aktualisieren"
+  it: "Aggiorna piano"
+  uk: "Оновити план"
+  ja: "プランを更新"
+  zh-Hans: "更新计划"
+
+"Updating plan…":
+  es: "Actualizando plan…"
+  pt: "Atualizando plano…"
+  fr: "Mise à jour du plan…"
+  de: "Plan wird aktualisiert…"
+  it: "Aggiornamento del piano…"
+  uk: "Оновлення плану…"
+  ja: "プランを更新中…"
+  zh-Hans: "正在更新计划…"
+
+"Updated plan ({edits})":
+  es: "Plan actualizado ({edits})"
+  pt: "Plano atualizado ({edits})"
+  fr: "Plan mis à jour ({edits})"
+  de: "Plan aktualisiert ({edits})"
+  it: "Piano aggiornato ({edits})"
+  uk: "План оновлено ({edits})"
+  ja: "プランを更新しました ({edits})"
+  zh-Hans: "已更新计划（{edits}）"
+
+"Failed to update plan":
+  es: "No se pudo actualizar el plan"
+  pt: "Falha ao atualizar o plano"
+  fr: "Impossible de mettre à jour le plan"
+  de: "Plan konnte nicht aktualisiert werden"
+  it: "Impossibile aggiornare il piano"
+  uk: "Не вдалося оновити план"
+  ja: "プランを更新できませんでした"
+  zh-Hans: "无法更新计划"
+
+"Update plan cancelled":
+  es: "Actualización del plan cancelada"
+  pt: "Atualização do plano cancelada"
+  fr: "Mise à jour du plan annulée"
+  de: "Planaktualisierung abgebrochen"
+  it: "Aggiornamento del piano annullato"
+  uk: "Оновлення плану скасовано"
+  ja: "プランの更新をキャンセルしました"
+  zh-Hans: "已取消更新计划"
+
+"Create plan":
+  es: "Crear plan"
+  pt: "Criar plano"
+  fr: "Créer un plan"
+  de: "Plan erstellen"
+  it: "Crea piano"
+  uk: "Створити план"
+  ja: "プランを作成"
+  zh-Hans: "创建计划"
+
+"Generating plan…":
+  es: "Generando plan…"
+  pt: "Gerando plano…"
+  fr: "Génération du plan…"
+  de: "Plan wird erstellt…"
+  it: "Generazione del piano…"
+  uk: "Створення плану…"
+  ja: "プランを生成中…"
+  zh-Hans: "正在生成计划…"
+
+"Created {count} documents":
+  es: "Se crearon {count} documentos"
+  pt: "{count} documentos criados"
+  fr: "{count} documents créés"
+  de: "{count} Dokumente erstellt"
+  it: "{count} documenti creati"
+  uk: "Створено документів: {count}"
+  ja: "{count} 件のドキュメントを作成しました"
+  zh-Hans: "已创建 {count} 个文档"
+
+"Created plan":
+  es: "Plan creado"
+  pt: "Plano criado"
+  fr: "Plan créé"
+  de: "Plan erstellt"
+  it: "Piano creato"
+  uk: "План створено"
+  ja: "プランを作成しました"
+  zh-Hans: "已创建计划"
+
+"Failed to create plan":
+  es: "No se pudo crear el plan"
+  pt: "Falha ao criar o plano"
+  fr: "Impossible de créer le plan"
+  de: "Plan konnte nicht erstellt werden"
+  it: "Impossibile creare il piano"
+  uk: "Не вдалося створити план"
+  ja: "プランを作成できませんでした"
+  zh-Hans: "无法创建计划"
+
+"Create plan cancelled":
+  es: "Creación del plan cancelada"
+  pt: "Criação do plano cancelada"
+  fr: "Création du plan annulée"
+  de: "Planerstellung abgebrochen"
+  it: "Creazione del piano annullata"
+  uk: "Створення плану скасовано"
+  ja: "プランの作成をキャンセルしました"
+  zh-Hans: "已取消创建计划"
+
+"Read command output":
+  es: "Leer salida del comando"
+  pt: "Ler saída do comando"
+  fr: "Lire la sortie de la commande"
+  de: "Befehlsausgabe lesen"
+  it: "Leggi output del comando"
+  uk: "Прочитати вивід команди"
+  ja: "コマンド出力を読み込む"
+  zh-Hans: "读取命令输出"
+
+"Reading command output…":
+  es: "Leyendo salida del comando…"
+  pt: "Lendo saída do comando…"
+  fr: "Lecture de la sortie de la commande…"
+  de: "Befehlsausgabe wird gelesen…"
+  it: "Lettura dell'output del comando…"
+  uk: "Читання виводу команди…"
+  ja: "コマンド出力を読み込み中…"
+  zh-Hans: "正在读取命令输出…"
+
+"Failed to read command output":
+  es: "No se pudo leer la salida del comando"
+  pt: "Falha ao ler a saída do comando"
+  fr: "Impossible de lire la sortie de la commande"
+  de: "Befehlsausgabe konnte nicht gelesen werden"
+  it: "Impossibile leggere l'output del comando"
+  uk: "Не вдалося прочитати вивід команди"
+  ja: "コマンド出力を読み込めませんでした"
+  zh-Hans: "无法读取命令输出"
+
+"Read command output cancelled":
+  es: "Lectura de la salida del comando cancelada"
+  pt: "Leitura da saída do comando cancelada"
+  fr: "Lecture de la sortie de la commande annulée"
+  de: "Lesen der Befehlsausgabe abgebrochen"
+  it: "Lettura dell'output del comando annullata"
+  uk: "Читання виводу команди скасовано"
+  ja: "コマンド出力の読み込みをキャンセルしました"
+  zh-Hans: "已取消读取命令输出"
+
+"Preparing review comments…":
+  es: "Preparando comentarios de revisión…"
+  pt: "Preparando comentários de revisão…"
+  fr: "Préparation des commentaires de revue…"
+  de: "Review-Kommentare werden vorbereitet…"
+  it: "Preparazione dei commenti di revisione…"
+  uk: "Підготовка коментарів рецензії…"
+  ja: "レビューコメントを準備中…"
+  zh-Hans: "正在准备审查评论…"
+
+"Insert {comments}":
+  es: "Insertar {comments}"
+  pt: "Inserir {comments}"
+  fr: "Insérer {comments}"
+  de: "{comments} einfügen"
+  it: "Inserisci {comments}"
+  uk: "Вставити {comments}"
+  ja: "{comments} を挿入"
+  zh-Hans: "插入 {comments}"
+
+"Inserting {comments}…":
+  es: "Insertando {comments}…"
+  pt: "Inserindo {comments}…"
+  fr: "Insertion de {comments}…"
+  de: "{comments} werden eingefügt…"
+  it: "Inserimento di {comments}…"
+  uk: "Вставлення: {comments}…"
+  ja: "{comments} を挿入中…"
+  zh-Hans: "正在插入 {comments}…"
+
+"Inserted {comments}":
+  es: "Se insertaron {comments}"
+  pt: "{comments} inseridos"
+  fr: "{comments} insérés"
+  de: "{comments} eingefügt"
+  it: "{comments} inseriti"
+  uk: "Вставлено: {comments}"
+  ja: "{comments} を挿入しました"
+  zh-Hans: "已插入 {comments}"
+
+"Failed to insert review comments":
+  es: "No se pudieron insertar los comentarios de revisión"
+  pt: "Falha ao inserir os comentários de revisão"
+  fr: "Impossible d'insérer les commentaires de revue"
+  de: "Review-Kommentare konnten nicht eingefügt werden"
+  it: "Impossibile inserire i commenti di revisione"
+  uk: "Не вдалося вставити коментарі рецензії"
+  ja: "レビューコメントを挿入できませんでした"
+  zh-Hans: "无法插入审查评论"
+
+"Insert review comments cancelled":
+  es: "Inserción de comentarios de revisión cancelada"
+  pt: "Inserção de comentários de revisão cancelada"
+  fr: "Insertion des commentaires de revue annulée"
+  de: "Einfügen der Review-Kommentare abgebrochen"
+  it: "Inserimento dei commenti di revisione annullato"
+  uk: "Вставлення коментарів рецензії скасовано"
+  ja: "レビューコメントの挿入をキャンセルしました"
+  zh-Hans: "已取消插入审查评论"
+
+"Start recording":
+  es: "Iniciar grabación"
+  pt: "Iniciar gravação"
+  fr: "Démarrer l'enregistrement"
+  de: "Aufnahme starten"
+  it: "Avvia registrazione"
+  uk: "Почати запис"
+  ja: "録画を開始"
+  zh-Hans: "开始录制"
+
+"Starting recording…":
+  es: "Iniciando grabación…"
+  pt: "Iniciando gravação…"
+  fr: "Démarrage de l'enregistrement…"
+  de: "Aufnahme wird gestartet…"
+  it: "Avvio della registrazione…"
+  uk: "Початок запису…"
+  ja: "録画を開始中…"
+  zh-Hans: "正在开始录制…"
+
+"Started screen recording":
+  es: "Grabación de pantalla iniciada"
+  pt: "Gravação de tela iniciada"
+  fr: "Enregistrement de l'écran démarré"
+  de: "Bildschirmaufnahme gestartet"
+  it: "Registrazione dello schermo avviata"
+  uk: "Запис екрана розпочато"
+  ja: "画面録画を開始しました"
+  zh-Hans: "已开始屏幕录制"
+
+"Start recording cancelled":
+  es: "Inicio de grabación cancelado"
+  pt: "Início da gravação cancelado"
+  fr: "Démarrage de l'enregistrement annulé"
+  de: "Aufnahmestart abgebrochen"
+  it: "Avvio della registrazione annullato"
+  uk: "Початок запису скасовано"
+  ja: "録画の開始をキャンセルしました"
+  zh-Hans: "已取消开始录制"
+
+"Stop recording":
+  es: "Detener grabación"
+  pt: "Parar gravação"
+  fr: "Arrêter l'enregistrement"
+  de: "Aufnahme beenden"
+  it: "Interrompi registrazione"
+  uk: "Зупинити запис"
+  ja: "録画を停止"
+  zh-Hans: "停止录制"
+
+"Stopping recording…":
+  es: "Deteniendo grabación…"
+  pt: "Parando gravação…"
+  fr: "Arrêt de l'enregistrement…"
+  de: "Aufnahme wird beendet…"
+  it: "Interruzione della registrazione…"
+  uk: "Зупинка запису…"
+  ja: "録画を停止中…"
+  zh-Hans: "正在停止录制…"
+
+"Discarded screen recording":
+  es: "Grabación de pantalla descartada"
+  pt: "Gravação de tela descartada"
+  fr: "Enregistrement de l'écran supprimé"
+  de: "Bildschirmaufnahme verworfen"
+  it: "Registrazione dello schermo scartata"
+  uk: "Запис екрана відхилено"
+  ja: "画面録画を破棄しました"
+  zh-Hans: "已丢弃屏幕录制"
+
+"Saved screen recording":
+  es: "Grabación de pantalla guardada"
+  pt: "Gravação de tela salva"
+  fr: "Enregistrement de l'écran sauvegardé"
+  de: "Bildschirmaufnahme gespeichert"
+  it: "Registrazione dello schermo salvata"
+  uk: "Запис екрана збережено"
+  ja: "画面録画を保存しました"
+  zh-Hans: "已保存屏幕录制"
+
+"Failed to save recording":
+  es: "No se pudo guardar la grabación"
+  pt: "Falha ao salvar a gravação"
+  fr: "Impossible d'enregistrer la capture"
+  de: "Aufnahme konnte nicht gespeichert werden"
+  it: "Impossibile salvare la registrazione"
+  uk: "Не вдалося зберегти запис"
+  ja: "録画を保存できませんでした"
+  zh-Hans: "无法保存录制"
+
+"Stop recording cancelled":
+  es: "Detención de la grabación cancelada"
+  pt: "Parada da gravação cancelada"
+  fr: "Arrêt de l'enregistrement annulé"
+  de: "Beenden der Aufnahme abgebrochen"
+  it: "Interruzione della registrazione annullata"
+  uk: "Зупинку запису скасовано"
+  ja: "録画の停止をキャンセルしました"
+  zh-Hans: "已取消停止录制"
+
+"Reading skill…":
+  es: "Leyendo habilidad…"
+  pt: "Lendo habilidade…"
+  fr: "Lecture de la compétence…"
+  de: "Skill wird gelesen…"
+  it: "Lettura della skill…"
+  uk: "Читання навички…"
+  ja: "スキルを読み込み中…"
+  zh-Hans: "正在读取技能…"
+
+"Read skill {skill}":
+  es: "Leer habilidad {skill}"
+  pt: "Ler habilidade {skill}"
+  fr: "Lire la compétence {skill}"
+  de: "Skill {skill} lesen"
+  it: "Leggi skill {skill}"
+  uk: "Прочитати навичку {skill}"
+  ja: "スキル {skill} を読み込む"
+  zh-Hans: "读取技能 {skill}"
+
+"Reading skill {skill}":
+  es: "Leyendo habilidad {skill}"
+  pt: "Lendo habilidade {skill}"
+  fr: "Lecture de la compétence {skill}"
+  de: "Skill {skill} wird gelesen"
+  it: "Lettura della skill {skill}"
+  uk: "Читання навички {skill}"
+  ja: "スキル {skill} を読み込み中"
+  zh-Hans: "正在读取技能 {skill}"
+
+"Failed to read skill {skill}":
+  es: "No se pudo leer la habilidad {skill}"
+  pt: "Falha ao ler a habilidade {skill}"
+  fr: "Impossible de lire la compétence {skill}"
+  de: "Skill {skill} konnte nicht gelesen werden"
+  it: "Impossibile leggere la skill {skill}"
+  uk: "Не вдалося прочитати навичку {skill}"
+  ja: "スキル {skill} を読み込めませんでした"
+  zh-Hans: "无法读取技能 {skill}"
+
+"Cancelled reading skill {skill}":
+  es: "Se canceló la lectura de la habilidad {skill}"
+  pt: "Leitura da habilidade {skill} cancelada"
+  fr: "Lecture de la compétence {skill} annulée"
+  de: "Lesen von Skill {skill} abgebrochen"
+  it: "Lettura della skill {skill} annullata"
+  uk: "Читання навички {skill} скасовано"
+  ja: "スキル {skill} の読み込みをキャンセルしました"
+  zh-Hans: "已取消读取技能 {skill}"
+
+"Fetch conversation":
+  es: "Obtener conversación"
+  pt: "Buscar conversa"
+  fr: "Récupérer la conversation"
+  de: "Unterhaltung abrufen"
+  it: "Recupera conversazione"
+  uk: "Отримати розмову"
+  ja: "会話を取得"
+  zh-Hans: "获取对话"
+
+"Fetching conversation…":
+  es: "Obteniendo conversación…"
+  pt: "Buscando conversa…"
+  fr: "Récupération de la conversation…"
+  de: "Unterhaltung wird abgerufen…"
+  it: "Recupero della conversazione…"
+  uk: "Отримання розмови…"
+  ja: "会話を取得中…"
+  zh-Hans: "正在获取对话…"
+
+"Fetched conversation":
+  es: "Conversación obtenida"
+  pt: "Conversa obtida"
+  fr: "Conversation récupérée"
+  de: "Unterhaltung abgerufen"
+  it: "Conversazione recuperata"
+  uk: "Розмову отримано"
+  ja: "会話を取得しました"
+  zh-Hans: "已获取对话"
+
+"Fetch conversation failed":
+  es: "No se pudo obtener la conversación"
+  pt: "Falha ao buscar a conversa"
+  fr: "Échec de la récupération de la conversation"
+  de: "Abrufen der Unterhaltung fehlgeschlagen"
+  it: "Recupero della conversazione non riuscito"
+  uk: "Не вдалося отримати розмову"
+  ja: "会話を取得できませんでした"
+  zh-Hans: "获取对话失败"
+
+"Fetch conversation cancelled":
+  es: "Obtención de la conversación cancelada"
+  pt: "Busca da conversa cancelada"
+  fr: "Récupération de la conversation annulée"
+  de: "Abrufen der Unterhaltung abgebrochen"
+  it: "Recupero della conversazione annullato"
+  uk: "Отримання розмови скасовано"
+  ja: "会話の取得をキャンセルしました"
+  zh-Hans: "已取消获取对话"
+
+"Handing control to you…":
+  es: "Cediéndote el control…"
+  pt: "Passando o controle para você…"
+  fr: "Transfert du contrôle vers vous…"
+  de: "Kontrolle wird an Sie übergeben…"
+  it: "Passaggio del controllo a te…"
+  uk: "Передаю вам керування…"
+  ja: "操作をあなたに渡しています…"
+  zh-Hans: "正在将控制权交给你…"
+
+"Handing control to you: {reason}":
+  es: "Cediéndote el control: {reason}"
+  pt: "Passando o controle para você: {reason}"
+  fr: "Transfert du contrôle vers vous : {reason}"
+  de: "Kontrolle wird an Sie übergeben: {reason}"
+  it: "Passaggio del controllo a te: {reason}"
+  uk: "Передаю вам керування: {reason}"
+  ja: "操作をあなたに渡しています: {reason}"
+  zh-Hans: "正在将控制权交给你：{reason}"
+
+"You are in control":
+  es: "Tienes el control"
+  pt: "Você está no controle"
+  fr: "Vous avez le contrôle"
+  de: "Sie haben die Kontrolle"
+  it: "Hai il controllo"
+  uk: "Керування у вас"
+  ja: "あなたが操作しています"
+  zh-Hans: "你已获得控制权"
+
+"Control transfer failed":
+  es: "No se pudo transferir el control"
+  pt: "Falha na transferência do controle"
+  fr: "Échec du transfert du contrôle"
+  de: "Übergabe der Kontrolle fehlgeschlagen"
+  it: "Trasferimento del controllo non riuscito"
+  uk: "Не вдалося передати керування"
+  ja: "操作の引き渡しに失敗しました"
+  zh-Hans: "控制权转移失败"
+
+"Control transfer cancelled":
+  es: "Transferencia del control cancelada"
+  pt: "Transferência do controle cancelada"
+  fr: "Transfert du contrôle annulé"
+  de: "Übergabe der Kontrolle abgebrochen"
+  it: "Trasferimento del controllo annullato"
+  uk: "Передачу керування скасовано"
+  ja: "操作の引き渡しをキャンセルしました"
+  zh-Hans: "已取消控制权转移"
+
+"Preparing question…":
+  es: "Preparando pregunta…"
+  pt: "Preparando pergunta…"
+  fr: "Préparation de la question…"
+  de: "Frage wird vorbereitet…"
+  it: "Preparazione della domanda…"
+  uk: "Підготовка запитання…"
+  ja: "質問を準備中…"
+  zh-Hans: "正在准备问题…"
+
+"Asking {questions}":
+  es: "Preguntando {questions}"
+  pt: "Fazendo {questions}"
+  fr: "{questions} en cours"
+  de: "{questions} werden gestellt"
+  it: "Domande in corso: {questions}"
+  uk: "Ставлю запитання: {questions}"
+  ja: "{questions} を質問中"
+  zh-Hans: "正在提问 {questions}"
+
+"Answered {answered} of {total} questions":
+  es: "Se respondieron {answered} de {total} preguntas"
+  pt: "{answered} de {total} perguntas respondidas"
+  fr: "Réponse à {answered} questions sur {total}"
+  de: "{answered} von {total} Fragen beantwortet"
+  it: "Risposto a {answered} domande su {total}"
+  uk: "Відповідено на {answered} з {total} запитань"
+  ja: "{total} 件中 {answered} 件の質問に回答しました"
+  zh-Hans: "已回答 {answered}/{total} 个问题"
+
+"Answered questions":
+  es: "Preguntas respondidas"
+  pt: "Perguntas respondidas"
+  fr: "Questions répondues"
+  de: "Fragen beantwortet"
+  it: "Domande risposte"
+  uk: "Запитання відповідено"
+  ja: "質問に回答しました"
+  zh-Hans: "已回答问题"
+
+"Questions failed":
+  es: "Las preguntas fallaron"
+  pt: "As perguntas falharam"
+  fr: "Échec des questions"
+  de: "Fragen fehlgeschlagen"
+  it: "Domande non riuscite"
+  uk: "Запитання не вдалися"
+  ja: "質問に失敗しました"
+  zh-Hans: "问题失败"
+
+"Questions cancelled":
+  es: "Preguntas canceladas"
+  pt: "Perguntas canceladas"
+  fr: "Questions annulées"
+  de: "Fragen abgebrochen"
+  it: "Domande annullate"
+  uk: "Запитання скасовано"
+  ja: "質問をキャンセルしました"
+  zh-Hans: "已取消问题"
+
+"Finding files…":
+  es: "Buscando archivos…"
+  pt: "Procurando arquivos…"
+  fr: "Recherche de fichiers…"
+  de: "Dateien werden gesucht…"
+  it: "Ricerca dei file…"
+  uk: "Пошук файлів…"
+  ja: "ファイルを検索中…"
+  zh-Hans: "正在查找文件…"
+
+"Find files matching {patterns} in {path}":
+  es: "Buscar archivos que coincidan con {patterns} en {path}"
+  pt: "Procurar arquivos correspondentes a {patterns} em {path}"
+  fr: "Rechercher les fichiers correspondant à {patterns} dans {path}"
+  de: "Dateien mit {patterns} in {path} suchen"
+  it: "Trova i file corrispondenti a {patterns} in {path}"
+  uk: "Знайти файли за шаблонами {patterns} у {path}"
+  ja: "{path} で {patterns} に一致するファイルを検索"
+  zh-Hans: "在 {path} 中查找匹配 {patterns} 的文件"
+
+"Finding files matching {patterns} in {path}":
+  es: "Buscando archivos que coincidan con {patterns} en {path}"
+  pt: "Procurando arquivos correspondentes a {patterns} em {path}"
+  fr: "Recherche des fichiers correspondant à {patterns} dans {path}"
+  de: "Dateien mit {patterns} in {path} werden gesucht"
+  it: "Ricerca dei file corrispondenti a {patterns} in {path}"
+  uk: "Пошук файлів за шаблонами {patterns} у {path}"
+  ja: "{path} で {patterns} に一致するファイルを検索中"
+  zh-Hans: "正在 {path} 中查找匹配 {patterns} 的文件"
+
+"Found {files} matching {patterns}":
+  es: "Se encontraron {files} que coinciden con {patterns}"
+  pt: "{files} encontrados correspondentes a {patterns}"
+  fr: "{files} trouvés correspondant à {patterns}"
+  de: "{files} mit {patterns} gefunden"
+  it: "Trovati {files} corrispondenti a {patterns}"
+  uk: "Знайдено {files} за шаблонами {patterns}"
+  ja: "{patterns} に一致する {files}が見つかりました"
+  zh-Hans: "找到 {files} 匹配 {patterns}"
+
+"Found files matching {patterns}":
+  es: "Se encontraron archivos que coinciden con {patterns}"
+  pt: "Arquivos correspondentes a {patterns} encontrados"
+  fr: "Fichiers correspondant à {patterns} trouvés"
+  de: "Dateien mit {patterns} gefunden"
+  it: "Trovati file corrispondenti a {patterns}"
+  uk: "Знайдено файли за шаблонами {patterns}"
+  ja: "{patterns} に一致するファイルが見つかりました"
+  zh-Hans: "已找到匹配 {patterns} 的文件"
+
+"File search for {patterns} failed":
+  es: "La búsqueda de archivos de {patterns} falló"
+  pt: "A busca de arquivos por {patterns} falhou"
+  fr: "La recherche de fichiers {patterns} a échoué"
+  de: "Dateisuche nach {patterns} fehlgeschlagen"
+  it: "Ricerca dei file {patterns} non riuscita"
+  uk: "Пошук файлів {patterns} не вдався"
+  ja: "{patterns} のファイル検索に失敗しました"
+  zh-Hans: "文件搜索 {patterns} 失败"
+
+"File search for {patterns} cancelled":
+  es: "Búsqueda de archivos de {patterns} cancelada"
+  pt: "Busca de arquivos por {patterns} cancelada"
+  fr: "Recherche de fichiers {patterns} annulée"
+  de: "Dateisuche nach {patterns} abgebrochen"
+  it: "Ricerca dei file {patterns} annullata"
+  uk: "Пошук файлів {patterns} скасовано"
+  ja: "{patterns} のファイル検索をキャンセルしました"
+  zh-Hans: "已取消文件搜索 {patterns}"
+
+"Preparing computer use…":
+  es: "Preparando el uso del ordenador…"
+  pt: "Preparando o uso do computador…"
+  fr: "Préparation de l'utilisation de l'ordinateur…"
+  de: "Computernutzung wird vorbereitet…"
+  it: "Preparazione dell'uso del computer…"
+  uk: "Підготовка до керування комп'ютером…"
+  ja: "コンピューターの操作を準備中…"
+  zh-Hans: "正在准备使用计算机…"
+
+"{summary} — failed":
+  es: "{summary} — error"
+  pt: "{summary} — falhou"
+  fr: "{summary} — échec"
+  de: "{summary} — fehlgeschlagen"
+  it: "{summary} — non riuscito"
+  uk: "{summary} — помилка"
+  ja: "{summary} — 失敗"
+  zh-Hans: "{summary} — 失败"
+
+"{summary} — cancelled":
+  es: "{summary} — cancelado"
+  pt: "{summary} — cancelado"
+  fr: "{summary} — annulé"
+  de: "{summary} — abgebrochen"
+  it: "{summary} — annullato"
+  uk: "{summary} — скасовано"
+  ja: "{summary} — キャンセル済み"
+  zh-Hans: "{summary} — 已取消"
+
+"{name} — done":
+  es: "{name} — listo"
+  pt: "{name} — concluído"
+  fr: "{name} — terminé"
+  de: "{name} — fertig"
+  it: "{name} — completato"
+  uk: "{name} — готово"
+  ja: "{name} — 完了"
+  zh-Hans: "{name} — 已完成"
+
+"{name} — failed":
+  es: "{name} — error"
+  pt: "{name} — falhou"
+  fr: "{name} — échec"
+  de: "{name} — fehlgeschlagen"
+  it: "{name} — non riuscito"
+  uk: "{name} — помилка"
+  ja: "{name} — 失敗"
+  zh-Hans: "{name} — 失败"
+
+"{name} — cancelled":
+  es: "{name} — cancelado"
+  pt: "{name} — cancelado"
+  fr: "{name} — annulé"
+  de: "{name} — abgebrochen"
+  it: "{name} — annullato"
+  uk: "{name} — скасовано"
+  ja: "{name} — キャンセル済み"
+  zh-Hans: "{name} — 已取消"
+
+"files":
+  es: "archivos"
+  pt: "arquivos"
+  fr: "fichiers"
+  de: "Dateien"
+  it: "file"
+  uk: "файли"
+  ja: "ファイル"
+  zh-Hans: "文件"
+
+"Other…":
+  es: "Otra…"
+  pt: "Outra…"
+  fr: "Autre…"
+  de: "Andere…"
+  it: "Altro…"
+  uk: "Інше…"
+  ja: "その他…"
+  zh-Hans: "其他…"
+
+"of {total} ":
+  es: "de {total} "
+  pt: "de {total} "
+  fr: "sur {total} "
+  de: "von {total} "
+  it: "di {total} "
+  uk: "з {total} "
+  ja: "/ {total} "
+  zh-Hans: "/ {total}"
+
+"to advance ":
+  es: "para avanzar "
+  pt: "para avançar "
+  fr: "pour continuer "
+  de: "zum Fortfahren "
+  it: "per proseguire "
+  uk: "щоб перейти далі "
+  ja: "で次へ "
+  zh-Hans: "前进"
+
+"Enter or number ":
+  es: "Enter o número "
+  pt: "Enter ou número "
+  fr: "Entrée ou numéro "
+  de: "Enter oder Zahl "
+  it: "Invio o numero "
+  uk: "Enter або номер "
+  ja: "Enter または番号 "
+  zh-Hans: "Enter 或数字"
+
+"to select ":
+  es: "para seleccionar "
+  pt: "para selecionar "
+  fr: "pour sélectionner "
+  de: "zum Auswählen "
+  it: "per selezionare "
+  uk: "щоб вибрати "
+  ja: "で選択 "
+  zh-Hans: "选择"
+
+"to cancel question":
+  es: "para cancelar la pregunta"
+  pt: "para cancelar a pergunta"
+  fr: "pour annuler la question"
+  de: "zum Abbrechen der Frage"
+  it: "per annullare la domanda"
+  uk: "щоб скасувати запитання"
+  ja: "で質問をキャンセル"
+  zh-Hans: "取消问题"
+
+"Tab or ← → ":
+  es: "Tab o ← → "
+  pt: "Tab ou ← → "
+  fr: "Tab ou ← → "
+  de: "Tab oder ← → "
+  it: "Tab o ← → "
+  uk: "Tab або ← → "
+  ja: "Tab または ← → "
+  zh-Hans: "Tab 或 ← →"
+
+"to navigate ":
+  es: "para navegar "
+  pt: "para navegar "
+  fr: "pour naviguer "
+  de: "zum Navigieren "
+  it: "per navigare "
+  uk: "щоб перейти "
+  ja: "で移動 "
+  zh-Hans: "导航"
+
+"Q: {question}":
+  es: "P: {question}"
+  pt: "P: {question}"
+  fr: "Q : {question}"
+  de: "F: {question}"
+  it: "D: {question}"
+  uk: "З: {question}"
+  ja: "Q: {question}"
+  zh-Hans: "问：{question}"
+
+"A: {answer}":
+  es: "R: {answer}"
+  pt: "R: {answer}"
+  fr: "R : {answer}"
+  de: "A: {answer}"
+  it: "R: {answer}"
+  uk: "В: {answer}"
+  ja: "A: {answer}"
+  zh-Hans: "答：{answer}"
+
+"Command finished":
+  es: "Comando finalizado"
+  pt: "Comando concluído"
+  fr: "Commande terminée"
+  de: "Befehl beendet"
+  it: "Comando terminato"
+  uk: "Команду завершено"
+  ja: "コマンドが終了しました"
+  zh-Hans: "命令已完成"
+
+"Agent needs your input":
+  es: "El agente necesita tu respuesta"
+  pt: "O agente precisa da sua resposta"
+  fr: "L'agent a besoin de votre réponse"
+  de: "Der Agent benötigt Ihre Eingabe"
+  it: "L'agente ha bisogno del tuo input"
+  uk: "Агенту потрібна ваша відповідь"
+  ja: "エージェントが入力を求めています"
+  zh-Hans: "智能体需要你的输入"
+
+"Agent is monitoring command":
+  es: "El agente está supervisando el comando"
+  pt: "O agente está monitorando o comando"
+  fr: "L'agent surveille la commande"
+  de: "Der Agent überwacht den Befehl"
+  it: "L'agente sta monitorando il comando"
+  uk: "Агент стежить за командою"
+  ja: "エージェントがコマンドを監視しています"
+  zh-Hans: "智能体正在监控命令"
+
+"to take control":
+  es: "para tomar el control"
+  pt: "para assumir o controle"
+  fr: "pour prendre le contrôle"
+  de: "zum Übernehmen der Kontrolle"
+  it: "per prendere il controllo"
+  uk: "щоб взяти керування"
+  ja: "で操作を引き継ぐ"
+  zh-Hans: "接管控制"
+
+"Agent waiting for instructions":
+  es: "El agente espera instrucciones"
+  pt: "O agente está aguardando instruções"
+  fr: "L'agent attend des instructions"
+  de: "Der Agent wartet auf Anweisungen"
+  it: "L'agente è in attesa di istruzioni"
+  uk: "Агент чекає на інструкції"
+  ja: "エージェントが指示を待っています"
+  zh-Hans: "智能体正在等待指示"
+
+"to hand back":
+  es: "para devolver el control"
+  pt: "para devolver o controle"
+  fr: "pour rendre le contrôle"
+  de: "zum Zurückgeben"
+  it: "per restituire il controllo"
+  uk: "щоб повернути керування"
+  ja: "で操作を戻す"
+  zh-Hans: "交还控制权"
+
+"Agent paused · user is in control":
+  es: "Agente en pausa · el usuario tiene el control"
+  pt: "Agente pausado · o usuário está no controle"
+  fr: "Agent en pause · l'utilisateur a le contrôle"
+  de: "Agent pausiert · der Benutzer hat die Kontrolle"
+  it: "Agente in pausa · l'utente ha il controllo"
+  uk: "Агента призупинено · керування в користувача"
+  ja: "エージェント一時停止中 · ユーザーが操作しています"
+  zh-Hans: "智能体已暂停 · 用户已获得控制权"
+
+"Agent handed control to you":
+  es: "El agente te cedió el control"
+  pt: "O agente passou o controle para você"
+  fr: "L'agent vous a donné le contrôle"
+  de: "Der Agent hat Ihnen die Kontrolle übergeben"
+  it: "L'agente ti ha passato il controllo"
+  uk: "Агент передав вам керування"
+  ja: "エージェントがあなたに操作を渡しました"
+  zh-Hans: "智能体已将控制权交给你"
+
+"Line input":
+  es: "Entrada de línea"
+  pt: "Entrada de linha"
+  fr: "Saisie de ligne"
+  de: "Zeileneingabe"
+  it: "Input di riga"
+  uk: "Введення рядка"
+  ja: "行入力"
+  zh-Hans: "行输入"
+
+"Pasted input":
+  es: "Entrada pegada"
+  pt: "Entrada colada"
+  fr: "Saisie collée"
+  de: "Eingefügte Eingabe"
+  it: "Input incollato"
+  uk: "Вставлене введення"
+  ja: "貼り付けた入力"
+  zh-Hans: "粘贴的输入"
+
+"Agent wants to write to the running command":
+  es: "El agente quiere escribir en el comando en ejecución"
+  pt: "O agente quer escrever no comando em execução"
+  fr: "L'agent veut écrire dans la commande en cours"
+  de: "Der Agent möchte in den laufenden Befehl schreiben"
+  it: "L'agente vuole scrivere nel comando in esecuzione"
+  uk: "Агент хоче записати в запущену команду"
+  ja: "エージェントが実行中のコマンドへの書き込みを求めています"
+  zh-Hans: "智能体想要向运行中的命令写入"
+
+"Agent wants to hand command control to you":
+  es: "El agente quiere cederte el control del comando"
+  pt: "O agente quer passar o controle do comando para você"
+  fr: "L'agent veut vous donner le contrôle de la commande"
+  de: "Der Agent möchte Ihnen die Kontrolle über den Befehl übergeben"
+  it: "L'agente vuole passarti il controllo del comando"
+  uk: "Агент хоче передати вам керування командою"
+  ja: "エージェントがコマンドの操作をあなたに渡そうとしています"
+  zh-Hans: "智能体想要将命令控制权交给你"
+
+"Reason: {reason}":
+  es: "Motivo: {reason}"
+  pt: "Motivo: {reason}"
+  fr: "Raison : {reason}"
+  de: "Grund: {reason}"
+  it: "Motivo: {reason}"
+  uk: "Причина: {reason}"
+  ja: "理由: {reason}"
+  zh-Hans: "原因：{reason}"
+
+"Agent wants to read files":
+  es: "El agente quiere leer archivos"
+  pt: "O agente quer ler arquivos"
+  fr: "L'agent veut lire des fichiers"
+  de: "Der Agent möchte Dateien lesen"
+  it: "L'agente vuole leggere dei file"
+  uk: "Агент хоче прочитати файли"
+  ja: "エージェントがファイルの読み込みを求めています"
+  zh-Hans: "智能体想要读取文件"
+
+"Query: {query}":
+  es: "Consulta: {query}"
+  pt: "Consulta: {query}"
+  fr: "Requête : {query}"
+  de: "Abfrage: {query}"
+  it: "Query: {query}"
+  uk: "Запит: {query}"
+  ja: "クエリ: {query}"
+  zh-Hans: "查询：{query}"
+
+"Path: {path}":
+  es: "Ruta: {path}"
+  pt: "Caminho: {path}"
+  fr: "Chemin : {path}"
+  de: "Pfad: {path}"
+  it: "Percorso: {path}"
+  uk: "Шлях: {path}"
+  ja: "パス: {path}"
+  zh-Hans: "路径：{path}"
+
+"Files: {files}":
+  es: "Archivos: {files}"
+  pt: "Arquivos: {files}"
+  fr: "Fichiers : {files}"
+  de: "Dateien: {files}"
+  it: "File: {files}"
+  uk: "Файли: {files}"
+  ja: "ファイル: {files}"
+  zh-Hans: "文件：{files}"
+
+"Agent wants to search the codebase":
+  es: "El agente quiere buscar en el código"
+  pt: "O agente quer pesquisar no código"
+  fr: "L'agent veut effectuer une recherche dans le code"
+  de: "Der Agent möchte die Codebasis durchsuchen"
+  it: "L'agente vuole cercare nel codice"
+  uk: "Агент хоче виконати пошук у кодовій базі"
+  ja: "エージェントがコードベースの検索を求めています"
+  zh-Hans: "智能体想要搜索代码库"
+
+"Agent wants to search file contents":
+  es: "El agente quiere buscar en el contenido de los archivos"
+  pt: "O agente quer pesquisar o conteúdo dos arquivos"
+  fr: "L'agent veut rechercher dans le contenu des fichiers"
+  de: "Der Agent möchte Dateiinhalte durchsuchen"
+  it: "L'agente vuole cercare nel contenuto dei file"
+  uk: "Агент хоче виконати пошук у вмісті файлів"
+  ja: "エージェントがファイル内容の検索を求めています"
+  zh-Hans: "智能体想要搜索文件内容"
+
+"Agent wants to find files":
+  es: "El agente quiere buscar archivos"
+  pt: "O agente quer procurar arquivos"
+  fr: "L'agent veut rechercher des fichiers"
+  de: "Der Agent möchte Dateien finden"
+  it: "L'agente vuole trovare dei file"
+  uk: "Агент хоче знайти файли"
+  ja: "エージェントがファイルの検索を求めています"
+  zh-Hans: "智能体想要查找文件"
+
+"Patterns: {patterns}":
+  es: "Patrones: {patterns}"
+  pt: "Padrões: {patterns}"
+  fr: "Motifs : {patterns}"
+  de: "Muster: {patterns}"
+  it: "Pattern: {patterns}"
+  uk: "Шаблони: {patterns}"
+  ja: "パターン: {patterns}"
+  zh-Hans: "模式：{patterns}"
+
+" · Check in {seconds}s":
+  es: " · Revisión en {seconds} s"
+  pt: " · Verificação em {seconds} s"
+  fr: " · Vérification dans {seconds} s"
+  de: " · Prüfung in {seconds} s"
+  it: " · Controllo tra {seconds} s"
+  uk: " · Перевірка через {seconds} с"
+  ja: " · {seconds} 秒後に確認"
+  zh-Hans: " · {seconds} 秒后检查"
+
+" · Check in {minutes}m":
+  es: " · Revisión en {minutes} min"
+  pt: " · Verificação em {minutes} min"
+  fr: " · Vérification dans {minutes} min"
+  de: " · Prüfung in {minutes} Min."
+  it: " · Controllo tra {minutes} min"
+  uk: " · Перевірка через {minutes} хв"
+  ja: " · {minutes} 分後に確認"
+  zh-Hans: " · {minutes} 分钟后检查"
+
+"Last instruction: {instruction}":
+  es: "Última instrucción: {instruction}"
+  pt: "Última instrução: {instruction}"
+  fr: "Dernière instruction : {instruction}"
+  de: "Letzte Anweisung: {instruction}"
+  it: "Ultima istruzione: {instruction}"
+  uk: "Остання інструкція: {instruction}"
+  ja: "最後の指示: {instruction}"
+  zh-Hans: "最后的指示：{instruction}"
+
+"Allow · Ctrl+Enter":
+  es: "Permitir · Ctrl+Enter"
+  pt: "Permitir · Ctrl+Enter"
+  fr: "Autoriser · Ctrl+Enter"
+  de: "Zulassen · Ctrl+Enter"
+  it: "Consenti · Ctrl+Enter"
+  uk: "Дозволити · Ctrl+Enter"
+  ja: "許可 · Ctrl+Enter"
+  zh-Hans: "允许 · Ctrl+Enter"
+
+"Reject · Ctrl+C":
+  es: "Rechazar · Ctrl+C"
+  pt: "Rejeitar · Ctrl+C"
+  fr: "Refuser · Ctrl+C"
+  de: "Ablehnen · Ctrl+C"
+  it: "Rifiuta · Ctrl+C"
+  uk: "Відхилити · Ctrl+C"
+  ja: "拒否 · Ctrl+C"
+  zh-Hans: "拒绝 · Ctrl+C"
+
+"Edited 1 file":
+  es: "Se editó 1 archivo"
+  pt: "1 arquivo editado"
+  fr: "1 fichier modifié"
+  de: "1 Datei bearbeitet"
+  it: "1 file modificato"
+  uk: "Відредаговано 1 файл"
+  ja: "1 個のファイルを編集しました"
+  zh-Hans: "已编辑 1 个文件"
+
+"Edited {count} files":
+  es: "Se editaron {count} archivos"
+  pt: "{count} arquivos editados"
+  fr: "{count} fichiers modifiés"
+  de: "{count} Dateien bearbeitet"
+  it: "{count} file modificati"
+  uk: "Відредаговано файлів: {count}"
+  ja: "{count} 個のファイルを編集しました"
+  zh-Hans: "已编辑 {count} 个文件"
+
+"File edits cancelled":
+  es: "Ediciones de archivos canceladas"
+  pt: "Edições de arquivo canceladas"
+  fr: "Modifications de fichiers annulées"
+  de: "Dateibearbeitungen abgebrochen"
+  it: "Modifiche ai file annullate"
+  uk: "Редагування файлів скасовано"
+  ja: "ファイルの編集をキャンセルしました"
+  zh-Hans: "已取消文件编辑"
+
+"File edits failed":
+  es: "Las ediciones de archivos fallaron"
+  pt: "As edições de arquivo falharam"
+  fr: "Échec des modifications de fichiers"
+  de: "Dateibearbeitungen fehlgeschlagen"
+  it: "Modifiche ai file non riuscite"
+  uk: "Не вдалося відредагувати файли"
+  ja: "ファイルの編集に失敗しました"
+  zh-Hans: "文件编辑失败"
+
+"Preparing edits…":
+  es: "Preparando ediciones…"
+  pt: "Preparando edições…"
+  fr: "Préparation des modifications…"
+  de: "Bearbeitungen werden vorbereitet…"
+  it: "Preparazione delle modifiche…"
+  uk: "Підготовка змін…"
+  ja: "編集を準備中…"
+  zh-Hans: "正在准备编辑…"
+
+"Editing":
+  es: "Editando"
+  pt: "Editando"
+  fr: "Modification"
+  de: "Bearbeitung"
+  it: "Modifica"
+  uk: "Редагування"
+  ja: "編集中"
+  zh-Hans: "正在编辑"
+
+"Created":
+  es: "Creado"
+  pt: "Criado"
+  fr: "Créé"
+  de: "Erstellt"
+  it: "Creato"
+  uk: "Створено"
+  ja: "作成"
+  zh-Hans: "已创建"
+
+"Updated":
+  es: "Actualizado"
+  pt: "Atualizado"
+  fr: "Mis à jour"
+  de: "Aktualisiert"
+  it: "Aggiornato"
+  uk: "Оновлено"
+  ja: "更新"
+  zh-Hans: "已更新"
+
+" to expand/collapse":
+  es: " para expandir/contraer"
+  pt: " para expandir/recolher"
+  fr: " pour développer/réduire"
+  de: " zum Ein-/Ausklappen"
+  it: " per espandere/comprimere"
+  uk: " щоб розгорнути/згорнути"
+  ja: " で展開/折りたたみ"
+  zh-Hans: " 展开/折叠"
+
+"Is it OK if I make these file edits?":
+  es: "¿Puedo hacer estas ediciones de archivos?"
+  pt: "Posso fazer estas edições de arquivo?"
+  fr: "Puis-je effectuer ces modifications de fichiers ?"
+  de: "Darf ich diese Dateibearbeitungen vornehmen?"
+  it: "Posso apportare queste modifiche ai file?"
+  uk: "Можна внести ці зміни у файли?"
+  ja: "これらのファイルを編集してもよろしいですか?"
+  zh-Hans: "可以进行这些文件编辑吗？"
+
+"Edited":
+  es: "Editado"
+  pt: "Editado"
+  fr: "Modifié"
+  de: "Bearbeitet"
+  it: "Modificato"
+  uk: "Відредаговано"
+  ja: "編集済み"
+  zh-Hans: "已编辑"
+
+"{count} files":
+  es: "{count} archivos"
+  pt: "{count} arquivos"
+  fr: "{count} fichiers"
+  de: "{count} Dateien"
+  it: "{count} file"
+  uk: "файлів: {count}"
+  ja: "{count} 個のファイル"
+  zh-Hans: "{count} 个文件"
+
+"Is it OK if I read these files?":
+  es: "¿Puedo leer estos archivos?"
+  pt: "Posso ler estes arquivos?"
+  fr: "Puis-je lire ces fichiers ?"
+  de: "Darf ich diese Dateien lesen?"
+  it: "Posso leggere questi file?"
+  uk: "Можна прочитати ці файли?"
+  ja: "これらのファイルを読み込んでもよろしいですか?"
+  zh-Hans: "可以读取这些文件吗？"
+
+"Is it OK if I search this codebase?":
+  es: "¿Puedo buscar en este código?"
+  pt: "Posso pesquisar neste código?"
+  fr: "Puis-je effectuer une recherche dans ce code ?"
+  de: "Darf ich diese Codebasis durchsuchen?"
+  it: "Posso cercare in questo codice?"
+  uk: "Можна виконати пошук у цій кодовій базі?"
+  ja: "このコードベースを検索してもよろしいですか?"
+  zh-Hans: "可以搜索此代码库吗？"
+
+"Is it OK if I search these files?":
+  es: "¿Puedo buscar en estos archivos?"
+  pt: "Posso pesquisar nestes arquivos?"
+  fr: "Puis-je effectuer une recherche dans ces fichiers ?"
+  de: "Darf ich diese Dateien durchsuchen?"
+  it: "Posso cercare in questi file?"
+  uk: "Можна виконати пошук у цих файлах?"
+  ja: "これらのファイルを検索してもよろしいですか?"
+  zh-Hans: "可以搜索这些文件吗？"
+
+"Is it OK if I find files matching these patterns?":
+  es: "¿Puedo buscar archivos que coincidan con estos patrones?"
+  pt: "Posso procurar arquivos correspondentes a estes padrões?"
+  fr: "Puis-je rechercher les fichiers correspondant à ces motifs ?"
+  de: "Darf ich Dateien suchen, die diesen Mustern entsprechen?"
+  it: "Posso trovare i file corrispondenti a questi pattern?"
+  uk: "Можна знайти файли за цими шаблонами?"
+  ja: "これらのパターンに一致するファイルを検索してもよろしいですか?"
+  zh-Hans: "可以查找匹配这些模式的文件吗？"
+
+"Is it OK if I call an MCP tool on {server}?":
+  es: "¿Puedo llamar a una herramienta MCP en {server}?"
+  pt: "Posso chamar uma ferramenta MCP em {server}?"
+  fr: "Puis-je appeler un outil MCP sur {server} ?"
+  de: "Darf ich ein MCP-Tool auf {server} aufrufen?"
+  it: "Posso chiamare uno strumento MCP su {server}?"
+  uk: "Можна викликати інструмент MCP на {server}?"
+  ja: "{server} の MCP ツールを呼び出してもよろしいですか?"
+  zh-Hans: "可以调用 {server} 上的 MCP 工具吗？"
+
+"Is it OK if I call this MCP tool?":
+  es: "¿Puedo llamar a esta herramienta MCP?"
+  pt: "Posso chamar esta ferramenta MCP?"
+  fr: "Puis-je appeler cet outil MCP ?"
+  de: "Darf ich dieses MCP-Tool aufrufen?"
+  it: "Posso chiamare questo strumento MCP?"
+  uk: "Можна викликати цей інструмент MCP?"
+  ja: "この MCP ツールを呼び出してもよろしいですか?"
+  zh-Hans: "可以调用此 MCP 工具吗？"
+
+"Is it OK if I call MCP tool {name} on {server}?":
+  es: "¿Puedo llamar a la herramienta MCP {name} en {server}?"
+  pt: "Posso chamar a ferramenta MCP {name} em {server}?"
+  fr: "Puis-je appeler l'outil MCP {name} sur {server} ?"
+  de: "Darf ich das MCP-Tool {name} auf {server} aufrufen?"
+  it: "Posso chiamare lo strumento MCP {name} su {server}?"
+  uk: "Можна викликати інструмент MCP {name} на {server}?"
+  ja: "{server} の MCP ツール {name} を呼び出してもよろしいですか?"
+  zh-Hans: "可以调用 {server} 上的 MCP 工具 {name} 吗？"
+
+"Is it OK if I call MCP tool {name}?":
+  es: "¿Puedo llamar a la herramienta MCP {name}?"
+  pt: "Posso chamar a ferramenta MCP {name}?"
+  fr: "Puis-je appeler l'outil MCP {name} ?"
+  de: "Darf ich das MCP-Tool {name} aufrufen?"
+  it: "Posso chiamare lo strumento MCP {name}?"
+  uk: "Можна викликати інструмент MCP {name}?"
+  ja: "MCP ツール {name} を呼び出してもよろしいですか?"
+  zh-Hans: "可以调用 MCP 工具 {name} 吗？"
+
+"Is it OK if I read this MCP resource?":
+  es: "¿Puedo leer este recurso MCP?"
+  pt: "Posso ler este recurso MCP?"
+  fr: "Puis-je lire cette ressource MCP ?"
+  de: "Darf ich diese MCP-Ressource lesen?"
+  it: "Posso leggere questa risorsa MCP?"
+  uk: "Можна прочитати цей ресурс MCP?"
+  ja: "この MCP リソースを読み込んでもよろしいですか?"
+  zh-Hans: "可以读取此 MCP 资源吗？"
+
+"Is it OK if I use the computer?":
+  es: "¿Puedo usar el ordenador?"
+  pt: "Posso usar o computador?"
+  fr: "Puis-je utiliser l'ordinateur ?"
+  de: "Darf ich den Computer verwenden?"
+  it: "Posso usare il computer?"
+  uk: "Можна скористатися комп'ютером?"
+  ja: "コンピューターを操作してもよろしいですか?"
+  zh-Hans: "可以使用计算机吗？"
+
+"Is it OK if I write this input to the running command?":
+  es: "¿Puedo escribir esta entrada en el comando en ejecución?"
+  pt: "Posso escrever esta entrada no comando em execução?"
+  fr: "Puis-je écrire cette entrée dans la commande en cours ?"
+  de: "Darf ich diese Eingabe an den laufenden Befehl senden?"
+  it: "Posso scrivere questo input nel comando in esecuzione?"
+  uk: "Можна записати це введення в запущену команду?"
+  ja: "この入力を実行中のコマンドに書き込んでもよろしいですか?"
+  zh-Hans: "可以将此输入写入运行中的命令吗？"
+
+"Should I start a new conversation?":
+  es: "¿Inicio una nueva conversación?"
+  pt: "Devo iniciar uma nova conversa?"
+  fr: "Dois-je démarrer une nouvelle conversation ?"
+  de: "Soll ich eine neue Unterhaltung beginnen?"
+  it: "Devo iniziare una nuova conversazione?"
+  uk: "Почати нову розмову?"
+  ja: "新しい会話を開始しますか?"
+  zh-Hans: "要开始新对话吗？"
+
+"Is it OK if I hand control of the running command to you?":
+  es: "¿Puedo cederte el control del comando en ejecución?"
+  pt: "Posso passar o controle do comando em execução para você?"
+  fr: "Puis-je vous donner le contrôle de la commande en cours ?"
+  de: "Darf ich Ihnen die Kontrolle über den laufenden Befehl übergeben?"
+  it: "Posso passarti il controllo del comando in esecuzione?"
+  uk: "Можна передати вам керування запущеною командою?"
+  ja: "実行中のコマンドの操作をあなたに渡してもよろしいですか?"
+  zh-Hans: "可以将运行中命令的控制权交给你吗？"
+
+"Is it OK if I {action}?":
+  es: "¿Puedo realizar esta acción: {action}?"
+  pt: "Posso realizar esta ação: {action}?"
+  fr: "Puis-je effectuer cette action : {action} ?"
+  de: "Darf ich diese Aktion ausführen: {action}?"
+  it: "Posso eseguire questa azione: {action}?"
+  uk: "Можна виконати дію: {action}?"
+  ja: "次の操作を実行してもよろしいですか: {action}"
+  zh-Hans: "可以执行此操作吗：{action}？"
+
+"  in {path}":
+  es: "  en {path}"
+  pt: "  em {path}"
+  fr: "  dans {path}"
+  de: "  in {path}"
+  it: "  in {path}"
+  uk: "  у {path}"
+  ja: "  場所: {path}"
+  zh-Hans: "  位置：{path}"
+
+"{name} on {server}":
+  es: "{name} en {server}"
+  pt: "{name} em {server}"
+  fr: "{name} sur {server}"
+  de: "{name} auf {server}"
+  it: "{name} su {server}"
+  uk: "{name} на {server}"
+  ja: "{name} ({server})"
+  zh-Hans: "{name}（{server}）"
+
+"Continue the agent's next step in a fresh conversation.":
+  es: "Continuar el siguiente paso del agente en una conversación nueva."
+  pt: "Continuar a próxima etapa do agente em uma nova conversa."
+  fr: "Poursuivre l'étape suivante de l'agent dans une nouvelle conversation."
+  de: "Den nächsten Schritt des Agenten in einer neuen Unterhaltung fortsetzen."
+  it: "Prosegui il prossimo passaggio dell'agente in una nuova conversazione."
+  uk: "Продовжити наступний крок агента в новій розмові."
+  ja: "エージェントの次のステップを新しい会話で続行します。"
+  zh-Hans: "在新对话中继续智能体的下一步。"
+
+"[Image without description]":
+  es: "[Imagen sin descripción]"
+  pt: "[Imagem sem descrição]"
+  fr: "[Image sans description]"
+  de: "[Bild ohne Beschreibung]"
+  it: "[Immagine senza descrizione]"
+  uk: "[Зображення без опису]"
+  ja: "[説明のない画像]"
+  zh-Hans: "[无描述的图片]"
+
+"[Empty table]":
+  es: "[Tabla vacía]"
+  pt: "[Tabela vazia]"
+  fr: "[Tableau vide]"
+  de: "[Leere Tabelle]"
+  it: "[Tabella vuota]"
+  uk: "[Порожня таблиця]"
+  ja: "[空のテーブル]"
+  zh-Hans: "[空表格]"
+
+"[Table has no rows]":
+  es: "[La tabla no tiene filas]"
+  pt: "[A tabela não tem linhas]"
+  fr: "[Le tableau n'a aucune ligne]"
+  de: "[Tabelle hat keine Zeilen]"
+  it: "[La tabella non ha righe]"
+  uk: "[Таблиця не має рядків]"
+  ja: "[テーブルに行がありません]"
+  zh-Hans: "[表格没有行]"
+
+"yes":
+  es: "sí"
+  pt: "sim"
+  fr: "oui"
+  de: "ja"
+  it: "sì"
+  uk: "так"
+  ja: "はい"
+  zh-Hans: "是"
+
+"no":
+  es: "no"
+  pt: "não"
+  fr: "non"
+  de: "nein"
+  it: "no"
+  uk: "ні"
+  ja: "いいえ"
+  zh-Hans: "否"
+
+" to exit editor  ":
+  es: " para salir del editor  "
+  pt: " para sair do editor  "
+  fr: " pour quitter l'éditeur  "
+  de: " zum Verlassen des Editors  "
+  it: " per uscire dall'editor  "
+  uk: " щоб вийти з редактора  "
+  ja: " でエディターを終了  "
+  zh-Hans: " 退出编辑器"
+
+" to cancel  ":
+  es: " para cancelar  "
+  pt: " para cancelar  "
+  fr: " pour annuler  "
+  de: " zum Abbrechen  "
+  it: " per annullare  "
+  uk: " щоб скасувати  "
+  ja: " でキャンセル  "
+  zh-Hans: " 取消"
+
+" to run":
+  es: " para ejecutar"
+  pt: " para executar"
+  fr: " pour exécuter"
+  de: " zum Ausführen"
+  it: " per eseguire"
+  uk: " щоб виконати"
+  ja: " で実行"
+  zh-Hans: " 运行"
+
+"{count} documents":
+  es: "{count} documentos"
+  pt: "{count} documentos"
+  fr: "{count} documents"
+  de: "{count} Dokumente"
+  it: "{count} documenti"
+  uk: "документів: {count}"
+  ja: "{count} 件のドキュメント"
+  zh-Hans: "{count} 个文档"
+
+"Creating ":
+  es: "Creando "
+  pt: "Criando "
+  fr: "Création de "
+  de: "Wird erstellt: "
+  it: "Creazione di "
+  uk: "Створення: "
+  ja: "作成中: "
+  zh-Hans: "正在创建"
+
+"Created ":
+  es: "Creado: "
+  pt: "Criado: "
+  fr: "Créé : "
+  de: "Erstellt: "
+  it: "Creato: "
+  uk: "Створено: "
+  ja: "作成済み: "
+  zh-Hans: "已创建"
+
+"Updating plan":
+  es: "Actualizando plan"
+  pt: "Atualizando plano"
+  fr: "Mise à jour du plan"
+  de: "Plan wird aktualisiert"
+  it: "Aggiornamento del piano"
+  uk: "Оновлення плану"
+  ja: "プランを更新中"
+  zh-Hans: "正在更新计划"
+
+"Updated plan":
+  es: "Plan actualizado"
+  pt: "Plano atualizado"
+  fr: "Plan mis à jour"
+  de: "Plan aktualisiert"
+  it: "Piano aggiornato"
+  uk: "План оновлено"
+  ja: "プランを更新しました"
+  zh-Hans: "已更新计划"
+
+"Pull request":
+  es: "Pull request"
+  pt: "Pull request"
+  fr: "Pull request"
+  de: "Pull-Request"
+  it: "Pull request"
+  uk: "Pull request"
+  ja: "プルリクエスト"
+  zh-Hans: "拉取请求"
+
+"new":
+  es: "nuevo"
+  pt: "novo"
+  fr: "nouveau"
+  de: "neu"
+  it: "nuovo"
+  uk: "нове"
+  ja: "新"
+  zh-Hans: "新"
+
+"old":
+  es: "antiguo"
+  pt: "antigo"
+  fr: "ancien"
+  de: "alt"
+  it: "vecchio"
+  uk: "старе"
+  ja: "旧"
+  zh-Hans: "旧"
+
+"diff":
+  es: "diff"
+  pt: "diff"
+  fr: "diff"
+  de: "Diff"
+  it: "diff"
+  uk: "diff"
+  ja: "差分"
+  zh-Hans: "差异"
+
+"Enter a command to continue.":
+  es: "Introduce un comando para continuar."
+  pt: "Insira um comando para continuar."
+  fr: "Saisissez une commande pour continuer."
+  de: "Geben Sie einen Befehl ein, um fortzufahren."
+  it: "Inserisci un comando per continuare."
+  uk: "Введіть команду, щоб продовжити."
+  ja: "続行するにはコマンドを入力してください。"
+  zh-Hans: "请输入命令以继续。"
+
+" to edit command":
+  es: " para editar el comando"
+  pt: " para editar o comando"
+  fr: " pour modifier la commande"
+  de: " zum Bearbeiten des Befehls"
+  it: " per modificare il comando"
+  uk: " щоб редагувати команду"
+  ja: " でコマンドを編集"
+  zh-Hans: " 编辑命令"
+
+"Is it OK if I run this command and read the output?":
+  es: "¿Puedo ejecutar este comando y leer la salida?"
+  pt: "Posso executar este comando e ler a saída?"
+  fr: "Puis-je exécuter cette commande et lire la sortie ?"
+  de: "Darf ich diesen Befehl ausführen und die Ausgabe lesen?"
+  it: "Posso eseguire questo comando e leggere l'output?"
+  uk: "Можна виконати цю команду й прочитати вивід?"
+  ja: "このコマンドを実行して出力を読み込んでもよろしいですか?"
+  zh-Hans: "可以运行此命令并读取输出吗？"
+
+"Esc or Ctrl-C to cancel and start a new session":
+  es: "Esc o Ctrl-C para cancelar e iniciar una sesión nueva"
+  pt: "Esc ou Ctrl-C para cancelar e iniciar uma nova sessão"
+  fr: "Esc ou Ctrl-C pour annuler et démarrer une nouvelle session"
+  de: "Esc oder Ctrl-C zum Abbrechen und Starten einer neuen Sitzung"
+  it: "Esc o Ctrl-C per annullare e avviare una nuova sessione"
+  uk: "Esc або Ctrl-C, щоб скасувати й почати новий сеанс"
+  ja: "Esc または Ctrl-C でキャンセルして新しいセッションを開始"
+  zh-Hans: "按 Esc 或 Ctrl-C 取消并开始新会话"
+
+"Loading session...":
+  es: "Cargando sesión..."
+  pt: "Carregando sessão..."
+  fr: "Chargement de la session..."
+  de: "Sitzung wird geladen..."
+  it: "Caricamento della sessione..."
+  uk: "Завантаження сеансу..."
+  ja: "セッションを読み込み中..."
+  zh-Hans: "正在加载会话..."
+
+"Could not restore conversation: {message}":
+  es: "No se pudo restaurar la conversación: {message}"
+  pt: "Não foi possível restaurar a conversa: {message}"
+  fr: "Impossible de restaurer la conversation : {message}"
+  de: "Unterhaltung konnte nicht wiederhergestellt werden: {message}"
+  it: "Impossibile ripristinare la conversazione: {message}"
+  uk: "Не вдалося відновити розмову: {message}"
+  ja: "会話を復元できませんでした: {message}"
+  zh-Hans: "无法恢复对话：{message}"
+
+"Press Ctrl-C to exit.":
+  es: "Pulsa Ctrl-C para salir."
+  pt: "Pressione Ctrl-C para sair."
+  fr: "Appuyez sur Ctrl-C pour quitter."
+  de: "Drücken Sie Ctrl-C zum Beenden."
+  it: "Premi Ctrl-C per uscire."
+  uk: "Натисніть Ctrl-C, щоб вийти."
+  ja: "Ctrl-C を押すと終了します。"
+  zh-Hans: "按 Ctrl-C 退出。"
+
+"Welcome to Termloc":
+  es: "Te damos la bienvenida a Termloc"
+  pt: "Boas-vindas ao Termloc"
+  fr: "Bienvenue dans Termloc"
+  de: "Willkommen bei Termloc"
+  it: "Benvenuto in Termloc"
+  uk: "Ласкаво просимо до Termloc"
+  ja: "Termloc へようこそ"
+  zh-Hans: "欢迎使用 Termloc"
+
+"What’s different about Termloc":
+  es: "Qué tiene de diferente Termloc"
+  pt: "O que o Termloc tem de diferente"
+  fr: "Ce qui distingue Termloc"
+  de: "Was Termloc anders macht"
+  it: "Cosa rende diverso Termloc"
+  uk: "Чим відрізняється Termloc"
+  ja: "Termloc の特長"
+  zh-Hans: "Termloc 的不同之处"
+
+"State of the art coding agents":
+  es: "Agentes de programación de última generación"
+  pt: "Agentes de programação de última geração"
+  fr: "Agents de codage de pointe"
+  de: "Hochmoderne Coding-Agenten"
+  it: "Agenti di programmazione all'avanguardia"
+  uk: "Найсучасніші агенти для програмування"
+  ja: "最先端のコーディングエージェント"
+  zh-Hans: "最先进的编程智能体"
+
+"Frontier and open-weight models":
+  es: "Modelos de vanguardia y de pesos abiertos"
+  pt: "Modelos de ponta e de pesos abertos"
+  fr: "Modèles de pointe et à poids ouverts"
+  de: "Frontier- und Open-Weight-Modelle"
+  it: "Modelli di frontiera e open-weight"
+  uk: "Передові моделі та моделі з відкритими вагами"
+  ja: "最先端モデルとオープンウェイトモデル"
+  zh-Hans: "前沿模型与开放权重模型"
+
+"Fully customizable model routers":
+  es: "Enrutadores de modelos totalmente personalizables"
+  pt: "Roteadores de modelos totalmente personalizáveis"
+  fr: "Routeurs de modèles entièrement personnalisables"
+  de: "Vollständig anpassbare Modell-Router"
+  it: "Router di modelli completamente personalizzabili"
+  uk: "Повністю налаштовувані маршрутизатори моделей"
+  ja: "完全にカスタマイズ可能なモデルルーター"
+  zh-Hans: "完全可自定义的模型路由"
+
+"Better shell command support":
+  es: "Mejor compatibilidad con comandos de shell"
+  pt: "Melhor suporte a comandos de shell"
+  fr: "Meilleure prise en charge des commandes shell"
+  de: "Bessere Unterstützung für Shell-Befehle"
+  it: "Supporto migliorato per i comandi shell"
+  uk: "Краща підтримка команд оболонки"
+  ja: "シェルコマンドのサポートを強化"
+  zh-Hans: "更好的 Shell 命令支持"
+
+"Starting terminal…":
+  es: "Iniciando terminal…"
+  pt: "Iniciando terminal…"
+  fr: "Démarrage du terminal…"
+  de: "Terminal wird gestartet…"
+  it: "Avvio del terminale…"
+  uk: "Запуск термінала…"
+  ja: "ターミナルを起動中…"
+  zh-Hans: "正在启动终端…"
+
+"Voice input is unavailable":
+  es: "La entrada de voz no está disponible"
+  pt: "A entrada de voz não está disponível"
+  fr: "La saisie vocale est indisponible"
+  de: "Spracheingabe ist nicht verfügbar"
+  it: "L'input vocale non è disponibile"
+  uk: "Голосове введення недоступне"
+  ja: "音声入力は利用できません"
+  zh-Hans: "语音输入不可用"
+
+"Microphone access denied":
+  es: "Acceso al micrófono denegado"
+  pt: "Acesso ao microfone negado"
+  fr: "Accès au microphone refusé"
+  de: "Mikrofonzugriff verweigert"
+  it: "Accesso al microfono negato"
+  uk: "Доступ до мікрофона заборонено"
+  ja: "マイクへのアクセスが拒否されました"
+  zh-Hans: "麦克风访问被拒绝"
+
+"Unable to start voice input":
+  es: "No se pudo iniciar la entrada de voz"
+  pt: "Não foi possível iniciar a entrada de voz"
+  fr: "Impossible de démarrer la saisie vocale"
+  de: "Spracheingabe konnte nicht gestartet werden"
+  it: "Impossibile avviare l'input vocale"
+  uk: "Не вдалося почати голосове введення"
+  ja: "音声入力を開始できません"
+  zh-Hans: "无法开始语音输入"
+
+"Failed to stop voice input":
+  es: "No se pudo detener la entrada de voz"
+  pt: "Falha ao parar a entrada de voz"
+  fr: "Impossible d'arrêter la saisie vocale"
+  de: "Spracheingabe konnte nicht beendet werden"
+  it: "Impossibile interrompere l'input vocale"
+  uk: "Не вдалося зупинити голосове введення"
+  ja: "音声入力を停止できませんでした"
+  zh-Hans: "无法停止语音输入"
+
+"Voice input stopped":
+  es: "Entrada de voz detenida"
+  pt: "Entrada de voz interrompida"
+  fr: "Saisie vocale arrêtée"
+  de: "Spracheingabe beendet"
+  it: "Input vocale interrotto"
+  uk: "Голосове введення зупинено"
+  ja: "音声入力を停止しました"
+  zh-Hans: "语音输入已停止"
+
+"Voice transcription is unavailable":
+  es: "La transcripción de voz no está disponible"
+  pt: "A transcrição de voz não está disponível"
+  fr: "La transcription vocale est indisponible"
+  de: "Sprachtranskription ist nicht verfügbar"
+  it: "La trascrizione vocale non è disponibile"
+  uk: "Транскрибування голосу недоступне"
+  ja: "音声の文字起こしは利用できません"
+  zh-Hans: "语音转写不可用"
+
+" to stop":
+  es: " para detener"
+  pt: " para parar"
+  fr: " pour arrêter"
+  de: " zum Beenden"
+  it: " per interrompere"
+  uk: " щоб зупинити"
+  ja: " で停止"
+  zh-Hans: " 停止"
+
+"logged in as":
+  es: "sesión iniciada como"
+  pt: "conectado como"
+  fr: "connecté en tant que"
+  de: "angemeldet als"
+  it: "accesso effettuato come"
+  uk: "увійшли як"
+  ja: "ログイン中:"
+  zh-Hans: "已登录为"
+
+"No servers available · run /mcp":
+  es: "No hay servidores disponibles · ejecuta /mcp"
+  pt: "Nenhum servidor disponível · execute /mcp"
+  fr: "Aucun serveur disponible · exécutez /mcp"
+  de: "Keine Server verfügbar · /mcp ausführen"
+  it: "Nessun server disponibile · esegui /mcp"
+  uk: "Немає доступних серверів · виконайте /mcp"
+  ja: "利用可能なサーバーはありません · /mcp を実行"
+  zh-Hans: "没有可用的服务器 · 运行 /mcp"
+
+"{count} connected":
+  es: "{count} conectados"
+  pt: "{count} conectados"
+  fr: "{count} connectés"
+  de: "{count} verbunden"
+  it: "{count} connessi"
+  uk: "підключено: {count}"
+  ja: "{count} 件接続済み"
+  zh-Hans: "{count} 个已连接"
+
+"{count} starting":
+  es: "{count} iniciándose"
+  pt: "{count} iniciando"
+  fr: "{count} en démarrage"
+  de: "{count} werden gestartet"
+  it: "{count} in avvio"
+  uk: "запускається: {count}"
+  ja: "{count} 件起動中"
+  zh-Hans: "{count} 个正在启动"
+
+"{count} needs auth":
+  es: "{count} requieren autenticación"
+  pt: "{count} precisam de autenticação"
+  fr: "{count} nécessitent une authentification"
+  de: "{count} benötigen Authentifizierung"
+  it: "{count} richiedono autenticazione"
+  uk: "потребують автентифікації: {count}"
+  ja: "{count} 件要認証"
+  zh-Hans: "{count} 个需要认证"
+
+"{count} stopping":
+  es: "{count} deteniéndose"
+  pt: "{count} parando"
+  fr: "{count} en arrêt"
+  de: "{count} werden beendet"
+  it: "{count} in arresto"
+  uk: "зупиняється: {count}"
+  ja: "{count} 件停止中"
+  zh-Hans: "{count} 个正在停止"
+
+"{count} failed":
+  es: "{count} con errores"
+  pt: "{count} com falha"
+  fr: "{count} en échec"
+  de: "{count} fehlgeschlagen"
+  it: "{count} non riusciti"
+  uk: "з помилкою: {count}"
+  ja: "{count} 件失敗"
+  zh-Hans: "{count} 个失败"
+
+"{count} offline":
+  es: "{count} sin conexión"
+  pt: "{count} offline"
+  fr: "{count} hors ligne"
+  de: "{count} offline"
+  it: "{count} offline"
+  uk: "офлайн: {count}"
+  ja: "{count} 件オフライン"
+  zh-Hans: "{count} 个离线"
+
+"{count} available":
+  es: "{count} disponibles"
+  pt: "{count} disponíveis"
+  fr: "{count} disponibles"
+  de: "{count} verfügbar"
+  it: "{count} disponibili"
+  uk: "доступно: {count}"
+  ja: "{count} 件利用可能"
+  zh-Hans: "{count} 个可用"
+
+"{count} config errors":
+  es: "{count} errores de configuración"
+  pt: "{count} erros de configuração"
+  fr: "{count} erreurs de configuration"
+  de: "{count} Konfigurationsfehler"
+  it: "{count} errori di configurazione"
+  uk: "помилок конфігурації: {count}"
+  ja: "設定エラー {count} 件"
+  zh-Hans: "{count} 个配置错误"
+
+"Signed in as":
+  es: "Sesión iniciada como"
+  pt: "Conectado como"
+  fr: "Connecté en tant que"
+  de: "Angemeldet als"
+  it: "Accesso effettuato come"
+  uk: "Ви увійшли як"
+  ja: "ログイン中:"
+  zh-Hans: "已登录为"
+
+"Not signed in":
+  es: "Sin sesión iniciada"
+  pt: "Não conectado"
+  fr: "Non connecté"
+  de: "Nicht angemeldet"
+  it: "Accesso non effettuato"
+  uk: "Ви не ввійшли"
+  ja: "未ログイン"
+  zh-Hans: "未登录"
+
+"dev build":
+  es: "compilación de desarrollo"
+  pt: "build de desenvolvimento"
+  fr: "build de développement"
+  de: "Entwicklungs-Build"
+  it: "build di sviluppo"
+  uk: "збірка для розробки"
+  ja: "開発ビルド"
+  zh-Hans: "开发版本"
+
+"Discovering project context…":
+  es: "Descubriendo el contexto del proyecto…"
+  pt: "Descobrindo o contexto do projeto…"
+  fr: "Analyse du contexte du projet…"
+  de: "Projektkontext wird ermittelt…"
+  it: "Rilevamento del contesto del progetto…"
+  uk: "Виявлення контексту проєкту…"
+  ja: "プロジェクトのコンテキストを検出中…"
+  zh-Hans: "正在发现项目上下文…"
+
+"{file} loaded":
+  es: "{file} cargado"
+  pt: "{file} carregado"
+  fr: "{file} chargé"
+  de: "{file} geladen"
+  it: "{file} caricato"
+  uk: "{file} завантажено"
+  ja: "{file} を読み込みました"
+  zh-Hans: "已加载 {file}"
+
+"1 skill discovered":
+  es: "1 habilidad descubierta"
+  pt: "1 habilidade descoberta"
+  fr: "1 compétence découverte"
+  de: "1 Skill gefunden"
+  it: "1 skill rilevata"
+  uk: "Виявлено 1 навичку"
+  ja: "1 個のスキルを検出しました"
+  zh-Hans: "发现 1 个技能"
+
+"{count} skills discovered":
+  es: "{count} habilidades descubiertas"
+  pt: "{count} habilidades descobertas"
+  fr: "{count} compétences découvertes"
+  de: "{count} Skills gefunden"
+  it: "{count} skill rilevate"
+  uk: "Виявлено навичок: {count}"
+  ja: "{count} 個のスキルを検出しました"
+  zh-Hans: "发现 {count} 个技能"
+
+"ctrl-c again to exit":
+  es: "ctrl-c de nuevo para salir"
+  pt: "ctrl-c novamente para sair"
+  fr: "ctrl-c à nouveau pour quitter"
+  de: "ctrl-c erneut zum Beenden"
+  it: "ctrl-c di nuovo per uscire"
+  uk: "ctrl-c ще раз, щоб вийти"
+  ja: "もう一度 ctrl-c で終了"
+  zh-Hans: "再按一次 ctrl-c 退出"
+
+"ctrl-c to return to command":
+  es: "ctrl-c para volver al comando"
+  pt: "ctrl-c para voltar ao comando"
+  fr: "ctrl-c pour revenir à la commande"
+  de: "ctrl-c, um zum Befehl zurückzukehren"
+  it: "ctrl-c per tornare al comando"
+  uk: "ctrl-c, щоб повернутися до команди"
+  ja: "ctrl-c でコマンドに戻る"
+  zh-Hans: "按 ctrl-c 返回命令"
+
+"Settings failed to load: invalid syntax.":
+  es: "No se pudieron cargar los ajustes: sintaxis no válida."
+  pt: "Falha ao carregar as configurações: sintaxe inválida."
+  fr: "Échec du chargement des paramètres : syntaxe non valide."
+  de: "Einstellungen konnten nicht geladen werden: ungültige Syntax."
+  it: "Impossibile caricare le impostazioni: sintassi non valida."
+  uk: "Не вдалося завантажити налаштування: недійсний синтаксис."
+  ja: "設定を読み込めませんでした: 構文が無効です。"
+  zh-Hans: "设置加载失败：语法无效。"
+
+"Settings failed to load: invalid values.":
+  es: "No se pudieron cargar los ajustes: valores no válidos."
+  pt: "Falha ao carregar as configurações: valores inválidos."
+  fr: "Échec du chargement des paramètres : valeurs non valides."
+  de: "Einstellungen konnten nicht geladen werden: ungültige Werte."
+  it: "Impossibile caricare le impostazioni: valori non validi."
+  uk: "Не вдалося завантажити налаштування: недійсні значення."
+  ja: "設定を読み込めませんでした: 値が無効です。"
+  zh-Hans: "设置加载失败：值无效。"
+
+"cannot run — command already running":
+  es: "no se puede ejecutar: ya hay un comando en ejecución"
+  pt: "não é possível executar — já há um comando em execução"
+  fr: "impossible d'exécuter — une commande est déjà en cours"
+  de: "Ausführung nicht möglich — es läuft bereits ein Befehl"
+  it: "impossibile eseguire — un comando è già in esecuzione"
+  uk: "неможливо виконати — команда вже виконується"
+  ja: "実行できません — 別のコマンドが実行中です"
+  zh-Hans: "无法运行 — 已有命令在运行"
+
+"cannot start new conversation while terminal command is running":
+  es: "no se puede iniciar una conversación nueva mientras se ejecuta un comando del terminal"
+  pt: "não é possível iniciar uma nova conversa enquanto um comando do terminal está em execução"
+  fr: "impossible de démarrer une nouvelle conversation pendant l'exécution d'une commande du terminal"
+  de: "Neue Unterhaltung kann nicht gestartet werden, während ein Terminalbefehl läuft"
+  it: "impossibile avviare una nuova conversazione mentre è in esecuzione un comando del terminale"
+  uk: "неможливо почати нову розмову, поки виконується команда термінала"
+  ja: "ターミナルのコマンド実行中は新しい会話を開始できません"
+  zh-Hans: "终端命令运行时无法开始新对话"
+
+"/fork requires an active conversation":
+  es: "/fork requiere una conversación activa"
+  pt: "/fork requer uma conversa ativa"
+  fr: "/fork nécessite une conversation active"
+  de: "/fork erfordert eine aktive Unterhaltung"
+  it: "/fork richiede una conversazione attiva"
+  uk: "/fork потребує активної розмови"
+  ja: "/fork にはアクティブな会話が必要です"
+  zh-Hans: "/fork 需要一个活动对话"
+
+"Nothing to fork — start a conversation first.":
+  es: "No hay nada que bifurcar: inicia una conversación primero."
+  pt: "Nada para bifurcar — inicie uma conversa primeiro."
+  fr: "Rien à dupliquer — démarrez d'abord une conversation."
+  de: "Nichts abzuzweigen — starten Sie zuerst eine Unterhaltung."
+  it: "Niente da duplicare — avvia prima una conversazione."
+  uk: "Нічого розгалужувати — спершу почніть розмову."
+  ja: "フォークするものがありません — まず会話を開始してください。"
+  zh-Hans: "没有可分叉的内容 — 请先开始对话。"
+
+"This conversation cannot be forked until it has a resume ID.":
+  es: "Esta conversación no se puede bifurcar hasta que tenga un ID de reanudación."
+  pt: "Esta conversa não pode ser bifurcada até ter um ID de retomada."
+  fr: "Cette conversation ne peut pas être dupliquée tant qu'elle n'a pas d'ID de reprise."
+  de: "Diese Unterhaltung kann erst abgezweigt werden, wenn sie eine Fortsetzungs-ID hat."
+  it: "Questa conversazione non può essere duplicata finché non ha un ID di ripresa."
+  uk: "Цю розмову не можна розгалузити, доки вона не має ID відновлення."
+  ja: "再開 ID が付与されるまで、この会話はフォークできません。"
+  zh-Hans: "此对话在获得恢复 ID 之前无法分叉。"
+
+"Conversation forking failed.":
+  es: "No se pudo bifurcar la conversación."
+  pt: "Falha ao bifurcar a conversa."
+  fr: "Échec de la duplication de la conversation."
+  de: "Abzweigen der Unterhaltung fehlgeschlagen."
+  it: "Duplicazione della conversazione non riuscita."
+  uk: "Не вдалося розгалузити розмову."
+  ja: "会話のフォークに失敗しました。"
+  zh-Hans: "对话分叉失败。"
+
+"Cannot switch conversations while a command is in progress.":
+  es: "No se puede cambiar de conversación mientras hay un comando en curso."
+  pt: "Não é possível trocar de conversa enquanto um comando está em andamento."
+  fr: "Impossible de changer de conversation pendant l'exécution d'une commande."
+  de: "Unterhaltungen können nicht gewechselt werden, während ein Befehl läuft."
+  it: "Impossibile cambiare conversazione mentre è in corso un comando."
+  uk: "Неможливо перемкнути розмову, поки виконується команда."
+  ja: "コマンドの実行中は会話を切り替えられません。"
+  zh-Hans: "命令运行期间无法切换对话。"
+
+"Cannot switch conversations while the current conversation is in progress.":
+  es: "No se puede cambiar de conversación mientras la conversación actual está en curso."
+  pt: "Não é possível trocar de conversa enquanto a conversa atual está em andamento."
+  fr: "Impossible de changer de conversation tant que la conversation actuelle est en cours."
+  de: "Unterhaltungen können nicht gewechselt werden, während die aktuelle Unterhaltung läuft."
+  it: "Impossibile cambiare conversazione mentre quella corrente è in corso."
+  uk: "Неможливо перемкнути розмову, поки триває поточна розмова."
+  ja: "現在の会話が進行中のため、会話を切り替えられません。"
+  zh-Hans: "当前对话进行中，无法切换对话。"
+
+"Another conversation is already loading.":
+  es: "Ya se está cargando otra conversación."
+  pt: "Outra conversa já está sendo carregada."
+  fr: "Une autre conversation est déjà en cours de chargement."
+  de: "Es wird bereits eine andere Unterhaltung geladen."
+  it: "È già in caricamento un'altra conversazione."
+  uk: "Інша розмова вже завантажується."
+  ja: "別の会話を読み込み中です。"
+  zh-Hans: "另一个对话正在加载。"
+
+"That conversation is no longer available.":
+  es: "Esa conversación ya no está disponible."
+  pt: "Essa conversa não está mais disponível."
+  fr: "Cette conversation n'est plus disponible."
+  de: "Diese Unterhaltung ist nicht mehr verfügbar."
+  it: "Quella conversazione non è più disponibile."
+  uk: "Ця розмова більше не доступна."
+  ja: "その会話は利用できなくなりました。"
+  zh-Hans: "该对话已不可用。"
+
+"Loading conversation…":
+  es: "Cargando conversación…"
+  pt: "Carregando conversa…"
+  fr: "Chargement de la conversation…"
+  de: "Unterhaltung wird geladen…"
+  it: "Caricamento della conversazione…"
+  uk: "Завантаження розмови…"
+  ja: "会話を読み込み中…"
+  zh-Hans: "正在加载对话…"
+
+"Theme must be auto, light, or dark.":
+  es: "El tema debe ser auto, light o dark."
+  pt: "O tema deve ser auto, light ou dark."
+  fr: "Le thème doit être auto, light ou dark."
+  de: "Das Design muss auto, light oder dark sein."
+  it: "Il tema deve essere auto, light o dark."
+  uk: "Тема має бути auto, light або dark."
+  ja: "テーマは auto、light、dark のいずれかを指定してください。"
+  zh-Hans: "主题必须是 auto、light 或 dark。"
+
+"Shell mode":
+  es: "Modo shell"
+  pt: "Modo shell"
+  fr: "Mode shell"
+  de: "Shell-Modus"
+  it: "Modalità shell"
+  uk: "Режим оболонки"
+  ja: "シェルモード"
+  zh-Hans: "Shell 模式"
+
+"copied to clipboard":
+  es: "copiado al portapapeles"
+  pt: "copiado para a área de transferência"
+  fr: "copié dans le presse-papiers"
+  de: "in die Zwischenablage kopiert"
+  it: "copiato negli appunti"
+  uk: "скопійовано в буфер обміну"
+  ja: "クリップボードにコピーしました"
+  zh-Hans: "已复制到剪贴板"
+
+"failed to copy to clipboard":
+  es: "no se pudo copiar al portapapeles"
+  pt: "falha ao copiar para a área de transferência"
+  fr: "impossible de copier dans le presse-papiers"
+  de: "Kopieren in die Zwischenablage fehlgeschlagen"
+  it: "impossibile copiare negli appunti"
+  uk: "не вдалося скопіювати в буфер обміну"
+  ja: "クリップボードにコピーできませんでした"
+  zh-Hans: "无法复制到剪贴板"
+
+"Debugging information copied to clipboard":
+  es: "Información de depuración copiada al portapapeles"
+  pt: "Informações de depuração copiadas para a área de transferência"
+  fr: "Informations de débogage copiées dans le presse-papiers"
+  de: "Debug-Informationen in die Zwischenablage kopiert"
+  it: "Informazioni di debug copiate negli appunti"
+  uk: "Діагностичну інформацію скопійовано в буфер обміну"
+  ja: "デバッグ情報をクリップボードにコピーしました"
+  zh-Hans: "调试信息已复制到剪贴板"
+
+"No debugging ID available for this conversation yet.":
+  es: "Aún no hay un ID de depuración para esta conversación."
+  pt: "Ainda não há um ID de depuração para esta conversa."
+  fr: "Aucun ID de débogage n'est encore disponible pour cette conversation."
+  de: "Für diese Unterhaltung ist noch keine Debug-ID verfügbar."
+  it: "Non è ancora disponibile un ID di debug per questa conversazione."
+  uk: "Для цієї розмови ще немає ID для діагностики."
+  ja: "この会話のデバッグ ID はまだありません。"
+  zh-Hans: "此对话尚无调试 ID。"
+
+"Failed to create log bundle (check logs)":
+  es: "No se pudo crear el paquete de registros (revisa los registros)"
+  pt: "Falha ao criar o pacote de logs (verifique os logs)"
+  fr: "Impossible de créer l'archive des journaux (consultez les journaux)"
+  de: "Log-Paket konnte nicht erstellt werden (Logs prüfen)"
+  it: "Impossibile creare il pacchetto di log (controlla i log)"
+  uk: "Не вдалося створити пакет журналів (перевірте журнали)"
+  ja: "ログバンドルを作成できませんでした (ログを確認してください)"
+  zh-Hans: "无法创建日志包（请查看日志）"
+
+"Natural language detection enabled.":
+  es: "Detección de lenguaje natural activada."
+  pt: "Detecção de linguagem natural ativada."
+  fr: "Détection du langage naturel activée."
+  de: "Erkennung natürlicher Sprache aktiviert."
+  it: "Rilevamento del linguaggio naturale attivato."
+  uk: "Розпізнавання природної мови увімкнено."
+  ja: "自然言語の検出を有効にしました。"
+  zh-Hans: "已启用自然语言检测。"
+
+"Natural language detection disabled.":
+  es: "Detección de lenguaje natural desactivada."
+  pt: "Detecção de linguagem natural desativada."
+  fr: "Détection du langage naturel désactivée."
+  de: "Erkennung natürlicher Sprache deaktiviert."
+  it: "Rilevamento del linguaggio naturale disattivato."
+  uk: "Розпізнавання природної мови вимкнено."
+  ja: "自然言語の検出を無効にしました。"
+  zh-Hans: "已禁用自然语言检测。"
+
+"Could not save the natural language detection setting.":
+  es: "No se pudo guardar el ajuste de detección de lenguaje natural."
+  pt: "Não foi possível salvar a configuração de detecção de linguagem natural."
+  fr: "Impossible d'enregistrer le paramètre de détection du langage naturel."
+  de: "Die Einstellung zur Erkennung natürlicher Sprache konnte nicht gespeichert werden."
+  it: "Impossibile salvare l'impostazione di rilevamento del linguaggio naturale."
+  uk: "Не вдалося зберегти налаштування розпізнавання природної мови."
+  ja: "自然言語の検出設定を保存できませんでした。"
+  zh-Hans: "无法保存自然语言检测设置。"
+
+"Vim mode enabled.":
+  es: "Modo Vim activado."
+  pt: "Modo Vim ativado."
+  fr: "Mode Vim activé."
+  de: "Vim-Modus aktiviert."
+  it: "Modalità Vim attivata."
+  uk: "Режим Vim увімкнено."
+  ja: "Vim モードを有効にしました。"
+  zh-Hans: "已启用 Vim 模式。"
+
+"Vim mode disabled.":
+  es: "Modo Vim desactivado."
+  pt: "Modo Vim desativado."
+  fr: "Mode Vim désactivé."
+  de: "Vim-Modus deaktiviert."
+  it: "Modalità Vim disattivata."
+  uk: "Режим Vim вимкнено."
+  ja: "Vim モードを無効にしました。"
+  zh-Hans: "已禁用 Vim 模式。"
+
+"Could not save the vim mode setting.":
+  es: "No se pudo guardar el ajuste del modo Vim."
+  pt: "Não foi possível salvar a configuração do modo Vim."
+  fr: "Impossible d'enregistrer le paramètre du mode Vim."
+  de: "Die Vim-Modus-Einstellung konnte nicht gespeichert werden."
+  it: "Impossibile salvare l'impostazione della modalità Vim."
+  uk: "Не вдалося зберегти налаштування режиму Vim."
+  ja: "Vim モードの設定を保存できませんでした。"
+  zh-Hans: "无法保存 Vim 模式设置。"
+
+"Could not save the theme setting.":
+  es: "No se pudo guardar el ajuste del tema."
+  pt: "Não foi possível salvar a configuração do tema."
+  fr: "Impossible d'enregistrer le paramètre du thème."
+  de: "Die Design-Einstellung konnte nicht gespeichert werden."
+  it: "Impossibile salvare l'impostazione del tema."
+  uk: "Не вдалося зберегти налаштування теми."
+  ja: "テーマ設定を保存できませんでした。"
+  zh-Hans: "无法保存主题设置。"
+
+"Could not load custom ASCII art. Using the built-in logo.":
+  es: "No se pudo cargar el arte ASCII personalizado. Se usará el logotipo integrado."
+  pt: "Não foi possível carregar a arte ASCII personalizada. Usando o logotipo integrado."
+  fr: "Impossible de charger l'art ASCII personnalisé. Utilisation du logo intégré."
+  de: "Benutzerdefinierte ASCII-Grafik konnte nicht geladen werden. Das integrierte Logo wird verwendet."
+  it: "Impossibile caricare l'ASCII art personalizzata. Verrà usato il logo integrato."
+  uk: "Не вдалося завантажити власний ASCII-арт. Використовується вбудований логотип."
+  ja: "カスタム ASCII アートを読み込めませんでした。内蔵のロゴを使用します。"
+  zh-Hans: "无法加载自定义 ASCII 图案。将使用内置徽标。"
+
+"Could not reload custom ASCII art. Keeping the current object.":
+  es: "No se pudo recargar el arte ASCII personalizado. Se mantiene el objeto actual."
+  pt: "Não foi possível recarregar a arte ASCII personalizada. Mantendo o objeto atual."
+  fr: "Impossible de recharger l'art ASCII personnalisé. L'objet actuel est conservé."
+  de: "Benutzerdefinierte ASCII-Grafik konnte nicht neu geladen werden. Das aktuelle Objekt wird beibehalten."
+  it: "Impossibile ricaricare l'ASCII art personalizzata. Viene mantenuto l'oggetto corrente."
+  uk: "Не вдалося перезавантажити власний ASCII-арт. Залишено поточний об'єкт."
+  ja: "カスタム ASCII アートを再読み込みできませんでした。現在のオブジェクトを維持します。"
+  zh-Hans: "无法重新加载自定义 ASCII 图案。保留当前对象。"
+
+"Usage: /voice (no arguments)":
+  es: "Uso: /voice (sin argumentos)"
+  pt: "Uso: /voice (sem argumentos)"
+  fr: "Utilisation : /voice (sans arguments)"
+  de: "Verwendung: /voice (ohne Argumente)"
+  it: "Uso: /voice (senza argomenti)"
+  uk: "Використання: /voice (без аргументів)"
+  ja: "使い方: /voice (引数なし)"
+  zh-Hans: "用法：/voice（无参数）"
+
+"Auto approve on":
+  es: "Aprobación automática activada"
+  pt: "Aprovação automática ativada"
+  fr: "Approbation automatique activée"
+  de: "Automatische Genehmigung an"
+  it: "Approvazione automatica attiva"
+  uk: "Автосхвалення увімкнено"
+  ja: "自動承認オン"
+  zh-Hans: "自动批准已开启"
+
+"Auto approve off":
+  es: "Aprobación automática desactivada"
+  pt: "Aprovação automática desativada"
+  fr: "Approbation automatique désactivée"
+  de: "Automatische Genehmigung aus"
+  it: "Approvazione automatica disattiva"
+  uk: "Автосхвалення вимкнено"
+  ja: "自動承認オフ"
+  zh-Hans: "自动批准已关闭"
+
+"Statusline configuration saved.":
+  es: "Configuración de la barra de estado guardada."
+  pt: "Configuração da barra de status salva."
+  fr: "Configuration de la barre d'état enregistrée."
+  de: "Statuszeilen-Konfiguration gespeichert."
+  it: "Configurazione della barra di stato salvata."
+  uk: "Конфігурацію рядка стану збережено."
+  ja: "ステータスラインの設定を保存しました。"
+  zh-Hans: "状态栏配置已保存。"
+
+"Statusline reset to defaults.":
+  es: "Barra de estado restablecida a los valores predeterminados."
+  pt: "Barra de status redefinida para o padrão."
+  fr: "Barre d'état réinitialisée aux valeurs par défaut."
+  de: "Statuszeile auf Standard zurückgesetzt."
+  it: "Barra di stato ripristinata ai valori predefiniti."
+  uk: "Рядок стану скинуто до типових налаштувань."
+  ja: "ステータスラインをデフォルトに戻しました。"
+  zh-Hans: "状态栏已重置为默认值。"
+
+"Could not save the statusline configuration.":
+  es: "No se pudo guardar la configuración de la barra de estado."
+  pt: "Não foi possível salvar a configuração da barra de status."
+  fr: "Impossible d'enregistrer la configuration de la barre d'état."
+  de: "Die Statuszeilen-Konfiguration konnte nicht gespeichert werden."
+  it: "Impossibile salvare la configurazione della barra di stato."
+  uk: "Не вдалося зберегти конфігурацію рядка стану."
+  ja: "ステータスラインの設定を保存できませんでした。"
+  zh-Hans: "无法保存状态栏配置。"
+
+"Ask the agent anything":
+  es: "Pregúntale lo que quieras al agente"
+  pt: "Pergunte qualquer coisa ao agente"
+  fr: "Posez n'importe quelle question à l'agent"
+  de: "Fragen Sie den Agenten etwas"
+  it: "Chiedi qualsiasi cosa all'agente"
+  uk: "Запитайте агента про будь-що"
+  ja: "エージェントに何でも質問"
+  zh-Hans: "向智能体提问"
+
+"? for shortcuts":
+  es: "? para atajos"
+  pt: "? para atalhos"
+  fr: "? pour les raccourcis"
+  de: "? für Tastenkürzel"
+  it: "? per le scorciatoie"
+  uk: "? — комбінації клавіш"
+  ja: "? でショートカット"
+  zh-Hans: "? 查看快捷键"
+
+"! for shell mode":
+  es: "! para modo shell"
+  pt: "! para modo shell"
+  fr: "! pour le mode shell"
+  de: "! für Shell-Modus"
+  it: "! per la modalità shell"
+  uk: "! — режим оболонки"
+  ja: "! でシェルモード"
+  zh-Hans: "! 进入 Shell 模式"
+
+"/ for commands":
+  es: "/ para comandos"
+  pt: "/ para comandos"
+  fr: "/ pour les commandes"
+  de: "/ für Befehle"
+  it: "/ per i comandi"
+  uk: "/ — команди"
+  ja: "/ でコマンド"
+  zh-Hans: "/ 查看命令"
+
+"← for conversations":
+  es: "← para conversaciones"
+  pt: "← para conversas"
+  fr: "← pour les conversations"
+  de: "← für Unterhaltungen"
+  it: "← per le conversazioni"
+  uk: "← — розмови"
+  ja: "← で会話"
+  zh-Hans: "← 查看对话"
+
+"Run a shell command • ? for shortcuts • esc for agent mode":
+  es: "Ejecuta un comando de shell • ? para atajos • esc para modo agente"
+  pt: "Execute um comando de shell • ? para atalhos • esc para modo agente"
+  fr: "Exécutez une commande shell • ? pour les raccourcis • esc pour le mode agent"
+  de: "Shell-Befehl ausführen • ? für Tastenkürzel • Esc für Agentenmodus"
+  it: "Esegui un comando shell • ? per le scorciatoie • esc per la modalità agente"
+  uk: "Виконайте команду оболонки • ? — комбінації клавіш • esc — режим агента"
+  ja: "シェルコマンドを実行 • ? でショートカット • esc でエージェントモード"
+  zh-Hans: "运行 Shell 命令 • ? 查看快捷键 • esc 进入智能体模式"
+
+"Enter a value to continue.":
+  es: "Introduce un valor para continuar."
+  pt: "Insira um valor para continuar."
+  fr: "Saisissez une valeur pour continuer."
+  de: "Geben Sie einen Wert ein, um fortzufahren."
+  it: "Inserisci un valore per continuare."
+  uk: "Введіть значення, щоб продовжити."
+  ja: "続行するには値を入力してください。"
+  zh-Hans: "请输入一个值以继续。"
+
+"auto":
+  es: "automático"
+  pt: "automático"
+  fr: "automatique"
+  de: "automatisch"
+  it: "automatico"
+  uk: "автоматично"
+  ja: "自動"
+  zh-Hans: "自动"
+
+"light":
+  es: "claro"
+  pt: "claro"
+  fr: "clair"
+  de: "hell"
+  it: "chiaro"
+  uk: "світла"
+  ja: "ライト"
+  zh-Hans: "浅色"
+
+"dark":
+  es: "oscuro"
+  pt: "escuro"
+  fr: "sombre"
+  de: "dunkel"
+  it: "scuro"
+  uk: "темна"
+  ja: "ダーク"
+  zh-Hans: "深色"
+
+"1 result":
+  es: "1 resultado"
+  pt: "1 resultado"
+  fr: "1 résultat"
+  de: "1 Ergebnis"
+  it: "1 risultato"
+  uk: "1 результат"
+  ja: "1 件の結果"
+  zh-Hans: "1 个结果"
+
+"{count} results":
+  es: "{count} resultados"
+  pt: "{count} resultados"
+  fr: "{count} résultats"
+  de: "{count} Ergebnisse"
+  it: "{count} risultati"
+  uk: "результатів: {count}"
+  ja: "{count} 件の結果"
+  zh-Hans: "{count} 个结果"
+
+"1 matching file":
+  es: "1 archivo coincidente"
+  pt: "1 arquivo correspondente"
+  fr: "1 fichier correspondant"
+  de: "1 passende Datei"
+  it: "1 file corrispondente"
+  uk: "1 відповідний файл"
+  ja: "一致するファイル 1 件"
+  zh-Hans: "1 个匹配文件"
+
+"{count} matching files":
+  es: "{count} archivos coincidentes"
+  pt: "{count} arquivos correspondentes"
+  fr: "{count} fichiers correspondants"
+  de: "{count} passende Dateien"
+  it: "{count} file corrispondenti"
+  uk: "відповідних файлів: {count}"
+  ja: "一致するファイル {count} 件"
+  zh-Hans: "{count} 个匹配文件"
+
+"1 document":
+  es: "1 documento"
+  pt: "1 documento"
+  fr: "1 document"
+  de: "1 Dokument"
+  it: "1 documento"
+  uk: "1 документ"
+  ja: "1 件のドキュメント"
+  zh-Hans: "1 个文档"
+
+"1 edit":
+  es: "1 edición"
+  pt: "1 edição"
+  fr: "1 modification"
+  de: "1 Änderung"
+  it: "1 modifica"
+  uk: "1 зміна"
+  ja: "1 件の編集"
+  zh-Hans: "1 处编辑"
+
+"{count} edits":
+  es: "{count} ediciones"
+  pt: "{count} edições"
+  fr: "{count} modifications"
+  de: "{count} Änderungen"
+  it: "{count} modifiche"
+  uk: "змін: {count}"
+  ja: "{count} 件の編集"
+  zh-Hans: "{count} 处编辑"
+
+"1 review comment":
+  es: "1 comentario de revisión"
+  pt: "1 comentário de revisão"
+  fr: "1 commentaire de revue"
+  de: "1 Review-Kommentar"
+  it: "1 commento di revisione"
+  uk: "1 коментар рецензії"
+  ja: "1 件のレビューコメント"
+  zh-Hans: "1 条审查评论"
+
+"{count} review comments":
+  es: "{count} comentarios de revisión"
+  pt: "{count} comentários de revisão"
+  fr: "{count} commentaires de revue"
+  de: "{count} Review-Kommentare"
+  it: "{count} commenti di revisione"
+  uk: "коментарів рецензії: {count}"
+  ja: "{count} 件のレビューコメント"
+  zh-Hans: "{count} 条审查评论"
+
+"1 question":
+  es: "1 pregunta"
+  pt: "1 pergunta"
+  fr: "1 question"
+  de: "1 Frage"
+  it: "1 domanda"
+  uk: "1 запитання"
+  ja: "1 件の質問"
+  zh-Hans: "1 个问题"
+
+"{count} questions":
+  es: "{count} preguntas"
+  pt: "{count} perguntas"
+  fr: "{count} questions"
+  de: "{count} Fragen"
+  it: "{count} domande"
+  uk: "запитань: {count}"
+  ja: "{count} 件の質問"
+  zh-Hans: "{count} 个问题"
+
+"1 file":
+  es: "1 archivo"
+  pt: "1 arquivo"
+  fr: "1 fichier"
+  de: "1 Datei"
+  it: "1 file"
+  uk: "1 файл"
+  ja: "1 個のファイル"
+  zh-Hans: "1 个文件"
+
+"Auto-approve indicator":
+  es: "Indicador de aprobación automática"
+  pt: "Indicador de aprovação automática"
+  fr: "Indicateur d'approbation automatique"
+  de: "Anzeige für automatische Genehmigung"
+  it: "Indicatore di approvazione automatica"
+  uk: "Індикатор автосхвалення"
+  ja: "自動承認インジケーター"
+  zh-Hans: "自动批准指示器"
+
+"Vim mode indicator":
+  es: "Indicador del modo Vim"
+  pt: "Indicador do modo Vim"
+  fr: "Indicateur du mode Vim"
+  de: "Vim-Modus-Anzeige"
+  it: "Indicatore della modalità Vim"
+  uk: "Індикатор режиму Vim"
+  ja: "Vim モードインジケーター"
+  zh-Hans: "Vim 模式指示器"
+
+"Model":
+  es: "Modelo"
+  pt: "Modelo"
+  fr: "Modèle"
+  de: "Modell"
+  it: "Modello"
+  uk: "Модель"
+  ja: "モデル"
+  zh-Hans: "模型"
+
+"Team":
+  es: "Equipo"
+  pt: "Equipe"
+  fr: "Équipe"
+  de: "Team"
+  it: "Team"
+  uk: "Команда"
+  ja: "チーム"
+  zh-Hans: "团队"
+
+"Git branch":
+  es: "Rama de Git"
+  pt: "Branch do Git"
+  fr: "Branche Git"
+  de: "Git-Branch"
+  it: "Branch Git"
+  uk: "Гілка Git"
+  ja: "Git ブランチ"
+  zh-Hans: "Git 分支"
+
+"Git branch status":
+  es: "Estado de la rama de Git"
+  pt: "Status do branch do Git"
+  fr: "État de la branche Git"
+  de: "Git-Branch-Status"
+  it: "Stato del branch Git"
+  uk: "Стан гілки Git"
+  ja: "Git ブランチのステータス"
+  zh-Hans: "Git 分支状态"
+
+"Git diff status":
+  es: "Estado de los cambios de Git"
+  pt: "Status das alterações do Git"
+  fr: "État des modifications Git"
+  de: "Git-Diff-Status"
+  it: "Stato delle modifiche Git"
+  uk: "Стан змін Git"
+  ja: "Git 差分のステータス"
+  zh-Hans: "Git 差异状态"
+
+"GitHub pull request":
+  es: "Pull request de GitHub"
+  pt: "Pull request do GitHub"
+  fr: "Pull request GitHub"
+  de: "GitHub-Pull-Request"
+  it: "Pull request GitHub"
+  uk: "Pull request GitHub"
+  ja: "GitHub プルリクエスト"
+  zh-Hans: "GitHub 拉取请求"
+
+"Date":
+  es: "Fecha"
+  pt: "Data"
+  fr: "Date"
+  de: "Datum"
+  it: "Data"
+  uk: "Дата"
+  ja: "日付"
+  zh-Hans: "日期"
+
+"Time (12 hour format)":
+  es: "Hora (formato de 12 horas)"
+  pt: "Hora (formato de 12 horas)"
+  fr: "Heure (format 12 heures)"
+  de: "Uhrzeit (12-Stunden-Format)"
+  it: "Ora (formato 12 ore)"
+  uk: "Час (12-годинний формат)"
+  ja: "時刻 (12 時間表記)"
+  zh-Hans: "时间（12 小时制）"
+
+"Time (24 hour format)":
+  es: "Hora (formato de 24 horas)"
+  pt: "Hora (formato de 24 horas)"
+  fr: "Heure (format 24 heures)"
+  de: "Uhrzeit (24-Stunden-Format)"
+  it: "Ora (formato 24 ore)"
+  uk: "Час (24-годинний формат)"
+  ja: "時刻 (24 時間表記)"
+  zh-Hans: "时间（24 小时制）"
+
+"Agent to-do list":
+  es: "Lista de tareas del agente"
+  pt: "Lista de tarefas do agente"
+  fr: "Liste de tâches de l'agent"
+  de: "Aufgabenliste des Agenten"
+  it: "Elenco attività dell'agente"
+  uk: "Список завдань агента"
+  ja: "エージェントの ToDo リスト"
+  zh-Hans: "智能体待办事项列表"
+
+"Add a new MCP server via the MCP settings page":
+  es: "Añadir un servidor MCP desde la página de ajustes de MCP"
+  pt: "Adicionar um novo servidor MCP pela página de configurações de MCP"
+  fr: "Ajouter un serveur MCP depuis la page des paramètres MCP"
+  de: "Neuen MCP-Server über die MCP-Einstellungsseite hinzufügen"
+  it: "Aggiungi un nuovo server MCP dalla pagina delle impostazioni MCP"
+  uk: "Додати новий сервер MCP на сторінці налаштувань MCP"
+  ja: "MCP 設定ページから新しい MCP サーバーを追加"
+  zh-Hans: "通过 MCP 设置页面添加新的 MCP 服务器"
+
+"Reset the statusline to its default items and ordering":
+  es: "Restablecer los elementos y el orden predeterminados de la barra de estado"
+  pt: "Redefinir os itens e a ordem padrão da barra de status"
+  fr: "Rétablir les éléments et l'ordre par défaut de la barre d'état"
+  de: "Statuszeile auf Standardelemente und -reihenfolge zurücksetzen"
+  it: "Ripristina elementi e ordine predefiniti della barra di stato"
+  uk: "Скинути елементи й порядок рядка стану до типових"
+  ja: "ステータスラインの項目と並び順をデフォルトに戻す"
+  zh-Hans: "将状态栏的项目和顺序重置为默认"
+
+"Configure the statusline":
+  es: "Configurar la barra de estado"
+  pt: "Configurar a barra de status"
+  fr: "Configurer la barre d'état"
+  de: "Statuszeile konfigurieren"
+  it: "Configura la barra di stato"
+  uk: "Налаштувати рядок стану"
+  ja: "ステータスラインを設定"
+  zh-Hans: "配置状态栏"
+
+"Toggle auto approve":
+  es: "Alternar aprobación automática"
+  pt: "Alternar aprovação automática"
+  fr: "Activer/désactiver l'approbation automatique"
+  de: "Automatische Genehmigung umschalten"
+  it: "Attiva/disattiva approvazione automatica"
+  uk: "Перемкнути автосхвалення"
+  ja: "自動承認を切り替え"
+  zh-Hans: "切换自动批准"
+
+"View and manage MCP servers":
+  es: "Ver y administrar servidores MCP"
+  pt: "Ver e gerenciar servidores MCP"
+  fr: "Afficher et gérer les serveurs MCP"
+  de: "MCP-Server anzeigen und verwalten"
+  it: "Visualizza e gestisci i server MCP"
+  uk: "Переглядати й керувати серверами MCP"
+  ja: "MCP サーバーを表示・管理"
+  zh-Hans: "查看和管理 MCP 服务器"
+
+"Bundle your logs into a zip archive":
+  es: "Empaquetar tus registros en un archivo zip"
+  pt: "Empacotar seus logs em um arquivo zip"
+  fr: "Regrouper vos journaux dans une archive zip"
+  de: "Logs in ein ZIP-Archiv packen"
+  it: "Raccogli i log in un archivio zip"
+  uk: "Упакувати журнали в zip-архів"
+  ja: "ログを zip アーカイブにまとめる"
+  zh-Hans: "将日志打包为 zip 压缩包"
+
+"Start voice input (Ctrl-S)":
+  es: "Iniciar entrada de voz (Ctrl-S)"
+  pt: "Iniciar entrada de voz (Ctrl-S)"
+  fr: "Démarrer la saisie vocale (Ctrl-S)"
+  de: "Spracheingabe starten (Ctrl-S)"
+  it: "Avvia input vocale (Ctrl-S)"
+  uk: "Почати голосове введення (Ctrl-S)"
+  ja: "音声入力を開始 (Ctrl-S)"
+  zh-Hans: "开始语音输入（Ctrl-S）"
+
+"Toggle natural language detection":
+  es: "Alternar detección de lenguaje natural"
+  pt: "Alternar detecção de linguagem natural"
+  fr: "Activer/désactiver la détection du langage naturel"
+  de: "Erkennung natürlicher Sprache umschalten"
+  it: "Attiva/disattiva rilevamento del linguaggio naturale"
+  uk: "Перемкнути розпізнавання природної мови"
+  ja: "自然言語の検出を切り替え"
+  zh-Hans: "切换自然语言检测"
+
+"Set color theme":
+  es: "Establecer tema de color"
+  pt: "Definir tema de cores"
+  fr: "Définir le thème de couleurs"
+  de: "Farbdesign festlegen"
+  it: "Imposta tema colori"
+  uk: "Вибрати колірну тему"
+  ja: "カラーテーマを設定"
+  zh-Hans: "设置颜色主题"
+
+"Set interface language":
+  es: "Establecer idioma de la interfaz"
+  pt: "Definir idioma da interface"
+  fr: "Définir la langue de l'interface"
+  de: "Sprache der Oberfläche festlegen"
+  it: "Imposta lingua dell'interfaccia"
+  uk: "Вибрати мову інтерфейсу"
+  ja: "表示言語を設定"
+  zh-Hans: "设置界面语言"
+
+"Exit Termloc":
+  es: "Salir de Termloc"
+  pt: "Sair do Termloc"
+  fr: "Quitter Termloc"
+  de: "Termloc beenden"
+  it: "Esci da Termloc"
+  uk: "Вийти з Termloc"
+  ja: "Termloc を終了"
+  zh-Hans: "退出 Termloc"
+
+"Show session and account status":
+  es: "Mostrar estado de la sesión y la cuenta"
+  pt: "Mostrar status da sessão e da conta"
+  fr: "Afficher l'état de la session et du compte"
+  de: "Sitzungs- und Kontostatus anzeigen"
+  it: "Mostra stato della sessione e dell'account"
+  uk: "Показати стан сеансу й облікового запису"
+  ja: "セッションとアカウントのステータスを表示"
+  zh-Hans: "显示会话和账户状态"
+
+"Create a new docker sandbox terminal session":
+  es: "Crear una nueva sesión de terminal en un sandbox de Docker"
+  pt: "Criar uma nova sessão de terminal em sandbox do Docker"
+  fr: "Créer une nouvelle session de terminal dans un bac à sable Docker"
+  de: "Neue Terminalsitzung in einer Docker-Sandbox erstellen"
+  it: "Crea una nuova sessione di terminale in una sandbox Docker"
+  uk: "Створити новий сеанс термінала в пісочниці Docker"
+  ja: "新しい Docker サンドボックスのターミナルセッションを作成"
+  zh-Hans: "创建新的 Docker 沙盒终端会话"
+
+"Have the Local Agent walk you through creating a new coding project":
+  es: "Deja que Local Agent te guíe para crear un nuevo proyecto de programación"
+  pt: "Deixe o Local Agent guiar você na criação de um novo projeto de programação"
+  fr: "Laissez Local Agent vous guider dans la création d'un nouveau projet de code"
+  de: "Local Agent führt Sie durch das Erstellen eines neuen Programmierprojekts"
+  it: "Fatti guidare da Local Agent nella creazione di un nuovo progetto di programmazione"
+  uk: "Local Agent допоможе створити новий проєкт"
+  ja: "Local Agent の案内で新しいコーディングプロジェクトを作成"
+  zh-Hans: "让 Local Agent 引导你创建新的编程项目"
+
+"Open a skill's markdown file in Termloc's built-in editor":
+  es: "Abrir el archivo markdown de una habilidad en el editor integrado de Termloc"
+  pt: "Abrir o arquivo markdown de uma habilidade no editor integrado do Termloc"
+  fr: "Ouvrir le fichier markdown d'une compétence dans l'éditeur intégré de Termloc"
+  de: "Markdown-Datei eines Skills im integrierten Editor von Termloc öffnen"
+  it: "Apri il file markdown di una skill nell'editor integrato di Termloc"
+  uk: "Відкрити markdown-файл навички у вбудованому редакторі Termloc"
+  ja: "スキルの Markdown ファイルを Termloc の内蔵エディターで開く"
+  zh-Hans: "在 Termloc 内置编辑器中打开技能的 Markdown 文件"
+
+"Invoke a skill":
+  es: "Invocar una habilidad"
+  pt: "Invocar uma habilidade"
+  fr: "Appeler une compétence"
+  de: "Skill aufrufen"
+  it: "Richiama una skill"
+  uk: "Викликати навичку"
+  ja: "スキルを呼び出す"
+  zh-Hans: "调用技能"
+
+"Add new Agent prompt":
+  es: "Añadir un nuevo prompt de agente"
+  pt: "Adicionar novo prompt do agente"
+  fr: "Ajouter un nouveau prompt d'agent"
+  de: "Neuen Agent-Prompt hinzufügen"
+  it: "Aggiungi un nuovo prompt dell'agente"
+  uk: "Додати новий промпт агента"
+  ja: "新しいエージェントプロンプトを追加"
+  zh-Hans: "添加新的智能体提示"
+
+"Add a new global rule for the agent":
+  es: "Añadir una nueva regla global para el agente"
+  pt: "Adicionar uma nova regra global para o agente"
+  fr: "Ajouter une nouvelle règle globale pour l'agent"
+  de: "Neue globale Regel für den Agenten hinzufügen"
+  it: "Aggiungi una nuova regola globale per l'agente"
+  uk: "Додати нове глобальне правило для агента"
+  ja: "エージェントの新しいグローバルルールを追加"
+  zh-Hans: "为智能体添加新的全局规则"
+
+"Open a file in Termloc's code editor":
+  es: "Abrir un archivo en el editor de código de Termloc"
+  pt: "Abrir um arquivo no editor de código do Termloc"
+  fr: "Ouvrir un fichier dans l'éditeur de code de Termloc"
+  de: "Datei im Code-Editor von Termloc öffnen"
+  it: "Apri un file nell'editor di codice di Termloc"
+  uk: "Відкрити файл у редакторі коду Termloc"
+  ja: "Termloc のコードエディターでファイルを開く"
+  zh-Hans: "在 Termloc 代码编辑器中打开文件"
+
+"Rename the current conversation":
+  es: "Cambiar el nombre de la conversación actual"
+  pt: "Renomear a conversa atual"
+  fr: "Renommer la conversation actuelle"
+  de: "Aktuelle Unterhaltung umbenennen"
+  it: "Rinomina la conversazione corrente"
+  uk: "Перейменувати поточну розмову"
+  ja: "現在の会話の名前を変更"
+  zh-Hans: "重命名当前对话"
+
+"Set the color of the current tab":
+  es: "Establecer el color de la pestaña actual"
+  pt: "Definir a cor da aba atual"
+  fr: "Définir la couleur de l'onglet actuel"
+  de: "Farbe des aktuellen Tabs festlegen"
+  it: "Imposta il colore della scheda corrente"
+  uk: "Задати колір поточної вкладки"
+  ja: "現在のタブの色を設定"
+  zh-Hans: "设置当前标签页的颜色"
+
+"Fork the current conversation":
+  es: "Bifurcar la conversación actual"
+  pt: "Bifurcar a conversa atual"
+  fr: "Dupliquer la conversation actuelle"
+  de: "Aktuelle Unterhaltung abzweigen"
+  it: "Duplica la conversazione corrente"
+  uk: "Розгалузити поточну розмову"
+  ja: "現在の会話をフォーク"
+  zh-Hans: "分叉当前对话"
+
+"Open code review":
+  es: "Abrir revisión de código"
+  pt: "Abrir revisão de código"
+  fr: "Ouvrir la revue de code"
+  de: "Code-Review öffnen"
+  it: "Apri revisione del codice"
+  uk: "Відкрити рецензування коду"
+  ja: "コードレビューを開く"
+  zh-Hans: "打开代码审查"
+
+"Index this codebase":
+  es: "Indexar este código"
+  pt: "Indexar este código"
+  fr: "Indexer ce code"
+  de: "Diese Codebasis indizieren"
+  it: "Indicizza questo codice"
+  uk: "Проіндексувати цю кодову базу"
+  ja: "このコードベースをインデックス化"
+  zh-Hans: "为此代码库建立索引"
+
+"Index this codebase and generate an AGENTS.md file":
+  es: "Indexar este código y generar un archivo AGENTS.md"
+  pt: "Indexar este código e gerar um arquivo AGENTS.md"
+  fr: "Indexer ce code et générer un fichier AGENTS.md"
+  de: "Diese Codebasis indizieren und eine AGENTS.md-Datei erstellen"
+  it: "Indicizza questo codice e genera un file AGENTS.md"
+  uk: "Проіндексувати цю кодову базу й створити файл AGENTS.md"
+  ja: "このコードベースをインデックス化して AGENTS.md ファイルを生成"
+  zh-Hans: "为此代码库建立索引并生成 AGENTS.md 文件"
+
+"Open the project rules file (AGENTS.md)":
+  es: "Abrir el archivo de reglas del proyecto (AGENTS.md)"
+  pt: "Abrir o arquivo de regras do projeto (AGENTS.md)"
+  fr: "Ouvrir le fichier de règles du projet (AGENTS.md)"
+  de: "Projektregeldatei öffnen (AGENTS.md)"
+  it: "Apri il file delle regole del progetto (AGENTS.md)"
+  uk: "Відкрити файл правил проєкту (AGENTS.md)"
+  ja: "プロジェクトのルールファイル (AGENTS.md) を開く"
+  zh-Hans: "打开项目规则文件（AGENTS.md）"
+
+"Open MCP servers":
+  es: "Abrir servidores MCP"
+  pt: "Abrir servidores MCP"
+  fr: "Ouvrir les serveurs MCP"
+  de: "MCP-Server öffnen"
+  it: "Apri server MCP"
+  uk: "Відкрити сервери MCP"
+  ja: "MCP サーバーを開く"
+  zh-Hans: "打开 MCP 服务器"
+
+"Open settings file (TOML)":
+  es: "Abrir archivo de ajustes (TOML)"
+  pt: "Abrir arquivo de configurações (TOML)"
+  fr: "Ouvrir le fichier de paramètres (TOML)"
+  de: "Einstellungsdatei öffnen (TOML)"
+  it: "Apri file delle impostazioni (TOML)"
+  uk: "Відкрити файл налаштувань (TOML)"
+  ja: "設定ファイル (TOML) を開く"
+  zh-Hans: "打开设置文件（TOML）"
+
+"Switch to another indexed repository":
+  es: "Cambiar a otro repositorio indexado"
+  pt: "Alternar para outro repositório indexado"
+  fr: "Passer à un autre dépôt indexé"
+  de: "Zu einem anderen indizierten Repository wechseln"
+  it: "Passa a un altro repository indicizzato"
+  uk: "Перейти до іншого проіндексованого репозиторію"
+  ja: "別のインデックス済みリポジトリに切り替え"
+  zh-Hans: "切换到另一个已索引的仓库"
+
+"View all of your global and project rules":
+  es: "Ver todas tus reglas globales y del proyecto"
+  pt: "Ver todas as suas regras globais e do projeto"
+  fr: "Afficher toutes vos règles globales et de projet"
+  de: "Alle globalen und Projektregeln anzeigen"
+  it: "Visualizza tutte le regole globali e di progetto"
+  uk: "Переглянути всі глобальні правила й правила проєкту"
+  ja: "グローバルルールとプロジェクトルールをすべて表示"
+  zh-Hans: "查看所有全局规则和项目规则"
+
+"Start a new conversation (alias for /agent)":
+  es: "Iniciar una conversación nueva (alias de /agent)"
+  pt: "Iniciar uma nova conversa (alias de /agent)"
+  fr: "Démarrer une nouvelle conversation (alias de /agent)"
+  de: "Neue Unterhaltung beginnen (Alias für /agent)"
+  it: "Inizia una nuova conversazione (alias di /agent)"
+  uk: "Почати нову розмову (псевдонім /agent)"
+  ja: "新しい会話を開始 (/agent のエイリアス)"
+  zh-Hans: "开始新对话（/agent 的别名）"
+
+"Clear the transcript and start a new conversation (alias for /agent)":
+  es: "Borrar la transcripción e iniciar una conversación nueva (alias de /agent)"
+  pt: "Limpar a transcrição e iniciar uma nova conversa (alias de /agent)"
+  fr: "Effacer la transcription et démarrer une nouvelle conversation (alias de /agent)"
+  de: "Transkript leeren und neue Unterhaltung beginnen (Alias für /agent)"
+  it: "Cancella la trascrizione e inizia una nuova conversazione (alias di /agent)"
+  uk: "Очистити стенограму й почати нову розмову (псевдонім /agent)"
+  ja: "トランスクリプトを消去して新しい会話を開始 (/agent のエイリアス)"
+  zh-Hans: "清除记录并开始新对话（/agent 的别名）"
+
+"Switch the base agent model":
+  es: "Cambiar el modelo base del agente"
+  pt: "Trocar o modelo base do agente"
+  fr: "Changer le modèle de base de l'agent"
+  de: "Basismodell des Agenten wechseln"
+  it: "Cambia il modello base dell'agente"
+  uk: "Змінити базову модель агента"
+  ja: "エージェントのベースモデルを切り替え"
+  zh-Hans: "切换智能体的基础模型"
+
+"Switch the active team":
+  es: "Cambiar el equipo activo"
+  pt: "Trocar a equipe ativa"
+  fr: "Changer d'équipe active"
+  de: "Aktives Team wechseln"
+  it: "Cambia il team attivo"
+  uk: "Змінити активну команду"
+  ja: "アクティブなチームを切り替え"
+  zh-Hans: "切换活动团队"
+
+"Switch the active execution profile":
+  es: "Cambiar el perfil de ejecución activo"
+  pt: "Trocar o perfil de execução ativo"
+  fr: "Changer le profil d'exécution actif"
+  de: "Aktives Ausführungsprofil wechseln"
+  it: "Cambia il profilo di esecuzione attivo"
+  uk: "Змінити активний профіль виконання"
+  ja: "アクティブな実行プロファイルを切り替え"
+  zh-Hans: "切换活动执行配置"
+
+"Prompt the agent to do some research and create a plan for a task":
+  es: "Pedir al agente que investigue y cree un plan para una tarea"
+  pt: "Pedir ao agente que pesquise e crie um plano para uma tarefa"
+  fr: "Demander à l'agent d'effectuer des recherches et de créer un plan pour une tâche"
+  de: "Den Agenten recherchieren und einen Plan für eine Aufgabe erstellen lassen"
+  it: "Chiedi all'agente di fare ricerche e creare un piano per un'attività"
+  uk: "Попросити агента дослідити питання й створити план завдання"
+  ja: "エージェントに調査させてタスクのプランを作成"
+  zh-Hans: "让智能体进行调研并为任务制定计划"
+
+"Free up context by summarizing convo history":
+  es: "Liberar contexto resumiendo el historial de la conversación"
+  pt: "Liberar contexto resumindo o histórico da conversa"
+  fr: "Libérer du contexte en résumant l'historique de la conversation"
+  de: "Kontext freigeben, indem der Unterhaltungsverlauf zusammengefasst wird"
+  it: "Libera contesto riassumendo la cronologia della conversazione"
+  uk: "Звільнити контекст, підсумувавши історію розмови"
+  ja: "会話履歴を要約してコンテキストを空ける"
+  zh-Hans: "通过总结对话历史释放上下文"
+
+"Compact conversation and then send a follow-up prompt":
+  es: "Compactar la conversación y enviar un prompt de seguimiento"
+  pt: "Compactar a conversa e depois enviar um prompt de acompanhamento"
+  fr: "Compacter la conversation, puis envoyer un prompt de suivi"
+  de: "Unterhaltung komprimieren und dann einen Folge-Prompt senden"
+  it: "Compatta la conversazione e poi invia un prompt di follow-up"
+  uk: "Стиснути розмову й надіслати наступний промпт"
+  ja: "会話を圧縮してからフォローアップのプロンプトを送信"
+  zh-Hans: "压缩对话后发送后续提示"
+
+"Queue a prompt to send after the agent finishes responding":
+  es: "Poner en cola un prompt para enviarlo cuando el agente termine de responder"
+  pt: "Enfileirar um prompt para enviar quando o agente terminar de responder"
+  fr: "Mettre en file d'attente un prompt à envoyer une fois la réponse de l'agent terminée"
+  de: "Prompt einreihen, der gesendet wird, sobald der Agent mit der Antwort fertig ist"
+  it: "Metti in coda un prompt da inviare quando l'agente finisce di rispondere"
+  uk: "Поставити в чергу промпт, який буде надіслано після відповіді агента"
+  ja: "エージェントの応答後に送信するプロンプトをキューに追加"
+  zh-Hans: "将提示加入队列，在智能体回复完成后发送"
+
+"Fork current conversation and compact it in the forked copy":
+  es: "Bifurcar la conversación actual y compactarla en la copia bifurcada"
+  pt: "Bifurcar a conversa atual e compactá-la na cópia bifurcada"
+  fr: "Dupliquer la conversation actuelle et la compacter dans la copie"
+  de: "Aktuelle Unterhaltung abzweigen und in der Kopie komprimieren"
+  it: "Duplica la conversazione corrente e compattala nella copia"
+  uk: "Розгалузити поточну розмову й стиснути її в копії"
+  ja: "現在の会話をフォークし、フォーク先で圧縮"
+  zh-Hans: "分叉当前对话并在分叉副本中压缩"
+
+"Fork conversation from a specific query":
+  es: "Bifurcar la conversación desde una consulta específica"
+  pt: "Bifurcar a conversa a partir de uma consulta específica"
+  fr: "Dupliquer la conversation à partir d'une requête précise"
+  de: "Unterhaltung ab einer bestimmten Anfrage abzweigen"
+  it: "Duplica la conversazione da una richiesta specifica"
+  uk: "Розгалузити розмову з певного запиту"
+  ja: "特定のクエリから会話をフォーク"
+  zh-Hans: "从指定查询分叉对话"
+
+"Open conversation history":
+  es: "Abrir historial de conversaciones"
+  pt: "Abrir histórico de conversas"
+  fr: "Ouvrir l'historique des conversations"
+  de: "Unterhaltungsverlauf öffnen"
+  it: "Apri cronologia delle conversazioni"
+  uk: "Відкрити історію розмов"
+  ja: "会話履歴を開く"
+  zh-Hans: "打开对话历史"
+
+"Search saved prompts":
+  es: "Buscar prompts guardados"
+  pt: "Pesquisar prompts salvos"
+  fr: "Rechercher dans les prompts enregistrés"
+  de: "Gespeicherte Prompts durchsuchen"
+  it: "Cerca prompt salvati"
+  uk: "Шукати збережені промпти"
+  ja: "保存済みのプロンプトを検索"
+  zh-Hans: "搜索已保存的提示"
+
+"Rewind to a previous point in the conversation":
+  es: "Volver a un punto anterior de la conversación"
+  pt: "Voltar a um ponto anterior da conversa"
+  fr: "Revenir à un point antérieur de la conversation"
+  de: "Zu einem früheren Punkt der Unterhaltung zurückspringen"
+  it: "Torna a un punto precedente della conversazione"
+  uk: "Повернутися до попереднього моменту розмови"
+  ja: "会話の以前の時点に巻き戻す"
+  zh-Hans: "回退到对话中的先前位置"
+
+"Export current conversation to clipboard in markdown format":
+  es: "Exportar la conversación actual al portapapeles en formato markdown"
+  pt: "Exportar a conversa atual para a área de transferência em formato markdown"
+  fr: "Exporter la conversation actuelle dans le presse-papiers au format markdown"
+  de: "Aktuelle Unterhaltung im Markdown-Format in die Zwischenablage exportieren"
+  it: "Esporta la conversazione corrente negli appunti in formato markdown"
+  uk: "Експортувати поточну розмову в буфер обміну у форматі markdown"
+  ja: "現在の会話を Markdown 形式でクリップボードにエクスポート"
+  zh-Hans: "将当前对话以 Markdown 格式导出到剪贴板"
+
+"Export current conversation to a markdown file":
+  es: "Exportar la conversación actual a un archivo markdown"
+  pt: "Exportar a conversa atual para um arquivo markdown"
+  fr: "Exporter la conversation actuelle dans un fichier markdown"
+  de: "Aktuelle Unterhaltung in eine Markdown-Datei exportieren"
+  it: "Esporta la conversazione corrente in un file markdown"
+  uk: "Експортувати поточну розмову у файл markdown"
+  ja: "現在の会話を Markdown ファイルにエクスポート"
+  zh-Hans: "将当前对话导出为 Markdown 文件"
+
+"Toggle Vim mode":
+  es: "Alternar modo Vim"
+  pt: "Alternar modo Vim"
+  fr: "Activer/désactiver le mode Vim"
+  de: "Vim-Modus umschalten"
+  it: "Attiva/disattiva modalità Vim"
+  uk: "Перемкнути режим Vim"
+  ja: "Vim モードを切り替え"
+  zh-Hans: "切换 Vim 模式"
+
+"Copy debugging information for this conversation":
+  es: "Copiar información de depuración de esta conversación"
+  pt: "Copiar informações de depuração desta conversa"
+  fr: "Copier les informations de débogage de cette conversation"
+  de: "Debug-Informationen für diese Unterhaltung kopieren"
+  it: "Copia le informazioni di debug di questa conversazione"
+  uk: "Скопіювати діагностичну інформацію цієї розмови"
+  ja: "この会話のデバッグ情報をコピー"
+  zh-Hans: "复制此对话的调试信息"

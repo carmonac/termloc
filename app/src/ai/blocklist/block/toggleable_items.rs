@@ -1,3 +1,4 @@
+use i18n::t;
 use warpui::elements::{
     Border, Container, CornerRadius, CrossAxisAlignment, Expanded, Flex, Hoverable,
     MainAxisAlignment, MainAxisSize, MouseStateHandle, ParentElement, Radius,
@@ -175,7 +176,7 @@ impl<T: 'static> View for ToggleableItemsView<T> {
                     .finish();
 
                 let hint_text = Span::new(
-                    "to toggle selection",
+                    t!("to toggle selection"),
                     UiComponentStyles {
                         margin: Some(Coords::default().left(6.)),
                         ..hint_styles

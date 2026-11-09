@@ -1,4 +1,5 @@
 use fuzzy_match::FuzzyMatchResult;
+use i18n::t;
 use ordered_float::OrderedFloat;
 use warp_core::ui::Icon;
 use warp_core::ui::theme::Fill;
@@ -108,7 +109,7 @@ impl SearchItem for ProfileSearchItem {
                 is_selected,
                 ..
             } => (profile_name.clone(), *is_selected),
-            ProfileSearchItemKind::ManageProfiles => (MANAGE_PROFILES_LABEL.to_owned(), false),
+            ProfileSearchItemKind::ManageProfiles => (t!(MANAGE_PROFILES_LABEL).to_owned(), false),
         };
 
         let mut label = Text::new_inline(label_text, appearance.ui_font_family(), font_size)

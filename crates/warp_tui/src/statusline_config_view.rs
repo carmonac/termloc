@@ -2,6 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
+use i18n::t;
 use warp::settings::{TuiStatuslineConfig, TuiStatuslineItem};
 use warp::tui_export::{
     AskUserQuestionAction, AskUserQuestionItem, AskUserQuestionOption, AskUserQuestionSession,
@@ -147,7 +148,7 @@ impl TuiStatuslineConfigView {
                     .position(|candidate| candidate == item)
                     .map(|index| OptionRow {
                         id: index.to_string(),
-                        label: item.label().to_owned(),
+                        label: t!(item.label()).to_owned(),
                         badge: None,
                         disabled_reason: None,
                     })
@@ -250,11 +251,14 @@ impl TuiStatuslineConfigView {
         let builder = TuiUiBuilder::from_app(app);
         TuiText::from_spans([
             ("Enter ".to_owned(), builder.primary_text_style()),
-            ("to toggle  ".to_owned(), builder.muted_text_style()),
+            (t!("to toggle  ").to_owned(), builder.muted_text_style()),
             ("Esc ".to_owned(), builder.primary_text_style()),
-            ("to save and close  ".to_owned(), builder.muted_text_style()),
+            (
+                t!("to save and close  ").to_owned(),
+                builder.muted_text_style(),
+            ),
             ("← → ".to_owned(), builder.primary_text_style()),
-            ("to reorder".to_owned(), builder.muted_text_style()),
+            (t!("to reorder").to_owned(), builder.muted_text_style()),
         ])
         .truncate()
         .finish()
@@ -266,13 +270,13 @@ impl TuiStatuslineConfigView {
 fn statusline_question() -> AskUserQuestionItem {
     AskUserQuestionItem {
         question_id: STATUSLINE_QUESTION_ID.to_owned(),
-        question: "Configure statusline".to_owned(),
+        question: t!("Configure statusline").to_owned(),
         question_type: AskUserQuestionType::MultipleChoice {
             is_multiselect: true,
             options: TuiStatuslineItem::ALL
                 .iter()
                 .map(|item| AskUserQuestionOption {
-                    label: item.label().to_owned(),
+                    label: t!(item.label()).to_owned(),
                     recommended: false,
                 })
                 .collect(),
@@ -305,7 +309,7 @@ impl TuiView for TuiStatuslineConfigView {
 
     fn render(&self, app: &AppContext) -> Box<dyn TuiElement> {
         let builder = TuiUiBuilder::from_app(app);
-        let title = TuiText::new("Configure statusline")
+        let title = TuiText::new(t!("Configure statusline"))
             .with_style(builder.primary_text_style().add_modifier(Modifier::BOLD))
             .finish();
         let body = TuiFlex::column()

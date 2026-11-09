@@ -3,6 +3,7 @@
 //! Uses the shared [`ChipConfigurator`] with `LeftRightZones` layout to let users
 //! drag/drop chips between left, right, and unused banks.
 
+use i18n::t;
 use settings::Setting as _;
 use warp_errors::report_if_error;
 use warpui::keymap::FixedBinding;
@@ -251,7 +252,7 @@ impl View for AgentToolbarInlineEditor {
         render_chip_editor_sections(
             &self.chip_configurator,
             ChipEditorSectionsConfig {
-                available_section_label: "Available chips",
+                available_section_label: t!("Available chips"),
                 is_at_defaults: self.is_at_defaults(),
                 reset_action: AgentToolbarInlineEditorAction::ResetDefault,
                 activate_action: AgentToolbarInlineEditorAction::Activate,
@@ -360,8 +361,8 @@ impl AgentToolbarEditorModal {
 
     fn modal_title(&self) -> &'static str {
         match self.mode {
-            AgentToolbarEditorMode::AgentView => AGENT_MODAL_TITLE,
-            AgentToolbarEditorMode::CLIAgent => CLI_MODAL_TITLE,
+            AgentToolbarEditorMode::AgentView => t!(AGENT_MODAL_TITLE),
+            AgentToolbarEditorMode::CLIAgent => t!(CLI_MODAL_TITLE),
         }
     }
 }
@@ -419,7 +420,7 @@ impl View for AgentToolbarEditorModal {
             &self.chip_configurator,
             ChipEditorModalConfig {
                 title: self.modal_title(),
-                available_section_label: "Available chips",
+                available_section_label: t!("Available chips"),
                 is_at_defaults: self.is_at_defaults(),
                 is_dirty: self.is_dirty,
                 cancel_action: AgentToolbarEditorAction::Cancel,

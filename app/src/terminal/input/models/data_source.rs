@@ -1,4 +1,5 @@
 use fuzzy_match::{FuzzyMatchResult, match_indices_case_insensitive};
+use i18n::t;
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use warp_core::ui::appearance::Appearance;
@@ -427,8 +428,8 @@ impl SearchItem for ModelSearchItem {
             && let Some(model) = installed_local_model(&self.id, app)
         {
             let header = render_model_spec_header(
-                LOCAL_MODEL_DETAILS_TITLE,
-                LOCAL_MODEL_DETAILS_DESCRIPTION,
+                t!(LOCAL_MODEL_DETAILS_TITLE),
+                t!(LOCAL_MODEL_DETAILS_DESCRIPTION),
                 app,
             );
             let column = Flex::column()
@@ -442,9 +443,9 @@ impl SearchItem for ModelSearchItem {
         }
 
         let (title, description) = if self.reasoning_level.is_some() {
-            (REASONING_LEVEL_TITLE, REASONING_LEVEL_DESCRIPTION)
+            (t!(REASONING_LEVEL_TITLE), t!(REASONING_LEVEL_DESCRIPTION))
         } else {
-            (MODEL_SPECS_TITLE, MODEL_SPECS_DESCRIPTION)
+            (t!(MODEL_SPECS_TITLE), t!(MODEL_SPECS_DESCRIPTION))
         };
         let header = render_model_spec_header(title, description, app);
 

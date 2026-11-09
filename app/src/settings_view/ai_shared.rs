@@ -11,6 +11,7 @@ use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use i18n::t;
 use settings::Setting;
 use warp_core::context_flag::ContextFlag;
 use warp_core::features::FeatureFlag;
@@ -61,7 +62,7 @@ pub fn render_toolbar_layout_editor(
     let label = Container::new(
         appearance
             .ui_builder()
-            .span("Toolbar layout".to_string())
+            .span(t!("Toolbar layout").to_string())
             .with_style(UiComponentStyles {
                 font_size: Some(CONTENT_FONT_SIZE),
                 ..Default::default()

@@ -22,6 +22,7 @@
 use std::ops::Range;
 use std::rc::Rc;
 
+use i18n::t;
 use string_offset::CharOffset;
 use warp::editor::CodeEditorModel;
 use warp_editor::model::CoreEditorModel;
@@ -535,9 +536,10 @@ impl TuiEditorElement {
                     .expect("ghost display rows have source text");
                 (content, self.styles.ghost)
             }
-            DisplayRowKind::Gap { line_range } => {
-                (format!("… {} lines", line_range.len()), self.styles.gap)
-            }
+            DisplayRowKind::Gap { line_range } => (
+                t!("… {count} lines", count = line_range.len()),
+                self.styles.gap,
+            ),
         };
         let gutter = self.gutter_cells(row);
         // An empty `TuiText` lays out to zero rows, which would collapse the

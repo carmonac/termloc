@@ -7,6 +7,7 @@
 //!   `Workspace::render_settings_error_banner`) when the settings file has an
 //!   error *and* the user has dismissed the workspace banner.
 //! * Otherwise, a plain bordered "Open settings file" button.
+use i18n::t;
 use pathfinder_color::ColorU;
 use warp_core::ui::color::coloru_with_opacity;
 use warp_core::ui::theme::Fill;
@@ -113,7 +114,7 @@ pub fn render_open_settings_file_button(
             .with_height(FOOTER_ICON_SIZE)
             .finish();
 
-        let label = Text::new_inline("Open settings file", ui_font_family, FOOTER_FONT_SIZE)
+        let label = Text::new_inline(t!("Open settings file"), ui_font_family, FOOTER_FONT_SIZE)
             .with_color(text_color)
             .with_style(Properties {
                 weight: Weight::Semibold,
@@ -228,7 +229,7 @@ pub fn render_settings_error_alert(
         ui_font_family,
         text_color,
         mouse_states.alert_open_file_button.clone(),
-        "Open file",
+        t!("Open file"),
         /*icon=*/ None,
         /*bordered=*/ true,
         WorkspaceAction::OpenSettingsFile,
@@ -250,7 +251,7 @@ pub fn render_settings_error_alert(
             ui_font_family,
             text_color,
             mouse_states.alert_fix_with_agent_button.clone(),
-            "Fix with Local Agent",
+            t!("Fix with Local Agent"),
             Some(Icon::Agent),
             /*bordered=*/ false,
             WorkspaceAction::FixSettingsWithOz { error_description },

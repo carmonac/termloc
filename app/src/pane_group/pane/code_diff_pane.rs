@@ -1,3 +1,4 @@
+use i18n::t;
 use warpui::{AppContext, ModelHandle, SingletonEntity, ViewContext, ViewHandle};
 
 use super::code_diff_pane_model::CodeDiffPaneModel;
@@ -22,7 +23,7 @@ impl CodeDiffPane {
         let pane_configuration = ctx.add_model(|_ctx| {
             let mut config = PaneConfiguration::new("");
             // This title must be set with .set_title and not just ::new() to ensure that the tab renders immediately.
-            config.set_title("Requested Edit", _ctx);
+            config.set_title(t!("Requested Edit"), _ctx);
             config
         });
 

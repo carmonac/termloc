@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
@@ -76,13 +77,13 @@ static TAB_CONFIGS: LazyLock<Vec<InlineMenuTabConfig<InlineModelSelectorTab>>> =
     LazyLock::new(|| {
         let mut configs = vec![InlineMenuTabConfig {
             id: InlineModelSelectorTab::BaseAgent,
-            label: "Base".to_string(),
+            label: t!("Base").to_string(),
             filters: HashSet::from([QueryFilter::BaseModels]),
         }];
         if FeatureFlag::InlineMenuHeaders.is_enabled() {
             configs.push(InlineMenuTabConfig {
                 id: InlineModelSelectorTab::FullTerminalUse,
-                label: "Full Terminal Use".to_string(),
+                label: t!("Full Terminal Use").to_string(),
                 filters: HashSet::from([QueryFilter::FullTerminalUseModels]),
             });
         }
@@ -150,7 +151,7 @@ impl InlineModelSelectorView {
 
         let menu_view = if FeatureFlag::InlineMenuHeaders.is_enabled() {
             let manage_defaults_button = ctx.add_view(|_| {
-                ActionButton::new("Manage defaults", ManageDefaultsTheme)
+                ActionButton::new(t!("Manage defaults"), ManageDefaultsTheme)
                     .with_icon(Icon::Settings)
                     .with_size(ButtonSize::Small)
                     .on_click(|ctx| {
@@ -195,10 +196,10 @@ impl InlineModelSelectorView {
                         cli_ctrl.as_ref(app).is_agent_in_control_or_tagged_in();
                     let message = match active_tab {
                         InlineModelSelectorTab::FullTerminalUse if main_agent_in_progress && !is_cli_agent_in_control_or_tagged_in => {
-                            Some("You're using the base agent. Full terminal use models only apply to the full terminal use agent.")
+                            Some(t!("You're using the base agent. Full terminal use models only apply to the full terminal use agent."))
                         }
                         InlineModelSelectorTab::BaseAgent if is_cli_agent_in_control_or_tagged_in => {
-                            Some("You're using the full terminal use agent. Base models only apply to the base agent.")
+                            Some(t!("You're using the full terminal use agent. Base models only apply to the base agent."))
                         }
                         _ => None,
                     };

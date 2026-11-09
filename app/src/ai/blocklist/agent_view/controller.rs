@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use i18n::t;
 use instant::Instant;
 use parking_lot::FairMutex;
 use warp_core::ui::appearance::Appearance;
@@ -982,9 +983,9 @@ fn exit_confirmation_message(
                 ..Default::default()
             },
             if should_stop_and_exit {
-                "again to stop and exit"
+                t!("again to stop and exit")
             } else {
-                "again to exit"
+                t!("again to exit")
             },
         ),
         ExitConfirmationTrigger::CtrlC => (
@@ -993,7 +994,7 @@ fn exit_confirmation_message(
                 ctrl: true,
                 ..Default::default()
             },
-            "again to exit",
+            t!("again to exit"),
         ),
     };
 
@@ -1011,7 +1012,7 @@ fn new_conversation_keybinding_confirmation_message(
     let appearance = Appearance::handle(app).as_ref(app);
     Message::new(vec![
         MessageItem::keystroke(keystroke),
-        MessageItem::text("again to start new conversation"),
+        MessageItem::text(t!("again to start new conversation")),
     ])
     .with_text_color(appearance.theme().ansi_fg_magenta())
 }

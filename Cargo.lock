@@ -5569,6 +5569,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "i18n"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "regex",
+ "serde_yaml 0.8.26",
+ "sys-locale",
+ "walkdir",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13549,6 +13560,7 @@ dependencies = [
  "http_client",
  "http_server",
  "hyper",
+ "i18n",
  "image",
  "indexmap 2.12.0",
  "infer",
@@ -14238,6 +14250,7 @@ dependencies = [
  "futures",
  "futures-lite 1.13.0",
  "http_client",
+ "i18n",
  "instant",
  "itertools 0.14.0",
  "log",
@@ -14365,6 +14378,7 @@ dependencies = [
  "futures-util",
  "global-hotkey",
  "gloo",
+ "i18n",
  "image",
  "instant",
  "itertools 0.14.0",
@@ -14456,6 +14470,7 @@ dependencies = [
  "futures-lite 1.13.0",
  "futures-util",
  "gloo",
+ "i18n",
  "image",
  "infer",
  "instant",

@@ -1,3 +1,4 @@
+use i18n::t;
 use settings::Setting as _;
 use warp_core::ui::theme::Fill;
 use warpui::elements::{Align, Container, Empty, Flex, MouseStateHandle, ParentElement};
@@ -137,7 +138,7 @@ impl View for NativeModal {
         let dont_show_again_checkbox = appearance
             .ui_builder()
             .checkbox(self.dont_show_again_mouse_state.clone(), Some(14.))
-            .with_label(Span::new("Don't show again.", Default::default()))
+            .with_label(Span::new(t!("Don't show again."), Default::default()))
             .check(self.dont_show_again)
             .build()
             .with_cursor(Cursor::PointingHand)

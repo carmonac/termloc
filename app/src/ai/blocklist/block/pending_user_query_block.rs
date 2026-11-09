@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use i18n::t;
 use parking_lot::RwLock;
 use warp_core::features::FeatureFlag;
 use warp_core::semantic_selection::SemanticSelection;
@@ -51,7 +52,7 @@ impl PendingUserQueryBlock {
     ) -> Self {
         let close_button = show_close_button.then(|| {
             ctx.add_typed_action_view(|_| {
-                ActionButton::new("Remove queued prompt", NakedTheme)
+                ActionButton::new(t!("Remove queued prompt"), NakedTheme)
                     .with_icon(Icon::X)
                     .with_size(ButtonSize::XSmall)
                     .on_click(|ctx| {
@@ -61,7 +62,7 @@ impl PendingUserQueryBlock {
         });
         let send_now_button = show_send_now_button.then(|| {
             ctx.add_typed_action_view(|_| {
-                ActionButton::new("Send now", NakedTheme)
+                ActionButton::new(t!("Send now"), NakedTheme)
                     .with_icon(Icon::Play)
                     .with_size(ButtonSize::XSmall)
                     .on_click(|ctx| {
@@ -167,7 +168,7 @@ impl View for PendingUserQueryBlock {
         .finish();
 
         let queued_badge = Text::new(
-            "Queued",
+            t!("Queued"),
             appearance.ui_font_family(),
             appearance.monospace_font_size().max(4.) - 2.,
         )

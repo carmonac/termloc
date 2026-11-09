@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -176,7 +177,7 @@ impl AgentManagementView {
         let artifact_dropdown = ctx.add_typed_action_view(Self::create_artifact_dropdown);
 
         let no_filter_results_button = ctx.add_typed_action_view(move |_ctx| {
-            ActionButton::new("Clear filters", SecondaryTheme)
+            ActionButton::new(t!("Clear filters"), SecondaryTheme)
                 .with_size(ButtonSize::Small)
                 .on_click(move |ctx| {
                     ctx.dispatch_typed_action(AgentManagementViewAction::ClearFilters)
@@ -184,7 +185,7 @@ impl AgentManagementView {
         });
 
         let clear_all_filters_button = ctx.add_typed_action_view(move |_ctx| {
-            ActionButton::new("Clear all", NakedTheme)
+            ActionButton::new(t!("Clear all"), NakedTheme)
                 .with_icon(Icon::X)
                 .with_size(ButtonSize::Small)
                 .on_click(move |ctx| {
@@ -206,7 +207,7 @@ impl AgentManagementView {
                 },
                 ctx,
             );
-            editor.set_placeholder_text("Search", ctx);
+            editor.set_placeholder_text(t!("Search"), ctx);
             editor
         });
         ctx.subscribe_to_view(&search_editor, |me, _handle, event, ctx| {
@@ -214,7 +215,7 @@ impl AgentManagementView {
         });
 
         let new_agent_button = CompactibleActionButton::new(
-            "New agent".to_string(),
+            t!("New agent").to_string(),
             None,
             ButtonSize::Small,
             AgentManagementViewAction::NewAgent,
@@ -323,7 +324,7 @@ impl AgentManagementView {
         };
 
         let mut dropdown = Dropdown::new(ctx);
-        Self::setup_filter_menu(&mut dropdown, "Status", ctx);
+        Self::setup_filter_menu(&mut dropdown, t!("Status"), ctx);
 
         // Use this helper to make dropdown items with status icons
         let make_status_option =
@@ -338,22 +339,22 @@ impl AgentManagementView {
 
         let items = vec![
             make_status_option(
-                "All",
+                t!("All"),
                 AgentManagementViewAction::SetStatusFilter(StatusFilter::All),
                 None,
             ),
             make_status_option(
-                "Working",
+                t!("Working"),
                 AgentManagementViewAction::SetStatusFilter(StatusFilter::Working),
                 Some((Icon::ClockLoader, Fill::from(magenta))),
             ),
             make_status_option(
-                "Done",
+                t!("Done"),
                 AgentManagementViewAction::SetStatusFilter(StatusFilter::Done),
                 Some((Icon::Check, Fill::from(green))),
             ),
             make_status_option(
-                "Failed",
+                t!("Failed"),
                 AgentManagementViewAction::SetStatusFilter(StatusFilter::Failed),
                 Some((Icon::X, Fill::from(red))),
             ),
@@ -368,25 +369,29 @@ impl AgentManagementView {
         ctx: &mut ViewContext<Dropdown<AgentManagementViewAction>>,
     ) -> Dropdown<AgentManagementViewAction> {
         let mut dropdown = Dropdown::new(ctx);
-        Self::setup_filter_menu(&mut dropdown, "Created on", ctx);
+        Self::setup_filter_menu(&mut dropdown, t!("Created on"), ctx);
 
         let items = vec![
-            MenuItem::Item(MenuItemFields::new("All").with_on_select_action(
+            MenuItem::Item(MenuItemFields::new(t!("All")).with_on_select_action(
                 DropdownAction::select_action_and_close(
                     AgentManagementViewAction::SetCreatedOnFilter(CreatedOnFilter::All),
                 ),
             )),
-            MenuItem::Item(MenuItemFields::new("Last 24 hours").with_on_select_action(
-                DropdownAction::select_action_and_close(
-                    AgentManagementViewAction::SetCreatedOnFilter(CreatedOnFilter::Last24Hours),
+            MenuItem::Item(
+                MenuItemFields::new(t!("Last 24 hours")).with_on_select_action(
+                    DropdownAction::select_action_and_close(
+                        AgentManagementViewAction::SetCreatedOnFilter(CreatedOnFilter::Last24Hours),
+                    ),
                 ),
-            )),
-            MenuItem::Item(MenuItemFields::new("Past 3 days").with_on_select_action(
-                DropdownAction::select_action_and_close(
-                    AgentManagementViewAction::SetCreatedOnFilter(CreatedOnFilter::Past3Days),
+            ),
+            MenuItem::Item(
+                MenuItemFields::new(t!("Past 3 days")).with_on_select_action(
+                    DropdownAction::select_action_and_close(
+                        AgentManagementViewAction::SetCreatedOnFilter(CreatedOnFilter::Past3Days),
+                    ),
                 ),
-            )),
-            MenuItem::Item(MenuItemFields::new("Last week").with_on_select_action(
+            ),
+            MenuItem::Item(MenuItemFields::new(t!("Last week")).with_on_select_action(
                 DropdownAction::select_action_and_close(
                     AgentManagementViewAction::SetCreatedOnFilter(CreatedOnFilter::LastWeek),
                 ),
@@ -402,30 +407,32 @@ impl AgentManagementView {
         ctx: &mut ViewContext<Dropdown<AgentManagementViewAction>>,
     ) -> Dropdown<AgentManagementViewAction> {
         let mut dropdown = Dropdown::new(ctx);
-        Self::setup_filter_menu(&mut dropdown, "Has artifact", ctx);
+        Self::setup_filter_menu(&mut dropdown, t!("Has artifact"), ctx);
 
         let items = vec![
-            MenuItem::Item(MenuItemFields::new("All").with_on_select_action(
+            MenuItem::Item(MenuItemFields::new(t!("All")).with_on_select_action(
                 DropdownAction::select_action_and_close(
                     AgentManagementViewAction::SetArtifactFilter(ArtifactFilter::All),
                 ),
             )),
-            MenuItem::Item(MenuItemFields::new("Pull Request").with_on_select_action(
-                DropdownAction::select_action_and_close(
-                    AgentManagementViewAction::SetArtifactFilter(ArtifactFilter::PullRequest),
+            MenuItem::Item(
+                MenuItemFields::new(t!("Pull Request")).with_on_select_action(
+                    DropdownAction::select_action_and_close(
+                        AgentManagementViewAction::SetArtifactFilter(ArtifactFilter::PullRequest),
+                    ),
                 ),
-            )),
-            MenuItem::Item(MenuItemFields::new("Plan").with_on_select_action(
+            ),
+            MenuItem::Item(MenuItemFields::new(t!("Plan")).with_on_select_action(
                 DropdownAction::select_action_and_close(
                     AgentManagementViewAction::SetArtifactFilter(ArtifactFilter::Plan),
                 ),
             )),
-            MenuItem::Item(MenuItemFields::new("Screenshot").with_on_select_action(
+            MenuItem::Item(MenuItemFields::new(t!("Screenshot")).with_on_select_action(
                 DropdownAction::select_action_and_close(
                     AgentManagementViewAction::SetArtifactFilter(ArtifactFilter::Screenshot),
                 ),
             )),
-            MenuItem::Item(MenuItemFields::new("File").with_on_select_action(
+            MenuItem::Item(MenuItemFields::new(t!("File")).with_on_select_action(
                 DropdownAction::select_action_and_close(
                     AgentManagementViewAction::SetArtifactFilter(ArtifactFilter::File),
                 ),
@@ -677,7 +684,7 @@ impl AgentManagementView {
 
                 let window_id = ctx.window_id();
                 ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
-                    let toast = DismissibleToast::default("Copied branch name".to_string());
+                    let toast = DismissibleToast::default(t!("Copied branch name").to_string());
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
             }
@@ -1090,7 +1097,7 @@ impl AgentManagementView {
             .creator
             .name
             .clone()
-            .unwrap_or_else(|| "Unknown".to_string());
+            .unwrap_or_else(|| t!("Unknown").to_string());
         let avatar = Self::render_avatar_with_tooltip(
             &creator_name,
             appearance,
@@ -1135,9 +1142,9 @@ impl AgentManagementView {
             .harness
             .filter(|harness| *harness != Harness::Local)
         {
-            metadata_parts.push(format!(
-                "Harness: {}",
-                harness_display::display_name(harness)
+            metadata_parts.push(t!(
+                "Harness: {harness}",
+                harness = harness_display::display_name(harness)
             ));
         }
 
@@ -1166,7 +1173,7 @@ impl AgentManagementView {
 
         let build_header = |use_expanded: bool| {
             let title = Text::new_inline(
-                "Runs",
+                t!("Runs"),
                 appearance.ui_font_family(),
                 appearance.ui_font_size() + 4.,
             )
@@ -1253,7 +1260,7 @@ impl AgentManagementView {
             let mut stack = Stack::new().with_child(loading_icon);
             if mouse_state.is_hovered() {
                 let tooltip = ui_builder
-                    .tool_tip(String::from("Loading conversations"))
+                    .tool_tip(t!("Loading conversations").to_owned())
                     .build()
                     .finish();
                 stack.add_positioned_overlay_child(
@@ -1276,7 +1283,7 @@ impl AgentManagementView {
         let theme = appearance.theme();
 
         let title = Text::new_inline(
-            "Runs",
+            t!("Runs"),
             appearance.ui_font_family(),
             appearance.ui_font_size() + 4.,
         )
@@ -1298,7 +1305,7 @@ impl AgentManagementView {
             .with_child(Container::new(loading_icon).with_margin_right(10.).finish())
             .with_child(
                 Text::new_inline(
-                    "Loading agents...",
+                    t!("Loading agents..."),
                     appearance.ui_font_family(),
                     appearance.ui_font_size() + 2.,
                 )
@@ -1354,7 +1361,7 @@ impl AgentManagementView {
         .finish();
 
         let text = Text::new_inline(
-            "No results matched your filters",
+            t!("No results matched your filters"),
             appearance.ui_font_family(),
             appearance.ui_font_size(),
         )

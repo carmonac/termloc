@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 use std::sync::{Arc, Mutex};
@@ -236,7 +237,7 @@ impl ConversationListView {
                 ctx,
             );
 
-            editor.set_placeholder_text("Search", ctx);
+            editor.set_placeholder_text(t!("Search"), ctx);
             editor
         });
         ctx.subscribe_to_view(&query_editor, |me, _handle, event, ctx| {
@@ -270,7 +271,7 @@ impl ConversationListView {
         // We use this as both the "view all" and "show less" button
         // (switching out the text on-toggle).
         let toggle_view_all_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new(VIEW_ALL_LABEL, SecondaryTheme)
+            ActionButton::new(t!(VIEW_ALL_LABEL), SecondaryTheme)
                 .with_size(ButtonSize::Small)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(ConversationListViewAction::ToggleViewAll);
@@ -758,7 +759,7 @@ fn render_zero_state(
         .with_cross_axis_alignment(CrossAxisAlignment::Center)
         .with_spacing(4.)
         .with_child(
-            Text::new("No conversations yet", appearance.ui_font_family(), 14.)
+            Text::new(t!("No conversations yet"), appearance.ui_font_family(), 14.)
                 .with_color(theme.sub_text_color(theme.background()).into_solid())
                 .with_style(Properties::default().weight(Weight::Semibold))
                 .finish(),
@@ -766,7 +767,7 @@ fn render_zero_state(
         .with_child(
             ConstrainedBox::new(
                 FormattedTextElement::from_str(
-                    "Your active and past conversations with local and ambient agents will appear here.",
+                    t!("Your active and past conversations with local and ambient agents will appear here."),
                     appearance.ui_font_family(),
                     14.,
                 )
@@ -781,7 +782,7 @@ fn render_zero_state(
 
     let new_conversation_button =
         Hoverable::new(zero_state_button_mouse_state, move |mouse_state| {
-            let label = Text::new_inline("New conversation", appearance.ui_font_family(), 12.)
+            let label = Text::new_inline(t!("New conversation"), appearance.ui_font_family(), 12.)
                 .with_color(theme.main_text_color(theme.background()).into_solid())
                 .finish();
 
@@ -882,8 +883,8 @@ fn render_section_header(
 
     let title_text = Text::new_inline(
         match section {
-            ConversationSection::Active => "ACTIVE",
-            ConversationSection::Past => "PAST",
+            ConversationSection::Active => t!("Active").to_uppercase(),
+            ConversationSection::Past => t!("Past").to_uppercase(),
         },
         appearance.ui_font_family(),
         11.,
@@ -957,7 +958,8 @@ impl TypedActionView for ConversationListView {
                     ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                         toast_stack.add_ephemeral_toast(
                             DismissibleToast::error(
-                                "Conversations cannot be deleted while in progress.".to_string(),
+                                t!("Conversations cannot be deleted while in progress.")
+                                    .to_string(),
                             ),
                             window_id,
                             ctx,
@@ -972,7 +974,7 @@ impl TypedActionView for ConversationListView {
                     .as_ref(ctx)
                     .get_item_by_id(&id, ctx)
                     .map(|entry| entry.display.title)
-                    .unwrap_or_else(|| "Conversation".to_string());
+                    .unwrap_or_else(|| t!("Conversation").to_string());
                 ctx.emit(Event::ShowDeleteConfirmationDialog {
                     conversation_id: *conversation_id,
                     conversation_title,
@@ -1003,7 +1005,7 @@ impl TypedActionView for ConversationListView {
                         return;
                     };
 
-                    let mut delete_item = MenuItemFields::new("Delete")
+                    let mut delete_item = MenuItemFields::new(t!("Delete"))
                         .with_override_text_color(Appearance::as_ref(ctx).theme().ansi_fg_red())
                         .with_on_select_action(ConversationListViewAction::DeleteFromOverflowMenu {
                             conversation_id,
@@ -1011,13 +1013,13 @@ impl TypedActionView for ConversationListView {
                         .with_disabled(!entry.capabilities.can_delete);
                     if !entry.capabilities.can_delete {
                         delete_item =
-                            delete_item.with_tooltip("This conversation cannot be deleted");
+                            delete_item.with_tooltip(t!("This conversation cannot be deleted"));
                     }
 
                     // Only show share item if the conversation is shareable
                     let share_item = if entry.capabilities.can_share {
                         Some(
-                            MenuItemFields::new("Share conversation")
+                            MenuItemFields::new(t!("Share conversation"))
                                 .with_on_select_action(
                                     ConversationListViewAction::OpenShareDialog { conversation_id },
                                 )
@@ -1031,7 +1033,7 @@ impl TypedActionView for ConversationListView {
                         // Forking from a closed ambient agent conversation is not supported at this point.
                         if entry.capabilities.can_fork_locally {
                             Some([
-                                MenuItemFields::new("Fork in new pane")
+                                MenuItemFields::new(t!("Fork in new pane"))
                                     .with_on_select_action(
                                         ConversationListViewAction::ForkConversation {
                                             conversation_id,
@@ -1039,7 +1041,7 @@ impl TypedActionView for ConversationListView {
                                         },
                                     )
                                     .into_item(),
-                                MenuItemFields::new("Fork in new tab")
+                                MenuItemFields::new(t!("Fork in new tab"))
                                     .with_on_select_action(
                                         ConversationListViewAction::ForkConversation {
                                             conversation_id,
@@ -1119,7 +1121,7 @@ impl TypedActionView for ConversationListView {
                         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                             toast_stack.add_ephemeral_toast(
                                 DismissibleToast::error(
-                                    "Conversations cannot be deleted while in progress."
+                                    t!("Conversations cannot be deleted while in progress.")
                                         .to_string(),
                                 ),
                                 window_id,
@@ -1186,9 +1188,9 @@ impl TypedActionView for ConversationListView {
                 self.view_all = !self.view_all;
 
                 let label = if self.view_all {
-                    "Show less"
+                    t!("Show less")
                 } else {
-                    VIEW_ALL_LABEL
+                    t!(VIEW_ALL_LABEL)
                 };
                 self.toggle_view_all_button
                     .update(ctx, |button, ctx| button.set_label(label, ctx));
@@ -1265,7 +1267,7 @@ impl View for ConversationListView {
         } else if self.item_count() == 0 {
             Container::new(
                 Text::new_inline(
-                    "No matching conversations",
+                    t!("No matching conversations"),
                     appearance.ui_font_family(),
                     appearance.ui_font_size(),
                 )

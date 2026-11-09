@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
+use i18n::t;
 use instant::Instant;
 use parking_lot::FairMutex;
 use pathfinder_color::ColorU;
@@ -772,7 +773,7 @@ impl BlocklistAIStatusBar {
         let model_warping_message =
             resolve_warping_model_message(current_model_in_use, model.as_ref(), app);
         let default_warping_text = model_warping_message.as_ref().map_or_else(
-            || LOAD_OUTPUT_MESSAGE.to_owned(),
+            || t!(LOAD_OUTPUT_MESSAGE).to_owned(),
             |message| message.text.clone(),
         );
         let model_in_use_name = model_warping_message
@@ -935,9 +936,12 @@ fn render_fallback_explanation<V: View>(
         .map(|info| info.base_model_name.as_str());
     let text = match primary_name {
         Some(primary) => {
-            format!("The primary model ({primary}) failed. Retrying with the fallback model.")
+            t!(
+                "The primary model ({primary}) failed. Retrying with the fallback model.",
+                primary = primary
+            )
         }
-        None => "The primary model failed. Retrying with the fallback model.".to_owned(),
+        None => t!("The primary model failed. Retrying with the fallback model.").to_owned(),
     };
     let appearance = Appearance::as_ref(app);
     Text::new_inline(
@@ -983,10 +987,18 @@ const UNNAMED_FALLBACK_MODEL_WARPING_TEXT: &str = "Working with another model.";
 /// live. Cleaning the flag up in the "treat as false" direction would silently
 /// flip every fallback message to the ellipsis copy and drop its explanation line.
 fn fallback_warping_text(display_name: &str) -> String {
-    let stem = LOAD_OUTPUT_MESSAGE
+    let message = t!(LOAD_OUTPUT_MESSAGE);
+    let stem = message
         .strip_suffix(STATUS_MESSAGE_ELLIPSIS)
-        .unwrap_or(LOAD_OUTPUT_MESSAGE);
-    format!("{stem} with {display_name}.")
+        .unwrap_or(message);
+    format!(
+        "{}.",
+        t!(
+            "{message} with {model}",
+            message = stem,
+            model = display_name
+        )
+    )
 }
 
 /// Warping text for the model a response is running on, e.g. "Working with Claude
@@ -1029,7 +1041,7 @@ fn warping_model_message(inputs: WarpingModelInputs) -> Option<WarpingModelMessa
     let text = match (model_in_use.display_name.as_deref(), is_fallback_message) {
         (Some(display_name), true) => fallback_warping_text(display_name),
         // An unnamed fallback still has something to say.
-        (None, true) => UNNAMED_FALLBACK_MODEL_WARPING_TEXT.to_owned(),
+        (None, true) => t!(UNNAMED_FALLBACK_MODEL_WARPING_TEXT).to_owned(),
         (Some(display_name), false) => {
             status_message_naming_model(LOAD_OUTPUT_MESSAGE, display_name)
         }
@@ -1105,13 +1117,13 @@ impl View for BlocklistAIStatusBar {
                 WarpingIndicatorProps {
                     icon: Some(icons::gray_clock_icon(appearance).finish()),
                     warping_indicator_text: MaybeShimmeringText::Static(
-                        WAITING_FOR_USER_INPUT_MESSAGE.into(),
+                        t!(WAITING_FOR_USER_INPUT_MESSAGE).into(),
                     ),
                     non_shimmering_text: None,
                     non_shimmering_suffix: None,
                     buttons: Some(render_switch_control_to_user_button(
-                        "Exit",
-                        "Exit agent input",
+                        t!("Exit"),
+                        t!("Exit agent input"),
                         ButtonProps {
                             button_handle: &self.state_handles.take_over_button,
                             keystroke: self.set_terminal_input_keystroke.as_ref(),

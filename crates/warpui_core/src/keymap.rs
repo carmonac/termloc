@@ -164,7 +164,9 @@ impl BindingDescription {
     pub fn resolve(&self, ctx: &AppContext, context: DescriptionContext) -> Cow<'_, str> {
         match &self.dynamic_override {
             Some(f) => match f(ctx) {
-                Some(description) => Cow::Owned(titlecase(&description)),
+                Some(description) => {
+                    Cow::Owned(i18n::translate(&titlecase(&description)).to_owned())
+                }
                 None => Cow::Borrowed(self.in_context(context)),
             },
             None => Cow::Borrowed(self.in_context(context)),
@@ -202,13 +204,14 @@ impl BindingDescription {
     /// already-materialized descriptions, or that genuinely cannot plumb
     /// a context through.
     pub fn in_context(&self, context: DescriptionContext) -> &str {
-        match (context, &self.custom) {
+        let description = match (context, &self.custom) {
             (DescriptionContext::Custom(key), Some(map)) => map
                 .get(key)
                 .map(|s| s.as_str())
                 .unwrap_or_else(|| self.description.as_str()),
             _ => self.description.as_str(),
-        }
+        };
+        i18n::translate(description)
     }
 }
 

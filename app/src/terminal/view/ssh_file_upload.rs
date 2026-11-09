@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -302,7 +303,7 @@ impl FileUpload {
         if let FileUploadStatus::AwaitingPassword = file.status {
             session_action_row.add_child(
                 FormattedTextElement::from_str(
-                    String::from("Waiting for password input"),
+                    String::from(t!("Waiting for password input")),
                     font_family,
                     font_size,
                 )
@@ -365,9 +366,9 @@ impl FileUpload {
     /// assembly.
     fn render_file_detail_text(&self, file: &FileUploadInfo) -> FormattedText {
         let status_string = match file.status {
-            FileUploadStatus::Started | FileUploadStatus::AwaitingPassword => "Uploading",
-            FileUploadStatus::Completed { successful: true } => "Uploaded",
-            FileUploadStatus::Completed { successful: false } => "Failed to upload",
+            FileUploadStatus::Started | FileUploadStatus::AwaitingPassword => t!("Uploading"),
+            FileUploadStatus::Completed { successful: true } => t!("Uploaded"),
+            FileUploadStatus::Completed { successful: false } => t!("Failed to upload"),
         };
 
         let mut file_iter = file.local_file_paths.iter().peekable();
@@ -392,7 +393,7 @@ impl FileUpload {
         }
 
         let mut dest_fragments = vec![
-            FormattedTextFragment::plain_text(" to "),
+            FormattedTextFragment::plain_text(t!(" to ")),
             FormattedTextFragment::inline_code(&file.remote_host),
         ];
         if let Some(remote_path) = &file.remote_dest_path {
@@ -416,7 +417,12 @@ impl FileUpload {
         let ui_builder = appearance.ui_builder().clone();
         Container::new(
             icon_button(appearance, Icon::X, true, file.clear_button.clone())
-                .with_tooltip(move || ui_builder.tool_tip("Clear upload".into()).build().finish())
+                .with_tooltip(move || {
+                    ui_builder
+                        .tool_tip(t!("Clear upload").into())
+                        .build()
+                        .finish()
+                })
                 .build()
                 .on_click(move |event_ctx, _, _| {
                     event_ctx
@@ -434,10 +440,11 @@ impl FileUpload {
         appearance: &Appearance,
     ) -> Box<dyn Element> {
         let view_session_text = if file.local_session_open {
-            String::from("Close")
+            t!("Close upload session")
         } else {
-            String::from("View")
-        } + " upload session";
+            t!("View upload session")
+        }
+        .to_owned();
         let upload_id = file.upload_id;
         Container::new(
             appearance
@@ -460,7 +467,7 @@ impl FileUpload {
             FormattedTextElement::new(
                 FormattedText::new(vec![FormattedTextLine::Heading(FormattedTextHeader {
                     heading_size: 3,
-                    text: vec![FormattedTextFragment::plain_text("File Uploads")],
+                    text: vec![FormattedTextFragment::plain_text(t!("File Uploads"))],
                 })]),
                 appearance.ui_font_size(),
                 appearance.ui_font_family(),

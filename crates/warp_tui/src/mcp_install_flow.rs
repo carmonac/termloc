@@ -1,5 +1,6 @@
 use std::fmt;
 
+use i18n::t;
 use warp::editor::CodeEditorModel;
 use warp::tui_export::{
     TuiMcpInstallRequest, TuiMcpServerId, TuiMcpTemplateVariable, TuiMcpVariableValue,
@@ -185,23 +186,23 @@ impl TuiMcpInstallFlowModel {
         let request = self
             .request
             .as_ref()
-            .ok_or_else(|| "The MCP installation flow is no longer active".to_owned())?;
+            .ok_or_else(|| t!("The MCP installation flow is no longer active").to_owned())?;
         let TuiMcpInstallStep::Variable { index, .. } = &self.step else {
-            return Err("The MCP installation flow is not collecting a variable".to_owned());
+            return Err(t!("The MCP installation flow is not collecting a variable").to_owned());
         };
         let variable = request
             .variables
             .get(*index)
-            .ok_or_else(|| "The MCP variable is no longer available".to_owned())?;
+            .ok_or_else(|| t!("The MCP variable is no longer available").to_owned())?;
         if variable.key != key || value.is_empty() {
-            return Err("Enter a value for the required MCP variable".to_owned());
+            return Err(t!("Enter a value for the required MCP variable").to_owned());
         }
         if variable
             .allowed_values
             .as_ref()
             .is_some_and(|allowed| !allowed.contains(&value))
         {
-            return Err("Select one of the listed values".to_owned());
+            return Err(t!("Select one of the listed values").to_owned());
         }
 
         self.values.push(TuiMcpVariableValue { key, value });
@@ -227,9 +228,9 @@ impl TuiMcpInstallFlowModel {
         match &self.step {
             TuiMcpInstallStep::Closed => None,
             TuiMcpInstallStep::Variable { index, .. } if *index + 1 == request.variables.len() => {
-                Some("to install and enable")
+                Some(t!("to install and enable"))
             }
-            TuiMcpInstallStep::Variable { .. } => Some("to continue"),
+            TuiMcpInstallStep::Variable { .. } => Some(t!("to continue")),
         }
     }
 
@@ -245,7 +246,7 @@ impl TuiMcpInstallFlowModel {
             .variables
             .get(*index)
             .is_some_and(|variable| variable.allowed_values.is_none())
-            .then_some("Enter value…")
+            .then_some(t!("Enter value…"))
     }
 
     pub(crate) fn snapshot(&self, ctx: &AppContext) -> Option<TuiInlineMenuSnapshot> {
@@ -253,7 +254,7 @@ impl TuiMcpInstallFlowModel {
             return None;
         }
         let request = self.request.as_ref()?;
-        let title = format!("Install and enable {}", request.name);
+        let title = t!("Install and enable {name}", name = request.name);
         let header = Some(TuiInlineMenuHeader {
             title: Some(title),
             tabs: Vec::new(),
@@ -263,11 +264,11 @@ impl TuiMcpInstallFlowModel {
             TuiMcpInstallStep::Variable { index, choices } => {
                 let variable = request.variables.get(*index)?;
                 let status = variable.allowed_values.is_none().then(|| {
-                    TuiInlineMenuStatus::Empty(format!(
-                        "Enter a value for {} ({}/{})",
-                        variable.key,
-                        index + 1,
-                        request.variables.len()
+                    TuiInlineMenuStatus::Empty(t!(
+                        "Enter a value for {name} ({position}/{total})",
+                        name = variable.key,
+                        position = index + 1,
+                        total = request.variables.len()
                     ))
                 });
                 Some(TuiInlineMenuSnapshot {

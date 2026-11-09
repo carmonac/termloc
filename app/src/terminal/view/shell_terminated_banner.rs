@@ -1,3 +1,4 @@
+use i18n::t;
 use std::borrow::Cow;
 use std::cell::RefCell;
 
@@ -160,9 +161,9 @@ impl TerminationType {
 
     fn text(&self, appearance: &Appearance) -> Box<dyn Element> {
         let text = match self {
-            TerminationType::Normal => "Shell process exited",
-            TerminationType::PtySpawnFailure { .. } => "Shell process could not start!",
-            TerminationType::Premature { .. } => "Shell process exited prematurely!",
+            TerminationType::Normal => t!("Shell process exited"),
+            TerminationType::PtySpawnFailure { .. } => t!("Shell process could not start!"),
+            TerminationType::Premature { .. } => t!("Shell process exited prematurely!"),
         };
 
         Text::new(text, appearance.ui_font_family(), 14.)
@@ -207,7 +208,7 @@ impl TerminationType {
                 vec![
                     ui_builder
                         .button(ButtonVariant::Text, handles[0].clone())
-                        .with_text_label(FILE_ISSUE_TEXT.to_string())
+                        .with_text_label(t!(FILE_ISSUE_TEXT).to_string())
                         .build()
                         .on_click(|ctx, _, _| {
                             ctx.dispatch_typed_action(Action::OpenUrl(
@@ -225,7 +226,7 @@ impl TerminationType {
                 vec![
                     ui_builder
                         .button(ButtonVariant::Text, handles[0].clone())
-                        .with_text_label("Copy error".to_string())
+                        .with_text_label(t!("Copy error").to_string())
                         .build()
                         .on_click(move |evt_ctx, _ctx, _position| {
                             evt_ctx.dispatch_typed_action(Action::CopyPtySpawnError(
@@ -235,7 +236,7 @@ impl TerminationType {
                         .finish(),
                     ui_builder
                         .button(ButtonVariant::Text, handles[1].clone())
-                        .with_text_label(FILE_ISSUE_TEXT.to_string())
+                        .with_text_label(t!(FILE_ISSUE_TEXT).to_string())
                         .build()
                         .on_click(|ctx, _, _| {
                             ctx.dispatch_typed_action(Action::OpenUrl(

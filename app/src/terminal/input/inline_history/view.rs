@@ -1,4 +1,5 @@
 //! Inline history menu view for up-arrow history with conversations, commands and prompts.
+use i18n::t;
 use std::collections::HashSet;
 
 use pathfinder_color::ColorU;
@@ -131,7 +132,7 @@ fn build_tab_configs(is_agent_view: bool) -> Vec<InlineMenuTabConfig<HistoryTab>
     if !is_agent_view {
         return vec![InlineMenuTabConfig {
             id: HistoryTab::All,
-            label: "All".to_string(),
+            label: t!("All").to_string(),
             filters: HashSet::new(),
         }];
     }
@@ -139,17 +140,17 @@ fn build_tab_configs(is_agent_view: bool) -> Vec<InlineMenuTabConfig<HistoryTab>
     vec![
         InlineMenuTabConfig {
             id: HistoryTab::All,
-            label: "All".to_string(),
+            label: t!("All").to_string(),
             filters: HashSet::new(),
         },
         InlineMenuTabConfig {
             id: HistoryTab::Commands,
-            label: "Commands".to_string(),
+            label: t!("Commands").to_string(),
             filters: HashSet::from([QueryFilter::Commands]),
         },
         InlineMenuTabConfig {
             id: HistoryTab::Prompts,
-            label: "Prompts".to_string(),
+            label: t!("Prompts").to_string(),
             filters: HashSet::from([QueryFilter::PromptHistory]),
         },
     ]
@@ -262,7 +263,7 @@ impl InlineHistoryMenuView {
 
         let menu_view = if FeatureFlag::InlineMenuHeaders.is_enabled() {
             let configure_button = ctx.add_view(|_| {
-                ActionButton::new("Configure", ConfigureButtonTheme)
+                ActionButton::new(t!("Configure"), ConfigureButtonTheme)
                     .with_icon(Icon::Settings)
                     .with_size(ButtonSize::Small)
                     .on_click(|ctx| {
@@ -273,7 +274,7 @@ impl InlineHistoryMenuView {
                     })
             });
             let header_config = InlineMenuHeaderConfig {
-                label: "History".to_string(),
+                label: t!("History").to_string(),
                 trailing_element: Some(Box::new(move |_app: &AppContext| {
                     ChildView::new(&configure_button).finish()
                 })),

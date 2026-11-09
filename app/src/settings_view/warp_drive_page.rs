@@ -1,3 +1,4 @@
+use i18n::t;
 use warp_core::settings::ToggleableSetting as _;
 use warp_errors::report_if_error;
 use warpui::elements::Element;
@@ -141,7 +142,7 @@ impl SettingsWidget for WarpDriveToggleWidget {
         let settings = WarpDriveSettings::as_ref(app);
 
         render_body_item::<WarpDriveSettingsPageAction>(
-            "Drive".into(),
+            t!("Drive").into(),
             None,
             LocalOnlyIconState::Hidden,
             ToggleState::Enabled,
@@ -155,7 +156,7 @@ impl SettingsWidget for WarpDriveToggleWidget {
                     ctx.dispatch_typed_action(WarpDriveSettingsPageAction::ToggleShowWarpDrive);
                 })
                 .finish(),
-            Some("Drive is a workspace in your terminal where you can save Workflows, Notebooks, Prompts, and Environment Variables for personal use or to share with a team.".into()),
+            Some(t!("Drive is a workspace in your terminal where you can save Workflows, Notebooks, Prompts, and Environment Variables for personal use or to share with a team.").into()),
         )
     }
 }

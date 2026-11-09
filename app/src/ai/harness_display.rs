@@ -4,6 +4,7 @@
 //! dropdown, the conversation details sidebar, etc. — should source its label,
 //! icon, and brand color from here so the two surfaces cannot drift.
 
+use i18n::t;
 use pathfinder_color::ColorU;
 use warp_cli::agent::Harness;
 use warp_core::ui::theme::color::internal_colors;
@@ -17,13 +18,13 @@ use crate::ui_components::icons::Icon;
 /// User-visible display name for a [`Harness`].
 pub fn display_name(harness: Harness) -> &'static str {
     match harness {
-        Harness::Local => "Local Agent",
+        Harness::Local => t!("Local Agent"),
         Harness::Claude => "Claude Code",
         Harness::OpenCode => "OpenCode",
         Harness::Gemini => "Gemini CLI",
         Harness::Pi => "Pi",
         Harness::Codex => "Codex",
-        Harness::Unknown => "Unknown",
+        Harness::Unknown => t!("Unknown"),
     }
 }
 

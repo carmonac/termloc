@@ -2,7 +2,6 @@ pub(super) mod chips;
 pub mod editor;
 pub mod toolbar_item;
 
-#[cfg(not(target_family = "wasm"))]
 use std::env;
 #[cfg(not(target_family = "wasm"))]
 use std::path::PathBuf;
@@ -12,6 +11,8 @@ use std::time::Duration;
 
 use ai::document::{AIDocumentId, AIDocumentVersion};
 use chrono::{DateTime, Local};
+#[cfg(not(target_family = "wasm"))]
+use i18n::t;
 use parking_lot::FairMutex;
 use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::{Vector2F, vec2f};
@@ -220,9 +221,9 @@ impl AgentInputFooter {
             button.set_active(is_nld_enabled, ctx);
             button.set_tooltip(
                 Some(if is_nld_enabled {
-                    DISABLE_NLD_TOOLTIP
+                    t!(DISABLE_NLD_TOOLTIP)
                 } else {
-                    ENABLE_NLD_TOOLTIP
+                    t!(ENABLE_NLD_TOOLTIP)
                 }),
                 ctx,
             );
@@ -237,9 +238,9 @@ impl AgentInputFooter {
                 button.set_active(is_nld_enabled, ctx);
                 button.set_tooltip(
                     Some(if is_nld_enabled {
-                        DISABLE_NLD_TOOLTIP
+                        t!(DISABLE_NLD_TOOLTIP)
                     } else {
-                        ENABLE_NLD_TOOLTIP
+                        t!(ENABLE_NLD_TOOLTIP)
                     }),
                     ctx,
                 );
@@ -249,7 +250,7 @@ impl AgentInputFooter {
         let mic_button = ctx.add_typed_action_view(|_ctx| {
             let button = ActionButton::new("", ActiveMicButtonTheme)
                 .with_icon(Icon::Microphone)
-                .with_tooltip("Voice input")
+                .with_tooltip(t!("Voice input"))
                 .with_size(button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left);
             #[cfg(feature = "voice_input")]
@@ -285,7 +286,7 @@ impl AgentInputFooter {
         let file_button = ctx.add_typed_action_view(|_ctx| {
             ActionButton::new("", AgentInputButtonTheme)
                 .with_icon(Icon::Plus)
-                .with_tooltip("Attach file")
+                .with_tooltip(t!("Attach file"))
                 .with_tooltip_keybinding(ATTACH_FILE_KEYBINDING)
                 .with_size(button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
@@ -300,7 +301,7 @@ impl AgentInputFooter {
         let fast_forward_button = ctx.add_typed_action_view(|_ctx| {
             ActionButton::new("", FastForwardButtonTheme)
                 .with_icon(Icon::FastForward)
-                .with_tooltip(FAST_FORWARD_OFF_TOOLTIP)
+                .with_tooltip(t!(FAST_FORWARD_OFF_TOOLTIP))
                 .with_size(button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_disabled_theme(FastForwardLockedTheme)
@@ -311,9 +312,9 @@ impl AgentInputFooter {
 
         let cli_button_size = ButtonSize::AgentInputButton;
         let file_explorer_button = ctx.add_typed_action_view(|ctx| {
-            ActionButton::new("File explorer", AgentInputButtonTheme)
+            ActionButton::new(t!("File explorer"), AgentInputButtonTheme)
                 .with_icon(Icon::FileCopy)
-                .with_tooltip("Open file explorer")
+                .with_tooltip(t!("Open file explorer"))
                 .with_size(cli_button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_keybinding(
@@ -327,9 +328,9 @@ impl AgentInputFooter {
         });
         // CLI agent-specific buttons (only rendered when a CLI agent session is active).
         let rich_input_button = ctx.add_typed_action_view(|ctx| {
-            ActionButton::new("Rich Input", AgentInputButtonTheme)
+            ActionButton::new(t!("Rich Input"), AgentInputButtonTheme)
                 .with_icon(Icon::TextInput)
-                .with_tooltip("Open Rich Input")
+                .with_tooltip(t!("Open Rich Input"))
                 .with_size(cli_button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_keybinding(
@@ -344,7 +345,7 @@ impl AgentInputFooter {
         let settings_button = ctx.add_typed_action_view(|_ctx| {
             ActionButton::new("", AgentInputButtonTheme)
                 .with_icon(Icon::Settings)
-                .with_tooltip("Open coding agent settings")
+                .with_tooltip(t!("Open coding agent settings"))
                 .with_size(cli_button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .on_click(|ctx| {
@@ -353,11 +354,11 @@ impl AgentInputFooter {
         });
 
         let install_plugin_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Enable notifications", InstallPluginButtonTheme)
+            ActionButton::new(t!("Enable notifications"), InstallPluginButtonTheme)
                 .with_icon(Icon::Download)
-                .with_tooltip(
-                    "Install the agent plugin to enable rich agent notifications within Termloc",
-                )
+                .with_tooltip(t!(
+                    "Install the agent plugin to enable rich agent notifications within Termloc"
+                ))
                 .with_size(cli_button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_adjoined_side(AdjoinedSide::Right)
@@ -367,23 +368,26 @@ impl AgentInputFooter {
         });
 
         let plugin_instructions_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Notifications setup instructions", InstallPluginButtonTheme)
-                .with_icon(Icon::Info)
-                .with_tooltip("View instructions to install the agent plugin")
-                .with_size(cli_button_size)
-                .with_tooltip_alignment(TooltipAlignment::Left)
-                .with_adjoined_side(AdjoinedSide::Right)
-                .on_click(|ctx| {
-                    ctx.dispatch_typed_action(
-                        AgentInputFooterAction::OpenPluginInstallInstructionsPane,
-                    );
-                })
+            ActionButton::new(
+                t!("Notifications setup instructions"),
+                InstallPluginButtonTheme,
+            )
+            .with_icon(Icon::Info)
+            .with_tooltip(t!("View instructions to install the agent plugin"))
+            .with_size(cli_button_size)
+            .with_tooltip_alignment(TooltipAlignment::Left)
+            .with_adjoined_side(AdjoinedSide::Right)
+            .on_click(|ctx| {
+                ctx.dispatch_typed_action(
+                    AgentInputFooterAction::OpenPluginInstallInstructionsPane,
+                );
+            })
         });
 
         let update_plugin_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Update agent plugin", InstallPluginButtonTheme)
+            ActionButton::new(t!("Update agent plugin"), InstallPluginButtonTheme)
                 .with_icon(Icon::Download)
-                .with_tooltip("A new version of the agent plugin is available")
+                .with_tooltip(t!("A new version of the agent plugin is available"))
                 .with_size(cli_button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_adjoined_side(AdjoinedSide::Right)
@@ -393,9 +397,9 @@ impl AgentInputFooter {
         });
 
         let update_instructions_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Plugin update instructions", InstallPluginButtonTheme)
+            ActionButton::new(t!("Plugin update instructions"), InstallPluginButtonTheme)
                 .with_icon(Icon::Info)
-                .with_tooltip("View instructions to update the agent plugin")
+                .with_tooltip(t!("View instructions to update the agent plugin"))
                 .with_size(cli_button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_adjoined_side(AdjoinedSide::Right)
@@ -410,7 +414,7 @@ impl AgentInputFooter {
             ActionButton::new("", InstallPluginButtonTheme)
                 .with_icon(Icon::X)
                 .with_size(cli_button_size)
-                .with_tooltip("Dismiss")
+                .with_tooltip(t!("Dismiss"))
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .with_adjoined_side(AdjoinedSide::Left)
                 .on_click(|ctx| {
@@ -451,7 +455,7 @@ impl AgentInputFooter {
                 if let CLIAgentSessionsModelEvent::Started { .. } = event
                     && let Some(agent) = me.cli_agent(ctx)
                 {
-                    let label = format!("Enable {} notifications", agent.display_name());
+                    let label = t!("Enable {agent} notifications", agent = agent.display_name());
                     me.install_plugin_button.update(ctx, |button, ctx| {
                         button.set_label(label, ctx);
                     });
@@ -483,8 +487,8 @@ impl AgentInputFooter {
                 let is_open = matches!(new_input_state, CLIAgentInputState::Open { .. });
                 me.rich_input_button.update(ctx, |button, ctx| {
                     if is_open {
-                        button.set_label("Hide Rich Input", ctx);
-                        button.set_tooltip(Some("Hide Rich Input"), ctx);
+                        button.set_label(t!("Hide Rich Input"), ctx);
+                        button.set_tooltip(Some(t!("Hide Rich Input")), ctx);
                         button.set_keybinding(
                             Some(KeystrokeSource::Binding(
                                 OPEN_CLI_AGENT_RICH_INPUT_KEYBINDING,
@@ -492,8 +496,8 @@ impl AgentInputFooter {
                             ctx,
                         );
                     } else {
-                        button.set_label("Rich Input", ctx);
-                        button.set_tooltip(Some("Open Rich Input"), ctx);
+                        button.set_label(t!("Rich Input"), ctx);
+                        button.set_tooltip(Some(t!("Open Rich Input")), ctx);
                         button.set_keybinding(
                             Some(KeystrokeSource::Binding(
                                 OPEN_CLI_AGENT_RICH_INPUT_KEYBINDING,
@@ -509,7 +513,7 @@ impl AgentInputFooter {
         let context_window_button = ctx.add_typed_action_view(|_ctx| {
             ActionButton::new("", AgentInputButtonTheme)
                 .with_icon(Icon::ContextRemaining100)
-                .with_tooltip("Context window usage")
+                .with_tooltip(t!("Context window usage"))
                 .with_size(button_size)
                 .with_tooltip_alignment(TooltipAlignment::Left)
         });
@@ -1022,7 +1026,7 @@ impl AgentInputFooter {
                             );
                             if let Some(log_path) = log_path {
                                 toast = toast.with_link(
-                                    ToastLink::new("See logs for details".to_owned())
+                                    ToastLink::new(t!("See logs for details").to_owned())
                                         .with_onclick_action(WorkspaceAction::OpenFilePath {
                                             path: log_path,
                                         }),
@@ -1049,10 +1053,12 @@ impl AgentInputFooter {
             .cli_agent(ctx)
             .and_then(plugin_manager_for)
             .map(|m| m.install_success_message())
-            .unwrap_or("Agent plugin installed. Please restart the session to activate.");
+            .unwrap_or(t!(
+                "Agent plugin installed. Please restart the session to activate."
+            ));
         self.handle_plugin_operation(
-            "Installing agent plugin...",
-            "Failed to install agent plugin",
+            t!("Installing agent plugin..."),
+            t!("Failed to install agent plugin"),
             success_msg,
             |manager| async move { manager.install().await },
             ctx,
@@ -1065,10 +1071,12 @@ impl AgentInputFooter {
             .cli_agent(ctx)
             .and_then(plugin_manager_for)
             .map(|m| m.update_success_message())
-            .unwrap_or("Agent plugin updated. Please restart the session to activate.");
+            .unwrap_or(t!(
+                "Agent plugin updated. Please restart the session to activate."
+            ));
         self.handle_plugin_operation(
-            "Updating agent plugin...",
-            "Failed to update agent plugin",
+            t!("Updating agent plugin..."),
+            t!("Failed to update agent plugin"),
             success_msg,
             |manager| async move { manager.update().await },
             ctx,
@@ -1465,7 +1473,7 @@ impl AgentInputFooter {
                 report_error!(
                     anyhow::Error::new(e).context("Failed to transcribe CLI voice input")
                 );
-                self.show_cli_voice_error_toast("Failed to transcribe voice input", ctx);
+                self.show_cli_voice_error_toast(t!("Failed to transcribe voice input"), ctx);
             }
         }
 
@@ -1505,9 +1513,10 @@ impl AgentInputFooter {
     fn show_cli_microphone_access_toast(&self, ctx: &mut ViewContext<Self>) {
         let window_id = ctx.window_id();
         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
-            let toast = DismissibleToast::error(String::from(
-                "Failed to start voice input (you may need to enable Microphone access)",
-            ));
+            let toast = DismissibleToast::error(
+                t!("Failed to start voice input (you may need to enable Microphone access)")
+                    .to_owned(),
+            );
             toast_stack.add_ephemeral_toast(toast, window_id, ctx);
         });
     }
@@ -1518,9 +1527,9 @@ impl AgentInputFooter {
         AISettings::handle(ctx).update(ctx, |settings, ctx| {
             if let Some(toggle_key) = settings.maybe_setup_first_time_voice(ctx) {
                 ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
-                    let toast = DismissibleToast::success(format!(
-                        "Voice input is enabled. You can also press and hold the `{}` key to activate voice input (configure in Settings > AI > Voice)",
-                        toggle_key.display_name()
+                    let toast = DismissibleToast::success(t!(
+                        "Voice input is enabled. You can also press and hold the `{key}` key to activate voice input (configure in Settings > AI > Voice)",
+                        key = toggle_key.display_name()
                     ));
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
@@ -1548,11 +1557,11 @@ impl AgentInputFooter {
             Icon::FastForward
         };
         let tooltip = if is_force_enabled {
-            FAST_FORWARD_LOCKED_TOOLTIP
+            t!(FAST_FORWARD_LOCKED_TOOLTIP)
         } else if is_active {
-            FAST_FORWARD_ON_TOOLTIP
+            t!(FAST_FORWARD_ON_TOOLTIP)
         } else {
-            FAST_FORWARD_OFF_TOOLTIP
+            t!(FAST_FORWARD_OFF_TOOLTIP)
         };
 
         self.fast_forward_button.update(ctx, |button, ctx| {
@@ -1577,9 +1586,13 @@ impl AgentInputFooter {
             });
             let is_cache_expired = FeatureFlag::PromptCacheExpiryWarning.is_enabled()
                 && expiry.is_some_and(|expiry| expiry <= Local::now());
-            let context_remaining_tooltip = format!("{remaining_pct}% context remaining");
+            let context_remaining_tooltip =
+                t!("{percent}% context remaining", percent = remaining_pct);
             let tooltip = if is_cache_expired {
-                format!("{context_remaining_tooltip} · prompt cache expired")
+                format!(
+                    "{context_remaining_tooltip} · {}",
+                    t!("prompt cache expired")
+                )
             } else {
                 context_remaining_tooltip
             };

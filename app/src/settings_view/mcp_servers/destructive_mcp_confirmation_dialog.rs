@@ -1,3 +1,4 @@
+use i18n::t;
 use warpui::elements::{ChildView, Container, Dismiss, Empty};
 use warpui::ui_components::components::UiComponent;
 use warpui::{
@@ -57,22 +58,22 @@ impl From<&DestructiveMCPConfirmationDialogVariant>
     fn from(variant: &DestructiveMCPConfirmationDialogVariant) -> Self {
         match *variant {
             DestructiveMCPConfirmationDialogVariant::DeleteLocal => DestructiveMCPConfirmationDialogDisplayOptions::new(
-                "Delete MCP server?".to_string(),
-                "This will uninstall and remove this MCP server from all your devices.".to_string(),
-                "Delete MCP".to_string(),
-                "Cancel".to_string(),
+                t!("Delete MCP server?").to_string(),
+                t!("This will uninstall and remove this MCP server from all your devices.").to_string(),
+                t!("Delete MCP").to_string(),
+                t!("Cancel").to_string(),
             ),
             DestructiveMCPConfirmationDialogVariant::DeleteShared => DestructiveMCPConfirmationDialogDisplayOptions::new(
-                "Delete shared MCP server?".to_string(),
-                "This will not only delete this MCP server for yourself, but also uninstall and remove this MCP server from Termloc and across all of your teammates' devices.".to_string(),
-                "Delete MCP".to_string(),
-                "Cancel".to_string(),
+                t!("Delete shared MCP server?").to_string(),
+                t!("This will not only delete this MCP server for yourself, but also uninstall and remove this MCP server from Termloc and across all of your teammates' devices.").to_string(),
+                t!("Delete MCP").to_string(),
+                t!("Cancel").to_string(),
             ),
             DestructiveMCPConfirmationDialogVariant::Unshare => DestructiveMCPConfirmationDialogDisplayOptions::new(
-                "Remove shared MCP server from team?".to_string(),
-                "This will uninstall and remove this MCP server from Termloc and across all of your teammates' devices.".to_string(),
-                "Remove from team".to_string(),
-                "Cancel".to_string(),
+                t!("Remove shared MCP server from team?").to_string(),
+                t!("This will uninstall and remove this MCP server from Termloc and across all of your teammates' devices.").to_string(),
+                t!("Remove from team").to_string(),
+                t!("Cancel").to_string(),
             ),
         }
     }

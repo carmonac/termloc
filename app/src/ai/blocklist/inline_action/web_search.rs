@@ -1,3 +1,4 @@
+use i18n::t;
 use warp_core::ui::appearance::Appearance;
 use warpui::elements::{Container, CrossAxisAlignment, Element, Flex, ParentElement, Text};
 use warpui::{AppContext, Entity, SingletonEntity, TypedActionView, View, ViewContext};
@@ -54,9 +55,9 @@ impl WebSearchView {
         let loading_icon = yellow_running_icon(appearance);
 
         let text = if let Some(q) = query {
-            format!("Searching the web for \"{q}\"")
+            t!("Searching the web for \"{query}\"", query = q)
         } else {
-            "Searching the web".to_string()
+            t!("Searching the web").to_string()
         };
 
         super::search_results_common::render_status_header(text, loading_icon, app)
@@ -69,9 +70,9 @@ impl WebSearchView {
         app: &AppContext,
     ) -> Box<dyn Element> {
         let title_text = if query.is_empty() {
-            "Searched the web".to_string()
+            t!("Searched the web").to_string()
         } else {
-            format!("Searched the web for \"{query}\"")
+            t!("Searched the web for \"{query}\"", query = query)
         };
 
         let body = if self.collapsible.is_expanded {
@@ -83,7 +84,7 @@ impl WebSearchView {
         render_collapsible_search_results(
             title_text,
             pages.len(),
-            "URLs",
+            t!("URLs"),
             &self.collapsible,
             body,
             |ctx| {
@@ -122,7 +123,7 @@ impl WebSearchView {
 
         if pages.is_empty() {
             let no_results = Text::new_inline(
-                "No URLs found".to_string(),
+                t!("No URLs found").to_string(),
                 appearance.ui_font_family(),
                 appearance.monospace_font_size(),
             )
@@ -175,9 +176,9 @@ impl View for WebSearchView {
             WebSearchStatus::Error { query } => {
                 let appearance = Appearance::as_ref(app);
                 let text = if query.is_empty() {
-                    "Web search failed".to_string()
+                    t!("Web search failed").to_string()
                 } else {
-                    format!("Web search failed for \"{query}\"")
+                    t!("Web search failed for \"{query}\"", query = query)
                 };
                 super::search_results_common::render_status_header(
                     text,

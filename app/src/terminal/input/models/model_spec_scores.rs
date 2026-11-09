@@ -1,3 +1,4 @@
+use i18n::t;
 #[cfg(not(target_family = "wasm"))]
 use local_agent::LocalModel;
 use pathfinder_color::ColorU;
@@ -45,18 +46,23 @@ pub fn render_model_spec_scores(
 ) -> Box<dyn Element> {
     let rows = vec![
         render_score_row(
-            "Intelligence",
+            t!("Intelligence"),
             spec.map(|spec| spec.quality),
             layout.bg_bar_color,
             app,
         ),
         render_score_row(
-            "Speed",
+            t!("Speed"),
             spec.map(|spec| spec.speed),
             layout.bg_bar_color,
             app,
         ),
-        render_score_row("Cost", spec.map(|spec| spec.cost), layout.bg_bar_color, app),
+        render_score_row(
+            t!("Cost"),
+            spec.map(|spec| spec.cost),
+            layout.bg_bar_color,
+            app,
+        ),
     ];
 
     Flex::column()
@@ -243,20 +249,20 @@ pub fn local_model_detail_rows(model: &LocalModel) -> Vec<(&'static str, String)
     .collect::<Vec<_>>();
 
     [
-        ("Parameters", model.parameter_size.clone()),
-        ("Quantization", model.quantization.clone()),
+        (t!("Parameters"), model.parameter_size.clone()),
+        (t!("Quantization"), model.quantization.clone()),
         (
-            "Context",
+            t!("Context"),
             model
                 .context_length
-                .map(|tokens| format!("{} tokens", tokens.separate_with_commas())),
+                .map(|tokens| t!("{count} tokens", count = tokens.separate_with_commas())),
         ),
         (
-            "Size on disk",
+            t!("Size on disk"),
             (model.size > 0).then(|| format_size(model.size)),
         ),
         (
-            "Supports",
+            t!("Supports"),
             (!capabilities.is_empty()).then(|| capabilities.join(" · ")),
         ),
     ]

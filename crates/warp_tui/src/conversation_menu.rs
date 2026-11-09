@@ -5,6 +5,7 @@
 //! across live model updates. It owns menu lifecycle and presentation only; the terminal
 //! session revalidates an accepted entry before restoring it.
 
+use i18n::t;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
     AgentConversationEntryId, AgentConversationListEntryState, AgentConversationsModel,
@@ -187,16 +188,16 @@ impl TuiConversationMenuModel {
         };
         let status = if list.rows().is_empty() {
             Some(if list.is_loading() {
-                TuiInlineMenuStatus::Loading("Loading conversations…".to_owned())
+                TuiInlineMenuStatus::Loading(t!("Loading conversations…").to_owned())
             } else {
-                TuiInlineMenuStatus::Empty("No conversations found".to_owned())
+                TuiInlineMenuStatus::Empty(t!("No conversations found").to_owned())
             })
         } else {
             None
         };
         Some(TuiInlineMenuSnapshot {
             header: Some(TuiInlineMenuHeader {
-                title: Some("Conversations".to_owned()),
+                title: Some(t!("Conversations").to_owned()),
                 tabs: Vec::new(),
             }),
             rows: list

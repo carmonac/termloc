@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::LazyLock;
 use std::time::Duration;
 
+use i18n::t;
 use pathfinder_geometry::vector::vec2f;
 use regex::Regex;
 use settings::Setting as _;
@@ -113,34 +114,38 @@ impl PrivacyPageView {
         });
 
         let add_regex_modal_view = ctx.add_typed_action_view(|ctx| {
-            Modal::new(Some("Add regex pattern".to_string()), add_regex_body, ctx)
-                .with_modal_style(UiComponentStyles {
-                    width: Some(600.),
-                    height: Some(400.),
-                    ..Default::default()
-                })
-                .with_header_style(UiComponentStyles {
-                    padding: Some(Coords {
-                        top: 24.,
-                        bottom: 0.,
-                        left: 24.,
-                        right: 24.,
-                    }),
-                    font_size: Some(16.),
-                    font_weight: Some(Weight::Bold),
-                    ..Default::default()
-                })
-                .with_body_style(UiComponentStyles {
-                    padding: Some(Coords {
-                        top: 0.,
-                        bottom: 24.,
-                        left: 24.,
-                        right: 24.,
-                    }),
-                    ..Default::default()
-                })
-                .with_background_opacity(100)
-                .with_dismiss_on_click()
+            Modal::new(
+                Some(t!("Add regex pattern").to_string()),
+                add_regex_body,
+                ctx,
+            )
+            .with_modal_style(UiComponentStyles {
+                width: Some(600.),
+                height: Some(400.),
+                ..Default::default()
+            })
+            .with_header_style(UiComponentStyles {
+                padding: Some(Coords {
+                    top: 24.,
+                    bottom: 0.,
+                    left: 24.,
+                    right: 24.,
+                }),
+                font_size: Some(16.),
+                font_weight: Some(Weight::Bold),
+                ..Default::default()
+            })
+            .with_body_style(UiComponentStyles {
+                padding: Some(Coords {
+                    top: 0.,
+                    bottom: 24.,
+                    left: 24.,
+                    right: 24.,
+                }),
+                ..Default::default()
+            })
+            .with_background_opacity(100)
+            .with_dismiss_on_click()
         });
         ctx.subscribe_to_view(&add_regex_modal_view, |me, _, event, ctx| {
             me.handle_modal_event(event, ctx);
@@ -153,7 +158,7 @@ impl PrivacyPageView {
                     .iter()
                     .map(|mode| {
                         DropdownItem::new(
-                            mode.display_name(),
+                            t!(mode.display_name()),
                             PrivacyPageAction::SetSecretDisplayMode(*mode),
                         )
                     })
@@ -187,7 +192,7 @@ impl PrivacyPageView {
         if ContextFlag::NetworkLogConsole.is_enabled() {
             widgets.push(Box::new(NetworkLogWidget::default()));
         }
-        PageType::new_uncategorized(widgets, Some(PageTitle::new("Privacy")))
+        PageType::new_uncategorized(widgets, Some(PageTitle::new(t!("Privacy"))))
     }
 
     fn update_button_states(
@@ -671,7 +676,7 @@ impl SecretRedactionWidget {
             .count();
 
         let personal_tab = self.render_tab(
-            "Personal".to_string(),
+            t!("Personal").to_string(),
             personal_count,
             SecretRedactionTab::Personal,
             active_tab == SecretRedactionTab::Personal,
@@ -682,7 +687,7 @@ impl SecretRedactionWidget {
         let is_enterprise_tab_active = active_tab == SecretRedactionTab::Enterprise;
 
         let enterprise_tab = self.render_tab(
-            "Enterprise".to_string(),
+            t!("Enterprise").to_string(),
             enterprise_count,
             SecretRedactionTab::Enterprise,
             is_enterprise_tab_active,
@@ -698,7 +703,7 @@ impl SecretRedactionWidget {
         if is_enterprise_tab_active {
             row.add_child(Shrinkable::new(1., Empty::new().finish()).finish());
             row.add_child(self.render_info(
-                "Enterprise secret redaction cannot be modified.".to_string(),
+                t!("Enterprise secret redaction cannot be modified.").to_string(),
                 appearance,
             ));
         }
@@ -817,7 +822,9 @@ impl SecretRedactionWidget {
 
         if enterprise_regex_list.is_empty() {
             return ui_builder
-                .paragraph("No enterprise regexes have been configured by your organization.")
+                .paragraph(t!(
+                    "No enterprise regexes have been configured by your organization."
+                ))
                 .with_style(UiComponentStyles {
                     font_color: Some(description_text_color),
                     ..Default::default()
@@ -917,7 +924,7 @@ impl SecretRedactionWidget {
                         .with_main_axis_alignment(MainAxisAlignment::SpaceBetween)
                         .with_cross_axis_alignment(CrossAxisAlignment::Center)
                         .with_child(
-                            self.render_section_title("Recommended".to_string(), appearance),
+                            self.render_section_title(t!("Recommended").to_string(), appearance),
                         )
                         .with_child(
                             Container::new(
@@ -927,7 +934,8 @@ impl SecretRedactionWidget {
                                         self.add_all_button_mouse_state.clone(),
                                     )
                                     .with_text_and_icon_label(Self::add_button(
-                                        "Add all", appearance,
+                                        t!("Add all"),
+                                        appearance,
                                     ))
                                     .with_style(Self::add_button_style())
                                     .build()
@@ -1085,7 +1093,11 @@ impl SettingsWidget for SecretRedactionWidget {
                 .with_child(
                     Shrinkable::new(
                         1.0,
-                        render_sub_header(appearance, SAFE_MODE_TITLE, Some(local_only_icon_state)),
+                        render_sub_header(
+                            appearance,
+                            t!(SAFE_MODE_TITLE),
+                            Some(local_only_icon_state),
+                        ),
                     )
                     .finish(),
                 )
@@ -1093,7 +1105,7 @@ impl SettingsWidget for SecretRedactionWidget {
                     Container::new({
                         if is_enterprise_enabled {
                             self.render_info(
-                                "Enabled by your organization.".to_string(),
+                                t!("Enabled by your organization.").to_string(),
                                 appearance,
                             )
                         } else {
@@ -1120,7 +1132,7 @@ impl SettingsWidget for SecretRedactionWidget {
             .with_child(secret_redaction_title_row)
             .with_child(
                 ui_builder
-                    .paragraph((*SAFE_MODE_DESCRIPTION).to_owned())
+                    .paragraph(t!(*SAFE_MODE_DESCRIPTION).to_owned())
                     .with_style(UiComponentStyles {
                         font_color: Some(description_text_color),
                         font_size: Some(FONT_SIZE + 1.), // One size up from current 12px to 13px
@@ -1146,7 +1158,7 @@ impl SettingsWidget for SecretRedactionWidget {
 
             // Create the label with local-only icon if needed
             let label_with_icon = super::settings_page::render_dropdown_item_label(
-                "Secret visual redaction mode".to_string(),
+                t!("Secret visual redaction mode").to_string(),
                 None,
                 local_only_icon_state,
                 None,
@@ -1160,7 +1172,7 @@ impl SettingsWidget for SecretRedactionWidget {
                     Container::new(
                         ui_builder
                             .paragraph(
-                                "Choose how secrets are visually presented in the block list while keeping them searchable. This setting only affects what you see in the block list.",
+                                t!("Choose how secrets are visually presented in the block list while keeping them searchable. This setting only affects what you see in the block list."),
                             )
                             .with_style(UiComponentStyles {
                                 font_color: Some(description_text_color),
@@ -1209,11 +1221,11 @@ impl SettingsWidget for SecretRedactionWidget {
                             1.,
                             Flex::column()
                                 .with_child(self.render_section_title(
-                                    USER_SECRET_REGEX_TITLE.to_string(),
+                                    t!(USER_SECRET_REGEX_TITLE).to_string(),
                                     appearance,
                                 ))
                                 .with_child(self.render_description(
-                                    USER_SECRET_REGEX_DESCRIPTION.to_owned(),
+                                    t!(USER_SECRET_REGEX_DESCRIPTION).to_owned(),
                                     appearance,
                                     if privacy_settings.user_secret_regex_list.iter().count() > 0 {
                                         10.
@@ -1231,7 +1243,7 @@ impl SettingsWidget for SecretRedactionWidget {
                                 ButtonVariant::Secondary,
                                 self.add_regex_button_mouse_state.clone(),
                             )
-                            .with_text_and_icon_label(Self::add_button("Add regex", appearance))
+                            .with_text_and_icon_label(Self::add_button(t!("Add regex"), appearance))
                             .with_style(Self::add_button_style())
                             .build()
                             .on_click(move |ctx, _, _| {
@@ -1297,7 +1309,7 @@ impl SettingsWidget for NetworkLogWidget {
         let ui_builder = appearance.ui_builder();
         Flex::column()
             .with_child(render_body_item::<PrivacyPageAction>(
-                "Network log console".into(),
+                t!("Network log console").into(),
                 None,
                 // Not rendering a setting, so no need to show local only icon state.
                 LocalOnlyIconState::Hidden,
@@ -1309,10 +1321,10 @@ impl SettingsWidget for NetworkLogWidget {
             .with_child(
                 ui_builder
                     .paragraph(
-                        "We've built a native console that allows you to view all communications \
+                        t!("We've built a native console that allows you to view all communications \
                         from Termloc to external servers to ensure you feel comfortable that your \
-                        work is always kept safe."
-                            .to_owned(),
+                        work is always kept safe.")
+                        .to_owned(),
                     )
                     .with_style(UiComponentStyles {
                         font_color: Some(
@@ -1335,7 +1347,7 @@ impl SettingsWidget for NetworkLogWidget {
                 Align::new(
                     ui_builder
                         .link(
-                            "View network logging".to_owned(),
+                            t!("View network logging").to_owned(),
                             None,
                             Some(Box::new(|ctx| {
                                 ctx.dispatch_typed_action(PrivacyPageAction::LaunchNetworkLogging);

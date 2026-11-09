@@ -1,3 +1,4 @@
+use i18n::t;
 use pathfinder_geometry::vector::vec2f;
 use warpui::elements::{Hoverable, MainAxisAlignment, MainAxisSize, MouseStateHandle};
 use warpui::ui_components::button::{ButtonVariant, TextAndIcon, TextAndIconAlignment};
@@ -73,7 +74,7 @@ impl SettingsUmbrella {
             .button(ButtonVariant::Text, self.button_state_handle.clone())
             .with_text_and_icon_label(TextAndIcon::new(
                 TextAndIconAlignment::TextFirst,
-                self.label.to_string(),
+                t!(self.label).to_string(),
                 chevron_icon.to_warpui_icon(text_color),
                 MainAxisSize::Max,
                 MainAxisAlignment::SpaceBetween,
@@ -99,7 +100,7 @@ impl SettingsUmbrella {
         let section = self.subpages.get(index)?;
         let mouse_state = self.subpage_button_states.get(index)?.clone();
 
-        let label = section.to_string() + &match_data.to_string();
+        let label = t!(&section.to_string()).to_owned() + &match_data.to_string();
 
         let hoverable = appearance
             .ui_builder()

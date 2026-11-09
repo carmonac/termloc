@@ -7,6 +7,7 @@
 
 use std::time::Duration;
 
+use i18n::t;
 use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentTodo, AIAgentTodoList, MessageId, TodoStatus,
     format_elapsed_seconds,
@@ -122,8 +123,11 @@ pub(crate) fn render_thinking_section(
     app: &AppContext,
 ) -> Box<dyn TuiElement> {
     let header = match finished_duration {
-        Some(duration) => format!("Thought for {}", format_elapsed_seconds(duration)),
-        None => "Thinking...".to_owned(),
+        Some(duration) => t!(
+            "Thought for {duration}",
+            duration = format_elapsed_seconds(duration)
+        ),
+        None => t!("Thinking...").to_owned(),
     };
     render_collapsible_message_section(
         states,
@@ -151,7 +155,7 @@ pub(crate) fn render_summarization_section(
     render_collapsible_message_section(
         states,
         message_id,
-        "Conversation summary".to_owned(),
+        t!("Conversation summary").to_owned(),
         // Always collapsed by default; a manual override in
         // `CollapsibleSectionStates` still wins so users can expand it.
         true,
@@ -239,7 +243,7 @@ pub(crate) fn render_todo_list_section(
     builder.prominent_collapsible(
         collapsed,
         TASK_LIST_HEADER_GLYPH,
-        format!("Tasks {}", todos.len()),
+        t!("Tasks {count}", count = todos.len()),
         states.hover_state(message_id),
         body.finish(),
         move |event_ctx, _app| {
@@ -302,7 +306,10 @@ pub(crate) fn completed_todos_label(
             })
             .unwrap_or_default();
         if index == 0 {
-            label += &format!("Completed {}{position}", item.title);
+            label += &t!(
+                "Completed {item}",
+                item = format!("{}{position}", item.title)
+            );
         } else {
             label += &format!(", {}{position}", item.title);
         }

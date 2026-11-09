@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
+use i18n::t;
 use lazy_static::lazy_static;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use parking_lot::{FairMutex, RwLock};
@@ -237,7 +238,7 @@ impl CLISubagentView {
         ctx: &mut ViewContext<Self>,
     ) -> Self {
         let allow_button = CompactibleSplitActionButton::new(
-            "Allow".to_string(),
+            t!("Allow").to_string(),
             Some(KeystrokeSource::Fixed(ACCEPT_KEYSTROKE.clone())),
             ButtonSize::Small,
             CLISubagentAction::ExecuteBlockedAction,
@@ -249,7 +250,7 @@ impl CLISubagentView {
         );
 
         let reject_button = CompactibleActionButton::new(
-            "Refine".to_string(),
+            t!("Refine").to_string(),
             Some(KeystrokeSource::Fixed(REJECT_KEYSTROKE.clone())),
             ButtonSize::Small,
             CLISubagentAction::RejectBlockedAction {
@@ -261,7 +262,7 @@ impl CLISubagentView {
         );
 
         let take_over_button = CompactibleActionButton::new(
-            "Take over".to_string(),
+            t!("Take over").to_string(),
             Some(KeystrokeSource::Binding(
                 SET_INPUT_MODE_TERMINAL_ACTION_NAME,
             )),
@@ -274,7 +275,7 @@ impl CLISubagentView {
             ctx,
         );
         let transfer_control_button = CompactibleActionButton::new(
-            "Take control".to_string(),
+            t!("Take control").to_string(),
             Some(KeystrokeSource::Binding(
                 SET_INPUT_MODE_TERMINAL_ACTION_NAME,
             )),
@@ -296,11 +297,11 @@ impl CLISubagentView {
         allow_menu.update(ctx, |menu, ctx| {
             menu.set_items(
                 vec![
-                    MenuItemFields::new("Accept".to_string())
+                    MenuItemFields::new(t!("Accept").to_string())
                         .with_key_shortcut_label(Some(ACCEPT_KEYSTROKE.displayed()))
                         .with_on_select_action(CLISubagentAction::ExecuteBlockedAction)
                         .into_item(),
-                    MenuItemFields::new("Auto-approve".to_string())
+                    MenuItemFields::new(t!("Auto-approve").to_string())
                         .with_key_shortcut_label(Some(AUTO_APPROVE_KEYSTROKE.displayed()))
                         .with_on_select_action(CLISubagentAction::ExecuteAndAutoApprove)
                         .into_item(),
@@ -1200,7 +1201,7 @@ impl View for CLISubagentView {
                     output_items.add_child(
                         Container::new(render_informational_footer(
                             app,
-                            "This response won't count towards your usage. \"Take over\" to continue."
+                            t!("This response won't count towards your usage. \"Take over\" to continue.")
                                 .to_string(),
                         ))
                         .with_margin_top(8.)
@@ -1277,7 +1278,7 @@ impl View for CLISubagentView {
             AIAgentActionType::WriteToLongRunningShellCommand { input, mode, .. } => {
                 Some(render_blocked_action(
                     BlockedActionProps {
-                        header: BLOCKED_ACTION_MESSAGE_FOR_WRITE_TO_LONG_RUNNING_SHELL_COMMAND
+                        header: t!(BLOCKED_ACTION_MESSAGE_FOR_WRITE_TO_LONG_RUNNING_SHELL_COMMAND)
                             .to_string(),
                         description: Some(render_write_to_pty_input(
                             WriteToPtyInputProps {
@@ -1313,7 +1314,7 @@ impl View for CLISubagentView {
             AIAgentActionType::TransferShellCommandControlToUser { ref reason } => {
                 Some(render_blocked_action(
                     BlockedActionProps {
-                        header: BLOCKED_ACTION_MESSAGE_FOR_TRANSFER_CONTROL.to_string(),
+                        header: t!(BLOCKED_ACTION_MESSAGE_FOR_TRANSFER_CONTROL).to_string(),
                         description: Some(render_transfer_control_reason(reason, app)),
                         is_allow_menu_open: false,
                         allow_menu: None,
@@ -1449,7 +1450,7 @@ impl TypedActionView for CLISubagentView {
                 let window_id = ctx.window_id();
                 ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                     toast_stack.add_ephemeral_toast(
-                        DismissibleToast::success(String::from("Copied to clipboard")),
+                        DismissibleToast::success(t!("Copied to clipboard").to_owned()),
                         window_id,
                         ctx,
                     );
@@ -1596,9 +1597,9 @@ fn render_web_search(query: Option<String>, app: &AppContext) -> Box<dyn Element
     let theme = appearance.theme();
 
     let text = if let Some(q) = query {
-        format!("Searching the web for \"{q}\"")
+        t!("Searching the web for \"{query}\"", query = q)
     } else {
-        LOAD_OUTPUT_MESSAGE_FOR_WEB_SEARCH.to_string()
+        t!(LOAD_OUTPUT_MESSAGE_FOR_WEB_SEARCH).to_string()
     };
 
     let icon = Container::new(
@@ -1812,7 +1813,7 @@ fn render_permissions_speedbump(
 
     let checkbox_text = appearance
         .ui_builder()
-        .span("Always allow")
+        .span(t!("Always allow"))
         .with_style(UiComponentStyles {
             font_color: Some(font_color),
             font_size: Some(font_size),
@@ -1825,7 +1826,7 @@ fn render_permissions_speedbump(
 
     let formatted_text = FormattedTextElement::new(
         FormattedText::new([FormattedTextLine::Line(vec![
-            FormattedTextFragment::hyperlink("Manage Agent permissions", "Settings > AI"),
+            FormattedTextFragment::hyperlink(t!("Manage Agent permissions"), "Settings > AI"),
         ])]),
         font_size,
         font_family,
@@ -1890,16 +1891,16 @@ fn render_transfer_control_reason(reason: &str, app: &AppContext) -> Box<dyn Ele
 fn get_blocked_action_header(action: AIAgentActionType) -> Option<String> {
     match action {
         AIAgentActionType::WriteToLongRunningShellCommand { .. } => {
-            Some(BLOCKED_ACTION_MESSAGE_FOR_WRITE_TO_LONG_RUNNING_SHELL_COMMAND.to_string())
+            Some(t!(BLOCKED_ACTION_MESSAGE_FOR_WRITE_TO_LONG_RUNNING_SHELL_COMMAND).to_string())
         }
         AIAgentActionType::ReadFiles(..) => {
-            Some(BLOCKED_ACTION_MESSAGE_FOR_READING_FILES.to_string())
+            Some(t!(BLOCKED_ACTION_MESSAGE_FOR_READING_FILES).to_string())
         }
         AIAgentActionType::SearchCodebase(..) => {
-            Some(BLOCKED_ACTION_MESSAGE_FOR_SEARCHING_CODEBASE.to_string())
+            Some(t!(BLOCKED_ACTION_MESSAGE_FOR_SEARCHING_CODEBASE).to_string())
         }
         AIAgentActionType::Grep { .. } | AIAgentActionType::FileGlobV2 { .. } => {
-            Some(BLOCKED_ACTION_MESSAGE_FOR_GREP_OR_FILE_GLOB.to_string())
+            Some(t!(BLOCKED_ACTION_MESSAGE_FOR_GREP_OR_FILE_GLOB).to_string())
         }
         _ => None,
     }
@@ -1996,32 +1997,43 @@ fn render_search_action_input(
             ref path,
         } => {
             let display_path = if path == "." {
-                "the current directory"
+                t!("the current directory")
             } else {
                 path.as_str()
             };
 
             if queries.len() == 1 {
-                format!("Grep for `{}` in {}", queries[0], display_path)
+                t!(
+                    "Grep for `{query}` in {path}",
+                    query = queries[0],
+                    path = display_path
+                )
             } else {
                 let patterns_list = queries
                     .iter()
                     .map(|q| format!(" - `{q}`"))
                     .collect::<Vec<_>>()
                     .join("\n");
-                format!("Grep for the following patterns in {display_path}:\n{patterns_list}")
+                format!(
+                    "{}:\n{patterns_list}",
+                    t!(
+                        "Grep for the following patterns in {path}",
+                        path = display_path
+                    )
+                )
             }
         }
         AIAgentActionType::FileGlobV2 {
             ref patterns,
             ref search_dir,
         } => {
-            let display_path = search_dir.as_deref().unwrap_or("the current directory");
+            let display_path = search_dir.as_deref().unwrap_or(t!("the current directory"));
 
             if patterns.len() == 1 {
-                format!(
-                    "Search for files that match `{}` in {}",
-                    patterns[0], display_path
+                t!(
+                    "Search for files that match `{pattern}` in {path}",
+                    pattern = patterns[0],
+                    path = display_path
                 )
             } else {
                 let patterns_list = patterns
@@ -2030,7 +2042,11 @@ fn render_search_action_input(
                     .collect::<Vec<_>>()
                     .join("\n");
                 format!(
-                    "Find files that match the following patterns in {display_path}:\n{patterns_list}"
+                    "{}:\n{patterns_list}",
+                    t!(
+                        "Find files that match the following patterns in {path}",
+                        path = display_path
+                    )
                 )
             }
         }

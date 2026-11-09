@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
@@ -117,11 +118,11 @@ impl CliAgentPluginManager for ClaudeCodePluginManager {
     }
 
     fn install_success_message(&self) -> &'static str {
-        "Agent plugin installed. Please run /reload-plugins to activate."
+        t!("Agent plugin installed. Please run /reload-plugins to activate.")
     }
 
     fn update_success_message(&self) -> &'static str {
-        "Agent plugin updated. Please run /reload-plugins to activate."
+        t!("Agent plugin updated. Please run /reload-plugins to activate.")
     }
 
     fn install_instructions(&self) -> &'static PluginInstructions {

@@ -6,6 +6,7 @@
 //! [`BlocklistAIHistoryModel::active_conversation_id`]. Tracks panel-only UI state (collapse,
 //! hover, drag) locally. Emits high-level events for immediate submission, deletion, and edit
 //! completion, which the host uses to submit or update the input editor.
+use i18n::t;
 use std::collections::HashMap;
 
 use pathfinder_color::ColorU;
@@ -78,7 +79,7 @@ fn build_row_state(
     let send_now_button = ctx.add_typed_action_view(move |_| {
         ActionButton::new("", NakedTheme)
             .with_icon(TerminalIcon::ArrowUp)
-            .with_tooltip("Send now")
+            .with_tooltip(t!("Send now"))
             .with_size(ButtonSize::XSmall)
             .with_disabled_theme(NakedTheme)
             .on_click(move |ctx| {
@@ -88,7 +89,7 @@ fn build_row_state(
     let edit_button = ctx.add_typed_action_view(move |_| {
         ActionButton::new("", NakedTheme)
             .with_icon(TerminalIcon::Pencil)
-            .with_tooltip("Edit")
+            .with_tooltip(t!("Edit"))
             .with_size(ButtonSize::XSmall)
             .with_disabled_theme(NakedTheme)
             .on_click(move |ctx| {
@@ -98,7 +99,7 @@ fn build_row_state(
     let delete_button = ctx.add_typed_action_view(move |_| {
         ActionButton::new("", NakedTheme)
             .with_icon(TerminalIcon::Trash)
-            .with_tooltip("Delete")
+            .with_tooltip(t!("Delete"))
             .with_size(ButtonSize::XSmall)
             .with_disabled_theme(NakedTheme)
             .on_click(move |ctx| {
@@ -389,15 +390,15 @@ impl QueuedPromptsPanelView {
             let disabled_for_pending_lrc = *origin == QueuedQueryOrigin::PendingLrcAutoQueue;
             let disabled = disabled_for_pending_lrc || dispatch_blocked || !ready;
             let tooltip = if disabled_for_pending_lrc {
-                SEND_NOW_PENDING_LRC_TOOLTIP
+                t!(SEND_NOW_PENDING_LRC_TOOLTIP)
             } else if dispatch_blocked {
-                SEND_NOW_DURING_SETUP_TOOLTIP
+                t!(SEND_NOW_DURING_SETUP_TOOLTIP)
             } else if !ready {
-                "Sent by the external agent"
+                t!("Sent by the external agent")
             } else if lrc_subagent_in_progress {
-                SEND_NOW_TO_FULL_TERMINAL_USE_AGENT_TOOLTIP
+                t!(SEND_NOW_TO_FULL_TERMINAL_USE_AGENT_TOOLTIP)
             } else {
-                "Send now"
+                t!("Send now")
             };
             send_now_button.update(ctx, |button, ctx| {
                 button.set_disabled(disabled, ctx);
@@ -973,7 +974,7 @@ fn render_header(
             );
             row.add_child(Container::new(keycap).with_margin_left(4.).finish());
             row.add_child(
-                Text::new("to send", ui_font_family, ui_font_size)
+                Text::new(t!("to send"), ui_font_family, ui_font_size)
                     .with_style(Properties {
                         style: Style::Normal,
                         weight: Weight::Normal,
@@ -1115,9 +1116,9 @@ fn render_row(props: RenderRowProps<'_>, app: &AppContext) -> Box<dyn Element> {
         };
         let suffix = match origin {
             QueuedQueryOrigin::LrcAutoQueue | QueuedQueryOrigin::PendingLrcAutoQueue => {
-                Some(LRC_AUTO_QUEUE_ROW_SUFFIX)
+                Some(t!(LRC_AUTO_QUEUE_ROW_SUFFIX))
             }
-            QueuedQueryOrigin::LocalSteering => Some(LOCAL_STEERING_ROW_SUFFIX),
+            QueuedQueryOrigin::LocalSteering => Some(t!(LOCAL_STEERING_ROW_SUFFIX)),
             QueuedQueryOrigin::ExternalHarness
             | QueuedQueryOrigin::QueueSlashCommand
             | QueuedQueryOrigin::AutoQueueToggle

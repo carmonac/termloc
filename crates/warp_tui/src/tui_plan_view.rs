@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use ai::agent::document_action_presentation::DocumentActionPresentation;
+use i18n::t;
 use markdown_parser::{FormattedText, FormattedTextLine, parse_markdown_with_gfm_tables};
 use warp::tui_export::{
     AIAgentAction, AIAgentActionType, BlocklistAIActionEvent, BlocklistAIActionModel,
@@ -204,7 +205,10 @@ impl TuiPlanView {
         if self.presentation.documents.len() == 1 {
             self.presentation.documents[0].title.clone()
         } else {
-            format!("{} documents", self.presentation.documents.len())
+            t!(
+                "{count} documents",
+                count = self.presentation.documents.len()
+            )
         }
     }
 
@@ -212,14 +216,14 @@ impl TuiPlanView {
         if matches!(&self.action.action, AIAgentActionType::CreateDocuments(_)) {
             match state {
                 ToolCallDisplayState::Constructing | ToolCallDisplayState::Running => {
-                    ("Creating ", Some(self.document_subject()))
+                    (t!("Creating "), Some(self.document_subject()))
                 }
                 ToolCallDisplayState::Pending | ToolCallDisplayState::Blocked => {
-                    ("Create plan", None)
+                    (t!("Create plan"), None)
                 }
-                ToolCallDisplayState::Succeeded => ("Created ", Some(self.document_subject())),
-                ToolCallDisplayState::Failed => ("Failed to create plan", None),
-                ToolCallDisplayState::Cancelled => ("Create plan cancelled", None),
+                ToolCallDisplayState::Succeeded => (t!("Created "), Some(self.document_subject())),
+                ToolCallDisplayState::Failed => (t!("Failed to create plan"), None),
+                ToolCallDisplayState::Cancelled => (t!("Create plan cancelled"), None),
             }
         } else {
             debug_assert!(matches!(
@@ -228,14 +232,14 @@ impl TuiPlanView {
             ));
             match state {
                 ToolCallDisplayState::Constructing | ToolCallDisplayState::Running => {
-                    ("Updating plan", None)
+                    (t!("Updating plan"), None)
                 }
                 ToolCallDisplayState::Pending | ToolCallDisplayState::Blocked => {
-                    ("Update plan", None)
+                    (t!("Update plan"), None)
                 }
-                ToolCallDisplayState::Succeeded => ("Updated plan", None),
-                ToolCallDisplayState::Failed => ("Failed to update plan", None),
-                ToolCallDisplayState::Cancelled => ("Update plan cancelled", None),
+                ToolCallDisplayState::Succeeded => (t!("Updated plan"), None),
+                ToolCallDisplayState::Failed => (t!("Failed to update plan"), None),
+                ToolCallDisplayState::Cancelled => (t!("Update plan cancelled"), None),
             }
         }
     }

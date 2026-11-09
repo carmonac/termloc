@@ -1,5 +1,6 @@
 use ai::skills::{SkillProvider, SkillReference, SkillScope};
 use fuzzy_match::FuzzyMatchResult;
+use i18n::t;
 use ordered_float::OrderedFloat;
 use warp_core::ui::icons::Icon;
 use warp_core::ui::theme::Fill;
@@ -41,12 +42,12 @@ impl InlineMenuAction for AcceptSkill {
         // If no item is selected, show "No skills found" message with escape hint
         if args.inline_menu_model.selected_item().is_none() {
             return Some(Message::new(vec![
-                MessageItem::text("No skills found"),
+                MessageItem::text(t!("No skills found")),
                 MessageItem::keystroke(Keystroke {
                     key: "escape".to_owned(),
                     ..Default::default()
                 }),
-                MessageItem::text(" to dismiss"),
+                MessageItem::text(t!(" to dismiss")),
             ]));
         }
 
@@ -262,7 +263,7 @@ impl SearchItem for SkillSearchItem {
             let badge_text_color =
                 inline_styles::disabled_text_color(theme, background_color.into());
             let badge_text = Text::new_inline(
-                "Project Skill".to_string(),
+                t!("Project Skill").to_string(),
                 appearance.ui_font_family(),
                 badge_font_size,
             )

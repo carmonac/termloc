@@ -4,6 +4,7 @@ mod data_source;
 mod search_item;
 mod view;
 
+use i18n::t;
 use pathfinder_color::ColorU;
 pub use view::{InlineConversationMenuEvent, InlineConversationMenuView};
 use warp_core::ui::appearance::Appearance;
@@ -46,9 +47,9 @@ impl InlineMenuAction for AcceptConversation {
 
         if let Some(item) = inline_menu_model.selected_item() {
             let text = if item.is_open_elsewhere {
-                " go to conversation"
+                t!(" go to conversation")
             } else {
-                " continue in this pane"
+                t!(" continue in this pane")
             };
 
             let item_id = item.item_id;
@@ -85,7 +86,7 @@ impl InlineMenuAction for AcceptConversation {
                     background_color: Some(ColorU::transparent_black()),
                 },
                 MessageItem::Text {
-                    content: " continue in this pane".into(),
+                    content: t!(" continue in this pane").into(),
                     color: Some(disabled_color),
                 },
             ]);

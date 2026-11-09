@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use i18n::t;
 use settings::{Setting, ToggleableSetting};
 use warp_core::features::FeatureFlag;
 use warp_errors::report_if_error;
@@ -113,7 +114,7 @@ impl ExternalEditorView {
         dropdown: &mut Dropdown<ExternalEditorAction>,
         ctx: &mut ViewContext<Dropdown<ExternalEditorAction>>,
     ) {
-        let default_option_text = "Split Pane";
+        let default_option_text = t!("Split Pane");
         let default_app = DropdownItem::new(
             default_option_text,
             ExternalEditorAction::SetLayout(EditorLayout::SplitPane),
@@ -121,14 +122,14 @@ impl ExternalEditorView {
 
         let mut items = vec![default_app];
         items.push(DropdownItem::new(
-            "New Tab",
+            t!("New Tab"),
             ExternalEditorAction::SetLayout(EditorLayout::NewTab),
         ));
 
         dropdown.set_items(items, ctx);
         match layout_to_open_files {
             EditorLayout::SplitPane => dropdown.set_selected_by_name(default_option_text, ctx),
-            EditorLayout::NewTab => dropdown.set_selected_by_name("New Tab", ctx),
+            EditorLayout::NewTab => dropdown.set_selected_by_name(t!("New Tab"), ctx),
         };
     }
 
@@ -138,7 +139,7 @@ impl ExternalEditorView {
         mut make_action: impl FnMut(EditorChoice) -> ExternalEditorAction,
         ctx: &mut ViewContext<Dropdown<ExternalEditorAction>>,
     ) {
-        let default_option_text = "Default App";
+        let default_option_text = t!("Default App");
         let default_app = DropdownItem::new(
             default_option_text,
             make_action(EditorChoice::SystemDefault),
@@ -237,7 +238,7 @@ impl View for ExternalEditorView {
 
         let default_editor = render_dropdown_item(
             appearance,
-            "Choose an editor to open file links",
+            t!("Choose an editor to open file links"),
             None,
             None,
             LocalOnlyIconState::for_setting(
@@ -252,7 +253,9 @@ impl View for ExternalEditorView {
 
         let code_panels_editor = render_dropdown_item(
             appearance,
-            "Choose an editor to open files from the code review panel, project explorer, and global search",
+            t!(
+                "Choose an editor to open files from the code review panel, project explorer, and global search"
+            ),
             None,
             None,
             LocalOnlyIconState::for_setting(
@@ -267,7 +270,7 @@ impl View for ExternalEditorView {
 
         let default_layout = render_dropdown_item(
             appearance,
-            "Choose a layout to open files in Termloc",
+            t!("Choose a layout to open files in Termloc"),
             None,
             None,
             LocalOnlyIconState::for_setting(
@@ -287,7 +290,7 @@ impl View for ExternalEditorView {
 
         if FeatureFlag::TabbedEditorView.is_enabled() {
             column.add_child(render_body_item::<ExternalEditorAction>(
-                TABBED_FILE_VIEWER_TOGGLE_HEADER.into(),
+                t!(TABBED_FILE_VIEWER_TOGGLE_HEADER).into(),
                 None,
                 LocalOnlyIconState::for_setting(
                     PreferTabbedEditorView::storage_key(),
@@ -310,12 +313,12 @@ impl View for ExternalEditorView {
                         ctx.dispatch_typed_action(ExternalEditorAction::ToggleTabbedEditorView);
                     })
                     .finish(),
-                Some(TABBED_FILE_VIEWER_TOGGLE_DESCRIPTION.into()),
+                Some(t!(TABBED_FILE_VIEWER_TOGGLE_DESCRIPTION).into()),
             ));
         }
 
         column.add_child(render_body_item::<ExternalEditorAction>(
-            "Open Markdown files in Termloc's Markdown Viewer by default".to_string(),
+            t!("Open Markdown files in Termloc's Markdown Viewer by default").to_string(),
             None,
             LocalOnlyIconState::for_setting(
                 PreferMarkdownViewer::storage_key(),

@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use i18n::t;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use settings::ToggleableSetting as _;
 use strum::IntoEnumIterator;
@@ -198,12 +199,12 @@ impl MCPServersListPageView {
 
         search_editor.update(ctx, |editor, ctx| {
             editor.clear_buffer_and_reset_undo_stack(ctx);
-            editor.set_placeholder_text("Search MCP Servers", ctx);
+            editor.set_placeholder_text(t!("Search MCP Servers"), ctx);
         });
         let search_bar = ctx.add_typed_action_view(|_| SearchBar::new(search_editor.clone()));
 
         let add_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("Add", NakedTheme)
+            ActionButton::new(t!("Add"), NakedTheme)
                 .with_icon(Icon::Plus)
                 .on_click(|ctx| ctx.dispatch_typed_action(MCPServersListPageViewAction::Add))
         });
@@ -342,7 +343,7 @@ impl MCPServersListPageView {
             template
                 .description
                 .clone()
-                .or_else(|| Some("Available to install".to_string())),
+                .or_else(|| Some(t!("Available to install").to_string())),
             None, // Templates can never have tools
             None, // Templates cannot have an error
             title_chip_text.into_iter().collect(),
@@ -829,7 +830,7 @@ impl MCPServersListPageView {
                 // Show the toast that the server updated, even though we don't update the cloud template in this case
                 let window_id = ctx.window_id();
                 ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
-                    let toast = DismissibleToast::success(String::from("MCP server updated"));
+                    let toast = DismissibleToast::success(t!("MCP server updated").to_string());
                     toast_stack.add_ephemeral_toast(toast, window_id, ctx);
                 });
             }
@@ -1069,7 +1070,7 @@ impl MCPServersListPageView {
         let is_any_ai_enabled = ai_settings.is_any_ai_enabled(app);
 
         let label = render_body_item_label::<MCPServersListPageViewAction>(
-            "Auto-spawn servers from third-party agents".to_string(),
+            t!("Auto-spawn servers from third-party agents").to_string(),
             None,
             None,
             LocalOnlyIconState::Hidden,
@@ -1101,9 +1102,9 @@ impl MCPServersListPageView {
         static FILE_BASED_MCP_DESCRIPTION_FRAGMENTS: std::sync::LazyLock<
             Vec<FormattedTextFragment>,
         > = std::sync::LazyLock::new(|| {
-            vec![FormattedTextFragment::plain_text(
-                "Automatically detect and spawn MCP servers from globally-scoped third-party AI agent configuration files (e.g. in your home directory). Servers detected inside a repository are never spawned automatically and must be enabled individually in the \"Detected from\" sections below.",
-            )]
+            vec![FormattedTextFragment::plain_text(t!(
+                "Automatically detect and spawn MCP servers from globally-scoped third-party AI agent configuration files (e.g. in your home directory). Servers detected inside a repository are never spawned automatically and must be enabled individually in the \"Detected from\" sections below."
+            ))]
         });
 
         let description = FormattedTextElement::new(
@@ -1131,7 +1132,7 @@ impl MCPServersListPageView {
     }
 
     fn render_page_body(&self, appearance: &Appearance, app: &AppContext) -> Box<dyn Element> {
-        let description_fragments = vec![FormattedTextFragment::plain_text(DESCRIPTION_TEXT)];
+        let description_fragments = vec![FormattedTextFragment::plain_text(t!(DESCRIPTION_TEXT))];
 
         let description = FormattedTextElement::new(
             FormattedText::new([FormattedTextLine::Line(description_fragments)]),
@@ -1208,7 +1209,7 @@ impl MCPServersListPageView {
 
                 if !owned_server_cards.is_empty() {
                     page.add_child(self.render_server_cards_section(
-                        "My MCPs",
+                        t!("My MCPs"),
                         &owned_server_cards,
                         appearance,
                         app,
@@ -1220,8 +1221,8 @@ impl MCPServersListPageView {
                         .team_for_view_handle(&self.handle, app)
                         .map(|team| team.name.clone());
                     let shared_by_text = match team_name {
-                        Some(name) => format!("Shared by Termloc and {name}"),
-                        None => "Shared by Termloc and from other devices".to_string(),
+                        Some(name) => t!("Shared by Termloc and {name}", name = name),
+                        None => t!("Shared by Termloc and from other devices").to_string(),
                     };
 
                     page.add_child(self.render_server_cards_section(
@@ -1232,7 +1233,7 @@ impl MCPServersListPageView {
                     ));
                 } else if !filtered_gallery_cards.is_empty() {
                     page.add_child(self.render_server_cards_section(
-                        "Shared from Termloc",
+                        t!("Shared from Termloc"),
                         &filtered_gallery_cards,
                         appearance,
                         app,
@@ -1241,7 +1242,10 @@ impl MCPServersListPageView {
 
                 // Render one section per provider (e.g. "Detected from Claude").
                 for (provider, cards) in &filtered_file_based_cards {
-                    let section_title = format!("Detected from {}", provider.display_name());
+                    let section_title = t!(
+                        "Detected from {provider}",
+                        provider = provider.display_name()
+                    );
                     page.add_child(self.render_server_cards_section(
                         &section_title,
                         cards,
@@ -1437,7 +1441,7 @@ impl MCPServersListPageView {
                         .with_child(
                             appearance
                                 .ui_builder()
-                                .wrappable_text(EMPTY_STATE_TEXT, true)
+                                .wrappable_text(t!(EMPTY_STATE_TEXT), true)
                                 .with_style(style::description_text(appearance))
                                 .build()
                                 .finish(),
@@ -1468,7 +1472,7 @@ impl MCPServersListPageView {
                         .with_child(
                             appearance
                                 .ui_builder()
-                                .wrappable_text(NO_SEARCH_RESULTS_TEXT, true)
+                                .wrappable_text(t!(NO_SEARCH_RESULTS_TEXT), true)
                                 .with_style(style::description_text(appearance))
                                 .build()
                                 .finish(),
@@ -1489,14 +1493,14 @@ impl MCPServersListPageView {
         if let Some(home_dir) = dirs::home_dir()
             && root_path == &home_dir
         {
-            return Some("global".to_string());
+            return Some(t!("global").to_string());
         }
 
         // If the path is the Warp data directory (e.g. ~/.termloc or ~/.termloc-dev), set the text
         // to "global". The Warp provider stores its data directory as the root path rather than the
         // home directory, unlike other providers that store the home directory directly.
         if root_path == &crate::warp_managed_paths_watcher::warp_data_dir() {
-            return Some("global".to_string());
+            return Some(t!("global").to_string());
         }
 
         // Otherwise, set the text to the final path component.
@@ -1531,8 +1535,8 @@ impl MCPServersListPageView {
 
         // If global is present, only show global chips (global scope implies project-scope
         // chips are redundant).
-        if title_chips.iter().any(|chip| chip.text == "global") {
-            title_chips.retain(|chip| chip.text == "global");
+        if title_chips.iter().any(|chip| chip.text == t!("global")) {
+            title_chips.retain(|chip| chip.text == t!("global"));
         }
 
         title_chips
@@ -1578,7 +1582,7 @@ impl MCPServersListPageView {
                     .templatable_mcp_server()
                     .description
                     .clone()
-                    .or_else(|| Some("Detected from config file".to_string())),
+                    .or_else(|| Some(t!("Detected from config file").to_string())),
                 None, // tools only available when running
                 None, // no error when not yet started
                 title_chips,
@@ -1712,11 +1716,14 @@ impl MCPServersListPageView {
 
                 if is_shared {
                     match creator {
-                        Some(creator) => Some(TitleChip::text(format!("Shared by: {creator}"))),
-                        None => Some(TitleChip::text("Shared by a team member")),
+                        Some(creator) => Some(TitleChip::text(t!(
+                            "Shared by: {creator}",
+                            creator = creator
+                        ))),
+                        None => Some(TitleChip::text(t!("Shared by a team member"))),
                     }
                 } else if matches!(item_id, ServerCardItemId::TemplatableMCP(_)) {
-                    Some(TitleChip::text("From another device"))
+                    Some(TitleChip::text(t!("From another device")))
                 } else {
                     None
                 }

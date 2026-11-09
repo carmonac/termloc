@@ -1,3 +1,4 @@
+use i18n::t;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::appearance::Appearance;
 use warp_errors::report_error;
@@ -59,7 +60,7 @@ impl TerminalView {
             ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                 toast_stack.add_ephemeral_toast(
                     DismissibleToast::error(
-                        "Cannot start a new conversation while agent is monitoring a command."
+                        t!("Cannot start a new conversation while agent is monitoring a command.")
                             .to_string(),
                     ),
                     window_id,
@@ -273,7 +274,7 @@ impl TerminalView {
                         key: "enter".to_owned(),
                         ..Default::default()
                     }),
-                    MessageItem::text("again to send to agent"),
+                    MessageItem::text(t!("again to send to agent")),
                 ])
                 .with_text_color(appearance.theme().ansi_fg_magenta());
                 self.ephemeral_message_model.update(ctx, |model, ctx| {

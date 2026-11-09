@@ -1,0 +1,501 @@
+# English source text -> translation per language code.
+
+"Run commands":
+  es: "Ejecutar comandos"
+  pt: "Executar comandos"
+  fr: "Exécuter des commandes"
+  de: "Befehle ausführen"
+  it: "Esegui comandi"
+  uk: "Виконуйте команди"
+  ja: "コマンドを実行"
+  zh-Hans: "运行命令"
+
+"Tell the agent what to build...":
+  es: "Dile al agente qué construir..."
+  pt: "Diga ao agente o que construir..."
+  fr: "Dites à l'agent ce qu'il doit créer..."
+  de: "Sagen Sie dem Agenten, was er bauen soll..."
+  it: "Di' all'agente cosa costruire..."
+  uk: "Скажіть агенту, що створити..."
+  ja: "エージェントに作りたいものを伝えてください..."
+  zh-Hans: "告诉智能体要构建什么..."
+
+"Type '#' for AI command suggestions":
+  es: "Escribe '#' para obtener sugerencias de comandos con IA"
+  pt: "Digite '#' para sugestões de comandos com IA"
+  fr: "Tapez '#' pour obtenir des suggestions de commandes par IA"
+  de: "Geben Sie '#' für KI-Befehlsvorschläge ein"
+  it: "Digita '#' per suggerimenti di comandi IA"
+  uk: "Введіть '#', щоб отримати підказки команд від ШІ"
+  ja: "'#' を入力すると AI がコマンドを提案します"
+  zh-Hans: "输入 '#' 获取 AI 命令建议"
+
+"Steer the running agent":
+  es: "Guía al agente en ejecución"
+  pt: "Oriente o agente em execução"
+  fr: "Guidez l'agent en cours d'exécution"
+  de: "Laufenden Agenten steuern"
+  it: "Guida l'agente in esecuzione"
+  uk: "Скеровуйте запущеного агента"
+  ja: "実行中のエージェントに指示"
+  zh-Hans: "引导正在运行的智能体"
+
+"Steer the running agent, or backspace to exit":
+  es: "Guía al agente en ejecución, o pulsa retroceso para salir"
+  pt: "Oriente o agente em execução ou pressione backspace para sair"
+  fr: "Guidez l'agent en cours d'exécution, ou appuyez sur Retour arrière pour quitter"
+  de: "Laufenden Agenten steuern oder mit Rücktaste beenden"
+  it: "Guida l'agente in esecuzione o premi Backspace per uscire"
+  uk: "Скеровуйте запущеного агента або натисніть Backspace, щоб вийти"
+  ja: "実行中のエージェントに指示、Backspace で終了"
+  zh-Hans: "引导正在运行的智能体，或按退格键退出"
+
+"Queue a follow up for the running agent":
+  es: "Pon en cola una petición para el agente en ejecución"
+  pt: "Enfileire um acompanhamento para o agente em execução"
+  fr: "Mettez en file une demande pour l'agent en cours d'exécution"
+  de: "Folgeanfrage für den laufenden Agenten einreihen"
+  it: "Metti in coda una richiesta per l'agente in esecuzione"
+  uk: "Додайте в чергу наступний запит для запущеного агента"
+  ja: "実行中のエージェントへの追加依頼をキューに追加"
+  zh-Hans: "为正在运行的智能体排队后续请求"
+
+"Queue a follow up for the running agent, or backspace to exit":
+  es: "Pon en cola una petición para el agente en ejecución, o pulsa retroceso para salir"
+  pt: "Enfileire um acompanhamento para o agente em execução ou pressione backspace para sair"
+  fr: "Mettez en file une demande pour l'agent en cours d'exécution, ou appuyez sur Retour arrière pour quitter"
+  de: "Folgeanfrage für den laufenden Agenten einreihen oder mit Rücktaste beenden"
+  it: "Metti in coda una richiesta per l'agente in esecuzione o premi Backspace per uscire"
+  uk: "Додайте в чергу наступний запит для запущеного агента або натисніть Backspace, щоб вийти"
+  ja: "実行中のエージェントへの追加依頼をキューに追加、Backspace で終了"
+  zh-Hans: "为正在运行的智能体排队后续请求，或按退格键退出"
+
+"Ask a follow up":
+  es: "Haz una pregunta de seguimiento"
+  pt: "Faça uma pergunta de acompanhamento"
+  fr: "Posez une question complémentaire"
+  de: "Folgefrage stellen"
+  it: "Fai una domanda di approfondimento"
+  uk: "Поставте уточнювальне запитання"
+  ja: "続けて質問"
+  zh-Hans: "继续提问"
+
+"Ask a follow up, or backspace to exit":
+  es: "Haz una pregunta de seguimiento, o pulsa retroceso para salir"
+  pt: "Faça uma pergunta de acompanhamento ou pressione backspace para sair"
+  fr: "Posez une question complémentaire, ou appuyez sur Retour arrière pour quitter"
+  de: "Folgefrage stellen oder mit Rücktaste beenden"
+  it: "Fai una domanda di approfondimento o premi Backspace per uscire"
+  uk: "Поставте уточнювальне запитання або натисніть Backspace, щоб вийти"
+  ja: "続けて質問、Backspace で終了"
+  zh-Hans: "继续提问，或按退格键退出"
+
+"Enter prompt for {agent}...":
+  es: "Escribe una petición para {agent}..."
+  pt: "Digite um prompt para {agent}..."
+  fr: "Saisissez une requête pour {agent}..."
+  de: "Prompt für {agent} eingeben..."
+  it: "Inserisci un prompt per {agent}..."
+  uk: "Введіть запит для {agent}..."
+  ja: "{agent} へのプロンプトを入力..."
+  zh-Hans: "输入给 {agent} 的提示..."
+
+"Listening...":
+  es: "Escuchando..."
+  pt: "Ouvindo..."
+  fr: "Écoute..."
+  de: "Höre zu..."
+  it: "In ascolto..."
+  uk: "Слухаю..."
+  ja: "聞き取り中..."
+  zh-Hans: "正在聆听..."
+
+"Transcribing...":
+  es: "Transcribiendo..."
+  pt: "Transcrevendo..."
+  fr: "Transcription..."
+  de: "Wird transkribiert..."
+  it: "Trascrizione..."
+  uk: "Транскрибування..."
+  ja: "文字起こし中..."
+  zh-Hans: "正在转写..."
+
+"attach `{command}` output as agent context":
+  es: "adjuntar la salida de `{command}` como contexto del agente"
+  pt: "anexar a saída de `{command}` como contexto do agente"
+  fr: "joindre la sortie de `{command}` comme contexte de l'agent"
+  de: "Ausgabe von `{command}` als Agentenkontext anhängen"
+  it: "allega l'output di `{command}` come contesto dell'agente"
+  uk: "додати вивід `{command}` як контекст агента"
+  ja: "`{command}` の出力をエージェントのコンテキストとして添付"
+  zh-Hans: "将 `{command}` 的输出附加为智能体上下文"
+
+"new conversation":
+  es: "nueva conversación"
+  pt: "nova conversa"
+  fr: "nouvelle conversation"
+  de: "neue Unterhaltung"
+  it: "nuova conversazione"
+  uk: "нова розмова"
+  ja: "新しい会話"
+  zh-Hans: "新对话"
+
+"plan with agent":
+  es: "planificar con el agente"
+  pt: "planejar com o agente"
+  fr: "planifier avec l'agent"
+  de: "mit Agent planen"
+  it: "pianifica con l'agente"
+  uk: "спланувати з агентом"
+  ja: "エージェントと計画"
+  zh-Hans: "与智能体一起规划"
+
+"to continue conversation":
+  es: "para continuar la conversación"
+  pt: "para continuar a conversa"
+  fr: "pour poursuivre la conversation"
+  de: "um die Unterhaltung fortzusetzen"
+  it: "per continuare la conversazione"
+  uk: "щоб продовжити розмову"
+  ja: "で会話を続ける"
+  zh-Hans: "继续对话"
+
+"to execute":
+  es: "para ejecutar"
+  pt: "para executar"
+  fr: "pour exécuter"
+  de: "zum Ausführen"
+  it: "per eseguire"
+  uk: "щоб виконати"
+  ja: "で実行"
+  zh-Hans: "执行"
+
+"to send":
+  es: "para enviar"
+  pt: "para enviar"
+  fr: "pour envoyer"
+  de: "zum Senden"
+  it: "per inviare"
+  uk: "щоб надіслати"
+  ja: "で送信"
+  zh-Hans: "发送"
+
+"to open '{title}'":
+  es: "para abrir '{title}'"
+  pt: "para abrir '{title}'"
+  fr: "pour ouvrir « {title} »"
+  de: "um „{title}“ zu öffnen"
+  it: "per aprire '{title}'"
+  uk: "щоб відкрити «{title}»"
+  ja: "で「{title}」を開く"
+  zh-Hans: "打开“{title}”"
+
+"autodetected":
+  es: "detectado automáticamente"
+  pt: "detectado automaticamente"
+  fr: "détecté automatiquement"
+  de: "automatisch erkannt"
+  it: "rilevato automaticamente"
+  uk: "визначено автоматично"
+  ja: "自動検出"
+  zh-Hans: "自动检测"
+
+"to override":
+  es: "para anular"
+  pt: "para substituir"
+  fr: "pour ignorer"
+  de: "zum Überschreiben"
+  it: "per ignorare"
+  uk: "щоб скасувати"
+  ja: "で上書き"
+  zh-Hans: "覆盖"
+
+"new /agent conversation":
+  es: "nueva conversación con /agent"
+  pt: "nova conversa com /agent"
+  fr: "nouvelle conversation /agent"
+  de: "neue /agent-Unterhaltung"
+  it: "nuova conversazione /agent"
+  uk: "нова розмова /agent"
+  ja: "新しい /agent 会話"
+  zh-Hans: "新的 /agent 对话"
+
+"/agent for new conversation":
+  es: "/agent para una nueva conversación"
+  pt: "/agent para uma nova conversa"
+  fr: "/agent pour une nouvelle conversation"
+  de: "/agent für eine neue Unterhaltung"
+  it: "/agent per una nuova conversazione"
+  uk: "/agent для нової розмови"
+  ja: "/agent で新しい会話"
+  zh-Hans: "/agent 开始新对话"
+
+"with `{command}` attached":
+  es: "con `{command}` adjunto"
+  pt: "com `{command}` anexado"
+  fr: "avec `{command}` joint"
+  de: "mit angehängtem `{command}`"
+  it: "con `{command}` allegato"
+  uk: "з доданим `{command}`"
+  ja: "`{command}` を添付"
+  zh-Hans: "已附加 `{command}`"
+
+"with `{command}` and 1 other command attached":
+  es: "con `{command}` y 1 comando más adjuntos"
+  pt: "com `{command}` e mais 1 comando anexados"
+  fr: "avec `{command}` et 1 autre commande joints"
+  de: "mit angehängtem `{command}` und 1 weiteren Befehl"
+  it: "con `{command}` e 1 altro comando allegati"
+  uk: "з доданим `{command}` та ще 1 командою"
+  ja: "`{command}` とほか 1 件のコマンドを添付"
+  zh-Hans: "已附加 `{command}` 及另外 1 条命令"
+
+"with `{command}` and {count} other commands attached":
+  es: "con `{command}` y {count} comandos más adjuntos"
+  pt: "com `{command}` e mais {count} comandos anexados"
+  fr: "avec `{command}` et {count} autres commandes joints"
+  de: "mit angehängtem `{command}` und {count} weiteren Befehlen"
+  it: "con `{command}` e altri {count} comandi allegati"
+  uk: "з доданим `{command}` та ще кількома командами: {count}"
+  ja: "`{command}` とほか {count} 件のコマンドを添付"
+  zh-Hans: "已附加 `{command}` 及另外 {count} 条命令"
+
+"with text selection attached":
+  es: "con la selección de texto adjunta"
+  pt: "com a seleção de texto anexada"
+  fr: "avec la sélection de texte jointe"
+  de: "mit angehängter Textauswahl"
+  it: "con la selezione di testo allegata"
+  uk: "з доданим виділеним текстом"
+  ja: "選択したテキストを添付"
+  zh-Hans: "已附加所选文本"
+
+"New terminal session":
+  es: "Nueva sesión de terminal"
+  pt: "Nova sessão de terminal"
+  fr: "Nouvelle session de terminal"
+  de: "Neue Terminalsitzung"
+  it: "Nuova sessione del terminale"
+  uk: "Новий сеанс термінала"
+  ja: "新しいターミナルセッション"
+  zh-Hans: "新终端会话"
+
+"cycle past commands and conversations":
+  es: "recorrer comandos y conversaciones anteriores"
+  pt: "percorrer comandos e conversas anteriores"
+  fr: "parcourir les commandes et conversations précédentes"
+  de: "frühere Befehle und Unterhaltungen durchgehen"
+  it: "scorri comandi e conversazioni precedenti"
+  uk: "перебирати попередні команди й розмови"
+  ja: "過去のコマンドと会話を順に表示"
+  zh-Hans: "循环浏览过去的命令和对话"
+
+"autodetect agent prompts in terminal sessions":
+  es: "detectar automáticamente peticiones al agente en sesiones de terminal"
+  pt: "detectar automaticamente prompts do agente em sessões de terminal"
+  fr: "détecter automatiquement les requêtes à l'agent dans les sessions de terminal"
+  de: "Agenten-Prompts in Terminalsitzungen automatisch erkennen"
+  it: "rileva automaticamente i prompt per l'agente nelle sessioni del terminale"
+  uk: "автоматично визначати запити до агента в сеансах термінала"
+  ja: "ターミナルセッションでエージェント向けプロンプトを自動検出"
+  zh-Hans: "在终端会话中自动检测智能体提示"
+
+"Ask anything e.g. Deploy my React app to Vercel and set up environment variables":
+  es: "Pregunta lo que quieras, p. ej. Despliega mi app de React en Vercel y configura las variables de entorno"
+  pt: "Pergunte qualquer coisa, ex.: Implante meu app React na Vercel e configure as variáveis de ambiente"
+  fr: "Demandez ce que vous voulez, p. ex. Déploie mon app React sur Vercel et configure les variables d'environnement"
+  de: "Fragen Sie beliebig, z. B. Stelle meine React-App auf Vercel bereit und richte Umgebungsvariablen ein"
+  it: "Chiedi qualsiasi cosa, ad es. Distribuisci la mia app React su Vercel e configura le variabili d'ambiente"
+  uk: "Запитуйте що завгодно, напр. Розгорни мій React-застосунок на Vercel і налаштуй змінні середовища"
+  ja: "何でも聞いてください。例: React アプリを Vercel にデプロイして環境変数を設定して"
+  zh-Hans: "有问题尽管问，例如：把我的 React 应用部署到 Vercel 并配置环境变量"
+
+"Ask anything e.g. Help me debug why my Python tests are failing in CI":
+  es: "Pregunta lo que quieras, p. ej. Ayúdame a averiguar por qué fallan mis tests de Python en CI"
+  pt: "Pergunte qualquer coisa, ex.: Me ajude a depurar por que meus testes Python falham no CI"
+  fr: "Demandez ce que vous voulez, p. ex. Aide-moi à comprendre pourquoi mes tests Python échouent en CI"
+  de: "Fragen Sie beliebig, z. B. Hilf mir herauszufinden, warum meine Python-Tests in der CI fehlschlagen"
+  it: "Chiedi qualsiasi cosa, ad es. Aiutami a capire perché i miei test Python falliscono in CI"
+  uk: "Запитуйте що завгодно, напр. Допоможи з'ясувати, чому мої тести Python падають у CI"
+  ja: "何でも聞いてください。例: CI で Python のテストが失敗する原因をデバッグして"
+  zh-Hans: "有问题尽管问，例如：帮我排查 Python 测试为何在 CI 中失败"
+
+"Ask anything e.g. Set up a new microservice with Docker and create the deployment pipeline":
+  es: "Pregunta lo que quieras, p. ej. Crea un nuevo microservicio con Docker y su pipeline de despliegue"
+  pt: "Pergunte qualquer coisa, ex.: Configure um novo microsserviço com Docker e crie o pipeline de implantação"
+  fr: "Demandez ce que vous voulez, p. ex. Crée un nouveau microservice avec Docker et son pipeline de déploiement"
+  de: "Fragen Sie beliebig, z. B. Richte einen neuen Microservice mit Docker ein und erstelle die Deployment-Pipeline"
+  it: "Chiedi qualsiasi cosa, ad es. Configura un nuovo microservizio con Docker e crea la pipeline di deploy"
+  uk: "Запитуйте що завгодно, напр. Створи новий мікросервіс із Docker і конвеєр розгортання"
+  ja: "何でも聞いてください。例: Docker で新しいマイクロサービスを作成してデプロイパイプラインを用意して"
+  zh-Hans: "有问题尽管问，例如：用 Docker 搭建新的微服务并创建部署流水线"
+
+"Ask anything e.g. Find and fix the memory leak in my Node.js application":
+  es: "Pregunta lo que quieras, p. ej. Encuentra y corrige la fuga de memoria de mi aplicación Node.js"
+  pt: "Pergunte qualquer coisa, ex.: Encontre e corrija o vazamento de memória no meu app Node.js"
+  fr: "Demandez ce que vous voulez, p. ex. Trouve et corrige la fuite de mémoire de mon application Node.js"
+  de: "Fragen Sie beliebig, z. B. Finde und behebe das Speicherleck in meiner Node.js-Anwendung"
+  it: "Chiedi qualsiasi cosa, ad es. Trova e correggi il memory leak nella mia applicazione Node.js"
+  uk: "Запитуйте що завгодно, напр. Знайди й виправ витік пам'яті в моєму Node.js-застосунку"
+  ja: "何でも聞いてください。例: Node.js アプリのメモリリークを見つけて修正して"
+  zh-Hans: "有问题尽管问，例如：找到并修复我的 Node.js 应用中的内存泄漏"
+
+"Ask anything e.g. Create a backup script for my PostgreSQL database and schedule it":
+  es: "Pregunta lo que quieras, p. ej. Crea un script de copia de seguridad para mi base de datos PostgreSQL y prográmalo"
+  pt: "Pergunte qualquer coisa, ex.: Crie um script de backup para meu banco PostgreSQL e agende-o"
+  fr: "Demandez ce que vous voulez, p. ex. Crée un script de sauvegarde pour ma base PostgreSQL et planifie-le"
+  de: "Fragen Sie beliebig, z. B. Erstelle ein Backup-Skript für meine PostgreSQL-Datenbank und plane es ein"
+  it: "Chiedi qualsiasi cosa, ad es. Crea uno script di backup per il mio database PostgreSQL e pianificalo"
+  uk: "Запитуйте що завгодно, напр. Створи скрипт резервного копіювання моєї бази PostgreSQL і заплануй його"
+  ja: "何でも聞いてください。例: PostgreSQL データベースのバックアップスクリプトを作成してスケジュール実行して"
+  zh-Hans: "有问题尽管问，例如：为我的 PostgreSQL 数据库创建备份脚本并设置定时执行"
+
+"Ask anything e.g. Help me migrate my data from MySQL to PostgreSQL":
+  es: "Pregunta lo que quieras, p. ej. Ayúdame a migrar mis datos de MySQL a PostgreSQL"
+  pt: "Pergunte qualquer coisa, ex.: Me ajude a migrar meus dados do MySQL para o PostgreSQL"
+  fr: "Demandez ce que vous voulez, p. ex. Aide-moi à migrer mes données de MySQL vers PostgreSQL"
+  de: "Fragen Sie beliebig, z. B. Hilf mir, meine Daten von MySQL nach PostgreSQL zu migrieren"
+  it: "Chiedi qualsiasi cosa, ad es. Aiutami a migrare i miei dati da MySQL a PostgreSQL"
+  uk: "Запитуйте що завгодно, напр. Допоможи перенести мої дані з MySQL у PostgreSQL"
+  ja: "何でも聞いてください。例: MySQL から PostgreSQL へのデータ移行を手伝って"
+  zh-Hans: "有问题尽管问，例如：帮我把数据从 MySQL 迁移到 PostgreSQL"
+
+"Ask anything e.g. Set up monitoring and alerts for my AWS infrastructure":
+  es: "Pregunta lo que quieras, p. ej. Configura monitorización y alertas para mi infraestructura de AWS"
+  pt: "Pergunte qualquer coisa, ex.: Configure monitoramento e alertas para minha infraestrutura AWS"
+  fr: "Demandez ce que vous voulez, p. ex. Mets en place la supervision et les alertes de mon infrastructure AWS"
+  de: "Fragen Sie beliebig, z. B. Richte Monitoring und Warnungen für meine AWS-Infrastruktur ein"
+  it: "Chiedi qualsiasi cosa, ad es. Configura monitoraggio e avvisi per la mia infrastruttura AWS"
+  uk: "Запитуйте що завгодно, напр. Налаштуй моніторинг і сповіщення для моєї інфраструктури AWS"
+  ja: "何でも聞いてください。例: AWS インフラの監視とアラートを設定して"
+  zh-Hans: "有问题尽管问，例如：为我的 AWS 基础设施设置监控和告警"
+
+"Ask anything e.g. Build a REST API for my mobile app using FastAPI":
+  es: "Pregunta lo que quieras, p. ej. Crea una API REST para mi app móvil con FastAPI"
+  pt: "Pergunte qualquer coisa, ex.: Crie uma API REST para meu app móvel com FastAPI"
+  fr: "Demandez ce que vous voulez, p. ex. Crée une API REST pour mon app mobile avec FastAPI"
+  de: "Fragen Sie beliebig, z. B. Baue mit FastAPI eine REST-API für meine Mobile-App"
+  it: "Chiedi qualsiasi cosa, ad es. Crea un'API REST per la mia app mobile con FastAPI"
+  uk: "Запитуйте що завгодно, напр. Створи REST API для мого мобільного застосунку на FastAPI"
+  ja: "何でも聞いてください。例: FastAPI でモバイルアプリ用の REST API を作って"
+  zh-Hans: "有问题尽管问，例如：用 FastAPI 为我的移动应用构建 REST API"
+
+"Ask anything e.g. Help me optimize my SQL queries that are running slowly":
+  es: "Pregunta lo que quieras, p. ej. Ayúdame a optimizar mis consultas SQL lentas"
+  pt: "Pergunte qualquer coisa, ex.: Me ajude a otimizar minhas consultas SQL lentas"
+  fr: "Demandez ce que vous voulez, p. ex. Aide-moi à optimiser mes requêtes SQL trop lentes"
+  de: "Fragen Sie beliebig, z. B. Hilf mir, meine langsamen SQL-Abfragen zu optimieren"
+  it: "Chiedi qualsiasi cosa, ad es. Aiutami a ottimizzare le mie query SQL lente"
+  uk: "Запитуйте що завгодно, напр. Допоможи оптимізувати мої повільні SQL-запити"
+  ja: "何でも聞いてください。例: 遅い SQL クエリの最適化を手伝って"
+  zh-Hans: "有问题尽管问，例如：帮我优化运行缓慢的 SQL 查询"
+
+"Ask anything e.g. Create a GitHub Actions workflow to automatically deploy on merge":
+  es: "Pregunta lo que quieras, p. ej. Crea un workflow de GitHub Actions que despliegue automáticamente al fusionar"
+  pt: "Pergunte qualquer coisa, ex.: Crie um workflow do GitHub Actions para implantar automaticamente no merge"
+  fr: "Demandez ce que vous voulez, p. ex. Crée un workflow GitHub Actions qui déploie automatiquement à chaque merge"
+  de: "Fragen Sie beliebig, z. B. Erstelle einen GitHub-Actions-Workflow, der beim Mergen automatisch bereitstellt"
+  it: "Chiedi qualsiasi cosa, ad es. Crea un workflow GitHub Actions che distribuisca automaticamente al merge"
+  uk: "Запитуйте що завгодно, напр. Створи workflow GitHub Actions для автоматичного розгортання після злиття"
+  ja: "何でも聞いてください。例: マージ時に自動デプロイする GitHub Actions ワークフローを作成して"
+  zh-Hans: "有问题尽管问，例如：创建一个在合并时自动部署的 GitHub Actions 工作流"
+
+"Ask anything e.g. Set up Redis caching for my web application":
+  es: "Pregunta lo que quieras, p. ej. Configura una caché con Redis para mi aplicación web"
+  pt: "Pergunte qualquer coisa, ex.: Configure cache com Redis para meu app web"
+  fr: "Demandez ce que vous voulez, p. ex. Mets en place un cache Redis pour mon application web"
+  de: "Fragen Sie beliebig, z. B. Richte Redis-Caching für meine Webanwendung ein"
+  it: "Chiedi qualsiasi cosa, ad es. Configura la cache Redis per la mia applicazione web"
+  uk: "Запитуйте що завгодно, напр. Налаштуй кешування Redis для мого вебзастосунку"
+  ja: "何でも聞いてください。例: Web アプリに Redis キャッシュを設定して"
+  zh-Hans: "有问题尽管问，例如：为我的 Web 应用配置 Redis 缓存"
+
+"Ask anything e.g. Help me troubleshoot why my Kubernetes pods keep crashing":
+  es: "Pregunta lo que quieras, p. ej. Ayúdame a averiguar por qué mis pods de Kubernetes siguen fallando"
+  pt: "Pergunte qualquer coisa, ex.: Me ajude a descobrir por que meus pods do Kubernetes continuam travando"
+  fr: "Demandez ce que vous voulez, p. ex. Aide-moi à comprendre pourquoi mes pods Kubernetes plantent sans cesse"
+  de: "Fragen Sie beliebig, z. B. Hilf mir herauszufinden, warum meine Kubernetes-Pods ständig abstürzen"
+  it: "Chiedi qualsiasi cosa, ad es. Aiutami a capire perché i miei pod Kubernetes continuano a bloccarsi"
+  uk: "Запитуйте що завгодно, напр. Допоможи з'ясувати, чому мої поди Kubernetes постійно падають"
+  ja: "何でも聞いてください。例: Kubernetes の Pod がクラッシュし続ける原因を調べて"
+  zh-Hans: "有问题尽管问，例如：帮我排查 Kubernetes Pod 不断崩溃的原因"
+
+"Ask anything e.g. Build a data pipeline to process CSV files and load them into BigQuery":
+  es: "Pregunta lo que quieras, p. ej. Crea un pipeline de datos que procese archivos CSV y los cargue en BigQuery"
+  pt: "Pergunte qualquer coisa, ex.: Crie um pipeline de dados para processar arquivos CSV e carregá-los no BigQuery"
+  fr: "Demandez ce que vous voulez, p. ex. Crée un pipeline de données qui traite des fichiers CSV et les charge dans BigQuery"
+  de: "Fragen Sie beliebig, z. B. Baue eine Datenpipeline, die CSV-Dateien verarbeitet und in BigQuery lädt"
+  it: "Chiedi qualsiasi cosa, ad es. Crea una pipeline di dati che elabori file CSV e li carichi in BigQuery"
+  uk: "Запитуйте що завгодно, напр. Створи конвеєр даних, що обробляє CSV-файли й завантажує їх у BigQuery"
+  ja: "何でも聞いてください。例: CSV ファイルを処理して BigQuery に読み込むデータパイプラインを作って"
+  zh-Hans: "有问题尽管问，例如：构建处理 CSV 文件并加载到 BigQuery 的数据管道"
+
+"Ask anything e.g. Set up SSL certificates and configure HTTPS for my domain":
+  es: "Pregunta lo que quieras, p. ej. Configura certificados SSL y HTTPS para mi dominio"
+  pt: "Pergunte qualquer coisa, ex.: Configure certificados SSL e HTTPS para meu domínio"
+  fr: "Demandez ce que vous voulez, p. ex. Configure les certificats SSL et le HTTPS de mon domaine"
+  de: "Fragen Sie beliebig, z. B. Richte SSL-Zertifikate ein und konfiguriere HTTPS für meine Domain"
+  it: "Chiedi qualsiasi cosa, ad es. Configura i certificati SSL e l'HTTPS per il mio dominio"
+  uk: "Запитуйте що завгодно, напр. Налаштуй SSL-сертифікати та HTTPS для мого домену"
+  ja: "何でも聞いてください。例: ドメインの SSL 証明書と HTTPS を設定して"
+  zh-Hans: "有问题尽管问，例如：为我的域名配置 SSL 证书和 HTTPS"
+
+"Ask anything e.g. Help me refactor this legacy code to use modern design patterns":
+  es: "Pregunta lo que quieras, p. ej. Ayúdame a refactorizar este código heredado con patrones de diseño modernos"
+  pt: "Pergunte qualquer coisa, ex.: Me ajude a refatorar este código legado com padrões de projeto modernos"
+  fr: "Demandez ce que vous voulez, p. ex. Aide-moi à refactoriser ce code legacy avec des design patterns modernes"
+  de: "Fragen Sie beliebig, z. B. Hilf mir, diesen Legacy-Code mit modernen Entwurfsmustern zu refaktorieren"
+  it: "Chiedi qualsiasi cosa, ad es. Aiutami a rifattorizzare questo codice legacy con design pattern moderni"
+  uk: "Запитуйте що завгодно, напр. Допоможи відрефакторити цей застарілий код за сучасними шаблонами проєктування"
+  ja: "何でも聞いてください。例: このレガシーコードをモダンな設計パターンにリファクタリングして"
+  zh-Hans: "有问题尽管问，例如：帮我用现代设计模式重构这段遗留代码"
+
+"Ask anything e.g. Create unit tests for my authentication service":
+  es: "Pregunta lo que quieras, p. ej. Crea tests unitarios para mi servicio de autenticación"
+  pt: "Pergunte qualquer coisa, ex.: Crie testes unitários para meu serviço de autenticação"
+  fr: "Demandez ce que vous voulez, p. ex. Crée des tests unitaires pour mon service d'authentification"
+  de: "Fragen Sie beliebig, z. B. Erstelle Unit-Tests für meinen Authentifizierungsdienst"
+  it: "Chiedi qualsiasi cosa, ad es. Crea test unitari per il mio servizio di autenticazione"
+  uk: "Запитуйте що завгодно, напр. Створи модульні тести для мого сервісу автентифікації"
+  ja: "何でも聞いてください。例: 認証サービスの単体テストを作成して"
+  zh-Hans: "有问题尽管问，例如：为我的认证服务编写单元测试"
+
+"Ask anything e.g. Set up log aggregation with ELK stack for my distributed system":
+  es: "Pregunta lo que quieras, p. ej. Configura la agregación de logs con ELK para mi sistema distribuido"
+  pt: "Pergunte qualquer coisa, ex.: Configure a agregação de logs com a stack ELK para meu sistema distribuído"
+  fr: "Demandez ce que vous voulez, p. ex. Mets en place l'agrégation des logs avec la stack ELK pour mon système distribué"
+  de: "Fragen Sie beliebig, z. B. Richte Log-Aggregation mit dem ELK-Stack für mein verteiltes System ein"
+  it: "Chiedi qualsiasi cosa, ad es. Configura l'aggregazione dei log con lo stack ELK per il mio sistema distribuito"
+  uk: "Запитуйте що завгодно, напр. Налаштуй агрегацію логів через ELK для моєї розподіленої системи"
+  ja: "何でも聞いてください。例: 分散システム向けに ELK スタックでログ集約を設定して"
+  zh-Hans: "有问题尽管问，例如：为我的分布式系统用 ELK 搭建日志聚合"
+
+"Ask anything e.g. Help me implement OAuth2 authentication in my Express.js app":
+  es: "Pregunta lo que quieras, p. ej. Ayúdame a implementar autenticación OAuth2 en mi app de Express.js"
+  pt: "Pergunte qualquer coisa, ex.: Me ajude a implementar autenticação OAuth2 no meu app Express.js"
+  fr: "Demandez ce que vous voulez, p. ex. Aide-moi à implémenter l'authentification OAuth2 dans mon app Express.js"
+  de: "Fragen Sie beliebig, z. B. Hilf mir, OAuth2-Authentifizierung in meiner Express.js-App umzusetzen"
+  it: "Chiedi qualsiasi cosa, ad es. Aiutami a implementare l'autenticazione OAuth2 nella mia app Express.js"
+  uk: "Запитуйте що завгодно, напр. Допоможи реалізувати автентифікацію OAuth2 у моєму застосунку Express.js"
+  ja: "何でも聞いてください。例: Express.js アプリに OAuth2 認証を実装するのを手伝って"
+  zh-Hans: "有问题尽管问，例如：帮我在 Express.js 应用中实现 OAuth2 认证"
+
+"Ask anything e.g. Optimize my Docker images to reduce build times and size":
+  es: "Pregunta lo que quieras, p. ej. Optimiza mis imágenes de Docker para reducir el tiempo de compilación y el tamaño"
+  pt: "Pergunte qualquer coisa, ex.: Otimize minhas imagens Docker para reduzir o tempo de build e o tamanho"
+  fr: "Demandez ce que vous voulez, p. ex. Optimise mes images Docker pour réduire le temps de build et leur taille"
+  de: "Fragen Sie beliebig, z. B. Optimiere meine Docker-Images, um Build-Zeit und Größe zu verringern"
+  it: "Chiedi qualsiasi cosa, ad es. Ottimizza le mie immagini Docker per ridurre tempi di build e dimensioni"
+  uk: "Запитуйте що завгодно, напр. Оптимізуй мої Docker-образи, щоб скоротити час збирання та розмір"
+  ja: "何でも聞いてください。例: Docker イメージを最適化してビルド時間とサイズを減らして"
+  zh-Hans: "有问题尽管问，例如：优化我的 Docker 镜像以缩短构建时间并减小体积"
+
+"Ask anything e.g. Set up A/B testing infrastructure for my web application":
+  es: "Pregunta lo que quieras, p. ej. Configura una infraestructura de tests A/B para mi aplicación web"
+  pt: "Pergunte qualquer coisa, ex.: Configure uma infraestrutura de testes A/B para meu app web"
+  fr: "Demandez ce que vous voulez, p. ex. Mets en place une infrastructure de tests A/B pour mon application web"
+  de: "Fragen Sie beliebig, z. B. Richte eine A/B-Test-Infrastruktur für meine Webanwendung ein"
+  it: "Chiedi qualsiasi cosa, ad es. Configura un'infrastruttura di A/B testing per la mia applicazione web"
+  uk: "Запитуйте що завгодно, напр. Налаштуй інфраструктуру A/B-тестування для мого вебзастосунку"
+  ja: "何でも聞いてください。例: Web アプリの A/B テスト基盤を構築して"
+  zh-Hans: "有问题尽管问，例如：为我的 Web 应用搭建 A/B 测试基础设施"

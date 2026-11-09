@@ -1,5 +1,6 @@
 //! Searchable TUI skill picker state.
 
+use i18n::t;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
     AcceptSkill, ActiveSession, ActiveSessionEvent, SkillReference, query_selectable_skills,
@@ -182,7 +183,7 @@ impl TuiSkillMenuModel {
         };
         Some(TuiInlineMenuSnapshot {
             header: Some(TuiInlineMenuHeader {
-                title: Some("Skills".to_owned()),
+                title: Some(t!("Skills").to_owned()),
                 tabs: Vec::new(),
             }),
             rows: list
@@ -205,7 +206,7 @@ impl TuiSkillMenuModel {
             status: list
                 .rows()
                 .is_empty()
-                .then(|| TuiInlineMenuStatus::Empty("No skills found".to_owned())),
+                .then(|| TuiInlineMenuStatus::Empty(t!("No skills found").to_owned())),
         })
     }
 

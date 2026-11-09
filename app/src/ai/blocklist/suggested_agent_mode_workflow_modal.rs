@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::sync::Arc;
 
+use i18n::t;
 use pathfinder_geometry::vector::vec2f;
 use warp_core::ui::appearance::Appearance;
 use warpui::elements::{
@@ -111,7 +112,7 @@ impl SuggestedAgentModeWorkflowModal {
 
         let modal = ctx.add_typed_action_view(|ctx| {
             let mut modal = Modal::new(
-                Some(SUGGESTED_PROMPT_MODAL_HEADER.to_string()),
+                Some(t!(SUGGESTED_PROMPT_MODAL_HEADER).to_string()),
                 workflow_view_handle,
                 ctx,
             )

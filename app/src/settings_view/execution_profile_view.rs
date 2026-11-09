@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use i18n::t;
 use uuid::Uuid;
 use warp_core::features::FeatureFlag;
 use warpui::elements::{
@@ -57,7 +58,7 @@ impl ExecutionProfileView {
         });
 
         let edit_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Edit", SecondaryTheme)
+            ActionButton::new(t!("Edit"), SecondaryTheme)
                 .with_icon(Icon::Pencil)
                 .with_size(ButtonSize::Small)
                 .on_click(|ctx| {
@@ -166,7 +167,7 @@ impl View for ExecutionProfileView {
                     let mut model_flex = Flex::column();
                     model_flex.add_child(
                         Container::new(
-                            Text::new("MODELS", appearance.ui_font_family(), 10.)
+                            Text::new(t!("MODELS"), appearance.ui_font_family(), 10.)
                                 .with_color(appearance.theme().disabled_ui_text_color().into())
                                 .finish(),
                         )
@@ -176,7 +177,7 @@ impl View for ExecutionProfileView {
                     model_flex.add_child(with_standard_vertical_margin(
                         render_model_line_with_icon(
                             Icon::Lightning,
-                            "Base model:",
+                            t!("Base model:"),
                             base_model,
                             appearance,
                             is_any_ai_enabled,
@@ -185,7 +186,7 @@ impl View for ExecutionProfileView {
                     model_flex.add_child(with_standard_vertical_margin(
                         render_model_line_with_icon(
                             Icon::Terminal,
-                            "Full terminal use:",
+                            t!("Full terminal use:"),
                             cli_agent_model,
                             appearance,
                             is_any_ai_enabled,
@@ -195,7 +196,7 @@ impl View for ExecutionProfileView {
                         model_flex.add_child(with_standard_vertical_margin(
                             render_model_line_with_icon(
                                 Icon::Laptop,
-                                "Computer use:",
+                                t!("Computer use:"),
                                 computer_use_model,
                                 appearance,
                                 is_any_ai_enabled,
@@ -212,7 +213,7 @@ impl View for ExecutionProfileView {
                         let mut permissions_column = Flex::column()
                             .with_child(
                                 Container::new(
-                                    Text::new("PERMISSIONS", appearance.ui_font_family(), 10.)
+                                    Text::new(t!("PERMISSIONS"), appearance.ui_font_family(), 10.)
                                         .with_color(
                                             appearance.theme().disabled_ui_text_color().into(),
                                         )
@@ -224,7 +225,7 @@ impl View for ExecutionProfileView {
                             .with_child(with_standard_vertical_margin(
                                 render_action_permission_line_with_icon(
                                     Icon::Code2,
-                                    "Apply code diffs:",
+                                    t!("Apply code diffs:"),
                                     &profile.apply_code_diffs,
                                     appearance,
                                     is_any_ai_enabled,
@@ -233,7 +234,7 @@ impl View for ExecutionProfileView {
                             .with_child(with_standard_vertical_margin(
                                 render_action_permission_line_with_icon(
                                     Icon::Notebook,
-                                    "Read files:",
+                                    t!("Read files:"),
                                     &profile.read_files,
                                     appearance,
                                     is_any_ai_enabled,
@@ -253,7 +254,7 @@ impl View for ExecutionProfileView {
                         permissions_column.add_child(with_standard_vertical_margin(
                             render_action_permission_line_with_icon(
                                 Icon::Terminal,
-                                "Execute commands:",
+                                t!("Execute commands:"),
                                 &profile.execute_commands,
                                 appearance,
                                 is_any_ai_enabled,
@@ -292,7 +293,7 @@ impl View for ExecutionProfileView {
                         permissions_column.add_child(with_standard_vertical_margin(
                             render_write_to_pty_permission_line_with_icon(
                                 Icon::Workflow,
-                                "Interact with running commands:",
+                                t!("Interact with running commands:"),
                                 &profile.write_to_pty,
                                 appearance,
                                 is_any_ai_enabled,
@@ -303,7 +304,7 @@ impl View for ExecutionProfileView {
                             permissions_column.add_child(with_standard_vertical_margin(
                                 render_computer_use_permission_line_with_icon(
                                     Icon::Laptop,
-                                    "Computer use:",
+                                    t!("Computer use:"),
                                     &profile.computer_use,
                                     appearance,
                                     is_any_ai_enabled,
@@ -314,7 +315,7 @@ impl View for ExecutionProfileView {
                         permissions_column.add_child(with_standard_vertical_margin(
                             render_ask_user_question_permission_line_with_icon(
                                 Icon::MessageText,
-                                "Ask questions:",
+                                t!("Ask questions:"),
                                 &profile.ask_user_question,
                                 appearance,
                                 is_any_ai_enabled,
@@ -323,7 +324,7 @@ impl View for ExecutionProfileView {
                         permissions_column.add_child(with_standard_vertical_margin(
                             render_run_agents_permission_line_with_icon(
                                 Icon::Workflow,
-                                "Run agents:",
+                                t!("Run agents:"),
                                 &profile.run_agents,
                                 appearance,
                                 is_any_ai_enabled,
@@ -333,7 +334,7 @@ impl View for ExecutionProfileView {
                         permissions_column.add_child(with_standard_vertical_margin(
                             render_action_permission_line_with_icon(
                                 Icon::Dataflow,
-                                "Call MCP servers:",
+                                t!("Call MCP servers:"),
                                 &profile.mcp_permissions,
                                 appearance,
                                 is_any_ai_enabled,
@@ -377,7 +378,7 @@ impl View for ExecutionProfileView {
                             permissions_column.add_child(with_standard_vertical_margin(
                                 render_bool_permission_line_with_icon(
                                     Icon::Globe,
-                                    "Call web tools:",
+                                    t!("Call web tools:"),
                                     profile.web_search_enabled,
                                     appearance,
                                     is_any_ai_enabled,
@@ -388,7 +389,7 @@ impl View for ExecutionProfileView {
                         permissions_column.add_child(with_standard_vertical_margin(
                             render_bool_permission_line_with_icon(
                                 Icon::Compass,
-                                "Auto-sync plans to Drive:",
+                                t!("Auto-sync plans to Drive:"),
                                 profile.autosync_plans_to_warp_drive,
                                 appearance,
                                 is_any_ai_enabled,
@@ -440,7 +441,7 @@ where
     let items_vec: Vec<String> = items.into_iter().map(|item| item.to_string()).collect();
     if items_vec.is_empty() {
         return Container::new(
-            Text::new("None", appearance.ui_font_family(), 12.)
+            Text::new(t!("None"), appearance.ui_font_family(), 12.)
                 .with_color(appearance.theme().disabled_ui_text_color().into())
                 .finish(),
         )
@@ -711,10 +712,10 @@ fn render_action_permission_line_with_icon(
     is_ai_enabled: bool,
 ) -> Box<dyn Element> {
     let permission_text = match permission {
-        ActionPermission::AgentDecides => "Agent decides",
-        ActionPermission::AlwaysAllow => "Always allow",
-        ActionPermission::AlwaysAsk => "Always ask",
-        ActionPermission::Unknown => "Unknown",
+        ActionPermission::AgentDecides => t!("Agent decides"),
+        ActionPermission::AlwaysAllow => t!("Always allow"),
+        ActionPermission::AlwaysAsk => t!("Always ask"),
+        ActionPermission::Unknown => t!("Unknown"),
     };
     render_permission_line_with_icon(icon, label, permission_text, appearance, is_ai_enabled)
 }
@@ -727,10 +728,10 @@ fn render_write_to_pty_permission_line_with_icon(
     is_ai_enabled: bool,
 ) -> Box<dyn Element> {
     let permission_text = match permission {
-        WriteToPtyPermission::AlwaysAllow => "Always allow",
-        WriteToPtyPermission::AlwaysAsk => "Always ask",
-        WriteToPtyPermission::AskOnFirstWrite => "Ask on first write",
-        WriteToPtyPermission::Unknown => "Unknown",
+        WriteToPtyPermission::AlwaysAllow => t!("Always allow"),
+        WriteToPtyPermission::AlwaysAsk => t!("Always ask"),
+        WriteToPtyPermission::AskOnFirstWrite => t!("Ask on first write"),
+        WriteToPtyPermission::Unknown => t!("Unknown"),
     };
     render_permission_line_with_icon(icon, label, permission_text, appearance, is_ai_enabled)
 }
@@ -744,9 +745,9 @@ fn render_computer_use_permission_line_with_icon(
 ) -> Box<dyn Element> {
     let permission_text = match permission {
         crate::ai::execution_profiles::ComputerUsePermission::Never
-        | crate::ai::execution_profiles::ComputerUsePermission::Unknown => "Never",
-        crate::ai::execution_profiles::ComputerUsePermission::AlwaysAsk => "Always ask",
-        crate::ai::execution_profiles::ComputerUsePermission::AlwaysAllow => "Always allow",
+        | crate::ai::execution_profiles::ComputerUsePermission::Unknown => t!("Never"),
+        crate::ai::execution_profiles::ComputerUsePermission::AlwaysAsk => t!("Always ask"),
+        crate::ai::execution_profiles::ComputerUsePermission::AlwaysAllow => t!("Always allow"),
     };
     render_permission_line_with_icon(icon, label, permission_text, appearance, is_ai_enabled)
 }
@@ -759,11 +760,11 @@ fn render_ask_user_question_permission_line_with_icon(
     is_ai_enabled: bool,
 ) -> Box<dyn Element> {
     let permission_text = match permission {
-        AskUserQuestionPermission::Never => "Never ask",
+        AskUserQuestionPermission::Never => t!("Never ask"),
         AskUserQuestionPermission::AskExceptInAutoApprove | AskUserQuestionPermission::Unknown => {
-            "Ask unless auto-approve"
+            t!("Ask unless auto-approve")
         }
-        AskUserQuestionPermission::AlwaysAsk => "Always ask",
+        AskUserQuestionPermission::AlwaysAsk => t!("Always ask"),
     };
     render_permission_line_with_icon(icon, label, permission_text, appearance, is_ai_enabled)
 }
@@ -776,9 +777,9 @@ fn render_run_agents_permission_line_with_icon(
     is_ai_enabled: bool,
 ) -> Box<dyn Element> {
     let permission_text = match permission {
-        RunAgentsPermission::NeverAllow | RunAgentsPermission::Unknown => "Never",
-        RunAgentsPermission::AlwaysAllow => "Always allow",
-        RunAgentsPermission::AlwaysAsk => "Always ask",
+        RunAgentsPermission::NeverAllow | RunAgentsPermission::Unknown => t!("Never"),
+        RunAgentsPermission::AlwaysAllow => t!("Always allow"),
+        RunAgentsPermission::AlwaysAsk => t!("Always ask"),
     };
     render_permission_line_with_icon(icon, label, permission_text, appearance, is_ai_enabled)
 }
@@ -790,7 +791,7 @@ fn render_bool_permission_line_with_icon(
     appearance: &Appearance,
     is_ai_enabled: bool,
 ) -> Box<dyn Element> {
-    let permission_text = if enabled { "On" } else { "Off" };
+    let permission_text = if enabled { t!("On") } else { t!("Off") };
     render_permission_line_with_icon(icon, label, permission_text, appearance, is_ai_enabled)
 }
 
@@ -801,7 +802,7 @@ fn render_directory_allowlist(
 ) -> Box<dyn Element> {
     with_standard_vertical_margin(render_pathbuf_allowlist_row(
         Icon::Check,
-        "Directory allowlist:".to_string(),
+        t!("Directory allowlist:").to_string(),
         &profile.directory_allowlist,
         appearance,
         is_ai_enabled,
@@ -815,7 +816,7 @@ fn render_command_allowlist(
 ) -> Box<dyn Element> {
     with_standard_vertical_margin(render_command_predicate_row(
         Icon::Check,
-        "Command allowlist:".to_string(),
+        t!("Command allowlist:").to_string(),
         &profile.command_allowlist,
         appearance,
         is_ai_enabled,
@@ -829,7 +830,7 @@ fn render_command_denylist(
 ) -> Box<dyn Element> {
     with_standard_vertical_margin(render_command_predicate_row(
         Icon::SlashCircle,
-        "Command denylist:".to_string(),
+        t!("Command denylist:").to_string(),
         &profile.command_denylist,
         appearance,
         is_ai_enabled,
@@ -844,7 +845,7 @@ fn render_mcp_allowlist(
 ) -> Box<dyn Element> {
     with_standard_vertical_margin(render_mcp_uuid_row(
         Icon::Check,
-        "MCP allowlist:".to_string(),
+        t!("MCP allowlist:").to_string(),
         &profile.mcp_allowlist,
         appearance,
         app,
@@ -860,7 +861,7 @@ fn render_mcp_denylist(
 ) -> Box<dyn Element> {
     with_standard_vertical_margin(render_mcp_uuid_row(
         Icon::SlashCircle,
-        "MCP denylist:".to_string(),
+        t!("MCP denylist:").to_string(),
         &profile.mcp_denylist,
         appearance,
         app,

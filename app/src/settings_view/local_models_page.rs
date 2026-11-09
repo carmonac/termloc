@@ -2,6 +2,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use i18n::t;
 use settings::Setting as _;
 use url::Url;
 use warp_errors::report_if_error;
@@ -103,7 +104,7 @@ impl LocalModelsPageView {
             Box::new(InstalledModelsWidget::default()),
         ];
         Self {
-            page: PageType::new_uncategorized(widgets, Some(PageTitle::new("Local models"))),
+            page: PageType::new_uncategorized(widgets, Some(PageTitle::new(t!("Local models")))),
             local_only_icon_tooltip_states: RefCell::new(HashMap::new()),
             url_editor,
             context_window_editor,
@@ -121,7 +122,7 @@ impl LocalModelsPageView {
             .value()
             .clone();
         let mut items = vec![DropdownItem::new(
-            NO_EMBEDDING_MODEL_LABEL,
+            t!(NO_EMBEDDING_MODEL_LABEL),
             LocalModelsPageAction::SetEmbeddingModel(String::new()),
         )];
         items.extend(
@@ -149,7 +150,7 @@ impl LocalModelsPageView {
     ) {
         let selected = AISettings::as_ref(ctx).local_quick_model.value().clone();
         let mut items = vec![DropdownItem::new(
-            AGENT_MODEL_LABEL,
+            t!(AGENT_MODEL_LABEL),
             LocalModelsPageAction::SetQuickModel(String::new()),
         )];
         items.extend(
@@ -311,7 +312,7 @@ impl SettingsWidget for OllamaUrlWidget {
         app: &AppContext,
     ) -> Box<dyn Element> {
         render_body_item::<LocalModelsPageAction>(
-            "Ollama URL".into(),
+            t!("Ollama URL").into(),
             None,
             LocalOnlyIconState::for_setting(
                 OllamaUrl::storage_key(),
@@ -322,7 +323,9 @@ impl SettingsWidget for OllamaUrlWidget {
             ToggleState::Enabled,
             appearance,
             render_input(&view.url_editor, appearance),
-            Some("Where Ollama is running. Prompts and code are sent to this server.".to_owned()),
+            Some(
+                t!("Where Ollama is running. Prompts and code are sent to this server.").to_owned(),
+            ),
         )
     }
 }
@@ -343,7 +346,7 @@ impl SettingsWidget for ContextWindowWidget {
         app: &AppContext,
     ) -> Box<dyn Element> {
         render_body_item::<LocalModelsPageAction>(
-            "Context window".into(),
+            t!("Context window").into(),
             None,
             LocalOnlyIconState::for_setting(
                 LocalContextWindow::storage_key(),
@@ -355,9 +358,11 @@ impl SettingsWidget for ContextWindowWidget {
             appearance,
             render_input(&view.context_window_editor, appearance),
             Some(
-                "Maximum tokens per request. Larger values use more memory, and each model has \
+                t!(
+                    "Maximum tokens per request. Larger values use more memory, and each model has \
                  its own limit."
-                    .to_owned(),
+                )
+                .to_owned(),
             ),
         )
     }
@@ -379,7 +384,7 @@ impl SettingsWidget for EmbeddingModelWidget {
         app: &AppContext,
     ) -> Box<dyn Element> {
         render_body_item::<LocalModelsPageAction>(
-            "Model for code search".into(),
+            t!("Model for code search").into(),
             None,
             LocalOnlyIconState::for_setting(
                 LocalEmbeddingModel::storage_key(),
@@ -391,9 +396,11 @@ impl SettingsWidget for EmbeddingModelWidget {
             appearance,
             ChildView::new(&view.embedding_model_dropdown).finish(),
             Some(
-                "Lets the agent find code by meaning. Needs an embedding model, for example \
+                t!(
+                    "Lets the agent find code by meaning. Needs an embedding model, for example \
                  `ollama pull nomic-embed-text`."
-                    .to_owned(),
+                )
+                .to_owned(),
             ),
         )
     }
@@ -415,7 +422,7 @@ impl SettingsWidget for QuickModelWidget {
         app: &AppContext,
     ) -> Box<dyn Element> {
         render_body_item::<LocalModelsPageAction>(
-            "Model for quick tasks".into(),
+            t!("Model for quick tasks").into(),
             None,
             LocalOnlyIconState::for_setting(
                 LocalQuickModel::storage_key(),
@@ -427,9 +434,11 @@ impl SettingsWidget for QuickModelWidget {
             appearance,
             ChildView::new(&view.quick_model_dropdown).finish(),
             Some(
-                "Used for natural language commands, suggestions and titles. A small model \
+                t!(
+                    "Used for natural language commands, suggestions and titles. A small model \
                  answers faster."
-                    .to_owned(),
+                )
+                .to_owned(),
             ),
         )
     }
@@ -444,7 +453,7 @@ impl InstalledModelsWidget {
     fn description(app: &AppContext) -> String {
         let models = LocalModels::as_ref(app);
         match models.state() {
-            LocalModelsState::Loading => "Checking Ollama…".to_owned(),
+            LocalModelsState::Loading => t!("Checking Ollama…").to_owned(),
             LocalModelsState::Unavailable(message) => message.clone(),
             LocalModelsState::Ready => {
                 let names: Vec<&str> = models
@@ -452,10 +461,10 @@ impl InstalledModelsWidget {
                     .iter()
                     .map(|model| model.name.as_str())
                     .collect();
-                format!(
-                    "Installed models with tool support: {}. Choose one in the agent's model \
+                t!(
+                    "Installed models with tool support: {names}. Choose one in the agent's model \
                      menu.",
-                    names.join(", ")
+                    names = names.join(", ")
                 )
             }
         }
@@ -478,14 +487,14 @@ impl SettingsWidget for InstalledModelsWidget {
         let button = appearance
             .ui_builder()
             .button(ButtonVariant::Secondary, self.refresh_mouse_state.clone())
-            .with_text_label("Refresh".to_owned())
+            .with_text_label(t!("Refresh").to_owned())
             .build()
             .on_click(|ctx, _, _| {
                 ctx.dispatch_typed_action(LocalModelsPageAction::Refresh);
             })
             .finish();
         render_body_item::<LocalModelsPageAction>(
-            "Models".into(),
+            t!("Models").into(),
             None,
             // Not rendering a setting, so no need to show local only icon state.
             LocalOnlyIconState::Hidden,

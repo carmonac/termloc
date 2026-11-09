@@ -17,8 +17,8 @@ use super::{
     AISettings, AccessibilitySettings, AliasExpansionSettings, AppEditorSettings,
     BlockVisibilitySettings, CodeSettings, DebugSettings, EmacsBindingsSettings, FontSettings,
     FontSettingsChangedEvent, GPUSettings, InputBoxType, InputModeSettings, InputSettings,
-    LocalControlSettings, PaneSettings, SameLinePromptBlockSettings, ScrollSettings,
-    SelectionSettings, SharedObjectLimitBannerSettings, SshSettings, ThemeSettings,
+    LanguageSettings, LocalControlSettings, PaneSettings, SameLinePromptBlockSettings,
+    ScrollSettings, SelectionSettings, SharedObjectLimitBannerSettings, SshSettings, ThemeSettings,
     TuiThemeSettings, TuiVoiceSettings, TuiZeroStateSettings, VimBannerSettings,
     WarpDrivePrivacySettings,
 };
@@ -75,6 +75,7 @@ pub fn register_all_settings(ctx: &mut AppContext) {
     SelectionSettings::register(ctx);
     InputModeSettings::register(ctx);
     ThemeSettings::register(ctx);
+    LanguageSettings::register(ctx);
     TuiThemeSettings::register(ctx);
     TuiVoiceSettings::register(ctx);
     TuiZeroStateSettings::register(ctx);
@@ -216,6 +217,7 @@ pub fn init(
         },
     );
 
+    super::language::init(ctx);
     appearance::register(ctx);
 
     // Set up hot-reload for the settings file. When the WarpConfig watcher

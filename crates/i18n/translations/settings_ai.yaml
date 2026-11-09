@@ -1,0 +1,2861 @@
+# English source text -> translation per language code.
+
+"Toolbar layout":
+  es: "Diseño de la barra de herramientas"
+  pt: "Layout da barra de ferramentas"
+  fr: "Disposition de la barre d'outils"
+  de: "Symbolleistenlayout"
+  it: "Layout della barra degli strumenti"
+  uk: "Розташування панелі інструментів"
+  ja: "ツールバーのレイアウト"
+  zh-Hans: "工具栏布局"
+
+"Let AI suggest the next command to run based on your command history, outputs, and common workflows.":
+  es: "Permite que la IA sugiera el siguiente comando según tu historial de comandos, sus salidas y los flujos de trabajo habituales."
+  pt: "Permita que a IA sugira o próximo comando com base no seu histórico de comandos, nas saídas e nos fluxos de trabalho comuns."
+  fr: "Laissez l'IA suggérer la prochaine commande à exécuter en fonction de votre historique de commandes, des sorties et des workflows courants."
+  de: "Lassen Sie die KI anhand Ihres Befehlsverlaufs, der Ausgaben und gängiger Workflows den nächsten Befehl vorschlagen."
+  it: "Consenti all'IA di suggerire il prossimo comando da eseguire in base alla cronologia dei comandi, agli output e ai flussi di lavoro comuni."
+  uk: "Дозволити ШІ пропонувати наступну команду на основі історії команд, їхнього виводу та типових робочих процесів."
+  ja: "コマンド履歴、出力、一般的なワークフローに基づいて、次に実行するコマンドを AI が提案します。"
+  zh-Hans: "让 AI 根据你的命令历史、输出和常用工作流建议下一条要运行的命令。"
+
+"Let AI suggest natural language prompts, as inline banners in the input, based on recent commands and their outputs.":
+  es: "Permite que la IA sugiera prompts en lenguaje natural, como banners en la entrada, según los comandos recientes y sus salidas."
+  pt: "Permita que a IA sugira prompts em linguagem natural, como banners na entrada, com base nos comandos recentes e em suas saídas."
+  fr: "Laissez l'IA suggérer des prompts en langage naturel, sous forme de bannières dans la saisie, en fonction des commandes récentes et de leurs sorties."
+  de: "Lassen Sie die KI anhand der letzten Befehle und ihrer Ausgaben Prompts in natürlicher Sprache als Banner in der Eingabe vorschlagen."
+  it: "Consenti all'IA di suggerire prompt in linguaggio naturale, come banner nell'input, in base ai comandi recenti e ai loro output."
+  uk: "Дозволити ШІ пропонувати запити природною мовою як банери в полі введення на основі нещодавніх команд та їхнього виводу."
+  ja: "最近のコマンドとその出力に基づいて、自然言語のプロンプトを入力欄のバナーとして AI が提案します。"
+  zh-Hans: "让 AI 根据最近的命令及其输出，在输入框中以横幅形式建议自然语言提示。"
+
+"Let AI suggest code diffs and queries as inline banners in the blocklist, based on recent commands and their outputs.":
+  es: "Permite que la IA sugiera diffs de código y consultas como banners en la lista de bloques, según los comandos recientes y sus salidas."
+  pt: "Permita que a IA sugira diffs de código e consultas como banners na lista de blocos, com base nos comandos recentes e em suas saídas."
+  fr: "Laissez l'IA suggérer des diffs de code et des requêtes sous forme de bannières dans la liste des blocs, en fonction des commandes récentes et de leurs sorties."
+  de: "Lassen Sie die KI anhand der letzten Befehle und ihrer Ausgaben Code-Diffs und Abfragen als Banner in der Blockliste vorschlagen."
+  it: "Consenti all'IA di suggerire diff di codice e query come banner nell'elenco dei blocchi, in base ai comandi recenti e ai loro output."
+  uk: "Дозволити ШІ пропонувати зміни коду та запити як банери у списку блоків на основі нещодавніх команд та їхнього виводу."
+  ja: "最近のコマンドとその出力に基づいて、コードの差分やクエリをブロックリストのバナーとして AI が提案します。"
+  zh-Hans: "让 AI 根据最近的命令及其输出，在块列表中以横幅形式建议代码差异和查询。"
+
+"Let AI suggest natural language autosuggestions, based on recent commands and their outputs.":
+  es: "Permite que la IA ofrezca autosugerencias en lenguaje natural según los comandos recientes y sus salidas."
+  pt: "Permita que a IA ofereça sugestões automáticas em linguagem natural com base nos comandos recentes e em suas saídas."
+  fr: "Laissez l'IA proposer des suggestions automatiques en langage naturel en fonction des commandes récentes et de leurs sorties."
+  de: "Lassen Sie die KI anhand der letzten Befehle und ihrer Ausgaben automatische Vorschläge in natürlicher Sprache machen."
+  it: "Consenti all'IA di proporre suggerimenti automatici in linguaggio naturale in base ai comandi recenti e ai loro output."
+  uk: "Дозволити ШІ пропонувати автопідказки природною мовою на основі нещодавніх команд та їхнього виводу."
+  ja: "最近のコマンドとその出力に基づいて、自然言語の自動候補を AI が提案します。"
+  zh-Hans: "让 AI 根据最近的命令及其输出提供自然语言自动建议。"
+
+"Let AI generate a title for your shared block based on the command and output.":
+  es: "Permite que la IA genere un título para tu bloque compartido según el comando y su salida."
+  pt: "Permita que a IA gere um título para o seu bloco compartilhado com base no comando e na saída."
+  fr: "Laissez l'IA générer un titre pour votre bloc partagé à partir de la commande et de sa sortie."
+  de: "Lassen Sie die KI anhand des Befehls und der Ausgabe einen Titel für Ihren geteilten Block erstellen."
+  it: "Consenti all'IA di generare un titolo per il blocco condiviso in base al comando e all'output."
+  uk: "Дозволити ШІ створювати назву для спільного блока на основі команди та її виводу."
+  ja: "コマンドと出力に基づいて、共有ブロックのタイトルを AI が生成します。"
+  zh-Hans: "让 AI 根据命令和输出为你共享的块生成标题。"
+
+"Let AI generate commit messages and pull request titles and descriptions.":
+  es: "Permite que la IA genere mensajes de commit y títulos y descripciones de pull requests."
+  pt: "Permita que a IA gere mensagens de commit e títulos e descrições de pull requests."
+  fr: "Laissez l'IA générer les messages de commit ainsi que les titres et descriptions des pull requests."
+  de: "Lassen Sie die KI Commit-Nachrichten sowie Titel und Beschreibungen von Pull Requests erstellen."
+  it: "Consenti all'IA di generare messaggi di commit e titoli e descrizioni delle pull request."
+  uk: "Дозволити ШІ створювати повідомлення комітів, а також назви й описи pull request."
+  ja: "コミットメッセージと、プルリクエストのタイトルおよび説明を AI が生成します。"
+  zh-Hans: "让 AI 生成提交信息以及拉取请求的标题和描述。"
+
+"Commands, comma separated":
+  es: "Comandos, separados por comas"
+  pt: "Comandos, separados por vírgulas"
+  fr: "Commandes, séparées par des virgules"
+  de: "Befehle, durch Kommas getrennt"
+  it: "Comandi, separati da virgole"
+  uk: "Команди через кому"
+  ja: "コマンド（カンマ区切り）"
+  zh-Hans: "命令，以逗号分隔"
+
+"Active AI":
+  es: "IA activa"
+  pt: "IA ativa"
+  fr: "IA active"
+  de: "Aktive KI"
+  it: "IA attiva"
+  uk: "Активний ШІ"
+  ja: "アクティブ AI"
+  zh-Hans: "主动 AI"
+
+"Input":
+  es: "Entrada"
+  pt: "Entrada"
+  fr: "Saisie"
+  de: "Eingabe"
+  it: "Input"
+  uk: "Введення"
+  ja: "入力"
+  zh-Hans: "输入"
+
+"Voice":
+  es: "Voz"
+  pt: "Voz"
+  fr: "Voix"
+  de: "Sprache"
+  it: "Voce"
+  uk: "Голос"
+  ja: "音声"
+  zh-Hans: "语音"
+
+"Agent Attribution":
+  es: "Atribución del agente"
+  pt: "Atribuição do agente"
+  fr: "Attribution de l'agent"
+  de: "Agent-Zuordnung"
+  it: "Attribuzione dell'agente"
+  uk: "Атрибуція агента"
+  ja: "エージェントの帰属表示"
+  zh-Hans: "代理署名"
+
+"Other":
+  es: "Otros"
+  pt: "Outros"
+  fr: "Autres"
+  de: "Sonstiges"
+  it: "Altro"
+  uk: "Інше"
+  ja: "その他"
+  zh-Hans: "其他"
+
+"Local Agent":
+  es: "Agente local"
+  pt: "Agente local"
+  fr: "Agent local"
+  de: "Lokaler Agent"
+  it: "Agente locale"
+  uk: "Локальний агент"
+  ja: "ローカルエージェント"
+  zh-Hans: "本地代理"
+
+"Your organization disallows AI when the active pane contains content from a remote session":
+  es: "Tu organización no permite la IA cuando el panel activo contiene contenido de una sesión remota"
+  pt: "Sua organização não permite IA quando o painel ativo contém conteúdo de uma sessão remota"
+  fr: "Votre organisation interdit l'IA lorsque le volet actif contient du contenu d'une session distante"
+  de: "Ihre Organisation untersagt KI, wenn der aktive Bereich Inhalte aus einer Remote-Sitzung enthält"
+  it: "La tua organizzazione non consente l'IA quando il riquadro attivo contiene contenuti di una sessione remota"
+  uk: "Ваша організація забороняє ШІ, коли активна панель містить вміст віддаленого сеансу"
+  ja: "アクティブなペインにリモートセッションの内容が含まれている場合、組織のポリシーにより AI は使用できません"
+  zh-Hans: "当活动窗格包含远程会话的内容时，你的组织不允许使用 AI"
+
+"Next Command":
+  es: "Siguiente comando"
+  pt: "Próximo comando"
+  fr: "Commande suivante"
+  de: "Nächster Befehl"
+  it: "Comando successivo"
+  uk: "Наступна команда"
+  ja: "次のコマンド"
+  zh-Hans: "下一条命令"
+
+"Prompt Suggestions":
+  es: "Sugerencias de prompts"
+  pt: "Sugestões de prompts"
+  fr: "Suggestions de prompts"
+  de: "Prompt-Vorschläge"
+  it: "Suggerimenti di prompt"
+  uk: "Пропозиції запитів"
+  ja: "プロンプトの提案"
+  zh-Hans: "提示建议"
+
+"Suggested Code Banners":
+  es: "Banners de código sugerido"
+  pt: "Banners de código sugerido"
+  fr: "Bannières de code suggéré"
+  de: "Banner mit Codevorschlägen"
+  it: "Banner di codice suggerito"
+  uk: "Банери із запропонованим кодом"
+  ja: "コード提案バナー"
+  zh-Hans: "建议代码横幅"
+
+"Natural Language Autosuggestions":
+  es: "Autosugerencias en lenguaje natural"
+  pt: "Sugestões automáticas em linguagem natural"
+  fr: "Suggestions automatiques en langage naturel"
+  de: "Automatische Vorschläge in natürlicher Sprache"
+  it: "Suggerimenti automatici in linguaggio naturale"
+  uk: "Автопідказки природною мовою"
+  ja: "自然言語の自動候補"
+  zh-Hans: "自然语言自动建议"
+
+"Shared Block Title Generation":
+  es: "Generación de títulos de bloques compartidos"
+  pt: "Geração de títulos de blocos compartilhados"
+  fr: "Génération de titres de blocs partagés"
+  de: "Titelerstellung für geteilte Blöcke"
+  it: "Generazione di titoli per blocchi condivisi"
+  uk: "Створення назв спільних блоків"
+  ja: "共有ブロックのタイトル生成"
+  zh-Hans: "共享块标题生成"
+
+"Commit & Pull Request Generation":
+  es: "Generación de commits y pull requests"
+  pt: "Geração de commits e pull requests"
+  fr: "Génération de commits et de pull requests"
+  de: "Erstellung von Commits und Pull Requests"
+  it: "Generazione di commit e pull request"
+  uk: "Створення комітів і pull request"
+  ja: "コミットとプルリクエストの生成"
+  zh-Hans: "提交和拉取请求生成"
+
+"Show input hint text":
+  es: "Mostrar texto de ayuda en la entrada"
+  pt: "Mostrar texto de dica na entrada"
+  fr: "Afficher le texte d'aide dans la saisie"
+  de: "Hinweistext in der Eingabe anzeigen"
+  it: "Mostra testo di suggerimento nell'input"
+  uk: "Показувати текст підказки в полі введення"
+  ja: "入力欄にヒントを表示"
+  zh-Hans: "显示输入提示文字"
+
+"Enable '#' trigger for AI Command Search":
+  es: "Activar el atajo '#' para la búsqueda de comandos con IA"
+  pt: "Ativar o gatilho '#' para a pesquisa de comandos com IA"
+  fr: "Activer le déclencheur « # » pour la recherche de commandes par IA"
+  de: "'#'-Auslöser für die KI-Befehlssuche aktivieren"
+  it: "Attiva il trigger '#' per la ricerca comandi con IA"
+  uk: "Увімкнути тригер «#» для пошуку команд за допомогою ШІ"
+  ja: "AI コマンド検索の「#」トリガーを有効化"
+  zh-Hans: "启用“#”触发 AI 命令搜索"
+
+"Show agent tips":
+  es: "Mostrar consejos del agente"
+  pt: "Mostrar dicas do agente"
+  fr: "Afficher les conseils de l'agent"
+  de: "Agent-Tipps anzeigen"
+  it: "Mostra suggerimenti dell'agente"
+  uk: "Показувати поради агента"
+  ja: "エージェントのヒントを表示"
+  zh-Hans: "显示代理提示"
+
+"Include agent-executed commands in history":
+  es: "Incluir en el historial los comandos ejecutados por el agente"
+  pt: "Incluir no histórico os comandos executados pelo agente"
+  fr: "Inclure dans l'historique les commandes exécutées par l'agent"
+  de: "Vom Agenten ausgeführte Befehle in den Verlauf aufnehmen"
+  it: "Includi nella cronologia i comandi eseguiti dall'agente"
+  uk: "Додавати до історії команди, виконані агентом"
+  ja: "エージェントが実行したコマンドを履歴に含める"
+  zh-Hans: "在历史记录中包含代理执行的命令"
+
+"Allow auto-approve to bypass command denylist":
+  es: "Permitir que la aprobación automática omita la lista de comandos bloqueados"
+  pt: "Permitir que a aprovação automática ignore a lista de comandos bloqueados"
+  fr: "Autoriser l'approbation automatique à ignorer la liste des commandes interdites"
+  de: "Automatische Genehmigung darf die Befehls-Sperrliste umgehen"
+  it: "Consenti all'approvazione automatica di ignorare l'elenco dei comandi bloccati"
+  uk: "Дозволити автосхваленню обходити список заборонених команд"
+  ja: "自動承認でコマンド拒否リストを無視することを許可"
+  zh-Hans: "允许自动批准绕过命令拒绝列表"
+
+"When enabled, fast forward and auto-approve run denylisted commands without asking for confirmation.":
+  es: "Si está activado, el avance rápido y la aprobación automática ejecutan los comandos bloqueados sin pedir confirmación."
+  pt: "Quando ativado, o avanço rápido e a aprovação automática executam comandos bloqueados sem pedir confirmação."
+  fr: "Si cette option est activée, l'avance rapide et l'approbation automatique exécutent les commandes interdites sans demander de confirmation."
+  de: "Wenn aktiviert, führen Schnellvorlauf und automatische Genehmigung gesperrte Befehle ohne Bestätigung aus."
+  it: "Se attivato, l'avanzamento rapido e l'approvazione automatica eseguono i comandi bloccati senza chiedere conferma."
+  uk: "Якщо ввімкнено, швидке виконання та автосхвалення запускають заборонені команди без запиту підтвердження."
+  ja: "有効にすると、早送りと自動承認で拒否リストのコマンドが確認なしで実行されます。"
+  zh-Hans: "启用后，快进和自动批准将直接运行拒绝列表中的命令，而不请求确认。"
+
+"Default prompt submission mode":
+  es: "Modo predeterminado de envío de prompts"
+  pt: "Modo padrão de envio de prompts"
+  fr: "Mode d'envoi des prompts par défaut"
+  de: "Standardmodus für das Senden von Prompts"
+  it: "Modalità predefinita di invio dei prompt"
+  uk: "Типовий режим надсилання запитів"
+  ja: "プロンプト送信のデフォルトモード"
+  zh-Hans: "默认提示提交模式"
+
+"What happens when you submit a new prompt while the agent is still responding. You can override this per conversation using the auto-queue toggle.":
+  es: "Qué ocurre cuando envías un nuevo prompt mientras el agente todavía está respondiendo. Puedes cambiarlo en cada conversación con el interruptor de cola automática."
+  pt: "O que acontece quando você envia um novo prompt enquanto o agente ainda está respondendo. Você pode substituir isso por conversa com a opção de fila automática."
+  fr: "Ce qui se passe lorsque vous envoyez un nouveau prompt alors que l'agent répond encore. Vous pouvez modifier ce comportement pour chaque conversation avec l'option de file d'attente automatique."
+  de: "Was passiert, wenn Sie einen neuen Prompt senden, während der Agent noch antwortet. Sie können dies pro Unterhaltung mit dem Schalter für die automatische Warteschlange überschreiben."
+  it: "Cosa succede quando invii un nuovo prompt mentre l'agente sta ancora rispondendo. Puoi modificarlo per ogni conversazione con l'interruttore della coda automatica."
+  uk: "Що відбувається, коли ви надсилаєте новий запит, поки агент ще відповідає. Це можна змінити для окремої розмови перемикачем автоматичної черги."
+  ja: "エージェントの応答中に新しいプロンプトを送信したときの動作です。会話ごとに自動キューの切り替えで変更できます。"
+  zh-Hans: "在代理仍在回复时提交新提示的处理方式。你可以使用自动排队开关按对话覆盖此设置。"
+
+"Default long-running command submission mode":
+  es: "Modo predeterminado de envío durante comandos de larga duración"
+  pt: "Modo padrão de envio durante comandos de longa duração"
+  fr: "Mode d'envoi par défaut pendant les commandes de longue durée"
+  de: "Standardmodus für das Senden bei lang laufenden Befehlen"
+  it: "Modalità predefinita di invio durante i comandi di lunga durata"
+  uk: "Типовий режим надсилання під час тривалих команд"
+  ja: "長時間実行コマンド中の送信のデフォルトモード"
+  zh-Hans: "长时间运行命令的默认提交模式"
+
+"What happens when you submit a prompt while an agent is driving an agent-requested long-running command. Queued prompts are sent to the agent when the command finishes.":
+  es: "Qué ocurre cuando envías un prompt mientras un agente controla un comando de larga duración que él mismo solicitó. Los prompts en cola se envían al agente cuando termina el comando."
+  pt: "O que acontece quando você envia um prompt enquanto um agente controla um comando de longa duração solicitado por ele. Os prompts na fila são enviados ao agente quando o comando termina."
+  fr: "Ce qui se passe lorsque vous envoyez un prompt alors qu'un agent pilote une commande de longue durée qu'il a demandée. Les prompts en file d'attente sont envoyés à l'agent à la fin de la commande."
+  de: "Was passiert, wenn Sie einen Prompt senden, während ein Agent einen von ihm angeforderten lang laufenden Befehl steuert. Prompts in der Warteschlange werden an den Agenten gesendet, sobald der Befehl beendet ist."
+  it: "Cosa succede quando invii un prompt mentre un agente gestisce un comando di lunga durata da lui richiesto. I prompt in coda vengono inviati all'agente al termine del comando."
+  uk: "Що відбувається, коли ви надсилаєте запит, поки агент керує тривалою командою, яку сам запросив. Запити з черги надсилаються агенту після завершення команди."
+  ja: "エージェントが自ら要求した長時間実行コマンドを操作している間にプロンプトを送信したときの動作です。キューに入ったプロンプトは、コマンドの終了時にエージェントへ送信されます。"
+  zh-Hans: "在代理操作其请求的长时间运行命令时提交提示的处理方式。排队的提示将在命令结束后发送给代理。"
+
+"Autodetect agent prompts in terminal input":
+  es: "Detectar automáticamente prompts para el agente en la entrada del terminal"
+  pt: "Detectar automaticamente prompts para o agente na entrada do terminal"
+  fr: "Détecter automatiquement les prompts pour l'agent dans la saisie du terminal"
+  de: "Agent-Prompts in der Terminaleingabe automatisch erkennen"
+  it: "Rileva automaticamente i prompt per l'agente nell'input del terminale"
+  uk: "Автоматично розпізнавати запити до агента у введенні терміналу"
+  ja: "ターミナル入力でエージェント向けプロンプトを自動検出"
+  zh-Hans: "在终端输入中自动检测代理提示"
+
+"Autodetect terminal commands in agent input":
+  es: "Detectar automáticamente comandos de terminal en la entrada del agente"
+  pt: "Detectar automaticamente comandos de terminal na entrada do agente"
+  fr: "Détecter automatiquement les commandes de terminal dans la saisie de l'agent"
+  de: "Terminalbefehle in der Agent-Eingabe automatisch erkennen"
+  it: "Rileva automaticamente i comandi del terminale nell'input dell'agente"
+  uk: "Автоматично розпізнавати команди терміналу у введенні агента"
+  ja: "エージェント入力でターミナルコマンドを自動検出"
+  zh-Hans: "在代理输入中自动检测终端命令"
+
+"Enabling natural language detection will detect when natural language is written in the terminal input, and then automatically switch to Agent Mode for AI queries.":
+  es: "Al activar la detección de lenguaje natural, se detectará cuando escribas en lenguaje natural en la entrada del terminal y se cambiará automáticamente al modo agente para las consultas de IA."
+  pt: "Ao ativar a detecção de linguagem natural, será detectado quando você escrever em linguagem natural na entrada do terminal, alternando automaticamente para o modo agente nas consultas de IA."
+  fr: "La détection du langage naturel repère le texte en langage naturel saisi dans le terminal et bascule automatiquement en mode agent pour les requêtes d'IA."
+  de: "Die Erkennung natürlicher Sprache erkennt, wenn in der Terminaleingabe natürliche Sprache geschrieben wird, und wechselt für KI-Anfragen automatisch in den Agent-Modus."
+  it: "Attivando il rilevamento del linguaggio naturale, quando scrivi in linguaggio naturale nell'input del terminale si passa automaticamente alla modalità agente per le richieste all'IA."
+  uk: "Розпізнавання природної мови визначає, коли у введенні терміналу написано текст природною мовою, і автоматично перемикає в режим агента для запитів до ШІ."
+  ja: "自然言語検出を有効にすると、ターミナル入力に自然言語が書かれたことを検出し、AI へのクエリのために自動的にエージェントモードに切り替えます。"
+  zh-Hans: "启用自然语言检测后，系统会检测终端输入中的自然语言，并自动切换到代理模式以进行 AI 查询。"
+
+"Natural language detection":
+  es: "Detección de lenguaje natural"
+  pt: "Detecção de linguagem natural"
+  fr: "Détection du langage naturel"
+  de: "Erkennung natürlicher Sprache"
+  it: "Rilevamento del linguaggio naturale"
+  uk: "Розпізнавання природної мови"
+  ja: "自然言語の検出"
+  zh-Hans: "自然语言检测"
+
+"Natural language denylist":
+  es: "Lista de exclusión de lenguaje natural"
+  pt: "Lista de exclusão de linguagem natural"
+  fr: "Liste d'exclusion du langage naturel"
+  de: "Sperrliste für natürliche Sprache"
+  it: "Elenco di esclusione del linguaggio naturale"
+  uk: "Список винятків для природної мови"
+  ja: "自然言語の拒否リスト"
+  zh-Hans: "自然语言拒绝列表"
+
+"Commands listed here will never trigger natural language detection.":
+  es: "Los comandos de esta lista nunca activarán la detección de lenguaje natural."
+  pt: "Os comandos listados aqui nunca acionarão a detecção de linguagem natural."
+  fr: "Les commandes listées ici ne déclencheront jamais la détection du langage naturel."
+  de: "Hier aufgeführte Befehle lösen niemals die Erkennung natürlicher Sprache aus."
+  it: "I comandi elencati qui non attiveranno mai il rilevamento del linguaggio naturale."
+  uk: "Наведені тут команди ніколи не запускатимуть розпізнавання природної мови."
+  ja: "ここに記載されたコマンドで自然言語検出が作動することはありません。"
+  zh-Hans: "此处列出的命令永远不会触发自然语言检测。"
+
+"Voice Input":
+  es: "Entrada de voz"
+  pt: "Entrada de voz"
+  fr: "Saisie vocale"
+  de: "Spracheingabe"
+  it: "Input vocale"
+  uk: "Голосове введення"
+  ja: "音声入力"
+  zh-Hans: "语音输入"
+
+"Voice input allows you to control Termloc by speaking directly to your terminal (powered by ":
+  es: "La entrada de voz te permite controlar Termloc hablándole directamente a tu terminal (con la tecnología de "
+  pt: "A entrada de voz permite controlar o Termloc falando diretamente com o seu terminal (com tecnologia "
+  fr: "La saisie vocale vous permet de contrôler Termloc en parlant directement à votre terminal (avec "
+  de: "Mit der Spracheingabe steuern Sie Termloc, indem Sie direkt mit Ihrem Terminal sprechen (unterstützt von "
+  it: "L'input vocale ti consente di controllare Termloc parlando direttamente al terminale (con tecnologia "
+  uk: "Голосове введення дає змогу керувати Termloc, говорячи безпосередньо до термінала (на основі "
+  ja: "音声入力を使うと、ターミナルに直接話しかけて Termloc を操作できます（提供: "
+  zh-Hans: "语音输入让你可以直接对终端说话来控制 Termloc（技术支持："
+
+"Key for Activating Voice Input":
+  es: "Tecla para activar la entrada de voz"
+  pt: "Tecla para ativar a entrada de voz"
+  fr: "Touche d'activation de la saisie vocale"
+  de: "Taste zum Aktivieren der Spracheingabe"
+  it: "Tasto per attivare l'input vocale"
+  uk: "Клавіша для активації голосового введення"
+  ja: "音声入力を有効にするキー"
+  zh-Hans: "激活语音输入的按键"
+
+"Press and hold to activate.":
+  es: "Mantén pulsada para activarla."
+  pt: "Mantenha pressionada para ativar."
+  fr: "Maintenez-la enfoncée pour activer."
+  de: "Zum Aktivieren gedrückt halten."
+  it: "Tieni premuto per attivare."
+  uk: "Натисніть і утримуйте для активації."
+  ja: "長押しで有効になります。"
+  zh-Hans: "按住即可激活。"
+
+"Speech Language":
+  es: "Idioma de voz"
+  pt: "Idioma da fala"
+  fr: "Langue parlée"
+  de: "Sprache für Spracheingabe"
+  it: "Lingua del parlato"
+  uk: "Мова мовлення"
+  ja: "音声の言語"
+  zh-Hans: "语音语言"
+
+"Language used when transcribing voice input.":
+  es: "Idioma que se usa al transcribir la entrada de voz."
+  pt: "Idioma usado ao transcrever a entrada de voz."
+  fr: "Langue utilisée pour transcrire la saisie vocale."
+  de: "Sprache, die beim Transkribieren der Spracheingabe verwendet wird."
+  it: "Lingua utilizzata per trascrivere l'input vocale."
+  uk: "Мова, що використовується для розшифрування голосового введення."
+  ja: "音声入力の文字起こしに使用する言語です。"
+  zh-Hans: "转写语音输入时使用的语言。"
+
+"Show \"Use Agent\" footer":
+  es: "Mostrar el pie «Usar agente»"
+  pt: "Mostrar o rodapé “Usar agente”"
+  fr: "Afficher le pied de page « Utiliser l'agent »"
+  de: "Fußzeile „Agent verwenden“ anzeigen"
+  it: "Mostra il piè di pagina “Usa agente”"
+  uk: "Показувати нижній колонтитул «Використати агента»"
+  ja: "「エージェントを使用」フッターを表示"
+  zh-Hans: "显示“使用代理”页脚"
+
+"Shows hint to use the \"Full Terminal Use\"-enabled agent in long running commands.":
+  es: "Muestra una sugerencia para usar el agente con «Uso completo del terminal» en comandos de larga duración."
+  pt: "Mostra uma dica para usar o agente com “Uso completo do terminal” em comandos de longa duração."
+  fr: "Affiche une suggestion d'utiliser l'agent avec « Utilisation complète du terminal » dans les commandes de longue durée."
+  de: "Zeigt bei lang laufenden Befehlen einen Hinweis, den Agenten mit „Vollständige Terminalnutzung“ zu verwenden."
+  it: "Mostra un suggerimento per usare l'agente con “Uso completo del terminale” nei comandi di lunga durata."
+  uk: "Показує підказку використати агента з «Повним використанням терміналу» в тривалих командах."
+  ja: "長時間実行コマンドで、「ターミナルのフル使用」が有効なエージェントの使用を促すヒントを表示します。"
+  zh-Hans: "在长时间运行的命令中显示使用启用“完整终端使用”的代理的提示。"
+
+"Show conversation history in tools panel":
+  es: "Mostrar el historial de conversaciones en el panel de herramientas"
+  pt: "Mostrar o histórico de conversas no painel de ferramentas"
+  fr: "Afficher l'historique des conversations dans le panneau d'outils"
+  de: "Unterhaltungsverlauf im Werkzeugbereich anzeigen"
+  it: "Mostra la cronologia delle conversazioni nel pannello strumenti"
+  uk: "Показувати історію розмов на панелі інструментів"
+  ja: "ツールパネルに会話履歴を表示"
+  zh-Hans: "在工具面板中显示对话历史"
+
+"Agent thinking display":
+  es: "Visualización del razonamiento del agente"
+  pt: "Exibição do raciocínio do agente"
+  fr: "Affichage de la réflexion de l'agent"
+  de: "Anzeige der Agent-Denkprozesse"
+  it: "Visualizzazione del ragionamento dell'agente"
+  uk: "Відображення міркувань агента"
+  ja: "エージェントの思考の表示"
+  zh-Hans: "代理思考显示"
+
+"Controls how reasoning/thinking traces are displayed.":
+  es: "Controla cómo se muestran los rastros de razonamiento."
+  pt: "Controla como os rastros de raciocínio são exibidos."
+  fr: "Définit l'affichage des traces de raisonnement."
+  de: "Legt fest, wie Denk- und Begründungsspuren angezeigt werden."
+  it: "Controlla come vengono visualizzate le tracce di ragionamento."
+  uk: "Визначає, як відображаються сліди міркувань."
+  ja: "推論・思考の過程の表示方法を設定します。"
+  zh-Hans: "控制推理/思考过程的显示方式。"
+
+"Preferred layout when opening existing agent conversations":
+  es: "Diseño preferido al abrir conversaciones existentes con el agente"
+  pt: "Layout preferido ao abrir conversas existentes com o agente"
+  fr: "Disposition préférée à l'ouverture des conversations existantes avec l'agent"
+  de: "Bevorzugtes Layout beim Öffnen bestehender Agent-Unterhaltungen"
+  it: "Layout preferito all'apertura di conversazioni esistenti con l'agente"
+  uk: "Бажане розташування під час відкриття наявних розмов з агентом"
+  ja: "既存のエージェント会話を開くときのレイアウト"
+  zh-Hans: "打开现有代理对话时的首选布局"
+
+"This option is enforced by your organization's settings and cannot be customized.":
+  es: "Esta opción la impone la configuración de tu organización y no se puede personalizar."
+  pt: "Esta opção é imposta pelas configurações da sua organização e não pode ser personalizada."
+  fr: "Cette option est imposée par les paramètres de votre organisation et ne peut pas être personnalisée."
+  de: "Diese Option wird durch die Einstellungen Ihrer Organisation vorgegeben und kann nicht angepasst werden."
+  it: "Questa opzione è imposta dalle impostazioni della tua organizzazione e non può essere personalizzata."
+  uk: "Цей параметр визначено налаштуваннями вашої організації, і його не можна змінити."
+  ja: "このオプションは組織の設定で固定されているため、変更できません。"
+  zh-Hans: "此选项由你的组织设置强制执行，无法自定义。"
+
+"Enable agent attribution":
+  es: "Activar la atribución del agente"
+  pt: "Ativar a atribuição do agente"
+  fr: "Activer l'attribution de l'agent"
+  de: "Agent-Zuordnung aktivieren"
+  it: "Attiva l'attribuzione dell'agente"
+  uk: "Увімкнути атрибуцію агента"
+  ja: "エージェントの帰属表示を有効化"
+  zh-Hans: "启用代理署名"
+
+"Local Agent can add attribution to commit messages and pull requests it creates":
+  es: "El agente local puede añadir la atribución a los mensajes de commit y pull requests que crea"
+  pt: "O agente local pode adicionar atribuição às mensagens de commit e pull requests que cria"
+  fr: "L'agent local peut ajouter une attribution aux messages de commit et aux pull requests qu'il crée"
+  de: "Der lokale Agent kann von ihm erstellten Commit-Nachrichten und Pull Requests eine Zuordnung hinzufügen"
+  it: "L'agente locale può aggiungere l'attribuzione ai messaggi di commit e alle pull request che crea"
+  uk: "Локальний агент може додавати атрибуцію до повідомлень комітів і pull request, які він створює"
+  ja: "ローカルエージェントは、作成するコミットメッセージとプルリクエストに帰属表示を追加できます"
+  zh-Hans: "本地代理可以在其创建的提交信息和拉取请求中添加署名"
+
+"New Tab":
+  es: "Nueva pestaña"
+  pt: "Nova aba"
+  fr: "Nouvel onglet"
+  de: "Neuer Tab"
+  it: "Nuova scheda"
+  uk: "Нова вкладка"
+  ja: "新しいタブ"
+  zh-Hans: "新标签页"
+
+"Split Pane":
+  es: "Dividir panel"
+  pt: "Dividir painel"
+  fr: "Diviser le volet"
+  de: "Bereich teilen"
+  it: "Dividi riquadro"
+  uk: "Розділити панель"
+  ja: "ペインを分割"
+  zh-Hans: "拆分窗格"
+
+"Show & collapse":
+  es: "Mostrar y contraer"
+  pt: "Mostrar e recolher"
+  fr: "Afficher et réduire"
+  de: "Anzeigen und einklappen"
+  it: "Mostra e comprimi"
+  uk: "Показати й згорнути"
+  ja: "表示して折りたたむ"
+  zh-Hans: "显示并折叠"
+
+"Always show":
+  es: "Mostrar siempre"
+  pt: "Sempre mostrar"
+  fr: "Toujours afficher"
+  de: "Immer anzeigen"
+  it: "Mostra sempre"
+  uk: "Завжди показувати"
+  ja: "常に表示"
+  zh-Hans: "始终显示"
+
+"Never show":
+  es: "No mostrar nunca"
+  pt: "Nunca mostrar"
+  fr: "Ne jamais afficher"
+  de: "Nie anzeigen"
+  it: "Non mostrare mai"
+  uk: "Ніколи не показувати"
+  ja: "表示しない"
+  zh-Hans: "从不显示"
+
+"Interrupt response":
+  es: "Interrumpir la respuesta"
+  pt: "Interromper a resposta"
+  fr: "Interrompre la réponse"
+  de: "Antwort unterbrechen"
+  it: "Interrompi la risposta"
+  uk: "Перервати відповідь"
+  ja: "応答を中断"
+  zh-Hans: "中断回复"
+
+"Steer at next turn":
+  es: "Redirigir en el siguiente turno"
+  pt: "Redirecionar no próximo turno"
+  fr: "Réorienter au prochain tour"
+  de: "Beim nächsten Schritt lenken"
+  it: "Indirizza al turno successivo"
+  uk: "Скерувати на наступному кроці"
+  ja: "次のターンで方向修正"
+  zh-Hans: "在下一轮引导"
+
+"Queue until response finishes":
+  es: "Poner en cola hasta que termine la respuesta"
+  pt: "Enfileirar até a resposta terminar"
+  fr: "Mettre en file d'attente jusqu'à la fin de la réponse"
+  de: "Bis zum Ende der Antwort in die Warteschlange"
+  it: "Metti in coda fino al termine della risposta"
+  uk: "Поставити в чергу до завершення відповіді"
+  ja: "応答が終わるまでキューに追加"
+  zh-Hans: "排队直到回复完成"
+
+"Send immediately":
+  es: "Enviar inmediatamente"
+  pt: "Enviar imediatamente"
+  fr: "Envoyer immédiatement"
+  de: "Sofort senden"
+  it: "Invia subito"
+  uk: "Надіслати негайно"
+  ja: "すぐに送信"
+  zh-Hans: "立即发送"
+
+"Queue until command finishes":
+  es: "Poner en cola hasta que termine el comando"
+  pt: "Enfileirar até o comando terminar"
+  fr: "Mettre en file d'attente jusqu'à la fin de la commande"
+  de: "Bis zum Ende des Befehls in die Warteschlange"
+  it: "Metti in coda fino al termine del comando"
+  uk: "Поставити в чергу до завершення команди"
+  ja: "コマンドが終わるまでキューに追加"
+  zh-Hans: "排队直到命令完成"
+
+"e.g. ~/code-repos/repo":
+  es: "p. ej., ~/code-repos/repo"
+  pt: "ex.: ~/code-repos/repo"
+  fr: "ex. : ~/code-repos/repo"
+  de: "z. B. ~/code-repos/repo"
+  it: "es. ~/code-repos/repo"
+  uk: "напр., ~/code-repos/repo"
+  ja: "例: ~/code-repos/repo"
+  zh-Hans: "例如 ~/code-repos/repo"
+
+"e.g. ls .*":
+  es: "p. ej., ls .*"
+  pt: "ex.: ls .*"
+  fr: "ex. : ls .*"
+  de: "z. B. ls .*"
+  it: "es. ls .*"
+  uk: "напр., ls .*"
+  ja: "例: ls .*"
+  zh-Hans: "例如 ls .*"
+
+"e.g. rm .*":
+  es: "p. ej., rm .*"
+  pt: "ex.: rm .*"
+  fr: "ex. : rm .*"
+  de: "z. B. rm .*"
+  it: "es. rm .*"
+  uk: "напр., rm .*"
+  ja: "例: rm .*"
+  zh-Hans: "例如 rm .*"
+
+"Agent decides":
+  es: "Decide el agente"
+  pt: "O agente decide"
+  fr: "L'agent décide"
+  de: "Agent entscheidet"
+  it: "Decide l'agente"
+  uk: "Вирішує агент"
+  ja: "エージェントが判断"
+  zh-Hans: "由代理决定"
+
+"Always allow":
+  es: "Permitir siempre"
+  pt: "Sempre permitir"
+  fr: "Toujours autoriser"
+  de: "Immer erlauben"
+  it: "Consenti sempre"
+  uk: "Завжди дозволяти"
+  ja: "常に許可"
+  zh-Hans: "始终允许"
+
+"Always ask":
+  es: "Preguntar siempre"
+  pt: "Sempre perguntar"
+  fr: "Toujours demander"
+  de: "Immer fragen"
+  it: "Chiedi sempre"
+  uk: "Завжди запитувати"
+  ja: "常に確認"
+  zh-Hans: "始终询问"
+
+"Ask on first write":
+  es: "Preguntar en la primera escritura"
+  pt: "Perguntar na primeira escrita"
+  fr: "Demander lors de la première écriture"
+  de: "Beim ersten Schreiben fragen"
+  it: "Chiedi alla prima scrittura"
+  uk: "Запитувати під час першого запису"
+  ja: "初回の書き込み時に確認"
+  zh-Hans: "首次写入时询问"
+
+"Select MCP servers":
+  es: "Seleccionar servidores MCP"
+  pt: "Selecionar servidores MCP"
+  fr: "Sélectionner des serveurs MCP"
+  de: "MCP-Server auswählen"
+  it: "Seleziona server MCP"
+  uk: "Вибрати сервери MCP"
+  ja: "MCP サーバーを選択"
+  zh-Hans: "选择 MCP 服务器"
+
+"Add Profile":
+  es: "Añadir perfil"
+  pt: "Adicionar perfil"
+  fr: "Ajouter un profil"
+  de: "Profil hinzufügen"
+  it: "Aggiungi profilo"
+  uk: "Додати профіль"
+  ja: "プロファイルを追加"
+  zh-Hans: "添加配置文件"
+
+"Read only":
+  es: "Solo lectura"
+  pt: "Somente leitura"
+  fr: "Lecture seule"
+  de: "Nur lesen"
+  it: "Sola lettura"
+  uk: "Лише читання"
+  ja: "読み取り専用"
+  zh-Hans: "只读"
+
+"Supervised":
+  es: "Supervisado"
+  pt: "Supervisionado"
+  fr: "Supervisé"
+  de: "Überwacht"
+  it: "Supervisionato"
+  uk: "Під наглядом"
+  ja: "監視あり"
+  zh-Hans: "受监督"
+
+"Allow in specific directories":
+  es: "Permitir en directorios específicos"
+  pt: "Permitir em diretórios específicos"
+  fr: "Autoriser dans certains répertoires"
+  de: "In bestimmten Verzeichnissen erlauben"
+  it: "Consenti in directory specifiche"
+  uk: "Дозволяти в окремих каталогах"
+  ja: "特定のディレクトリで許可"
+  zh-Hans: "在特定目录中允许"
+
+"Agents":
+  es: "Agentes"
+  pt: "Agentes"
+  fr: "Agents"
+  de: "Agenten"
+  it: "Agenti"
+  uk: "Агенти"
+  ja: "エージェント"
+  zh-Hans: "代理"
+
+"Set the boundaries for how your Agent operates. Choose what it can access, how much autonomy it has, and when it must ask for your approval. You can also fine-tune behavior around natural language input, codebase awareness, and more.":
+  es: "Define los límites de cómo funciona tu agente. Elige a qué puede acceder, cuánta autonomía tiene y cuándo debe pedirte aprobación. También puedes ajustar su comportamiento con la entrada en lenguaje natural, el conocimiento del código y más."
+  pt: "Defina os limites de como seu agente opera. Escolha o que ele pode acessar, quanta autonomia ele tem e quando deve pedir sua aprovação. Você também pode ajustar o comportamento com entrada em linguagem natural, conhecimento do código e muito mais."
+  fr: "Définissez les limites du fonctionnement de votre agent. Choisissez ce à quoi il peut accéder, son degré d'autonomie et quand il doit demander votre approbation. Vous pouvez aussi affiner son comportement concernant la saisie en langage naturel, la connaissance du code, et plus encore."
+  de: "Legen Sie fest, wie Ihr Agent arbeitet: worauf er zugreifen darf, wie viel Autonomie er hat und wann er Ihre Zustimmung einholen muss. Außerdem können Sie das Verhalten bei Eingaben in natürlicher Sprache, beim Codebase-Verständnis und mehr feinabstimmen."
+  it: "Imposta i limiti del funzionamento del tuo agente. Scegli a cosa può accedere, quanta autonomia ha e quando deve chiedere la tua approvazione. Puoi anche perfezionare il comportamento per l'input in linguaggio naturale, la conoscenza del codice e altro ancora."
+  uk: "Визначте межі роботи вашого агента: до чого він має доступ, наскільки він автономний і коли має запитувати ваше схвалення. Також можна налаштувати поведінку щодо введення природною мовою, обізнаності з кодовою базою тощо."
+  ja: "エージェントの動作範囲を設定します。アクセスできる対象、自律性の程度、承認を求めるタイミングを選択できます。自然言語入力やコードベースの把握などの動作も細かく調整できます。"
+  zh-Hans: "为代理的运行方式设定边界：选择它可以访问的内容、拥有多少自主权，以及何时必须征得你的批准。你还可以微调自然语言输入、代码库感知等方面的行为。"
+
+"Profiles":
+  es: "Perfiles"
+  pt: "Perfis"
+  fr: "Profils"
+  de: "Profile"
+  it: "Profili"
+  uk: "Профілі"
+  ja: "プロファイル"
+  zh-Hans: "配置文件"
+
+"Profiles let you define how your Agent operates — from the actions it can take and when it needs approval, to the models it uses for tasks like coding and planning. You can also scope them to individual projects.":
+  es: "Los perfiles te permiten definir cómo funciona tu agente: desde las acciones que puede realizar y cuándo necesita aprobación, hasta los modelos que usa para tareas como programar y planificar. También puedes limitarlos a proyectos concretos."
+  pt: "Os perfis permitem definir como seu agente opera — desde as ações que ele pode realizar e quando precisa de aprovação até os modelos que usa para tarefas como programação e planejamento. Você também pode restringi-los a projetos específicos."
+  fr: "Les profils vous permettent de définir le fonctionnement de votre agent : des actions qu'il peut effectuer et du moment où il doit demander une approbation aux modèles qu'il utilise pour des tâches comme le code et la planification. Vous pouvez aussi les limiter à des projets précis."
+  de: "Mit Profilen legen Sie fest, wie Ihr Agent arbeitet – von den Aktionen, die er ausführen darf, und wann er eine Genehmigung braucht, bis zu den Modellen, die er für Aufgaben wie Programmieren und Planen nutzt. Sie können Profile auch auf einzelne Projekte beschränken."
+  it: "I profili ti consentono di definire come funziona il tuo agente: dalle azioni che può eseguire e quando serve un'approvazione, fino ai modelli che usa per attività come programmazione e pianificazione. Puoi anche limitarli a singoli progetti."
+  uk: "Профілі дають змогу визначити, як працює ваш агент: від дій, які він може виконувати, і моментів, коли потрібне схвалення, до моделей, які він використовує для програмування та планування. Профілі також можна обмежити окремими проєктами."
+  ja: "プロファイルでは、エージェントが実行できる操作や承認が必要なタイミングから、コーディングや計画などのタスクに使うモデルまで、エージェントの動作を定義できます。個別のプロジェクトに限定することもできます。"
+  zh-Hans: "配置文件可让你定义代理的运行方式——从它可以执行的操作、何时需要批准，到它用于编码和规划等任务的模型。你还可以将其限定于单个项目。"
+
+"Models":
+  es: "Modelos"
+  pt: "Modelos"
+  fr: "Modèles"
+  de: "Modelle"
+  it: "Modelli"
+  uk: "Моделі"
+  ja: "モデル"
+  zh-Hans: "模型"
+
+"Context window (tokens)":
+  es: "Ventana de contexto (tokens)"
+  pt: "Janela de contexto (tokens)"
+  fr: "Fenêtre de contexte (jetons)"
+  de: "Kontextfenster (Tokens)"
+  it: "Finestra di contesto (token)"
+  uk: "Контекстне вікно (токени)"
+  ja: "コンテキストウィンドウ（トークン）"
+  zh-Hans: "上下文窗口（token）"
+
+"Permissions":
+  es: "Permisos"
+  pt: "Permissões"
+  fr: "Autorisations"
+  de: "Berechtigungen"
+  it: "Autorizzazioni"
+  uk: "Дозволи"
+  ja: "権限"
+  zh-Hans: "权限"
+
+"Apply code diffs":
+  es: "Aplicar diffs de código"
+  pt: "Aplicar diffs de código"
+  fr: "Appliquer les diffs de code"
+  de: "Code-Diffs anwenden"
+  it: "Applica diff di codice"
+  uk: "Застосовувати зміни коду"
+  ja: "コードの差分を適用"
+  zh-Hans: "应用代码差异"
+
+"Read files":
+  es: "Leer archivos"
+  pt: "Ler arquivos"
+  fr: "Lire les fichiers"
+  de: "Dateien lesen"
+  it: "Leggi file"
+  uk: "Читати файли"
+  ja: "ファイルを読み取る"
+  zh-Hans: "读取文件"
+
+"Execute commands":
+  es: "Ejecutar comandos"
+  pt: "Executar comandos"
+  fr: "Exécuter des commandes"
+  de: "Befehle ausführen"
+  it: "Esegui comandi"
+  uk: "Виконувати команди"
+  ja: "コマンドを実行"
+  zh-Hans: "执行命令"
+
+"Some of your permissions are managed by your workspace.":
+  es: "Algunos de tus permisos los gestiona tu espacio de trabajo."
+  pt: "Algumas das suas permissões são gerenciadas pelo seu espaço de trabalho."
+  fr: "Certaines de vos autorisations sont gérées par votre espace de travail."
+  de: "Einige Ihrer Berechtigungen werden von Ihrem Workspace verwaltet."
+  it: "Alcune autorizzazioni sono gestite dal tuo spazio di lavoro."
+  uk: "Деякими вашими дозволами керує ваш робочий простір."
+  ja: "一部の権限はワークスペースによって管理されています。"
+  zh-Hans: "你的部分权限由工作区管理。"
+
+"Interact with running commands":
+  es: "Interactuar con comandos en ejecución"
+  pt: "Interagir com comandos em execução"
+  fr: "Interagir avec les commandes en cours"
+  de: "Mit laufenden Befehlen interagieren"
+  it: "Interagisci con i comandi in esecuzione"
+  uk: "Взаємодіяти з запущеними командами"
+  ja: "実行中のコマンドを操作"
+  zh-Hans: "与正在运行的命令交互"
+
+"Command denylist":
+  es: "Lista de comandos bloqueados"
+  pt: "Lista de comandos bloqueados"
+  fr: "Liste des commandes interdites"
+  de: "Befehls-Sperrliste"
+  it: "Elenco dei comandi bloccati"
+  uk: "Список заборонених команд"
+  ja: "コマンドの拒否リスト"
+  zh-Hans: "命令拒绝列表"
+
+"Regular expressions to match commands that the Local Agent should always ask permission to execute.":
+  es: "Expresiones regulares para los comandos que el agente local siempre debe pedir permiso para ejecutar."
+  pt: "Expressões regulares para os comandos que o agente local deve sempre pedir permissão para executar."
+  fr: "Expressions régulières correspondant aux commandes pour lesquelles l'agent local doit toujours demander l'autorisation avant de les exécuter."
+  de: "Reguläre Ausdrücke für Befehle, bei denen der lokale Agent vor der Ausführung immer um Erlaubnis fragen soll."
+  it: "Espressioni regolari per i comandi per cui l'agente locale deve sempre chiedere l'autorizzazione prima di eseguirli."
+  uk: "Регулярні вирази для команд, на виконання яких локальний агент завжди має запитувати дозвіл."
+  ja: "ローカルエージェントが実行前に必ず許可を求めるコマンドに一致する正規表現です。"
+  zh-Hans: "匹配本地代理执行前必须请求许可的命令的正则表达式。"
+
+"Command allowlist":
+  es: "Lista de comandos permitidos"
+  pt: "Lista de comandos permitidos"
+  fr: "Liste des commandes autorisées"
+  de: "Befehls-Positivliste"
+  it: "Elenco dei comandi consentiti"
+  uk: "Список дозволених команд"
+  ja: "コマンドの許可リスト"
+  zh-Hans: "命令允许列表"
+
+"Regular expressions to match commands that can be automatically executed by the Local Agent.":
+  es: "Expresiones regulares para los comandos que el agente local puede ejecutar automáticamente."
+  pt: "Expressões regulares para os comandos que o agente local pode executar automaticamente."
+  fr: "Expressions régulières correspondant aux commandes que l'agent local peut exécuter automatiquement."
+  de: "Reguläre Ausdrücke für Befehle, die der lokale Agent automatisch ausführen darf."
+  it: "Espressioni regolari per i comandi che l'agente locale può eseguire automaticamente."
+  uk: "Регулярні вирази для команд, які локальний агент може виконувати автоматично."
+  ja: "ローカルエージェントが自動的に実行できるコマンドに一致する正規表現です。"
+  zh-Hans: "匹配本地代理可以自动执行的命令的正则表达式。"
+
+"Directory allowlist":
+  es: "Lista de directorios permitidos"
+  pt: "Lista de diretórios permitidos"
+  fr: "Liste des répertoires autorisés"
+  de: "Verzeichnis-Positivliste"
+  it: "Elenco delle directory consentite"
+  uk: "Список дозволених каталогів"
+  ja: "ディレクトリの許可リスト"
+  zh-Hans: "目录允许列表"
+
+"Give the agent file access to certain directories.":
+  es: "Da al agente acceso a los archivos de ciertos directorios."
+  pt: "Dê ao agente acesso aos arquivos de determinados diretórios."
+  fr: "Donnez à l'agent l'accès aux fichiers de certains répertoires."
+  de: "Gewähren Sie dem Agenten Dateizugriff auf bestimmte Verzeichnisse."
+  it: "Concedi all'agente l'accesso ai file di determinate directory."
+  uk: "Надайте агенту доступ до файлів у певних каталогах."
+  ja: "特定のディレクトリのファイルへのアクセスをエージェントに許可します。"
+  zh-Hans: "授予代理访问特定目录中文件的权限。"
+
+"Show model picker in prompt":
+  es: "Mostrar el selector de modelo en el prompt"
+  pt: "Mostrar o seletor de modelo no prompt"
+  fr: "Afficher le sélecteur de modèle dans le prompt"
+  de: "Modellauswahl im Prompt anzeigen"
+  it: "Mostra il selettore del modello nel prompt"
+  uk: "Показувати вибір моделі в запиті"
+  ja: "プロンプトにモデル選択を表示"
+  zh-Hans: "在提示中显示模型选择器"
+
+"Base model":
+  es: "Modelo base"
+  pt: "Modelo base"
+  fr: "Modèle de base"
+  de: "Basismodell"
+  it: "Modello base"
+  uk: "Базова модель"
+  ja: "ベースモデル"
+  zh-Hans: "基础模型"
+
+"This model serves as the primary engine behind the Local Agent. It powers most interactions and invokes other models for tasks like planning or code generation when necessary. Termloc may automatically switch to alternate models based on model availability or for auxiliary tasks such as conversation summarization.":
+  es: "Este modelo es el motor principal del agente local. Se encarga de la mayoría de las interacciones e invoca otros modelos para tareas como la planificación o la generación de código cuando es necesario. Termloc puede cambiar automáticamente a otros modelos según su disponibilidad o para tareas auxiliares como resumir conversaciones."
+  pt: "Este modelo é o mecanismo principal do agente local. Ele responde pela maioria das interações e aciona outros modelos para tarefas como planejamento ou geração de código quando necessário. O Termloc pode mudar automaticamente para outros modelos conforme a disponibilidade ou para tarefas auxiliares, como resumir conversas."
+  fr: "Ce modèle est le moteur principal de l'agent local. Il gère la plupart des interactions et fait appel à d'autres modèles pour des tâches comme la planification ou la génération de code si nécessaire. Termloc peut basculer automatiquement vers d'autres modèles selon leur disponibilité ou pour des tâches annexes comme le résumé des conversations."
+  de: "Dieses Modell ist die Hauptengine des lokalen Agenten. Es übernimmt die meisten Interaktionen und ruft bei Bedarf andere Modelle für Aufgaben wie Planung oder Codegenerierung auf. Termloc kann je nach Verfügbarkeit oder für Hilfsaufgaben wie das Zusammenfassen von Unterhaltungen automatisch zu anderen Modellen wechseln."
+  it: "Questo modello è il motore principale dell'agente locale. Gestisce la maggior parte delle interazioni e richiama altri modelli per attività come la pianificazione o la generazione di codice, se necessario. Termloc può passare automaticamente ad altri modelli in base alla disponibilità o per attività ausiliarie come il riepilogo delle conversazioni."
+  uk: "Ця модель — основний рушій локального агента. Вона обробляє більшість взаємодій і за потреби викликає інші моделі для планування чи генерування коду. Termloc може автоматично перемикатися на інші моделі залежно від їхньої доступності або для допоміжних завдань, як-от підсумовування розмов."
+  ja: "このモデルはローカルエージェントの中心となるエンジンです。ほとんどの操作を担い、必要に応じて計画やコード生成などのタスクに他のモデルを呼び出します。Termloc は、モデルの利用状況に応じて、または会話の要約などの補助的なタスクのために、自動的に別のモデルへ切り替えることがあります。"
+  zh-Hans: "此模型是本地代理的主要引擎。它负责大多数交互，并在必要时调用其他模型来完成规划或代码生成等任务。Termloc 可能会根据模型可用性或为了对话摘要等辅助任务自动切换到其他模型。"
+
+"Codebase Context":
+  es: "Contexto del código"
+  pt: "Contexto do código"
+  fr: "Contexte du code"
+  de: "Codebase-Kontext"
+  it: "Contesto del codice"
+  uk: "Контекст кодової бази"
+  ja: "コードベースのコンテキスト"
+  zh-Hans: "代码库上下文"
+
+"Allow the Local Agent to generate an outline of your codebase that can be used for context. No code is ever stored on our servers.":
+  es: "Permite que el agente local genere un esquema de tu código para usarlo como contexto. Nunca se almacena código en nuestros servidores."
+  pt: "Permita que o agente local gere um esboço do seu código para usar como contexto. Nenhum código é armazenado em nossos servidores."
+  fr: "Autorisez l'agent local à générer un aperçu de votre code utilisable comme contexte. Aucun code n'est jamais stocké sur nos serveurs."
+  de: "Erlauben Sie dem lokalen Agenten, eine Übersicht Ihrer Codebase zu erstellen, die als Kontext genutzt werden kann. Es wird niemals Code auf unseren Servern gespeichert."
+  it: "Consenti all'agente locale di generare una struttura del codice da usare come contesto. Nessun codice viene mai archiviato sui nostri server."
+  uk: "Дозволити локальному агенту створювати структуру вашої кодової бази для використання як контекст. Код ніколи не зберігається на наших серверах."
+  ja: "ローカルエージェントが、コンテキストとして使えるコードベースの概要を生成することを許可します。コードがサーバーに保存されることはありません。"
+  zh-Hans: "允许本地代理生成可用作上下文的代码库大纲。代码绝不会存储在我们的服务器上。"
+
+"Call MCP servers":
+  es: "Llamar a servidores MCP"
+  pt: "Chamar servidores MCP"
+  fr: "Appeler des serveurs MCP"
+  de: "MCP-Server aufrufen"
+  it: "Chiama server MCP"
+  uk: "Викликати сервери MCP"
+  ja: "MCP サーバーを呼び出す"
+  zh-Hans: "调用 MCP 服务器"
+
+"You haven't added any MCP servers yet. Once you do, you'll be able to control how much autonomy the Local Agent has when interacting with them. ":
+  es: "Aún no has añadido ningún servidor MCP. Cuando lo hagas, podrás controlar cuánta autonomía tiene el agente local al interactuar con ellos. "
+  pt: "Você ainda não adicionou nenhum servidor MCP. Quando adicionar, poderá controlar quanta autonomia o agente local tem ao interagir com eles. "
+  fr: "Vous n'avez encore ajouté aucun serveur MCP. Ensuite, vous pourrez définir le degré d'autonomie de l'agent local lorsqu'il interagit avec eux. "
+  de: "Sie haben noch keine MCP-Server hinzugefügt. Danach können Sie festlegen, wie viel Autonomie der lokale Agent im Umgang mit ihnen hat. "
+  it: "Non hai ancora aggiunto server MCP. Dopo averlo fatto, potrai controllare quanta autonomia ha l'agente locale quando interagisce con essi. "
+  uk: "Ви ще не додали жодного сервера MCP. Після цього ви зможете керувати тим, наскільки автономно локальний агент взаємодіє з ними. "
+  ja: "MCP サーバーがまだ追加されていません。追加すると、ローカルエージェントがサーバーとやり取りする際の自律性を設定できます。"
+  zh-Hans: "你尚未添加任何 MCP 服务器。添加后，你可以控制本地代理与它们交互时的自主程度。"
+
+"Add a server":
+  es: "Añade un servidor"
+  pt: "Adicione um servidor"
+  fr: "Ajouter un serveur"
+  de: "Server hinzufügen"
+  it: "Aggiungi un server"
+  uk: "Додати сервер"
+  ja: "サーバーを追加"
+  zh-Hans: "添加服务器"
+
+"MCP allowlist":
+  es: "Lista de MCP permitidos"
+  pt: "Lista de MCP permitidos"
+  fr: "Liste des MCP autorisés"
+  de: "MCP-Positivliste"
+  it: "Elenco MCP consentiti"
+  uk: "Список дозволених MCP"
+  ja: "MCP の許可リスト"
+  zh-Hans: "MCP 允许列表"
+
+"Allow the Local Agent to call these MCP servers.":
+  es: "Permite que el agente local llame a estos servidores MCP."
+  pt: "Permita que o agente local chame estes servidores MCP."
+  fr: "Autorisez l'agent local à appeler ces serveurs MCP."
+  de: "Erlauben Sie dem lokalen Agenten, diese MCP-Server aufzurufen."
+  it: "Consenti all'agente locale di chiamare questi server MCP."
+  uk: "Дозволити локальному агенту викликати ці сервери MCP."
+  ja: "ローカルエージェントがこれらの MCP サーバーを呼び出すことを許可します。"
+  zh-Hans: "允许本地代理调用这些 MCP 服务器。"
+
+"MCP denylist":
+  es: "Lista de MCP bloqueados"
+  pt: "Lista de MCP bloqueados"
+  fr: "Liste des MCP interdits"
+  de: "MCP-Sperrliste"
+  it: "Elenco MCP bloccati"
+  uk: "Список заборонених MCP"
+  ja: "MCP の拒否リスト"
+  zh-Hans: "MCP 拒绝列表"
+
+"The Local Agent will always ask for permission before calling any MCP servers on this list.":
+  es: "El agente local siempre pedirá permiso antes de llamar a cualquier servidor MCP de esta lista."
+  pt: "O agente local sempre pedirá permissão antes de chamar qualquer servidor MCP desta lista."
+  fr: "L'agent local demandera toujours l'autorisation avant d'appeler un serveur MCP de cette liste."
+  de: "Der lokale Agent fragt immer um Erlaubnis, bevor er einen MCP-Server auf dieser Liste aufruft."
+  it: "L'agente locale chiederà sempre l'autorizzazione prima di chiamare un server MCP di questo elenco."
+  uk: "Локальний агент завжди запитуватиме дозвіл, перш ніж викликати будь-який сервер MCP з цього списку."
+  ja: "ローカルエージェントは、このリストにある MCP サーバーを呼び出す前に必ず許可を求めます。"
+  zh-Hans: "本地代理在调用此列表中的任何 MCP 服务器前都会请求许可。"
+
+"The Agent chooses the safest path: acting on its own when confident, and asking for approval when uncertain.":
+  es: "El agente elige la opción más segura: actúa por su cuenta cuando está seguro y pide aprobación cuando tiene dudas."
+  pt: "O agente escolhe o caminho mais seguro: age por conta própria quando tem confiança e pede aprovação quando está em dúvida."
+  fr: "L'agent choisit la voie la plus sûre : il agit seul lorsqu'il est sûr de lui et demande une approbation en cas de doute."
+  de: "Der Agent wählt den sichersten Weg: Er handelt selbstständig, wenn er sicher ist, und bittet bei Unsicherheit um Zustimmung."
+  it: "L'agente sceglie la strada più sicura: agisce da solo quando è sicuro e chiede l'approvazione in caso di dubbio."
+  uk: "Агент обирає найбезпечніший шлях: діє самостійно, коли впевнений, і запитує схвалення, коли сумнівається."
+  ja: "エージェントが最も安全な方法を選びます。確信があるときは自ら実行し、不確かなときは承認を求めます。"
+  zh-Hans: "代理会选择最安全的方式：有把握时自行操作，不确定时请求批准。"
+
+"Give the Agent full autonomy  — no manual approval ever required.":
+  es: "Da al agente total autonomía: nunca se requiere aprobación manual."
+  pt: "Dê ao agente autonomia total — nenhuma aprovação manual é necessária."
+  fr: "Donnez une autonomie totale à l'agent : aucune approbation manuelle n'est jamais requise."
+  de: "Geben Sie dem Agenten volle Autonomie – keine manuelle Genehmigung erforderlich."
+  it: "Concedi all'agente piena autonomia: non serve mai l'approvazione manuale."
+  uk: "Надати агенту повну автономію — ручне схвалення ніколи не потрібне."
+  ja: "エージェントに完全な自律性を与えます。手動での承認は一切不要です。"
+  zh-Hans: "赋予代理完全自主权——无需任何手动批准。"
+
+"Require explicit approval before the Agent takes any action.":
+  es: "Requiere aprobación explícita antes de que el agente realice cualquier acción."
+  pt: "Exige aprovação explícita antes de o agente realizar qualquer ação."
+  fr: "Exige une approbation explicite avant toute action de l'agent."
+  de: "Vor jeder Aktion des Agenten ist eine ausdrückliche Genehmigung erforderlich."
+  it: "Richiede l'approvazione esplicita prima che l'agente esegua qualsiasi azione."
+  uk: "Вимагати явного схвалення перед будь-якою дією агента."
+  ja: "エージェントが操作を行う前に、明示的な承認を必須にします。"
+  zh-Hans: "代理执行任何操作前都需要明确批准。"
+
+"The agent will ask for permission the first time it needs to interact with a running command. After that, it will continue automatically for the rest of that command.":
+  es: "El agente pedirá permiso la primera vez que necesite interactuar con un comando en ejecución. Después, continuará automáticamente durante el resto de ese comando."
+  pt: "O agente pedirá permissão na primeira vez que precisar interagir com um comando em execução. Depois disso, continuará automaticamente pelo restante desse comando."
+  fr: "L'agent demandera l'autorisation la première fois qu'il doit interagir avec une commande en cours. Ensuite, il continuera automatiquement jusqu'à la fin de cette commande."
+  de: "Der Agent fragt beim ersten Mal um Erlaubnis, wenn er mit einem laufenden Befehl interagieren muss. Danach fährt er für den Rest dieses Befehls automatisch fort."
+  it: "L'agente chiederà l'autorizzazione la prima volta che deve interagire con un comando in esecuzione. Dopodiché proseguirà automaticamente per il resto di quel comando."
+  uk: "Агент запитає дозвіл, коли вперше потрібно буде взаємодіяти з запущеною командою. Далі він продовжуватиме автоматично до кінця цієї команди."
+  ja: "エージェントは、実行中のコマンドを初めて操作するときに許可を求めます。その後は、そのコマンドが終わるまで自動的に続行します。"
+  zh-Hans: "代理首次需要与正在运行的命令交互时会请求许可。之后，在该命令的剩余过程中会自动继续。"
+
+"The agent will always ask for permission to interact with a running command.":
+  es: "El agente siempre pedirá permiso para interactuar con un comando en ejecución."
+  pt: "O agente sempre pedirá permissão para interagir com um comando em execução."
+  fr: "L'agent demandera toujours l'autorisation d'interagir avec une commande en cours."
+  de: "Der Agent fragt immer um Erlaubnis, bevor er mit einem laufenden Befehl interagiert."
+  it: "L'agente chiederà sempre l'autorizzazione per interagire con un comando in esecuzione."
+  uk: "Агент завжди запитуватиме дозвіл на взаємодію з запущеною командою."
+  ja: "エージェントは、実行中のコマンドを操作する前に必ず許可を求めます。"
+  zh-Hans: "代理每次与正在运行的命令交互前都会请求许可。"
+
+"Same as the agent":
+  es: "Igual que el agente"
+  pt: "Igual ao agente"
+  fr: "Identique à l'agent"
+  de: "Wie der Agent"
+  it: "Uguale all'agente"
+  uk: "Як в агента"
+  ja: "エージェントと同じ"
+  zh-Hans: "与代理相同"
+
+"Off":
+  es: "Desactivado"
+  pt: "Desativado"
+  fr: "Désactivé"
+  de: "Aus"
+  it: "Disattivato"
+  uk: "Вимкнено"
+  ja: "オフ"
+  zh-Hans: "关闭"
+
+"Local models":
+  es: "Modelos locales"
+  pt: "Modelos locais"
+  fr: "Modèles locaux"
+  de: "Lokale Modelle"
+  it: "Modelli locali"
+  uk: "Локальні моделі"
+  ja: "ローカルモデル"
+  zh-Hans: "本地模型"
+
+"Ollama URL":
+  es: "URL de Ollama"
+  pt: "URL do Ollama"
+  fr: "URL d'Ollama"
+  de: "Ollama-URL"
+  it: "URL di Ollama"
+  uk: "URL Ollama"
+  ja: "Ollama の URL"
+  zh-Hans: "Ollama URL"
+
+"Where Ollama is running. Prompts and code are sent to this server.":
+  es: "Dónde se ejecuta Ollama. Los prompts y el código se envían a este servidor."
+  pt: "Onde o Ollama está em execução. Prompts e código são enviados para este servidor."
+  fr: "Emplacement où Ollama s'exécute. Les prompts et le code sont envoyés à ce serveur."
+  de: "Wo Ollama läuft. Prompts und Code werden an diesen Server gesendet."
+  it: "Dove è in esecuzione Ollama. I prompt e il codice vengono inviati a questo server."
+  uk: "Де запущено Ollama. Запити й код надсилаються на цей сервер."
+  ja: "Ollama が動作している場所です。プロンプトとコードはこのサーバーに送信されます。"
+  zh-Hans: "Ollama 的运行位置。提示和代码将发送到此服务器。"
+
+"Context window":
+  es: "Ventana de contexto"
+  pt: "Janela de contexto"
+  fr: "Fenêtre de contexte"
+  de: "Kontextfenster"
+  it: "Finestra di contesto"
+  uk: "Контекстне вікно"
+  ja: "コンテキストウィンドウ"
+  zh-Hans: "上下文窗口"
+
+"Maximum tokens per request. Larger values use more memory, and each model has its own limit.":
+  es: "Máximo de tokens por solicitud. Los valores más altos usan más memoria y cada modelo tiene su propio límite."
+  pt: "Máximo de tokens por solicitação. Valores maiores usam mais memória, e cada modelo tem seu próprio limite."
+  fr: "Nombre maximal de jetons par requête. Des valeurs plus élevées utilisent plus de mémoire, et chaque modèle a sa propre limite."
+  de: "Maximale Tokens pro Anfrage. Größere Werte benötigen mehr Speicher, und jedes Modell hat sein eigenes Limit."
+  it: "Numero massimo di token per richiesta. Valori più alti usano più memoria e ogni modello ha il proprio limite."
+  uk: "Максимальна кількість токенів на запит. Більші значення використовують більше пам'яті, і кожна модель має власне обмеження."
+  ja: "1 回のリクエストの最大トークン数です。値を大きくするとメモリの使用量が増えます。また、モデルごとに上限があります。"
+  zh-Hans: "每个请求的最大 token 数。值越大占用的内存越多，且每个模型都有自己的上限。"
+
+"Model for code search":
+  es: "Modelo para la búsqueda de código"
+  pt: "Modelo para pesquisa de código"
+  fr: "Modèle pour la recherche de code"
+  de: "Modell für die Codesuche"
+  it: "Modello per la ricerca nel codice"
+  uk: "Модель для пошуку коду"
+  ja: "コード検索用のモデル"
+  zh-Hans: "代码搜索模型"
+
+"Lets the agent find code by meaning. Needs an embedding model, for example `ollama pull nomic-embed-text`.":
+  es: "Permite que el agente encuentre código por su significado. Requiere un modelo de embeddings, por ejemplo `ollama pull nomic-embed-text`."
+  pt: "Permite que o agente encontre código pelo significado. Requer um modelo de embeddings, por exemplo `ollama pull nomic-embed-text`."
+  fr: "Permet à l'agent de trouver du code par son sens. Nécessite un modèle d'embeddings, par exemple `ollama pull nomic-embed-text`."
+  de: "Ermöglicht dem Agenten, Code nach Bedeutung zu finden. Erfordert ein Embedding-Modell, zum Beispiel `ollama pull nomic-embed-text`."
+  it: "Consente all'agente di trovare il codice in base al significato. Richiede un modello di embedding, ad esempio `ollama pull nomic-embed-text`."
+  uk: "Дає агенту змогу шукати код за змістом. Потрібна модель ембедингів, наприклад `ollama pull nomic-embed-text`."
+  ja: "エージェントが意味に基づいてコードを検索できるようにします。埋め込みモデルが必要です（例: `ollama pull nomic-embed-text`）。"
+  zh-Hans: "让代理按语义查找代码。需要一个嵌入模型，例如 `ollama pull nomic-embed-text`。"
+
+"Model for quick tasks":
+  es: "Modelo para tareas rápidas"
+  pt: "Modelo para tarefas rápidas"
+  fr: "Modèle pour les tâches rapides"
+  de: "Modell für schnelle Aufgaben"
+  it: "Modello per attività rapide"
+  uk: "Модель для швидких завдань"
+  ja: "簡単なタスク用のモデル"
+  zh-Hans: "快速任务模型"
+
+"Used for natural language commands, suggestions and titles. A small model answers faster.":
+  es: "Se usa para comandos en lenguaje natural, sugerencias y títulos. Un modelo pequeño responde más rápido."
+  pt: "Usado para comandos em linguagem natural, sugestões e títulos. Um modelo pequeno responde mais rápido."
+  fr: "Utilisé pour les commandes en langage naturel, les suggestions et les titres. Un petit modèle répond plus vite."
+  de: "Wird für Befehle in natürlicher Sprache, Vorschläge und Titel verwendet. Ein kleines Modell antwortet schneller."
+  it: "Usato per comandi in linguaggio naturale, suggerimenti e titoli. Un modello piccolo risponde più velocemente."
+  uk: "Використовується для команд природною мовою, пропозицій і назв. Невелика модель відповідає швидше."
+  ja: "自然言語のコマンド、提案、タイトルに使用します。小さいモデルほど応答が速くなります。"
+  zh-Hans: "用于自然语言命令、建议和标题。小模型响应更快。"
+
+"Checking Ollama…":
+  es: "Comprobando Ollama…"
+  pt: "Verificando o Ollama…"
+  fr: "Vérification d'Ollama…"
+  de: "Ollama wird geprüft…"
+  it: "Verifica di Ollama…"
+  uk: "Перевірка Ollama…"
+  ja: "Ollama を確認中…"
+  zh-Hans: "正在检查 Ollama…"
+
+"Installed models with tool support: {names}. Choose one in the agent's model menu.":
+  es: "Modelos instalados compatibles con herramientas: {names}. Elige uno en el menú de modelos del agente."
+  pt: "Modelos instalados com suporte a ferramentas: {names}. Escolha um no menu de modelos do agente."
+  fr: "Modèles installés prenant en charge les outils : {names}. Choisissez-en un dans le menu des modèles de l'agent."
+  de: "Installierte Modelle mit Tool-Unterstützung: {names}. Wählen Sie eines im Modellmenü des Agenten aus."
+  it: "Modelli installati con supporto per gli strumenti: {names}. Scegline uno nel menu dei modelli dell'agente."
+  uk: "Установлені моделі з підтримкою інструментів: {names}. Виберіть одну в меню моделей агента."
+  ja: "ツールに対応したインストール済みモデル: {names}。エージェントのモデルメニューから選択してください。"
+  zh-Hans: "已安装且支持工具的模型：{names}。请在代理的模型菜单中选择一个。"
+
+"Refresh":
+  es: "Actualizar"
+  pt: "Atualizar"
+  fr: "Actualiser"
+  de: "Aktualisieren"
+  it: "Aggiorna"
+  uk: "Оновити"
+  ja: "更新"
+  zh-Hans: "刷新"
+
+"Third party CLI agents":
+  es: "Agentes de CLI de terceros"
+  pt: "Agentes de CLI de terceiros"
+  fr: "Agents CLI tiers"
+  de: "CLI-Agenten von Drittanbietern"
+  it: "Agenti CLI di terze parti"
+  uk: "Сторонні агенти CLI"
+  ja: "サードパーティの CLI エージェント"
+  zh-Hans: "第三方 CLI 代理"
+
+"command (supports regex)":
+  es: "comando (admite regex)"
+  pt: "comando (aceita regex)"
+  fr: "commande (regex prises en charge)"
+  de: "Befehl (unterstützt Regex)"
+  it: "comando (supporta regex)"
+  uk: "команда (підтримує регулярні вирази)"
+  ja: "コマンド（正規表現対応）"
+  zh-Hans: "命令（支持正则表达式）"
+
+"Select coding agent":
+  es: "Seleccionar agente de programación"
+  pt: "Selecionar agente de programação"
+  fr: "Sélectionner un agent de code"
+  de: "Coding-Agent auswählen"
+  it: "Seleziona agente di programmazione"
+  uk: "Вибрати агента для програмування"
+  ja: "コーディングエージェントを選択"
+  zh-Hans: "选择编码代理"
+
+"Show coding agent toolbar":
+  es: "Mostrar la barra de herramientas del agente de programación"
+  pt: "Mostrar a barra de ferramentas do agente de programação"
+  fr: "Afficher la barre d'outils de l'agent de code"
+  de: "Symbolleiste für Coding-Agenten anzeigen"
+  it: "Mostra la barra degli strumenti dell'agente di programmazione"
+  uk: "Показувати панель інструментів агента для програмування"
+  ja: "コーディングエージェントのツールバーを表示"
+  zh-Hans: "显示编码代理工具栏"
+
+"Show a toolbar with quick actions when running coding agents like ":
+  es: "Muestra una barra de herramientas con acciones rápidas al ejecutar agentes de programación como "
+  pt: "Mostra uma barra de ferramentas com ações rápidas ao executar agentes de programação como "
+  fr: "Affiche une barre d'outils d'actions rapides lors de l'exécution d'agents de code comme "
+  de: "Zeigt eine Symbolleiste mit Schnellaktionen an, wenn Coding-Agenten wie "
+  it: "Mostra una barra degli strumenti con azioni rapide quando esegui agenti di programmazione come "
+  uk: "Показує панель зі швидкими діями під час роботи агентів для програмування, як-от "
+  ja: "次のようなコーディングエージェントの実行中に、クイックアクションのツールバーを表示します: "
+  zh-Hans: "运行编码代理时显示快速操作工具栏，例如 "
+
+", or ":
+  es: ", o "
+  pt: ", ou "
+  fr: ", ou "
+  de: ", oder "
+  it: ", o "
+  uk: ", або "
+  ja: "、"
+  zh-Hans: " 或 "
+
+"Auto show/hide Rich Input based on agent status":
+  es: "Mostrar u ocultar Rich Input automáticamente según el estado del agente"
+  pt: "Mostrar ou ocultar o Rich Input automaticamente conforme o status do agente"
+  fr: "Afficher ou masquer automatiquement Rich Input selon l'état de l'agent"
+  de: "Rich Input je nach Agent-Status automatisch ein- oder ausblenden"
+  it: "Mostra o nascondi automaticamente Rich Input in base allo stato dell'agente"
+  uk: "Автоматично показувати або приховувати Rich Input залежно від стану агента"
+  ja: "エージェントの状態に応じて Rich Input を自動で表示/非表示"
+  zh-Hans: "根据代理状态自动显示/隐藏 Rich Input"
+
+"Requires the agent plugin for your coding agent":
+  es: "Requiere el plugin del agente para tu agente de programación"
+  pt: "Requer o plugin do agente para o seu agente de programação"
+  fr: "Nécessite le plugin d'agent pour votre agent de code"
+  de: "Erfordert das Agent-Plugin für Ihren Coding-Agenten"
+  it: "Richiede il plugin dell'agente per il tuo agente di programmazione"
+  uk: "Потрібен плагін агента для вашого агента програмування"
+  ja: "コーディングエージェント用のエージェントプラグインが必要です"
+  zh-Hans: "需要为你的编码代理安装代理插件"
+
+"Auto open Rich Input when a coding agent session starts":
+  es: "Abrir Rich Input automáticamente al iniciar una sesión de un agente de programación"
+  pt: "Abrir o Rich Input automaticamente quando uma sessão de agente de programação começar"
+  fr: "Ouvrir automatiquement Rich Input au démarrage d'une session d'agent de code"
+  de: "Rich Input beim Start einer Coding-Agent-Sitzung automatisch öffnen"
+  it: "Apri automaticamente Rich Input all'avvio di una sessione di un agente di programmazione"
+  uk: "Автоматично відкривати Rich Input на початку сеансу агента програмування"
+  ja: "コーディングエージェントのセッション開始時に Rich Input を自動で開く"
+  zh-Hans: "编码代理会话开始时自动打开 Rich Input"
+
+"Auto dismiss Rich Input after prompt submission":
+  es: "Cerrar Rich Input automáticamente tras enviar el prompt"
+  pt: "Fechar o Rich Input automaticamente após enviar o prompt"
+  fr: "Fermer automatiquement Rich Input après l'envoi du prompt"
+  de: "Rich Input nach dem Senden des Prompts automatisch schließen"
+  it: "Chiudi automaticamente Rich Input dopo l'invio del prompt"
+  uk: "Автоматично закривати Rich Input після надсилання запиту"
+  ja: "プロンプト送信後に Rich Input を自動で閉じる"
+  zh-Hans: "提交提示后自动关闭 Rich Input"
+
+"Submit Rich Input with Ctrl+Enter":
+  es: "Enviar Rich Input con Ctrl+Enter"
+  pt: "Enviar o Rich Input com Ctrl+Enter"
+  fr: "Envoyer Rich Input avec Ctrl+Enter"
+  de: "Rich Input mit Ctrl+Enter senden"
+  it: "Invia Rich Input con Ctrl+Enter"
+  uk: "Надсилати Rich Input за допомогою Ctrl+Enter"
+  ja: "Ctrl+Enter で Rich Input を送信"
+  zh-Hans: "使用 Ctrl+Enter 提交 Rich Input"
+
+"Commands that enable the toolbar":
+  es: "Comandos que activan la barra de herramientas"
+  pt: "Comandos que ativam a barra de ferramentas"
+  fr: "Commandes qui activent la barre d'outils"
+  de: "Befehle, die die Symbolleiste aktivieren"
+  it: "Comandi che attivano la barra degli strumenti"
+  uk: "Команди, що вмикають панель інструментів"
+  ja: "ツールバーを有効にするコマンド"
+  zh-Hans: "启用工具栏的命令"
+
+"Add regex patterns to show the coding agent toolbar for matching commands.":
+  es: "Añade patrones regex para mostrar la barra del agente de programación con los comandos que coincidan."
+  pt: "Adicione padrões regex para mostrar a barra do agente de programação nos comandos correspondentes."
+  fr: "Ajoutez des motifs regex pour afficher la barre d'outils de l'agent de code pour les commandes correspondantes."
+  de: "Fügen Sie Regex-Muster hinzu, um die Coding-Agent-Symbolleiste bei passenden Befehlen anzuzeigen."
+  it: "Aggiungi pattern regex per mostrare la barra degli strumenti dell'agente di programmazione per i comandi corrispondenti."
+  uk: "Додайте шаблони регулярних виразів, щоб показувати панель агента програмування для відповідних команд."
+  ja: "正規表現パターンを追加すると、一致するコマンドでコーディングエージェントのツールバーが表示されます。"
+  zh-Hans: "添加正则表达式模式，以便在匹配的命令中显示编码代理工具栏。"
+
+"Code":
+  es: "Código"
+  pt: "Código"
+  fr: "Code"
+  de: "Code"
+  it: "Codice"
+  uk: "Код"
+  ja: "コード"
+  zh-Hans: "代码"
+
+"Initialization Settings":
+  es: "Ajustes de inicialización"
+  pt: "Configurações de inicialização"
+  fr: "Paramètres d'initialisation"
+  de: "Initialisierungseinstellungen"
+  it: "Impostazioni di inizializzazione"
+  uk: "Налаштування ініціалізації"
+  ja: "初期化の設定"
+  zh-Hans: "初始化设置"
+
+"Codebase indexing":
+  es: "Indexación del código"
+  pt: "Indexação do código"
+  fr: "Indexation du code"
+  de: "Codebase-Indizierung"
+  it: "Indicizzazione del codice"
+  uk: "Індексування кодової бази"
+  ja: "コードベースのインデックス作成"
+  zh-Hans: "代码库索引"
+
+"Termloc can automatically index code repositories as you navigate them, helping agents quickly understand context and provide solutions. Code stays on this machine, or on the Ollama server you set up. If a codebase is unable to be indexed, Termloc can still navigate your codebase and gain insights via grep and find tool calling.":
+  es: "Termloc puede indexar automáticamente los repositorios de código mientras los recorres, para que los agentes entiendan rápidamente el contexto y propongan soluciones. El código se queda en este equipo o en el servidor de Ollama que configures. Si no se puede indexar un código, Termloc puede seguir recorriéndolo y obtener información mediante las herramientas grep y find."
+  pt: "O Termloc pode indexar automaticamente os repositórios de código enquanto você navega por eles, ajudando os agentes a entender rapidamente o contexto e oferecer soluções. O código fica nesta máquina ou no servidor Ollama que você configurar. Se não for possível indexar um código, o Termloc ainda pode navegar por ele e obter informações com as ferramentas grep e find."
+  fr: "Termloc peut indexer automatiquement les dépôts de code pendant que vous les parcourez, pour aider les agents à comprendre rapidement le contexte et à proposer des solutions. Le code reste sur cette machine ou sur le serveur Ollama que vous avez configuré. Si un code ne peut pas être indexé, Termloc peut tout de même le parcourir et en tirer des informations grâce aux outils grep et find."
+  de: "Termloc kann Code-Repositorys automatisch indizieren, während Sie darin navigieren, damit Agenten den Kontext schnell verstehen und Lösungen anbieten können. Der Code bleibt auf diesem Rechner oder auf dem von Ihnen eingerichteten Ollama-Server. Kann eine Codebase nicht indiziert werden, kann Termloc sie trotzdem durchsuchen und über die Tools grep und find Erkenntnisse gewinnen."
+  it: "Termloc può indicizzare automaticamente i repository di codice mentre li esplori, aiutando gli agenti a comprendere rapidamente il contesto e a proporre soluzioni. Il codice resta su questo computer o sul server Ollama che hai configurato. Se un codice non può essere indicizzato, Termloc può comunque esplorarlo e ricavarne informazioni tramite gli strumenti grep e find."
+  uk: "Termloc може автоматично індексувати репозиторії коду, коли ви ними переміщуєтеся, щоб агенти швидко розуміли контекст і пропонували рішення. Код залишається на цьому комп'ютері або на налаштованому вами сервері Ollama. Якщо кодову базу неможливо проіндексувати, Termloc все одно може переміщуватися нею й отримувати відомості за допомогою інструментів grep і find."
+  ja: "Termloc は、コードリポジトリを移動するときに自動的にインデックスを作成し、エージェントがコンテキストをすばやく把握して解決策を提示できるようにします。コードはこのマシン、または設定した Ollama サーバーに保持されます。コードベースのインデックスを作成できない場合でも、Termloc は grep や find のツール呼び出しでコードベースを探索し、情報を得られます。"
+  zh-Hans: "Termloc 可以在你浏览代码仓库时自动为其建立索引，帮助代理快速理解上下文并提供解决方案。代码保留在本机或你设置的 Ollama 服务器上。如果无法为某个代码库建立索引，Termloc 仍可通过 grep 和 find 工具调用浏览代码库并获取信息。"
+
+"To exclude specific files or directories from indexing, add them to the .warpindexingignore file in your repository directory. These files will still be accessible to AI features, but they won't be included in codebase embeddings.":
+  es: "Para excluir archivos o directorios concretos de la indexación, añádelos al archivo .warpindexingignore del directorio de tu repositorio. Las funciones de IA podrán seguir accediendo a esos archivos, pero no se incluirán en los embeddings del código."
+  pt: "Para excluir arquivos ou diretórios específicos da indexação, adicione-os ao arquivo .warpindexingignore no diretório do repositório. Esses arquivos continuarão acessíveis aos recursos de IA, mas não serão incluídos nos embeddings do código."
+  fr: "Pour exclure certains fichiers ou répertoires de l'indexation, ajoutez-les au fichier .warpindexingignore du répertoire de votre dépôt. Ces fichiers resteront accessibles aux fonctionnalités d'IA, mais ne seront pas inclus dans les embeddings du code."
+  de: "Um bestimmte Dateien oder Verzeichnisse von der Indizierung auszuschließen, fügen Sie sie der Datei .warpindexingignore in Ihrem Repository-Verzeichnis hinzu. Diese Dateien bleiben für KI-Funktionen zugänglich, werden aber nicht in die Codebase-Embeddings aufgenommen."
+  it: "Per escludere file o directory specifici dall'indicizzazione, aggiungili al file .warpindexingignore nella directory del repository. Questi file resteranno accessibili alle funzionalità di IA, ma non saranno inclusi negli embedding del codice."
+  uk: "Щоб виключити певні файли чи каталоги з індексування, додайте їх до файлу .warpindexingignore у каталозі репозиторію. Ці файли залишаться доступними для функцій ШІ, але не потраплять до ембедингів кодової бази."
+  ja: "特定のファイルやディレクトリをインデックスの対象から外すには、リポジトリのディレクトリにある .warpindexingignore ファイルに追加してください。これらのファイルは AI 機能から引き続き利用できますが、コードベースの埋め込みには含まれません。"
+  zh-Hans: "要将特定文件或目录排除在索引之外，请将它们添加到仓库目录中的 .warpindexingignore 文件。AI 功能仍可访问这些文件，但它们不会包含在代码库嵌入中。"
+
+"Index new folders by default":
+  es: "Indexar carpetas nuevas de forma predeterminada"
+  pt: "Indexar novas pastas por padrão"
+  fr: "Indexer les nouveaux dossiers par défaut"
+  de: "Neue Ordner standardmäßig indizieren"
+  it: "Indicizza le nuove cartelle per impostazione predefinita"
+  uk: "Індексувати нові папки за замовчуванням"
+  ja: "新しいフォルダーをデフォルトでインデックス化"
+  zh-Hans: "默认为新文件夹建立索引"
+
+"When set to true, Termloc will automatically index code repositories as you navigate them - helping agents quickly understand context and provide targeted solutions.":
+  es: "Si está activado, Termloc indexará automáticamente los repositorios de código mientras los recorres, para que los agentes entiendan rápidamente el contexto y propongan soluciones específicas."
+  pt: "Quando ativado, o Termloc indexará automaticamente os repositórios de código enquanto você navega por eles, ajudando os agentes a entender rapidamente o contexto e oferecer soluções direcionadas."
+  fr: "Si cette option est activée, Termloc indexera automatiquement les dépôts de code pendant que vous les parcourez, pour aider les agents à comprendre rapidement le contexte et à proposer des solutions ciblées."
+  de: "Wenn aktiviert, indiziert Termloc Code-Repositorys automatisch, während Sie darin navigieren – damit Agenten den Kontext schnell verstehen und gezielte Lösungen anbieten können."
+  it: "Se attivato, Termloc indicizzerà automaticamente i repository di codice mentre li esplori, aiutando gli agenti a comprendere rapidamente il contesto e a proporre soluzioni mirate."
+  uk: "Якщо ввімкнено, Termloc автоматично індексуватиме репозиторії коду, коли ви ними переміщуєтеся, — щоб агенти швидко розуміли контекст і пропонували точні рішення."
+  ja: "有効にすると、Termloc はコードリポジトリを移動するときに自動的にインデックスを作成し、エージェントがコンテキストをすばやく把握して的確な解決策を提示できるようにします。"
+  zh-Hans: "启用后，Termloc 会在你浏览代码仓库时自动为其建立索引，帮助代理快速理解上下文并提供有针对性的解决方案。"
+
+"Team admins have disabled codebase indexing.":
+  es: "Los administradores del equipo han desactivado la indexación del código."
+  pt: "Os administradores da equipe desativaram a indexação do código."
+  fr: "Les administrateurs de l'équipe ont désactivé l'indexation du code."
+  de: "Team-Administratoren haben die Codebase-Indizierung deaktiviert."
+  it: "Gli amministratori del team hanno disattivato l'indicizzazione del codice."
+  uk: "Адміністратори команди вимкнули індексування кодової бази."
+  ja: "チーム管理者がコードベースのインデックス作成を無効にしています。"
+  zh-Hans: "团队管理员已禁用代码库索引。"
+
+"Team admins have enabled codebase indexing.":
+  es: "Los administradores del equipo han activado la indexación del código."
+  pt: "Os administradores da equipe ativaram a indexação do código."
+  fr: "Les administrateurs de l'équipe ont activé l'indexation du code."
+  de: "Team-Administratoren haben die Codebase-Indizierung aktiviert."
+  it: "Gli amministratori del team hanno attivato l'indicizzazione del codice."
+  uk: "Адміністратори команди ввімкнули індексування кодової бази."
+  ja: "チーム管理者がコードベースのインデックス作成を有効にしています。"
+  zh-Hans: "团队管理员已启用代码库索引。"
+
+"AI Features must be enabled to use codebase indexing.":
+  es: "Las funciones de IA deben estar activadas para usar la indexación del código."
+  pt: "Os recursos de IA precisam estar ativados para usar a indexação do código."
+  fr: "Les fonctionnalités d'IA doivent être activées pour utiliser l'indexation du code."
+  de: "KI-Funktionen müssen aktiviert sein, um die Codebase-Indizierung zu verwenden."
+  it: "Le funzionalità di IA devono essere attive per usare l'indicizzazione del codice."
+  uk: "Щоб використовувати індексування кодової бази, потрібно ввімкнути функції ШІ."
+  ja: "コードベースのインデックス作成を使うには、AI 機能を有効にする必要があります。"
+  zh-Hans: "必须启用 AI 功能才能使用代码库索引。"
+
+"You have reached the maximum number of codebase indices for your plan. Delete existing indices to auto-index new codebases.":
+  es: "Has alcanzado el número máximo de índices de código de tu plan. Elimina índices existentes para indexar automáticamente nuevos códigos."
+  pt: "Você atingiu o número máximo de índices de código do seu plano. Exclua índices existentes para indexar automaticamente novos códigos."
+  fr: "Vous avez atteint le nombre maximal d'index de code de votre forfait. Supprimez des index existants pour indexer automatiquement de nouveaux codes."
+  de: "Sie haben die maximale Anzahl an Codebase-Indizes für Ihren Plan erreicht. Löschen Sie vorhandene Indizes, um neue Codebases automatisch zu indizieren."
+  it: "Hai raggiunto il numero massimo di indici del codice per il tuo piano. Elimina gli indici esistenti per indicizzare automaticamente nuovo codice."
+  uk: "Ви досягли максимальної кількості індексів кодових баз для свого плану. Видаліть наявні індекси, щоб автоматично індексувати нові кодові бази."
+  ja: "ご利用のプランで作成できるコードベースのインデックス数の上限に達しました。新しいコードベースを自動でインデックス化するには、既存のインデックスを削除してください。"
+  zh-Hans: "你已达到当前方案的代码库索引数量上限。请删除现有索引以自动为新代码库建立索引。"
+
+"Codebase Indexing":
+  es: "Indexación del código"
+  pt: "Indexação do código"
+  fr: "Indexation du code"
+  de: "Codebase-Indizierung"
+  it: "Indicizzazione del codice"
+  uk: "Індексування кодової бази"
+  ja: "コードベースのインデックス作成"
+  zh-Hans: "代码库索引"
+
+"Codebase indexing is unavailable because {team_name} has disabled it.":
+  es: "La indexación del código no está disponible porque {team_name} la ha desactivado."
+  pt: "A indexação do código não está disponível porque {team_name} a desativou."
+  fr: "L'indexation du code n'est pas disponible, car {team_name} l'a désactivée."
+  de: "Die Codebase-Indizierung ist nicht verfügbar, da {team_name} sie deaktiviert hat."
+  it: "L'indicizzazione del codice non è disponibile perché {team_name} l'ha disattivata."
+  uk: "Індексування кодової бази недоступне, оскільки {team_name} його вимкнув."
+  ja: "{team_name} が無効にしているため、コードベースのインデックス作成は利用できません。"
+  zh-Hans: "{team_name} 已禁用代码库索引，因此无法使用。"
+
+"Index new folder":
+  es: "Indexar carpeta nueva"
+  pt: "Indexar nova pasta"
+  fr: "Indexer un nouveau dossier"
+  de: "Neuen Ordner indizieren"
+  it: "Indicizza nuova cartella"
+  uk: "Індексувати нову папку"
+  ja: "新しいフォルダーをインデックス化"
+  zh-Hans: "为新文件夹建立索引"
+
+"Initialized / indexed folders":
+  es: "Carpetas inicializadas / indexadas"
+  pt: "Pastas inicializadas / indexadas"
+  fr: "Dossiers initialisés / indexés"
+  de: "Initialisierte / indizierte Ordner"
+  it: "Cartelle inizializzate / indicizzate"
+  uk: "Ініціалізовані / проіндексовані папки"
+  ja: "初期化済み / インデックス済みのフォルダー"
+  zh-Hans: "已初始化 / 已索引的文件夹"
+
+"No folders have been initialized yet.":
+  es: "Todavía no se ha inicializado ninguna carpeta."
+  pt: "Nenhuma pasta foi inicializada ainda."
+  fr: "Aucun dossier n'a encore été initialisé."
+  de: "Es wurden noch keine Ordner initialisiert."
+  it: "Nessuna cartella è stata ancora inizializzata."
+  uk: "Ще не ініціалізовано жодної папки."
+  ja: "初期化されたフォルダーはまだありません。"
+  zh-Hans: "尚未初始化任何文件夹。"
+
+"Open project rules":
+  es: "Abrir reglas del proyecto"
+  pt: "Abrir regras do projeto"
+  fr: "Ouvrir les règles du projet"
+  de: "Projektregeln öffnen"
+  it: "Apri regole del progetto"
+  uk: "Відкрити правила проєкту"
+  ja: "プロジェクトのルールを開く"
+  zh-Hans: "打开项目规则"
+
+"INDEXING":
+  es: "INDEXACIÓN"
+  pt: "INDEXAÇÃO"
+  fr: "INDEXATION"
+  de: "INDIZIERUNG"
+  it: "INDICIZZAZIONE"
+  uk: "ІНДЕКСУВАННЯ"
+  ja: "インデックス"
+  zh-Hans: "索引"
+
+"No index created":
+  es: "No se ha creado ningún índice"
+  pt: "Nenhum índice criado"
+  fr: "Aucun index créé"
+  de: "Kein Index erstellt"
+  it: "Nessun indice creato"
+  uk: "Індекс не створено"
+  ja: "インデックスは未作成です"
+  zh-Hans: "未创建索引"
+
+"Discovered {total_nodes} chunks":
+  es: "Se encontraron {total_nodes} fragmentos"
+  pt: "{total_nodes} fragmentos encontrados"
+  fr: "{total_nodes} fragments découverts"
+  de: "{total_nodes} Abschnitte gefunden"
+  it: "{total_nodes} blocchi rilevati"
+  uk: "Виявлено фрагментів: {total_nodes}"
+  ja: "{total_nodes} 個のチャンクを検出"
+  zh-Hans: "已发现 {total_nodes} 个块"
+
+"Syncing - {completed_nodes} / {total_nodes}":
+  es: "Sincronizando: {completed_nodes} / {total_nodes}"
+  pt: "Sincronizando: {completed_nodes} / {total_nodes}"
+  fr: "Synchronisation : {completed_nodes} / {total_nodes}"
+  de: "Synchronisierung – {completed_nodes} / {total_nodes}"
+  it: "Sincronizzazione: {completed_nodes} / {total_nodes}"
+  uk: "Синхронізація: {completed_nodes} / {total_nodes}"
+  ja: "同期中 - {completed_nodes} / {total_nodes}"
+  zh-Hans: "正在同步 - {completed_nodes} / {total_nodes}"
+
+"Syncing...":
+  es: "Sincronizando..."
+  pt: "Sincronizando..."
+  fr: "Synchronisation..."
+  de: "Synchronisierung..."
+  it: "Sincronizzazione..."
+  uk: "Синхронізація..."
+  ja: "同期中..."
+  zh-Hans: "正在同步..."
+
+"Synced":
+  es: "Sincronizado"
+  pt: "Sincronizado"
+  fr: "Synchronisé"
+  de: "Synchronisiert"
+  it: "Sincronizzato"
+  uk: "Синхронізовано"
+  ja: "同期済み"
+  zh-Hans: "已同步"
+
+"Codebase too large":
+  es: "Código demasiado grande"
+  pt: "Código grande demais"
+  fr: "Code trop volumineux"
+  de: "Codebase zu groß"
+  it: "Codice troppo grande"
+  uk: "Кодова база завелика"
+  ja: "コードベースが大きすぎます"
+  zh-Hans: "代码库过大"
+
+"Stale":
+  es: "Desactualizado"
+  pt: "Desatualizado"
+  fr: "Obsolète"
+  de: "Veraltet"
+  it: "Non aggiornato"
+  uk: "Застаріло"
+  ja: "古い"
+  zh-Hans: "已过时"
+
+"Failed":
+  es: "Error"
+  pt: "Falhou"
+  fr: "Échec"
+  de: "Fehlgeschlagen"
+  it: "Non riuscito"
+  uk: "Помилка"
+  ja: "失敗"
+  zh-Hans: "失败"
+
+"No index built":
+  es: "No se ha generado ningún índice"
+  pt: "Nenhum índice gerado"
+  fr: "Aucun index généré"
+  de: "Kein Index erstellt"
+  it: "Nessun indice generato"
+  uk: "Індекс не побудовано"
+  ja: "インデックスは未構築です"
+  zh-Hans: "未构建索引"
+
+"LSP SERVERS":
+  es: "SERVIDORES LSP"
+  pt: "SERVIDORES LSP"
+  fr: "SERVEURS LSP"
+  de: "LSP-SERVER"
+  it: "SERVER LSP"
+  uk: "СЕРВЕРИ LSP"
+  ja: "LSP サーバー"
+  zh-Hans: "LSP 服务器"
+
+"Installed":
+  es: "Instalado"
+  pt: "Instalado"
+  fr: "Installé"
+  de: "Installiert"
+  it: "Installato"
+  uk: "Встановлено"
+  ja: "インストール済み"
+  zh-Hans: "已安装"
+
+"Installing...":
+  es: "Instalando..."
+  pt: "Instalando..."
+  fr: "Installation..."
+  de: "Wird installiert..."
+  it: "Installazione..."
+  uk: "Встановлення..."
+  ja: "インストール中..."
+  zh-Hans: "正在安装..."
+
+"Checking...":
+  es: "Comprobando..."
+  pt: "Verificando..."
+  fr: "Vérification..."
+  de: "Wird geprüft..."
+  it: "Verifica..."
+  uk: "Перевірка..."
+  ja: "確認中..."
+  zh-Hans: "正在检查..."
+
+"Available for download":
+  es: "Disponible para descargar"
+  pt: "Disponível para download"
+  fr: "Disponible au téléchargement"
+  de: "Zum Download verfügbar"
+  it: "Disponibile per il download"
+  uk: "Доступно для завантаження"
+  ja: "ダウンロード可能"
+  zh-Hans: "可下载"
+
+"Restart server":
+  es: "Reiniciar servidor"
+  pt: "Reiniciar servidor"
+  fr: "Redémarrer le serveur"
+  de: "Server neu starten"
+  it: "Riavvia server"
+  uk: "Перезапустити сервер"
+  ja: "サーバーを再起動"
+  zh-Hans: "重启服务器"
+
+"View logs":
+  es: "Ver registros"
+  pt: "Ver logs"
+  fr: "Afficher les journaux"
+  de: "Protokolle anzeigen"
+  it: "Visualizza log"
+  uk: "Переглянути журнали"
+  ja: "ログを表示"
+  zh-Hans: "查看日志"
+
+"Available":
+  es: "Disponible"
+  pt: "Disponível"
+  fr: "Disponible"
+  de: "Verfügbar"
+  it: "Disponibile"
+  uk: "Доступний"
+  ja: "利用可能"
+  zh-Hans: "可用"
+
+"Busy":
+  es: "Ocupado"
+  pt: "Ocupado"
+  fr: "Occupé"
+  de: "Beschäftigt"
+  it: "Occupato"
+  uk: "Зайнятий"
+  ja: "ビジー"
+  zh-Hans: "忙碌"
+
+"Stopped":
+  es: "Detenido"
+  pt: "Parado"
+  fr: "Arrêté"
+  de: "Gestoppt"
+  it: "Arrestato"
+  uk: "Зупинено"
+  ja: "停止"
+  zh-Hans: "已停止"
+
+"Not running":
+  es: "No se está ejecutando"
+  pt: "Não está em execução"
+  fr: "Pas en cours d'exécution"
+  de: "Läuft nicht"
+  it: "Non in esecuzione"
+  uk: "Не запущено"
+  ja: "未実行"
+  zh-Hans: "未运行"
+
+"Absolute":
+  es: "Absolutos"
+  pt: "Absolutos"
+  fr: "Absolus"
+  de: "Absolut"
+  it: "Assoluti"
+  uk: "Абсолютні"
+  ja: "絶対"
+  zh-Hans: "绝对"
+
+"Relative":
+  es: "Relativos"
+  pt: "Relativos"
+  fr: "Relatifs"
+  de: "Relativ"
+  it: "Relativi"
+  uk: "Відносні"
+  ja: "相対"
+  zh-Hans: "相对"
+
+"Auto open code review panel":
+  es: "Abrir automáticamente el panel de revisión de código"
+  pt: "Abrir automaticamente o painel de revisão de código"
+  fr: "Ouvrir automatiquement le panneau de revue de code"
+  de: "Code-Review-Bereich automatisch öffnen"
+  it: "Apri automaticamente il pannello di revisione del codice"
+  uk: "Автоматично відкривати панель рецензування коду"
+  ja: "コードレビューパネルを自動で開く"
+  zh-Hans: "自动打开代码审查面板"
+
+"When this setting is on, the code review panel will open on the first accepted diff of a conversation":
+  es: "Si este ajuste está activado, el panel de revisión de código se abrirá con el primer diff aceptado de una conversación"
+  pt: "Quando esta configuração está ativada, o painel de revisão de código abre no primeiro diff aceito de uma conversa"
+  fr: "Lorsque ce paramètre est activé, le panneau de revue de code s'ouvre au premier diff accepté d'une conversation"
+  de: "Wenn diese Einstellung aktiviert ist, öffnet sich der Code-Review-Bereich beim ersten akzeptierten Diff einer Unterhaltung"
+  it: "Quando questa impostazione è attiva, il pannello di revisione del codice si apre al primo diff accettato di una conversazione"
+  uk: "Якщо цей параметр увімкнено, панель рецензування коду відкриватиметься після першої прийнятої зміни в розмові"
+  ja: "この設定をオンにすると、会話で最初の差分が承認されたときにコードレビューパネルが開きます"
+  zh-Hans: "启用此设置后，代码审查面板会在对话中第一次接受差异时打开"
+
+"Show code review button":
+  es: "Mostrar botón de revisión de código"
+  pt: "Mostrar botão de revisão de código"
+  fr: "Afficher le bouton de revue de code"
+  de: "Code-Review-Schaltfläche anzeigen"
+  it: "Mostra il pulsante di revisione del codice"
+  uk: "Показувати кнопку рецензування коду"
+  ja: "コードレビューボタンを表示"
+  zh-Hans: "显示代码审查按钮"
+
+"Show a button in the top right of the window to toggle the code review panel.":
+  es: "Muestra un botón en la esquina superior derecha de la ventana para mostrar u ocultar el panel de revisión de código."
+  pt: "Mostra um botão no canto superior direito da janela para alternar o painel de revisão de código."
+  fr: "Affiche un bouton en haut à droite de la fenêtre pour afficher ou masquer le panneau de revue de code."
+  de: "Zeigt oben rechts im Fenster eine Schaltfläche zum Ein- und Ausblenden des Code-Review-Bereichs an."
+  it: "Mostra un pulsante in alto a destra nella finestra per attivare o disattivare il pannello di revisione del codice."
+  uk: "Показує кнопку у верхньому правому куті вікна для перемикання панелі рецензування коду."
+  ja: "ウィンドウ右上に、コードレビューパネルを切り替えるボタンを表示します。"
+  zh-Hans: "在窗口右上角显示一个用于切换代码审查面板的按钮。"
+
+"Show diff stats on code review button":
+  es: "Mostrar estadísticas del diff en el botón de revisión de código"
+  pt: "Mostrar estatísticas do diff no botão de revisão de código"
+  fr: "Afficher les statistiques du diff sur le bouton de revue de code"
+  de: "Diff-Statistiken auf der Code-Review-Schaltfläche anzeigen"
+  it: "Mostra le statistiche del diff sul pulsante di revisione del codice"
+  uk: "Показувати статистику змін на кнопці рецензування коду"
+  ja: "コードレビューボタンに差分の統計を表示"
+  zh-Hans: "在代码审查按钮上显示差异统计"
+
+"Show lines added and removed counts on the code review button.":
+  es: "Muestra el número de líneas añadidas y eliminadas en el botón de revisión de código."
+  pt: "Mostra a contagem de linhas adicionadas e removidas no botão de revisão de código."
+  fr: "Affiche le nombre de lignes ajoutées et supprimées sur le bouton de revue de code."
+  de: "Zeigt die Anzahl hinzugefügter und entfernter Zeilen auf der Code-Review-Schaltfläche an."
+  it: "Mostra il numero di righe aggiunte e rimosse sul pulsante di revisione del codice."
+  uk: "Показує кількість доданих і видалених рядків на кнопці рецензування коду."
+  ja: "コードレビューボタンに追加行数と削除行数を表示します。"
+  zh-Hans: "在代码审查按钮上显示新增和删除的行数。"
+
+"Adds an IDE-style project explorer / file tree to the left side tools panel.":
+  es: "Añade un explorador de proyectos / árbol de archivos al estilo de un IDE en el panel de herramientas izquierdo."
+  pt: "Adiciona um explorador de projetos / árvore de arquivos no estilo IDE ao painel de ferramentas à esquerda."
+  fr: "Ajoute un explorateur de projet / arborescence de fichiers de type IDE au panneau d'outils de gauche."
+  de: "Fügt dem linken Werkzeugbereich einen Projekt-Explorer bzw. Dateibaum im IDE-Stil hinzu."
+  it: "Aggiunge un esplora progetto / albero dei file in stile IDE al pannello strumenti a sinistra."
+  uk: "Додає провідник проєкту / дерево файлів у стилі IDE на ліву панель інструментів."
+  ja: "左側のツールパネルに、IDE のようなプロジェクトエクスプローラー / ファイルツリーを追加します。"
+  zh-Hans: "在左侧工具面板中添加 IDE 风格的项目资源管理器/文件树。"
+
+"Global file search":
+  es: "Búsqueda global de archivos"
+  pt: "Pesquisa global de arquivos"
+  fr: "Recherche globale de fichiers"
+  de: "Globale Dateisuche"
+  it: "Ricerca globale dei file"
+  uk: "Глобальний пошук файлів"
+  ja: "グローバルファイル検索"
+  zh-Hans: "全局文件搜索"
+
+"Adds global file search to the left side tools panel.":
+  es: "Añade la búsqueda global de archivos al panel de herramientas izquierdo."
+  pt: "Adiciona a pesquisa global de arquivos ao painel de ferramentas à esquerda."
+  fr: "Ajoute la recherche globale de fichiers au panneau d'outils de gauche."
+  de: "Fügt dem linken Werkzeugbereich die globale Dateisuche hinzu."
+  it: "Aggiunge la ricerca globale dei file al pannello strumenti a sinistra."
+  uk: "Додає глобальний пошук файлів на ліву панель інструментів."
+  ja: "左側のツールパネルにグローバルファイル検索を追加します。"
+  zh-Hans: "在左侧工具面板中添加全局文件搜索。"
+
+"Show hidden files in project explorer":
+  es: "Mostrar archivos ocultos en el explorador de proyectos"
+  pt: "Mostrar arquivos ocultos no explorador de projetos"
+  fr: "Afficher les fichiers cachés dans l'explorateur de projet"
+  de: "Versteckte Dateien im Projekt-Explorer anzeigen"
+  it: "Mostra i file nascosti nell'esplora progetto"
+  uk: "Показувати приховані файли в провіднику проєкту"
+  ja: "プロジェクトエクスプローラーに隠しファイルを表示"
+  zh-Hans: "在项目资源管理器中显示隐藏文件"
+
+"Show dotfiles and hidden files (starting with .) in the project explorer.":
+  es: "Muestra los dotfiles y archivos ocultos (que empiezan por .) en el explorador de proyectos."
+  pt: "Mostra dotfiles e arquivos ocultos (que começam com .) no explorador de projetos."
+  fr: "Affiche les dotfiles et les fichiers cachés (commençant par .) dans l'explorateur de projet."
+  de: "Zeigt Dotfiles und versteckte Dateien (beginnend mit .) im Projekt-Explorer an."
+  it: "Mostra i dotfile e i file nascosti (che iniziano con .) nell'esplora progetto."
+  uk: "Показує dotfile та приховані файли (що починаються з .) у провіднику проєкту."
+  ja: "ドットファイルと隠しファイル（. で始まるファイル）をプロジェクトエクスプローラーに表示します。"
+  zh-Hans: "在项目资源管理器中显示点文件和隐藏文件（以 . 开头）。"
+
+"Format on save (requires an active language server)":
+  es: "Formatear al guardar (requiere un servidor de lenguaje activo)"
+  pt: "Formatar ao salvar (requer um servidor de linguagem ativo)"
+  fr: "Formater à l'enregistrement (nécessite un serveur de langage actif)"
+  de: "Beim Speichern formatieren (erfordert einen aktiven Sprachserver)"
+  it: "Formatta al salvataggio (richiede un language server attivo)"
+  uk: "Форматувати під час збереження (потрібен активний мовний сервер)"
+  ja: "保存時にフォーマット（言語サーバーが有効な場合のみ）"
+  zh-Hans: "保存时格式化（需要活动的语言服务器）"
+
+"Only applies when a language server is active for the file. Automatically formats the file with the language server on save; other LSP features (hover, go-to-definition, references, diagnostics) are unaffected.":
+  es: "Solo se aplica cuando hay un servidor de lenguaje activo para el archivo. Formatea automáticamente el archivo con el servidor de lenguaje al guardar; las demás funciones de LSP (información al pasar el cursor, ir a la definición, referencias, diagnósticos) no se ven afectadas."
+  pt: "Aplica-se apenas quando há um servidor de linguagem ativo para o arquivo. Formata automaticamente o arquivo com o servidor de linguagem ao salvar; os demais recursos de LSP (hover, ir para definição, referências, diagnósticos) não são afetados."
+  fr: "S'applique uniquement lorsqu'un serveur de langage est actif pour le fichier. Formate automatiquement le fichier avec le serveur de langage à l'enregistrement ; les autres fonctionnalités LSP (survol, accès à la définition, références, diagnostics) ne sont pas concernées."
+  de: "Gilt nur, wenn für die Datei ein Sprachserver aktiv ist. Formatiert die Datei beim Speichern automatisch mit dem Sprachserver; andere LSP-Funktionen (Hover, Gehe zu Definition, Referenzen, Diagnosen) sind nicht betroffen."
+  it: "Si applica solo quando è attivo un language server per il file. Formatta automaticamente il file con il language server al salvataggio; le altre funzionalità LSP (hover, vai alla definizione, riferimenti, diagnostica) non sono interessate."
+  uk: "Діє, лише коли для файлу активний мовний сервер. Автоматично форматує файл за допомогою мовного сервера під час збереження; інші функції LSP (підказки при наведенні, перехід до визначення, посилання, діагностика) не змінюються."
+  ja: "ファイルに対して言語サーバーが有効な場合にのみ適用されます。保存時に言語サーバーでファイルを自動的にフォーマットします。その他の LSP 機能（ホバー、定義へ移動、参照、診断）には影響しません。"
+  zh-Hans: "仅在文件有活动的语言服务器时生效。保存时使用语言服务器自动格式化文件；其他 LSP 功能（悬停、转到定义、引用、诊断）不受影响。"
+
+"Auto save":
+  es: "Guardado automático"
+  pt: "Salvamento automático"
+  fr: "Enregistrement automatique"
+  de: "Automatisch speichern"
+  it: "Salvataggio automatico"
+  uk: "Автозбереження"
+  ja: "自動保存"
+  zh-Hans: "自动保存"
+
+"Automatically saves changes in the Termloc text editor as you type and when the editor loses focus.":
+  es: "Guarda automáticamente los cambios en el editor de texto de Termloc mientras escribes y cuando el editor pierde el foco."
+  pt: "Salva automaticamente as alterações no editor de texto do Termloc enquanto você digita e quando o editor perde o foco."
+  fr: "Enregistre automatiquement les modifications dans l'éditeur de texte de Termloc pendant la saisie et lorsque l'éditeur perd le focus."
+  de: "Speichert Änderungen im Texteditor von Termloc automatisch während der Eingabe und wenn der Editor den Fokus verliert."
+  it: "Salva automaticamente le modifiche nell'editor di testo di Termloc mentre scrivi e quando l'editor perde il focus."
+  uk: "Автоматично зберігає зміни в текстовому редакторі Termloc під час введення та коли редактор втрачає фокус."
+  ja: "入力中やエディターのフォーカスが外れたときに、Termloc のテキストエディターの変更を自動的に保存します。"
+  zh-Hans: "在你输入时以及编辑器失去焦点时，自动保存 Termloc 文本编辑器中的更改。"
+
+"Code editor line numbers:":
+  es: "Números de línea del editor de código:"
+  pt: "Números de linha do editor de código:"
+  fr: "Numéros de ligne de l'éditeur de code :"
+  de: "Zeilennummern im Code-Editor:"
+  it: "Numeri di riga dell'editor di codice:"
+  uk: "Номери рядків у редакторі коду:"
+  ja: "コードエディターの行番号:"
+  zh-Hans: "代码编辑器行号："
+
+"Rules":
+  es: "Reglas"
+  pt: "Regras"
+  fr: "Règles"
+  de: "Regeln"
+  it: "Regole"
+  uk: "Правила"
+  ja: "ルール"
+  zh-Hans: "规则"
+
+"Rules help the Local Agent follow your conventions, whether for codebases or specific workflows.":
+  es: "Las reglas ayudan al agente local a seguir tus convenciones, ya sea para bases de código o flujos de trabajo concretos."
+  pt: "As regras ajudam o agente local a seguir suas convenções, seja para bases de código ou fluxos de trabalho específicos."
+  fr: "Les règles aident l'agent local à suivre vos conventions, que ce soit pour des bases de code ou des workflows précis."
+  de: "Regeln helfen dem lokalen Agenten, Ihre Konventionen einzuhalten – für Codebases oder bestimmte Workflows."
+  it: "Le regole aiutano l'agente locale a seguire le tue convenzioni, sia per le codebase sia per flussi di lavoro specifici."
+  uk: "Правила допомагають локальному агенту дотримуватися ваших домовленостей — для кодових баз чи окремих робочих процесів."
+  ja: "ルールを使うと、コードベースや特定のワークフローに関する規約にローカルエージェントが従うようになります。"
+  zh-Hans: "规则可帮助本地代理遵循你的约定，无论是针对代码库还是特定工作流。"
+
+"Suggested Rules":
+  es: "Reglas sugeridas"
+  pt: "Regras sugeridas"
+  fr: "Règles suggérées"
+  de: "Vorgeschlagene Regeln"
+  it: "Regole suggerite"
+  uk: "Запропоновані правила"
+  ja: "ルールの提案"
+  zh-Hans: "建议的规则"
+
+"Let AI suggest rules to save based on your interactions.":
+  es: "Permite que la IA sugiera reglas para guardar según tus interacciones."
+  pt: "Permita que a IA sugira regras para salvar com base nas suas interações."
+  fr: "Laissez l'IA suggérer des règles à enregistrer en fonction de vos interactions."
+  de: "Lassen Sie die KI anhand Ihrer Interaktionen Regeln zum Speichern vorschlagen."
+  it: "Consenti all'IA di suggerire regole da salvare in base alle tue interazioni."
+  uk: "Дозволити ШІ пропонувати правила для збереження на основі ваших взаємодій."
+  ja: "操作内容に基づいて、保存するルールを AI が提案します。"
+  zh-Hans: "让 AI 根据你的交互建议要保存的规则。"
+
+"Drive as agent context":
+  es: "Drive como contexto del agente"
+  pt: "Drive como contexto do agente"
+  fr: "Drive comme contexte de l'agent"
+  de: "Drive als Agent-Kontext"
+  it: "Drive come contesto dell'agente"
+  uk: "Drive як контекст агента"
+  ja: "Drive をエージェントのコンテキストに使用"
+  zh-Hans: "将 Drive 用作代理上下文"
+
+"The Local Agent can leverage your Drive contents to tailor responses to your personal and team developer workflows and environments. This includes any Workflows, Notebooks, and Environment Variables.":
+  es: "El agente local puede aprovechar el contenido de tu Drive para adaptar sus respuestas a tus flujos de trabajo y entornos de desarrollo, personales y de equipo. Esto incluye flujos de trabajo, cuadernos y variables de entorno."
+  pt: "O agente local pode usar o conteúdo do seu Drive para adaptar as respostas aos seus fluxos de trabalho e ambientes de desenvolvimento, pessoais e da equipe. Isso inclui fluxos de trabalho, notebooks e variáveis de ambiente."
+  fr: "L'agent local peut exploiter le contenu de votre Drive pour adapter ses réponses à vos workflows et environnements de développement, personnels et d'équipe. Cela inclut les workflows, les notebooks et les variables d'environnement."
+  de: "Der lokale Agent kann Ihre Drive-Inhalte nutzen, um Antworten an Ihre persönlichen und Team-Entwicklungsworkflows und -umgebungen anzupassen. Dazu gehören Workflows, Notebooks und Umgebungsvariablen."
+  it: "L'agente locale può sfruttare i contenuti del tuo Drive per adattare le risposte ai flussi di lavoro e agli ambienti di sviluppo personali e del team. Sono inclusi flussi di lavoro, notebook e variabili d'ambiente."
+  uk: "Локальний агент може використовувати вміст вашого Drive, щоб адаптувати відповіді до ваших особистих і командних робочих процесів та середовищ розробки. Сюди входять робочі процеси, блокноти та змінні середовища."
+  ja: "ローカルエージェントは Drive の内容を活用して、個人やチームの開発ワークフローと環境に合わせた応答を行えます。これにはワークフロー、ノートブック、環境変数が含まれます。"
+  zh-Hans: "本地代理可以利用你的 Drive 内容，根据你个人和团队的开发工作流及环境定制回复。这包括所有工作流、笔记本和环境变量。"
+
+"MCP Servers":
+  es: "Servidores MCP"
+  pt: "Servidores MCP"
+  fr: "Serveurs MCP"
+  de: "MCP-Server"
+  it: "Server MCP"
+  uk: "Сервери MCP"
+  ja: "MCP サーバー"
+  zh-Hans: "MCP 服务器"
+
+"Successfully logged out of {name} MCP server":
+  es: "Se cerró la sesión del servidor MCP {name}"
+  pt: "Sessão encerrada no servidor MCP {name}"
+  fr: "Déconnexion du serveur MCP {name} réussie"
+  de: "Erfolgreich vom MCP-Server {name} abgemeldet"
+  it: "Disconnessione dal server MCP {name} riuscita"
+  uk: "Ви вийшли із сервера MCP {name}"
+  ja: "MCP サーバー {name} からログアウトしました"
+  zh-Hans: "已成功退出 MCP 服务器 {name}"
+
+"Successfully logged out of MCP server":
+  es: "Se cerró la sesión del servidor MCP"
+  pt: "Sessão encerrada no servidor MCP"
+  fr: "Déconnexion du serveur MCP réussie"
+  de: "Erfolgreich vom MCP-Server abgemeldet"
+  it: "Disconnessione dal server MCP riuscita"
+  uk: "Ви вийшли із сервера MCP"
+  ja: "MCP サーバーからログアウトしました"
+  zh-Hans: "已成功退出 MCP 服务器"
+
+"Finish the current MCP install before opening another install link.":
+  es: "Termina la instalación de MCP actual antes de abrir otro enlace de instalación."
+  pt: "Conclua a instalação de MCP atual antes de abrir outro link de instalação."
+  fr: "Terminez l'installation MCP en cours avant d'ouvrir un autre lien d'installation."
+  de: "Schließen Sie die aktuelle MCP-Installation ab, bevor Sie einen weiteren Installationslink öffnen."
+  it: "Completa l'installazione MCP in corso prima di aprire un altro link di installazione."
+  uk: "Завершіть поточне встановлення MCP, перш ніж відкривати інше посилання для встановлення."
+  ja: "別のインストールリンクを開く前に、現在の MCP のインストールを完了してください。"
+  zh-Hans: "请先完成当前的 MCP 安装，再打开其他安装链接。"
+
+"Unknown MCP server '{autoinstall_param}'":
+  es: "Servidor MCP desconocido: '{autoinstall_param}'"
+  pt: "Servidor MCP desconhecido: '{autoinstall_param}'"
+  fr: "Serveur MCP inconnu : « {autoinstall_param} »"
+  de: "Unbekannter MCP-Server: „{autoinstall_param}“"
+  it: "Server MCP sconosciuto: '{autoinstall_param}'"
+  uk: "Невідомий сервер MCP: «{autoinstall_param}»"
+  ja: "不明な MCP サーバー:「{autoinstall_param}」"
+  zh-Hans: "未知的 MCP 服务器“{autoinstall_param}”"
+
+"MCP server '{gallery_title}' cannot be installed from this link.":
+  es: "El servidor MCP '{gallery_title}' no se puede instalar desde este enlace."
+  pt: "O servidor MCP '{gallery_title}' não pode ser instalado por este link."
+  fr: "Le serveur MCP « {gallery_title} » ne peut pas être installé depuis ce lien."
+  de: "Der MCP-Server „{gallery_title}“ kann nicht über diesen Link installiert werden."
+  it: "Il server MCP '{gallery_title}' non può essere installato da questo link."
+  uk: "Сервер MCP «{gallery_title}» не можна встановити за цим посиланням."
+  ja: "MCP サーバー「{gallery_title}」はこのリンクからインストールできません。"
+  zh-Hans: "无法通过此链接安装 MCP 服务器“{gallery_title}”。"
+
+"Delete MCP server?":
+  es: "¿Eliminar el servidor MCP?"
+  pt: "Excluir o servidor MCP?"
+  fr: "Supprimer le serveur MCP ?"
+  de: "MCP-Server löschen?"
+  it: "Eliminare il server MCP?"
+  uk: "Видалити сервер MCP?"
+  ja: "MCP サーバーを削除しますか？"
+  zh-Hans: "删除 MCP 服务器？"
+
+"This will uninstall and remove this MCP server from all your devices.":
+  es: "Se desinstalará y eliminará este servidor MCP de todos tus dispositivos."
+  pt: "Isso desinstalará e removerá este servidor MCP de todos os seus dispositivos."
+  fr: "Ce serveur MCP sera désinstallé et supprimé de tous vos appareils."
+  de: "Dadurch wird dieser MCP-Server auf allen Ihren Geräten deinstalliert und entfernt."
+  it: "Questo server MCP verrà disinstallato e rimosso da tutti i tuoi dispositivi."
+  uk: "Цей сервер MCP буде деінстальовано й видалено з усіх ваших пристроїв."
+  ja: "この MCP サーバーをすべてのデバイスからアンインストールして削除します。"
+  zh-Hans: "这会从你的所有设备上卸载并移除此 MCP 服务器。"
+
+"Delete MCP":
+  es: "Eliminar MCP"
+  pt: "Excluir MCP"
+  fr: "Supprimer le MCP"
+  de: "MCP löschen"
+  it: "Elimina MCP"
+  uk: "Видалити MCP"
+  ja: "MCP を削除"
+  zh-Hans: "删除 MCP"
+
+"Delete shared MCP server?":
+  es: "¿Eliminar el servidor MCP compartido?"
+  pt: "Excluir o servidor MCP compartilhado?"
+  fr: "Supprimer le serveur MCP partagé ?"
+  de: "Geteilten MCP-Server löschen?"
+  it: "Eliminare il server MCP condiviso?"
+  uk: "Видалити спільний сервер MCP?"
+  ja: "共有 MCP サーバーを削除しますか？"
+  zh-Hans: "删除共享的 MCP 服务器？"
+
+"This will not only delete this MCP server for yourself, but also uninstall and remove this MCP server from Termloc and across all of your teammates' devices.":
+  es: "No solo se eliminará este servidor MCP para ti, sino que también se desinstalará y eliminará de Termloc y de los dispositivos de todos tus compañeros de equipo."
+  pt: "Isso não apenas excluirá este servidor MCP para você, mas também o desinstalará e removerá do Termloc e dos dispositivos de todos os seus colegas de equipe."
+  fr: "Ce serveur MCP ne sera pas seulement supprimé pour vous : il sera aussi désinstallé et supprimé de Termloc et des appareils de tous vos coéquipiers."
+  de: "Dadurch wird dieser MCP-Server nicht nur für Sie gelöscht, sondern auch aus Termloc und von den Geräten aller Ihrer Teammitglieder deinstalliert und entfernt."
+  it: "Questo server MCP non verrà eliminato solo per te, ma anche disinstallato e rimosso da Termloc e dai dispositivi di tutti i membri del tuo team."
+  uk: "Цей сервер MCP буде не лише видалено для вас, а й деінстальовано та видалено з Termloc і з пристроїв усіх ваших колег по команді."
+  ja: "この MCP サーバーは自分だけでなく、Termloc とチームメンバー全員のデバイスからもアンインストールされ、削除されます。"
+  zh-Hans: "这不仅会为你删除此 MCP 服务器，还会从 Termloc 以及所有团队成员的设备上卸载并移除它。"
+
+"Remove shared MCP server from team?":
+  es: "¿Quitar el servidor MCP compartido del equipo?"
+  pt: "Remover o servidor MCP compartilhado da equipe?"
+  fr: "Retirer le serveur MCP partagé de l'équipe ?"
+  de: "Geteilten MCP-Server aus dem Team entfernen?"
+  it: "Rimuovere il server MCP condiviso dal team?"
+  uk: "Вилучити спільний сервер MCP з команди?"
+  ja: "共有 MCP サーバーをチームから削除しますか？"
+  zh-Hans: "从团队中移除共享的 MCP 服务器？"
+
+"This will uninstall and remove this MCP server from Termloc and across all of your teammates' devices.":
+  es: "Se desinstalará y eliminará este servidor MCP de Termloc y de los dispositivos de todos tus compañeros de equipo."
+  pt: "Isso desinstalará e removerá este servidor MCP do Termloc e dos dispositivos de todos os seus colegas de equipe."
+  fr: "Ce serveur MCP sera désinstallé et supprimé de Termloc et des appareils de tous vos coéquipiers."
+  de: "Dadurch wird dieser MCP-Server aus Termloc und von den Geräten aller Ihrer Teammitglieder deinstalliert und entfernt."
+  it: "Questo server MCP verrà disinstallato e rimosso da Termloc e dai dispositivi di tutti i membri del tuo team."
+  uk: "Цей сервер MCP буде деінстальовано й видалено з Termloc і з пристроїв усіх ваших колег по команді."
+  ja: "この MCP サーバーを Termloc とチームメンバー全員のデバイスからアンインストールして削除します。"
+  zh-Hans: "这会从 Termloc 以及所有团队成员的设备上卸载并移除此 MCP 服务器。"
+
+"Remove from team":
+  es: "Quitar del equipo"
+  pt: "Remover da equipe"
+  fr: "Retirer de l'équipe"
+  de: "Aus dem Team entfernen"
+  it: "Rimuovi dal team"
+  uk: "Вилучити з команди"
+  ja: "チームから削除"
+  zh-Hans: "从团队中移除"
+
+"Edit Variables":
+  es: "Editar variables"
+  pt: "Editar variáveis"
+  fr: "Modifier les variables"
+  de: "Variablen bearbeiten"
+  it: "Modifica variabili"
+  uk: "Редагувати змінні"
+  ja: "変数を編集"
+  zh-Hans: "编辑变量"
+
+"Only team admins and the creator of the MCP server can edit the MCP server.":
+  es: "Solo los administradores del equipo y el creador del servidor MCP pueden editarlo."
+  pt: "Somente os administradores da equipe e o criador do servidor MCP podem editá-lo."
+  fr: "Seuls les administrateurs de l'équipe et le créateur du serveur MCP peuvent le modifier."
+  de: "Nur Team-Administratoren und der Ersteller des MCP-Servers können ihn bearbeiten."
+  it: "Solo gli amministratori del team e il creatore del server MCP possono modificarlo."
+  uk: "Редагувати сервер MCP можуть лише адміністратори команди та його автор."
+  ja: "MCP サーバーを編集できるのは、チーム管理者とサーバーの作成者のみです。"
+  zh-Hans: "只有团队管理员和 MCP 服务器的创建者可以编辑该服务器。"
+
+"Add New MCP Server":
+  es: "Añadir servidor MCP"
+  pt: "Adicionar servidor MCP"
+  fr: "Ajouter un serveur MCP"
+  de: "Neuen MCP-Server hinzufügen"
+  it: "Aggiungi nuovo server MCP"
+  uk: "Додати новий сервер MCP"
+  ja: "新しい MCP サーバーを追加"
+  zh-Hans: "添加新的 MCP 服务器"
+
+"Edit {name} MCP Server":
+  es: "Editar el servidor MCP {name}"
+  pt: "Editar o servidor MCP {name}"
+  fr: "Modifier le serveur MCP {name}"
+  de: "MCP-Server {name} bearbeiten"
+  it: "Modifica il server MCP {name}"
+  uk: "Редагувати сервер MCP {name}"
+  ja: "MCP サーバー {name} を編集"
+  zh-Hans: "编辑 MCP 服务器 {name}"
+
+"Edit MCP Server":
+  es: "Editar servidor MCP"
+  pt: "Editar servidor MCP"
+  fr: "Modifier le serveur MCP"
+  de: "MCP-Server bearbeiten"
+  it: "Modifica server MCP"
+  uk: "Редагувати сервер MCP"
+  ja: "MCP サーバーを編集"
+  zh-Hans: "编辑 MCP 服务器"
+
+"Log out":
+  es: "Cerrar sesión"
+  pt: "Sair"
+  fr: "Se déconnecter"
+  de: "Abmelden"
+  it: "Esci"
+  uk: "Вийти"
+  ja: "ログアウト"
+  zh-Hans: "退出登录"
+
+"This MCP server contains secrets. Visit Settings > Privacy to modify your secret redaction settings.":
+  es: "Este servidor MCP contiene secretos. Ve a Ajustes > Privacidad para cambiar la configuración de ocultación de secretos."
+  pt: "Este servidor MCP contém segredos. Acesse Configurações > Privacidade para alterar as configurações de ocultação de segredos."
+  fr: "Ce serveur MCP contient des secrets. Accédez à Paramètres > Confidentialité pour modifier vos paramètres de masquage des secrets."
+  de: "Dieser MCP-Server enthält Geheimnisse. Unter Einstellungen > Datenschutz können Sie die Einstellungen zum Schwärzen von Geheimnissen ändern."
+  it: "Questo server MCP contiene segreti. Vai in Impostazioni > Privacy per modificare le impostazioni di oscuramento dei segreti."
+  uk: "Цей сервер MCP містить секрети. Перейдіть у Налаштування > Конфіденційність, щоб змінити параметри приховування секретів."
+  ja: "この MCP サーバーにはシークレットが含まれています。シークレットの秘匿設定を変更するには、[設定] > [プライバシー] に移動してください。"
+  zh-Hans: "此 MCP 服务器包含机密信息。请前往“设置 > 隐私”修改机密信息隐藏设置。"
+
+"No MCP Server specified.":
+  es: "No se ha especificado ningún servidor MCP."
+  pt: "Nenhum servidor MCP especificado."
+  fr: "Aucun serveur MCP spécifié."
+  de: "Kein MCP-Server angegeben."
+  it: "Nessun server MCP specificato."
+  uk: "Сервер MCP не вказано."
+  ja: "MCP サーバーが指定されていません。"
+  zh-Hans: "未指定 MCP 服务器。"
+
+"Cannot add multiple MCP servers while editing a single server.":
+  es: "No se pueden añadir varios servidores MCP mientras editas uno solo."
+  pt: "Não é possível adicionar vários servidores MCP ao editar um único servidor."
+  fr: "Impossible d'ajouter plusieurs serveurs MCP lors de la modification d'un seul serveur."
+  de: "Beim Bearbeiten eines einzelnen Servers können nicht mehrere MCP-Server hinzugefügt werden."
+  it: "Non è possibile aggiungere più server MCP mentre se ne modifica uno solo."
+  uk: "Не можна додати кілька серверів MCP під час редагування одного сервера."
+  ja: "1 つのサーバーの編集中に複数の MCP サーバーを追加することはできません。"
+  zh-Hans: "编辑单个服务器时无法添加多个 MCP 服务器。"
+
+"Install {name}":
+  es: "Instalar {name}"
+  pt: "Instalar {name}"
+  fr: "Installer {name}"
+  de: "{name} installieren"
+  it: "Installa {name}"
+  uk: "Встановити {name}"
+  ja: "{name} をインストール"
+  zh-Hans: "安装 {name}"
+
+"Shared from team":
+  es: "Compartido por el equipo"
+  pt: "Compartilhado pela equipe"
+  fr: "Partagé par l'équipe"
+  de: "Vom Team geteilt"
+  it: "Condiviso dal team"
+  uk: "Поширено командою"
+  ja: "チームから共有"
+  zh-Hans: "来自团队共享"
+
+"From another device":
+  es: "Desde otro dispositivo"
+  pt: "De outro dispositivo"
+  fr: "Depuis un autre appareil"
+  de: "Von einem anderen Gerät"
+  it: "Da un altro dispositivo"
+  uk: "З іншого пристрою"
+  ja: "別のデバイスから"
+  zh-Hans: "来自其他设备"
+
+"No MCP server selected":
+  es: "No hay ningún servidor MCP seleccionado"
+  pt: "Nenhum servidor MCP selecionado"
+  fr: "Aucun serveur MCP sélectionné"
+  de: "Kein MCP-Server ausgewählt"
+  it: "Nessun server MCP selezionato"
+  uk: "Сервер MCP не вибрано"
+  ja: "MCP サーバーが選択されていません"
+  zh-Hans: "未选择 MCP 服务器"
+
+"Add MCP servers to extend the Local Agent's capabilities. MCP servers expose data sources or tools to agents through a standardized interface, essentially acting like plugins. Add a custom server, or use the presets to get started with popular servers. You can also find team servers that have been shared with you here.":
+  es: "Añade servidores MCP para ampliar las capacidades del agente local. Los servidores MCP ofrecen fuentes de datos o herramientas a los agentes mediante una interfaz estándar, y funcionan básicamente como plugins. Añade un servidor personalizado o usa los ajustes predefinidos para empezar con servidores populares. Aquí también encontrarás los servidores de equipo que se han compartido contigo."
+  pt: "Adicione servidores MCP para ampliar os recursos do agente local. Os servidores MCP expõem fontes de dados ou ferramentas aos agentes por meio de uma interface padronizada, funcionando basicamente como plugins. Adicione um servidor personalizado ou use as predefinições para começar com servidores populares. Aqui você também encontra os servidores de equipe compartilhados com você."
+  fr: "Ajoutez des serveurs MCP pour étendre les capacités de l'agent local. Les serveurs MCP exposent des sources de données ou des outils aux agents via une interface standardisée, comme des plugins. Ajoutez un serveur personnalisé ou utilisez les préréglages pour démarrer avec des serveurs populaires. Vous trouverez aussi ici les serveurs d'équipe partagés avec vous."
+  de: "Fügen Sie MCP-Server hinzu, um die Fähigkeiten des lokalen Agenten zu erweitern. MCP-Server stellen Agenten Datenquellen oder Tools über eine standardisierte Schnittstelle bereit und funktionieren im Grunde wie Plugins. Fügen Sie einen eigenen Server hinzu oder starten Sie mit den Vorlagen für beliebte Server. Hier finden Sie auch Team-Server, die mit Ihnen geteilt wurden."
+  it: "Aggiungi server MCP per estendere le capacità dell'agente locale. I server MCP espongono fonti di dati o strumenti agli agenti tramite un'interfaccia standard, funzionando in pratica come plugin. Aggiungi un server personalizzato o usa le preimpostazioni per iniziare con i server più diffusi. Qui trovi anche i server del team condivisi con te."
+  uk: "Додавайте сервери MCP, щоб розширити можливості локального агента. Сервери MCP надають агентам джерела даних або інструменти через стандартизований інтерфейс і по суті працюють як плагіни. Додайте власний сервер або скористайтеся готовими налаштуваннями для популярних серверів. Тут також можна знайти сервери команди, якими з вами поділилися."
+  ja: "MCP サーバーを追加すると、ローカルエージェントの機能を拡張できます。MCP サーバーは標準化されたインターフェイスを通じてデータソースやツールをエージェントに提供する、プラグインのようなものです。カスタムサーバーを追加するか、プリセットを使って人気のサーバーから始めましょう。共有されたチームのサーバーもここで確認できます。"
+  zh-Hans: "添加 MCP 服务器以扩展本地代理的能力。MCP 服务器通过标准化接口向代理提供数据源或工具，本质上相当于插件。你可以添加自定义服务器，或使用预设快速开始使用热门服务器。你还可以在此找到与你共享的团队服务器。"
+
+"Once you add a MCP server, it will be shown here.":
+  es: "Cuando añadas un servidor MCP, aparecerá aquí."
+  pt: "Quando você adicionar um servidor MCP, ele aparecerá aqui."
+  fr: "Une fois ajouté, un serveur MCP apparaîtra ici."
+  de: "Sobald Sie einen MCP-Server hinzufügen, wird er hier angezeigt."
+  it: "Dopo aver aggiunto un server MCP, verrà mostrato qui."
+  uk: "Щойно ви додасте сервер MCP, він з'явиться тут."
+  ja: "MCP サーバーを追加すると、ここに表示されます。"
+  zh-Hans: "添加 MCP 服务器后，它将显示在这里。"
+
+"No search results found":
+  es: "No se han encontrado resultados"
+  pt: "Nenhum resultado encontrado"
+  fr: "Aucun résultat trouvé"
+  de: "Keine Suchergebnisse gefunden"
+  it: "Nessun risultato trovato"
+  uk: "Нічого не знайдено"
+  ja: "検索結果が見つかりません"
+  zh-Hans: "未找到搜索结果"
+
+"Search MCP Servers":
+  es: "Buscar servidores MCP"
+  pt: "Pesquisar servidores MCP"
+  fr: "Rechercher des serveurs MCP"
+  de: "MCP-Server durchsuchen"
+  it: "Cerca server MCP"
+  uk: "Пошук серверів MCP"
+  ja: "MCP サーバーを検索"
+  zh-Hans: "搜索 MCP 服务器"
+
+"Add":
+  es: "Añadir"
+  pt: "Adicionar"
+  fr: "Ajouter"
+  de: "Hinzufügen"
+  it: "Aggiungi"
+  uk: "Додати"
+  ja: "追加"
+  zh-Hans: "添加"
+
+"Available to install":
+  es: "Disponible para instalar"
+  pt: "Disponível para instalar"
+  fr: "Disponible à l'installation"
+  de: "Zur Installation verfügbar"
+  it: "Disponibile per l'installazione"
+  uk: "Доступно для встановлення"
+  ja: "インストール可能"
+  zh-Hans: "可安装"
+
+"Auto-spawn servers from third-party agents":
+  es: "Iniciar automáticamente servidores de agentes de terceros"
+  pt: "Iniciar automaticamente servidores de agentes de terceiros"
+  fr: "Lancer automatiquement les serveurs des agents tiers"
+  de: "Server von Drittanbieter-Agenten automatisch starten"
+  it: "Avvia automaticamente i server di agenti di terze parti"
+  uk: "Автоматично запускати сервери сторонніх агентів"
+  ja: "サードパーティのエージェントのサーバーを自動起動"
+  zh-Hans: "自动启动第三方代理的服务器"
+
+"Automatically detect and spawn MCP servers from globally-scoped third-party AI agent configuration files (e.g. in your home directory). Servers detected inside a repository are never spawned automatically and must be enabled individually in the \"Detected from\" sections below.":
+  es: "Detecta e inicia automáticamente servidores MCP a partir de archivos de configuración globales de agentes de IA de terceros (por ejemplo, en tu directorio personal). Los servidores detectados dentro de un repositorio nunca se inician automáticamente y deben activarse uno a uno en las secciones «Detectado en» de abajo."
+  pt: "Detecta e inicia automaticamente servidores MCP a partir de arquivos de configuração globais de agentes de IA de terceiros (por exemplo, no seu diretório pessoal). Servidores detectados dentro de um repositório nunca são iniciados automaticamente e precisam ser ativados individualmente nas seções “Detectado em” abaixo."
+  fr: "Détecte et lance automatiquement les serveurs MCP à partir des fichiers de configuration globaux d'agents d'IA tiers (par exemple dans votre répertoire personnel). Les serveurs détectés dans un dépôt ne sont jamais lancés automatiquement et doivent être activés individuellement dans les sections « Détecté depuis » ci-dessous."
+  de: "Erkennt und startet automatisch MCP-Server aus global gültigen Konfigurationsdateien von KI-Agenten anderer Anbieter (z. B. in Ihrem Home-Verzeichnis). In einem Repository erkannte Server werden nie automatisch gestartet und müssen in den Abschnitten „Erkannt aus“ unten einzeln aktiviert werden."
+  it: "Rileva e avvia automaticamente i server MCP dai file di configurazione globali di agenti IA di terze parti (ad esempio nella tua directory home). I server rilevati all'interno di un repository non vengono mai avviati automaticamente e devono essere attivati singolarmente nelle sezioni “Rilevato da” qui sotto."
+  uk: "Автоматично виявляти й запускати сервери MCP з глобальних файлів конфігурації сторонніх агентів ШІ (наприклад, у вашому домашньому каталозі). Сервери, виявлені всередині репозиторію, ніколи не запускаються автоматично — їх потрібно ввімкнути окремо в розділах «Виявлено з» нижче."
+  ja: "グローバルなサードパーティ AI エージェントの設定ファイル（ホームディレクトリ内など）から MCP サーバーを自動的に検出して起動します。リポジトリ内で検出されたサーバーは自動的に起動されないため、下の「検出元」セクションで個別に有効にする必要があります。"
+  zh-Hans: "自动从全局范围的第三方 AI 代理配置文件（例如主目录中的文件）检测并启动 MCP 服务器。在仓库中检测到的服务器绝不会自动启动，必须在下方的“检测来源”部分中逐个启用。"
+
+"My MCPs":
+  es: "Mis MCP"
+  pt: "Meus MCPs"
+  fr: "Mes MCP"
+  de: "Meine MCPs"
+  it: "I miei MCP"
+  uk: "Мої MCP"
+  ja: "マイ MCP"
+  zh-Hans: "我的 MCP"
+
+"Shared by Termloc and {name}":
+  es: "Compartidos por Termloc y {name}"
+  pt: "Compartilhados pelo Termloc e por {name}"
+  fr: "Partagés par Termloc et {name}"
+  de: "Geteilt von Termloc und {name}"
+  it: "Condivisi da Termloc e {name}"
+  uk: "Поширено Termloc і {name}"
+  ja: "Termloc と {name} が共有"
+  zh-Hans: "由 Termloc 和 {name} 共享"
+
+"Shared by Termloc and from other devices":
+  es: "Compartidos por Termloc y desde otros dispositivos"
+  pt: "Compartilhados pelo Termloc e de outros dispositivos"
+  fr: "Partagés par Termloc et depuis d'autres appareils"
+  de: "Geteilt von Termloc und von anderen Geräten"
+  it: "Condivisi da Termloc e da altri dispositivi"
+  uk: "Поширено Termloc і з інших пристроїв"
+  ja: "Termloc と他のデバイスから共有"
+  zh-Hans: "由 Termloc 和其他设备共享"
+
+"Shared from Termloc":
+  es: "Compartidos desde Termloc"
+  pt: "Compartilhados pelo Termloc"
+  fr: "Partagés depuis Termloc"
+  de: "Von Termloc geteilt"
+  it: "Condivisi da Termloc"
+  uk: "Поширено з Termloc"
+  ja: "Termloc から共有"
+  zh-Hans: "来自 Termloc 共享"
+
+"Detected from {provider}":
+  es: "Detectado en {provider}"
+  pt: "Detectado em {provider}"
+  fr: "Détecté depuis {provider}"
+  de: "Erkannt aus {provider}"
+  it: "Rilevato da {provider}"
+  uk: "Виявлено з {provider}"
+  ja: "{provider} から検出"
+  zh-Hans: "检测来源：{provider}"
+
+"global":
+  es: "global"
+  pt: "global"
+  fr: "global"
+  de: "global"
+  it: "globale"
+  uk: "глобально"
+  ja: "グローバル"
+  zh-Hans: "全局"
+
+"Detected from config file":
+  es: "Detectado en un archivo de configuración"
+  pt: "Detectado em um arquivo de configuração"
+  fr: "Détecté depuis un fichier de configuration"
+  de: "Aus Konfigurationsdatei erkannt"
+  it: "Rilevato da un file di configurazione"
+  uk: "Виявлено з файлу конфігурації"
+  ja: "設定ファイルから検出"
+  zh-Hans: "从配置文件中检测到"
+
+"Shared by: {creator}":
+  es: "Compartido por: {creator}"
+  pt: "Compartilhado por: {creator}"
+  fr: "Partagé par : {creator}"
+  de: "Geteilt von: {creator}"
+  it: "Condiviso da: {creator}"
+  uk: "Поширив: {creator}"
+  ja: "共有者: {creator}"
+  zh-Hans: "共享者：{creator}"
+
+"Shared by a team member":
+  es: "Compartido por un miembro del equipo"
+  pt: "Compartilhado por um membro da equipe"
+  fr: "Partagé par un membre de l'équipe"
+  de: "Von einem Teammitglied geteilt"
+  it: "Condiviso da un membro del team"
+  uk: "Поширено учасником команди"
+  ja: "チームメンバーが共有"
+  zh-Hans: "由团队成员共享"
+
+"MCP server updated":
+  es: "Servidor MCP actualizado"
+  pt: "Servidor MCP atualizado"
+  fr: "Serveur MCP mis à jour"
+  de: "MCP-Server aktualisiert"
+  it: "Server MCP aggiornato"
+  uk: "Сервер MCP оновлено"
+  ja: "MCP サーバーを更新しました"
+  zh-Hans: "MCP 服务器已更新"
+
+"Offline":
+  es: "Sin conexión"
+  pt: "Offline"
+  fr: "Hors ligne"
+  de: "Offline"
+  it: "Offline"
+  uk: "Офлайн"
+  ja: "オフライン"
+  zh-Hans: "离线"
+
+"Starting server...":
+  es: "Iniciando el servidor..."
+  pt: "Iniciando o servidor..."
+  fr: "Démarrage du serveur..."
+  de: "Server wird gestartet..."
+  it: "Avvio del server..."
+  uk: "Запуск сервера..."
+  ja: "サーバーを起動中..."
+  zh-Hans: "正在启动服务器..."
+
+"Authenticating...":
+  es: "Autenticando..."
+  pt: "Autenticando..."
+  fr: "Authentification..."
+  de: "Authentifizierung..."
+  it: "Autenticazione..."
+  uk: "Автентифікація..."
+  ja: "認証中..."
+  zh-Hans: "正在验证身份..."
+
+"Shutting down...":
+  es: "Deteniendo..."
+  pt: "Encerrando..."
+  fr: "Arrêt en cours..."
+  de: "Wird beendet..."
+  it: "Arresto in corso..."
+  uk: "Зупинка..."
+  ja: "シャットダウン中..."
+  zh-Hans: "正在关闭..."
+
+"No tools available":
+  es: "No hay herramientas disponibles"
+  pt: "Nenhuma ferramenta disponível"
+  fr: "Aucun outil disponible"
+  de: "Keine Tools verfügbar"
+  it: "Nessuno strumento disponibile"
+  uk: "Немає доступних інструментів"
+  ja: "利用可能なツールはありません"
+  zh-Hans: "没有可用的工具"
+
+"{count} tools available":
+  es: "{count} herramientas disponibles"
+  pt: "{count} ferramentas disponíveis"
+  fr: "{count} outils disponibles"
+  de: "{count} Tools verfügbar"
+  it: "{count} strumenti disponibili"
+  uk: "Доступно інструментів: {count}"
+  ja: "{count} 個のツールが利用可能"
+  zh-Hans: "{count} 个可用工具"
+
+"Show logs":
+  es: "Mostrar registros"
+  pt: "Mostrar logs"
+  fr: "Afficher les journaux"
+  de: "Protokolle anzeigen"
+  it: "Mostra log"
+  uk: "Показати журнали"
+  ja: "ログを表示"
+  zh-Hans: "显示日志"
+
+"Share server":
+  es: "Compartir servidor"
+  pt: "Compartilhar servidor"
+  fr: "Partager le serveur"
+  de: "Server teilen"
+  it: "Condividi server"
+  uk: "Поділитися сервером"
+  ja: "サーバーを共有"
+  zh-Hans: "共享服务器"
+
+"Edit config":
+  es: "Editar configuración"
+  pt: "Editar configuração"
+  fr: "Modifier la configuration"
+  de: "Konfiguration bearbeiten"
+  it: "Modifica configurazione"
+  uk: "Редагувати конфігурацію"
+  ja: "設定を編集"
+  zh-Hans: "编辑配置"
+
+"Set up":
+  es: "Configurar"
+  pt: "Configurar"
+  fr: "Configurer"
+  de: "Einrichten"
+  it: "Configura"
+  uk: "Налаштувати"
+  ja: "セットアップ"
+  zh-Hans: "设置"
+
+"Server update available":
+  es: "Actualización del servidor disponible"
+  pt: "Atualização do servidor disponível"
+  fr: "Mise à jour du serveur disponible"
+  de: "Server-Update verfügbar"
+  it: "Aggiornamento del server disponibile"
+  uk: "Доступне оновлення сервера"
+  ja: "サーバーのアップデートがあります"
+  zh-Hans: "有可用的服务器更新"
+
+"Update":
+  es: "Actualizar"
+  pt: "Atualizar"
+  fr: "Mettre à jour"
+  de: "Aktualisieren"
+  it: "Aggiorna"
+  uk: "Оновити"
+  ja: "アップデート"
+  zh-Hans: "更新"
+
+"Server":
+  es: "Servidor"
+  pt: "Servidor"
+  fr: "Serveur"
+  de: "Server"
+  it: "Server"
+  uk: "Сервер"
+  ja: "サーバー"
+  zh-Hans: "服务器"
+
+"Update {name}":
+  es: "Actualizar {name}"
+  pt: "Atualizar {name}"
+  fr: "Mettre à jour {name}"
+  de: "{name} aktualisieren"
+  it: "Aggiorna {name}"
+  uk: "Оновити {name}"
+  ja: "{name} をアップデート"
+  zh-Hans: "更新 {name}"
+
+"This server has {count} updates available, which would you like to proceed with?":
+  es: "Este servidor tiene {count} actualizaciones disponibles. ¿Con cuál quieres continuar?"
+  pt: "Este servidor tem {count} atualizações disponíveis. Com qual você deseja continuar?"
+  fr: "Ce serveur a {count} mises à jour disponibles. Laquelle souhaitez-vous appliquer ?"
+  de: "Für diesen Server sind {count} Updates verfügbar. Mit welchem möchten Sie fortfahren?"
+  it: "Per questo server sono disponibili {count} aggiornamenti. Con quale vuoi procedere?"
+  uk: "Для цього сервера доступно оновлень: {count}. Яке з них застосувати?"
+  ja: "このサーバーには {count} 件のアップデートがあります。どれを適用しますか？"
+  zh-Hans: "此服务器有 {count} 个可用更新，你想继续使用哪一个？"
+
+"Update from another device":
+  es: "Actualización desde otro dispositivo"
+  pt: "Atualização de outro dispositivo"
+  fr: "Mise à jour depuis un autre appareil"
+  de: "Update von einem anderen Gerät"
+  it: "Aggiornamento da un altro dispositivo"
+  uk: "Оновлення з іншого пристрою"
+  ja: "別のデバイスからのアップデート"
+  zh-Hans: "来自其他设备的更新"
+
+"Update from {name}":
+  es: "Actualización de {name}"
+  pt: "Atualização de {name}"
+  fr: "Mise à jour de {name}"
+  de: "Update von {name}"
+  it: "Aggiornamento da {name}"
+  uk: "Оновлення від {name}"
+  ja: "{name} からのアップデート"
+  zh-Hans: "来自 {name} 的更新"
+
+"Update from a team member":
+  es: "Actualización de un miembro del equipo"
+  pt: "Atualização de um membro da equipe"
+  fr: "Mise à jour d'un membre de l'équipe"
+  de: "Update von einem Teammitglied"
+  it: "Aggiornamento da un membro del team"
+  uk: "Оновлення від учасника команди"
+  ja: "チームメンバーからのアップデート"
+  zh-Hans: "来自团队成员的更新"
+
+"Version {new_version}":
+  es: "Versión {new_version}"
+  pt: "Versão {new_version}"
+  fr: "Version {new_version}"
+  de: "Version {new_version}"
+  it: "Versione {new_version}"
+  uk: "Версія {new_version}"
+  ja: "バージョン {new_version}"
+  zh-Hans: "版本 {new_version}"
+
+"No updates available":
+  es: "No hay actualizaciones disponibles"
+  pt: "Nenhuma atualização disponível"
+  fr: "Aucune mise à jour disponible"
+  de: "Keine Updates verfügbar"
+  it: "Nessun aggiornamento disponibile"
+  uk: "Немає доступних оновлень"
+  ja: "利用可能なアップデートはありません"
+  zh-Hans: "没有可用的更新"
+
+"MODELS":
+  es: "MODELOS"
+  pt: "MODELOS"
+  fr: "MODÈLES"
+  de: "MODELLE"
+  it: "MODELLI"
+  uk: "МОДЕЛІ"
+  ja: "モデル"
+  zh-Hans: "模型"
+
+"Base model:":
+  es: "Modelo base:"
+  pt: "Modelo base:"
+  fr: "Modèle de base :"
+  de: "Basismodell:"
+  it: "Modello base:"
+  uk: "Базова модель:"
+  ja: "ベースモデル:"
+  zh-Hans: "基础模型："
+
+"Full terminal use:":
+  es: "Uso completo del terminal:"
+  pt: "Uso completo do terminal:"
+  fr: "Utilisation complète du terminal :"
+  de: "Vollständige Terminalnutzung:"
+  it: "Uso completo del terminale:"
+  uk: "Повне використання терміналу:"
+  ja: "ターミナルのフル使用:"
+  zh-Hans: "完整终端使用："
+
+"Computer use:":
+  es: "Uso del ordenador:"
+  pt: "Uso do computador:"
+  fr: "Utilisation de l'ordinateur :"
+  de: "Computernutzung:"
+  it: "Uso del computer:"
+  uk: "Використання комп'ютера:"
+  ja: "コンピューターの使用:"
+  zh-Hans: "计算机使用："
+
+"PERMISSIONS":
+  es: "PERMISOS"
+  pt: "PERMISSÕES"
+  fr: "AUTORISATIONS"
+  de: "BERECHTIGUNGEN"
+  it: "AUTORIZZAZIONI"
+  uk: "ДОЗВОЛИ"
+  ja: "権限"
+  zh-Hans: "权限"
+
+"Apply code diffs:":
+  es: "Aplicar diffs de código:"
+  pt: "Aplicar diffs de código:"
+  fr: "Appliquer les diffs de code :"
+  de: "Code-Diffs anwenden:"
+  it: "Applica diff di codice:"
+  uk: "Застосовувати зміни коду:"
+  ja: "コードの差分を適用:"
+  zh-Hans: "应用代码差异："
+
+"Read files:":
+  es: "Leer archivos:"
+  pt: "Ler arquivos:"
+  fr: "Lire les fichiers :"
+  de: "Dateien lesen:"
+  it: "Leggi file:"
+  uk: "Читати файли:"
+  ja: "ファイルの読み取り:"
+  zh-Hans: "读取文件："
+
+"Execute commands:":
+  es: "Ejecutar comandos:"
+  pt: "Executar comandos:"
+  fr: "Exécuter des commandes :"
+  de: "Befehle ausführen:"
+  it: "Esegui comandi:"
+  uk: "Виконувати команди:"
+  ja: "コマンドの実行:"
+  zh-Hans: "执行命令："
+
+"Interact with running commands:":
+  es: "Interactuar con comandos en ejecución:"
+  pt: "Interagir com comandos em execução:"
+  fr: "Interagir avec les commandes en cours :"
+  de: "Mit laufenden Befehlen interagieren:"
+  it: "Interagisci con i comandi in esecuzione:"
+  uk: "Взаємодіяти з запущеними командами:"
+  ja: "実行中のコマンドの操作:"
+  zh-Hans: "与正在运行的命令交互："
+
+"Ask questions:":
+  es: "Hacer preguntas:"
+  pt: "Fazer perguntas:"
+  fr: "Poser des questions :"
+  de: "Fragen stellen:"
+  it: "Porre domande:"
+  uk: "Ставити запитання:"
+  ja: "質問:"
+  zh-Hans: "提问："
+
+"Run agents:":
+  es: "Ejecutar agentes:"
+  pt: "Executar agentes:"
+  fr: "Exécuter des agents :"
+  de: "Agenten ausführen:"
+  it: "Esegui agenti:"
+  uk: "Запускати агентів:"
+  ja: "エージェントの実行:"
+  zh-Hans: "运行代理："
+
+"Call MCP servers:":
+  es: "Llamar a servidores MCP:"
+  pt: "Chamar servidores MCP:"
+  fr: "Appeler des serveurs MCP :"
+  de: "MCP-Server aufrufen:"
+  it: "Chiama server MCP:"
+  uk: "Викликати сервери MCP:"
+  ja: "MCP サーバーの呼び出し:"
+  zh-Hans: "调用 MCP 服务器："
+
+"Call web tools:":
+  es: "Llamar a herramientas web:"
+  pt: "Chamar ferramentas web:"
+  fr: "Appeler des outils web :"
+  de: "Web-Tools aufrufen:"
+  it: "Chiama strumenti web:"
+  uk: "Викликати вебінструменти:"
+  ja: "Web ツールの呼び出し:"
+  zh-Hans: "调用网络工具："
+
+"Auto-sync plans to Drive:":
+  es: "Sincronizar planes con Drive automáticamente:"
+  pt: "Sincronizar planos com o Drive automaticamente:"
+  fr: "Synchroniser automatiquement les plans avec Drive :"
+  de: "Pläne automatisch mit Drive synchronisieren:"
+  it: "Sincronizza automaticamente i piani con Drive:"
+  uk: "Автосинхронізація планів із Drive:"
+  ja: "プランを Drive に自動同期:"
+  zh-Hans: "自动将计划同步到 Drive："
+
+"None":
+  es: "Ninguno"
+  pt: "Nenhum"
+  fr: "Aucun"
+  de: "Keine"
+  it: "Nessuno"
+  uk: "Немає"
+  ja: "なし"
+  zh-Hans: "无"
+
+"Never ask":
+  es: "No preguntar nunca"
+  pt: "Nunca perguntar"
+  fr: "Ne jamais demander"
+  de: "Nie fragen"
+  it: "Non chiedere mai"
+  uk: "Ніколи не запитувати"
+  ja: "確認しない"
+  zh-Hans: "从不询问"
+
+"Ask unless auto-approve":
+  es: "Preguntar salvo con aprobación automática"
+  pt: "Perguntar, exceto com aprovação automática"
+  fr: "Demander sauf en approbation automatique"
+  de: "Fragen, außer bei automatischer Genehmigung"
+  it: "Chiedi tranne con approvazione automatica"
+  uk: "Запитувати, якщо не ввімкнено автосхвалення"
+  ja: "自動承認時以外は確認"
+  zh-Hans: "除非自动批准，否则询问"
+
+"On":
+  es: "Activado"
+  pt: "Ativado"
+  fr: "Activé"
+  de: "An"
+  it: "Attivato"
+  uk: "Увімкнено"
+  ja: "オン"
+  zh-Hans: "开启"
+
+"Directory allowlist:":
+  es: "Directorios permitidos:"
+  pt: "Diretórios permitidos:"
+  fr: "Répertoires autorisés :"
+  de: "Verzeichnis-Positivliste:"
+  it: "Directory consentite:"
+  uk: "Дозволені каталоги:"
+  ja: "ディレクトリの許可リスト:"
+  zh-Hans: "目录允许列表："
+
+"Command allowlist:":
+  es: "Comandos permitidos:"
+  pt: "Comandos permitidos:"
+  fr: "Commandes autorisées :"
+  de: "Befehls-Positivliste:"
+  it: "Comandi consentiti:"
+  uk: "Дозволені команди:"
+  ja: "コマンドの許可リスト:"
+  zh-Hans: "命令允许列表："
+
+"Command denylist:":
+  es: "Comandos bloqueados:"
+  pt: "Comandos bloqueados:"
+  fr: "Commandes interdites :"
+  de: "Befehls-Sperrliste:"
+  it: "Comandi bloccati:"
+  uk: "Заборонені команди:"
+  ja: "コマンドの拒否リスト:"
+  zh-Hans: "命令拒绝列表："
+
+"MCP allowlist:":
+  es: "MCP permitidos:"
+  pt: "MCP permitidos:"
+  fr: "MCP autorisés :"
+  de: "MCP-Positivliste:"
+  it: "MCP consentiti:"
+  uk: "Дозволені MCP:"
+  ja: "MCP の許可リスト:"
+  zh-Hans: "MCP 允许列表："
+
+"MCP denylist:":
+  es: "MCP bloqueados:"
+  pt: "MCP bloqueados:"
+  fr: "MCP interdits :"
+  de: "MCP-Sperrliste:"
+  it: "MCP bloccati:"
+  uk: "Заборонені MCP:"
+  ja: "MCP の拒否リスト:"
+  zh-Hans: "MCP 拒绝列表："

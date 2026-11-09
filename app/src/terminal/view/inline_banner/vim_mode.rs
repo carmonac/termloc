@@ -1,3 +1,4 @@
+use i18n::t;
 use warpui::Element;
 use warpui::elements::MouseStateHandle;
 
@@ -27,7 +28,7 @@ pub fn render_vim_mode_banner(
     let active_ui_text_color = appearance.theme().active_ui_text_color();
 
     let buttons = vec![InlineBannerTextButton {
-        text: "Enable".to_owned(),
+        text: t!("Enable").to_owned(),
         text_color: active_ui_text_color.into_solid(),
         button_state: InlineBannerButtonState {
             on_click_event: TerminalAction::VimModeBanner(VimModeBannerAction::Enable),
@@ -47,7 +48,7 @@ pub fn render_vim_mode_banner(
         InlineBannerStyle::LowPriority,
         appearance,
         InlineBannerContent {
-            title: "Enable Termloc's Vim keybindings?".to_string(),
+            title: t!("Enable Termloc's Vim keybindings?").to_string(),
             buttons,
             close_button: Some(close_button),
             ..Default::default()

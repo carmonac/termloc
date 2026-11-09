@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
+use i18n::t;
 use warp::tui_export::{
     AIActionStatus, AIAgentActionId, AIAgentActionResultType, AIConversationId,
     AskUserQuestionAction, AskUserQuestionAnswerItem, AskUserQuestionEffect, AskUserQuestionItem,
@@ -207,7 +208,7 @@ impl TuiAskQuestionView {
             .question
             .supports_other()
             .then(|| OptionFooter::CustomText {
-                label: "Other…".to_owned(),
+                label: t!("Other…").to_owned(),
             });
         let selected_id = current.draft.and_then(|draft| {
             draft.other_text.clone().or_else(|| {
@@ -425,7 +426,7 @@ impl TuiAskQuestionView {
         let position = TuiText::from_spans([
             ("← ".to_owned(), builder.muted_text_style()),
             (format!("{index} "), builder.primary_text_style()),
-            (format!("of {total} "), builder.muted_text_style()),
+            (t!("of {total} ", total = total), builder.muted_text_style()),
             ("→".to_owned(), builder.muted_text_style()),
         ])
         .finish();
@@ -434,7 +435,7 @@ impl TuiAskQuestionView {
                 TuiText::from_spans([
                     ("■ ".to_owned(), builder.attention_glyph_style()),
                     (
-                        "Agent questions".to_owned(),
+                        t!("Agent questions").to_owned(),
                         builder.primary_text_style().add_modifier(Modifier::BOLD),
                     ),
                 ])
@@ -445,27 +446,39 @@ impl TuiAskQuestionView {
             .finish();
         let mut question = current.question.question.clone();
         if current.question.is_multiselect() {
-            question.push_str(" (select all that apply)");
+            question.push_str(t!(" (select all that apply)"));
         }
         let footer = if current.question.is_multiselect() {
             TuiText::from_spans([
                 ("Shift + Enter ".to_owned(), builder.primary_text_style()),
-                ("to advance ".to_owned(), builder.muted_text_style()),
-                ("Enter or number ".to_owned(), builder.primary_text_style()),
-                ("to select ".to_owned(), builder.muted_text_style()),
+                (t!("to advance ").to_owned(), builder.muted_text_style()),
+                (
+                    t!("Enter or number ").to_owned(),
+                    builder.primary_text_style(),
+                ),
+                (t!("to select ").to_owned(), builder.muted_text_style()),
                 ("Ctrl + C ".to_owned(), builder.primary_text_style()),
-                ("to cancel question".to_owned(), builder.muted_text_style()),
+                (
+                    t!("to cancel question").to_owned(),
+                    builder.muted_text_style(),
+                ),
             ])
             .truncate()
             .finish()
         } else {
             TuiText::from_spans([
-                ("Enter or number ".to_owned(), builder.primary_text_style()),
-                ("to select ".to_owned(), builder.muted_text_style()),
-                ("Tab or ← → ".to_owned(), builder.primary_text_style()),
-                ("to navigate ".to_owned(), builder.muted_text_style()),
+                (
+                    t!("Enter or number ").to_owned(),
+                    builder.primary_text_style(),
+                ),
+                (t!("to select ").to_owned(), builder.muted_text_style()),
+                (t!("Tab or ← → ").to_owned(), builder.primary_text_style()),
+                (t!("to navigate ").to_owned(), builder.muted_text_style()),
                 ("Ctrl + C ".to_owned(), builder.primary_text_style()),
-                ("to cancel question".to_owned(), builder.muted_text_style()),
+                (
+                    t!("to cancel question").to_owned(),
+                    builder.muted_text_style(),
+                ),
             ])
             .truncate()
             .finish()
@@ -494,7 +507,7 @@ impl TuiAskQuestionView {
         TuiText::from_spans([
             ("■ ".to_owned(), builder.muted_text_style()),
             (
-                "Questions unavailable".to_owned(),
+                t!("Questions unavailable").to_owned(),
                 builder.muted_text_style(),
             ),
         ])
@@ -509,10 +522,10 @@ impl TuiAskQuestionView {
         match result {
             AskUserQuestionResult::Success { answers } => self.render_answers(answers, app),
             AskUserQuestionResult::SkippedByAutoApprove { .. } => {
-                self.render_summary("Questions skipped due to auto-approve", false, app)
+                self.render_summary(t!("Questions skipped due to auto-approve"), false, app)
             }
             AskUserQuestionResult::Error(_) | AskUserQuestionResult::Cancelled => {
-                self.render_summary("Questions skipped", false, app)
+                self.render_summary(t!("Questions skipped"), false, app)
             }
         }
     }
@@ -525,13 +538,17 @@ impl TuiAskQuestionView {
         let answered = answers.iter().filter(|answer| !answer.is_skipped()).count();
         let total = answers.len();
         let label = if answered == 0 {
-            "Questions skipped".to_owned()
+            t!("Questions skipped").to_owned()
         } else if answered == total && total == 1 {
-            "Answered question".to_owned()
+            t!("Answered question").to_owned()
         } else if answered == total {
-            format!("Answered all {total} questions")
+            t!("Answered all {total} questions", total = total)
         } else {
-            format!("Answered {answered} of {total} questions")
+            t!(
+                "Answered {answered} of {total} questions",
+                answered = answered,
+                total = total
+            )
         };
         let builder = TuiUiBuilder::from_app(app);
         let mut content = TuiFlex::column();
@@ -546,17 +563,17 @@ impl TuiAskQuestionView {
                     }
                 })
                 .map(AskUserQuestionAnswerItem::display_text)
-                .unwrap_or_else(|| "Skipped".to_owned());
+                .unwrap_or_else(|| t!("Skipped").to_owned());
             content.add_child(
                 TuiContainer::new(
                     TuiFlex::column()
                         .child(
-                            TuiText::new(format!("Q: {}", question.question))
+                            TuiText::new(t!("Q: {question}", question = question.question))
                                 .with_style(builder.primary_text_style())
                                 .finish(),
                         )
                         .child(
-                            TuiText::new(format!("A: {answer}"))
+                            TuiText::new(t!("A: {answer}", answer = answer))
                                 .with_style(builder.muted_text_style())
                                 .finish(),
                         )
@@ -642,7 +659,7 @@ impl TuiView for TuiAskQuestionView {
             return self.render_unavailable(app);
         }
         if status.is_none() && self.should_restore_as_skipped(app) {
-            return self.render_summary("Questions skipped", false, app);
+            return self.render_summary(t!("Questions skipped"), false, app);
         }
         match self.session.phase() {
             AskUserQuestionPhase::Completed { answers } => self.render_answers(answers, app),
@@ -653,7 +670,7 @@ impl TuiView for TuiAskQuestionView {
                 let builder = TuiUiBuilder::from_app(app);
                 TuiText::from_spans([
                     ("○ ".to_owned(), builder.muted_text_style()),
-                    ("Agent questions".to_owned(), builder.muted_text_style()),
+                    (t!("Agent questions").to_owned(), builder.muted_text_style()),
                 ])
                 .finish()
             }

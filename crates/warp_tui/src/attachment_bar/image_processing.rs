@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 use base64::Engine as _;
 use base64::engine::general_purpose;
+use i18n::t;
 use warp::tui_export::{
     ImageContext, MAX_IMAGE_SIZE_BYTES, MIME_SNIFF_BYTES, ProcessImageResult, infer_mime_type,
     is_supported_image_mime_type, process_image_for_agent,
@@ -101,34 +102,40 @@ pub(super) async fn process_paths(paths: Vec<PathBuf>) -> Result<Vec<ImageContex
     for path in paths {
         let metadata = async_fs::metadata(&path)
             .await
-            .map_err(|_| format!("Could not read image {}.", path.display()))?;
+            .map_err(|_| t!("Could not read image {path}.", path = path.display()))?;
         if !metadata.is_file() {
-            return Err(format!("Image path is not a file: {}.", path.display()));
+            return Err(t!(
+                "Image path is not a file: {path}.",
+                path = path.display()
+            ));
         }
         if metadata.len() > u64::try_from(MAX_IMAGE_SIZE_BYTES).unwrap_or(u64::MAX) {
-            return Err(format!("Image is too large: {}.", path.display()));
+            return Err(t!("Image is too large: {path}.", path = path.display()));
         }
         let bytes = async_fs::read(&path)
             .await
-            .map_err(|_| format!("Could not read image {}.", path.display()))?;
+            .map_err(|_| t!("Could not read image {path}.", path = path.display()))?;
         let mime_type = infer_mime_type(&path, &bytes[..bytes.len().min(MIME_SNIFF_BYTES)]);
         if !is_supported_image_mime_type(&mime_type) {
-            return Err(format!(
-                "Unsupported image type for {}. Use PNG, JPG, GIF, or WebP.",
-                path.display()
+            return Err(t!(
+                "Unsupported image type for {path}. Use PNG, JPG, GIF, or WebP.",
+                path = path.display()
             ));
         }
         let data = match process_image_for_agent(&bytes) {
             ProcessImageResult::Success { data } => data,
             ProcessImageResult::TooLarge => {
-                return Err(format!("Image is too large: {}.", path.display()));
+                return Err(t!("Image is too large: {path}.", path = path.display()));
             }
             ProcessImageResult::Error(_) => {
-                return Err(format!("Could not process image {}.", path.display()));
+                return Err(t!("Could not process image {path}.", path = path.display()));
             }
         };
         let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
-            return Err(format!("Image has no valid filename: {}.", path.display()));
+            return Err(t!(
+                "Image has no valid filename: {path}.",
+                path = path.display()
+            ));
         };
         images.push(ImageContext {
             data: general_purpose::STANDARD.encode(data),
@@ -143,7 +150,7 @@ pub(super) async fn process_paths(paths: Vec<PathBuf>) -> Result<Vec<ImageContex
 pub(super) async fn read_clipboard_content() -> Result<ClipboardContent, String> {
     blocking::unblock(|| -> Result<ClipboardContent, String> {
         let mut clipboard = warpui::platform::create_system_clipboard()
-            .map_err(|_| "The system clipboard is unavailable.".to_owned())?;
+            .map_err(|_| t!("The system clipboard is unavailable.").to_owned())?;
         Ok(clipboard.read())
     })
     .await
@@ -152,7 +159,7 @@ pub(super) async fn read_clipboard_content() -> Result<ClipboardContent, String>
 pub(super) fn process_clipboard_content(content: ClipboardContent) -> Result<ImageContext, String> {
     let images = content
         .images
-        .ok_or_else(|| "Clipboard image data is unavailable.".to_owned())?;
+        .ok_or_else(|| t!("Clipboard image data is unavailable.").to_owned())?;
     let image = CLIPBOARD_IMAGE_MIME_TYPES
         .iter()
         .find_map(|mime_type| {
@@ -161,16 +168,18 @@ pub(super) fn process_clipboard_content(content: ClipboardContent) -> Result<Ima
                 .find(|image| image.mime_type == *mime_type)
                 .cloned()
         })
-        .ok_or_else(|| "The clipboard does not contain a supported image.".to_owned())?;
+        .ok_or_else(|| t!("The clipboard does not contain a supported image.").to_owned())?;
     process_clipboard_image_data(image)
 }
 
 fn process_clipboard_image_data(image: ImageData) -> Result<ImageContext, String> {
     let data = match process_image_for_agent(&image.data) {
         ProcessImageResult::Success { data } => data,
-        ProcessImageResult::TooLarge => return Err("The clipboard image is too large.".to_owned()),
+        ProcessImageResult::TooLarge => {
+            return Err(t!("The clipboard image is too large.").to_owned());
+        }
         ProcessImageResult::Error(_) => {
-            return Err("The clipboard image could not be processed.".to_owned());
+            return Err(t!("The clipboard image could not be processed.").to_owned());
         }
     };
     Ok(ImageContext {

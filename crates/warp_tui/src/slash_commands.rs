@@ -6,11 +6,12 @@
 //! shared-source queries, and snapshotting render-friendly row data.
 use std::ops::Range;
 
+use i18n::t;
 use string_offset::CharOffset;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::search::data_source::QueryResult;
 use warp::search::mixer::SearchMixerEvent;
-use warp::settings::{AISettings, AppEditorSettings, TuiTheme, TuiThemeSettings};
+use warp::settings::{AISettings, AppEditorSettings, LanguageSettings, TuiTheme, TuiThemeSettings};
 use warp::tui_export::{
     AcceptSlashCommandOrSavedPrompt, Appearance, ConversationSelectionHandle,
     ParsedSlashCommandInput, SlashCommandDataSource as _, SlashCommandMixer,
@@ -277,9 +278,9 @@ impl TuiSlashCommandModel {
         };
         let status = if list.rows().is_empty() {
             Some(if list.is_loading() {
-                TuiInlineMenuStatus::Loading("Loading slash commands…".to_owned())
+                TuiInlineMenuStatus::Loading(t!("Loading slash commands…").to_owned())
             } else {
-                TuiInlineMenuStatus::Empty("No slash commands found".to_owned())
+                TuiInlineMenuStatus::Empty(t!("No slash commands found").to_owned())
             })
         } else {
             None
@@ -292,7 +293,10 @@ impl TuiSlashCommandModel {
                 .map(|row| TuiInlineMenuRow {
                     title: row.title.clone(),
                     prefix: None,
-                    description: row.description.clone(),
+                    description: row
+                        .description
+                        .as_deref()
+                        .map(|description| t!(description).to_owned()),
                     state_suffix: self.state_suffix(&row.title, ctx),
                     promotional_suffix: None,
                     is_selectable: true,
@@ -318,14 +322,21 @@ impl TuiSlashCommandModel {
         if title == slash_commands::THEME.name {
             let selected_theme = TuiThemeSettings::as_ref(ctx).selected_theme();
             return Some(match selected_theme {
-                TuiTheme::Auto => format!(
-                    "(currently auto: {})",
-                    TuiTheme::from(Appearance::as_ref(ctx).theme()).display_name()
+                TuiTheme::Auto => t!(
+                    "(currently auto: {theme})",
+                    theme = t!(TuiTheme::from(Appearance::as_ref(ctx).theme()).display_name())
                 ),
                 TuiTheme::Light | TuiTheme::Dark => {
-                    format!("(currently {})", selected_theme.display_name())
+                    t!(
+                        "(currently {state})",
+                        state = t!(selected_theme.display_name())
+                    )
                 }
             });
+        }
+        if title == slash_commands::LANGUAGE.name && ctx.has_singleton_model::<LanguageSettings>() {
+            let preference = LanguageSettings::as_ref(ctx).preference();
+            return Some(t!("(currently {state})", state = preference.display_name()));
         }
         let enabled = if title == slash_commands::AUTO_APPROVE.name {
             self.auto_approve_enabled(ctx)
@@ -339,10 +350,12 @@ impl TuiSlashCommandModel {
         } else {
             return None;
         };
-        Some(format!(
-            "(currently {})",
-            if enabled { "on" } else { "off" }
-        ))
+        let suffix = if enabled {
+            t!("(currently on)")
+        } else {
+            t!("(currently off)")
+        };
+        Some(suffix.to_owned())
     }
 
     fn update_from_input(&mut self, force_query: bool, ctx: &mut ModelContext<Self>) {

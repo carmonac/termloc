@@ -2,6 +2,7 @@ use ai::agent::action::{
     CommentSide, InsertReviewComment, InsertedCommentLocation, format_review_comment_thread,
     group_review_comment_threads,
 };
+use i18n::t;
 use markdown_parser::parse_markdown;
 use warp::tui_export::{AIActionStatus, AIAgentAction};
 use warpui_core::AppContext;
@@ -68,7 +69,7 @@ pub(crate) fn render_review_comments_tool_call(
 
 fn format_comment_target(comment: &InsertReviewComment) -> String {
     let Some(location) = &comment.comment_location else {
-        return "Pull request".to_owned();
+        return t!("Pull request").to_owned();
     };
     format_location(location)
 }
@@ -86,9 +87,9 @@ fn format_location(location: &InsertedCommentLocation) -> String {
         format!("{}-{}", range.start, range.end)
     };
     let side = match line.side {
-        Some(CommentSide::Right) => "new",
-        Some(CommentSide::Left) => "old",
-        None => "diff",
+        Some(CommentSide::Right) => t!("new"),
+        Some(CommentSide::Left) => t!("old"),
+        None => t!("diff"),
     };
     format!("{}:{line_label} ({side})", location.relative_file_path)
 }

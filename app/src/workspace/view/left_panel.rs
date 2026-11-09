@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -227,8 +228,8 @@ impl LeftPanelView {
     ) -> Box<dyn Element> {
         let (title, description) = match (view, availability) {
             (ToolPanelView::ConversationListView, ToolPanelAvailability::RequiresAi) => (
-                "Turn on AI to access Agent conversations",
-                "Enable AI to access your conversation history.",
+                t!("Turn on AI to access Agent conversations"),
+                t!("Enable AI to access your conversation history."),
             ),
             (
                 ToolPanelView::ProjectExplorer
@@ -239,8 +240,8 @@ impl LeftPanelView {
             | (_, ToolPanelAvailability::Available) => {
                 debug_assert!(false, "unexpected locked tool-panel state");
                 (
-                    "Feature unavailable",
-                    "This feature is currently unavailable.",
+                    t!("Feature unavailable"),
+                    t!("This feature is currently unavailable."),
                 )
             }
         };
@@ -470,7 +471,7 @@ impl LeftPanelView {
                 ToolbeltButtonConfig {
                     icon: Icon::FileCopy,
                     active_icon: None,
-                    tooltip_text: "Project explorer".to_string(),
+                    tooltip_text: t!("Project explorer").to_string(),
                     action: LeftPanelAction::ProjectExplorer,
                     render_with_active_state: false,
                     tooltip_keybinding: toolbelt_tooltip_keybinding(&tooltip_keybinding_names, ctx),
@@ -486,7 +487,7 @@ impl LeftPanelView {
                 ToolbeltButtonConfig {
                     icon: Icon::Search,
                     active_icon: None,
-                    tooltip_text: "Global search".to_string(),
+                    tooltip_text: t!("Global search").to_string(),
                     action: LeftPanelAction::GlobalSearch {
                         entry_focus: GlobalSearchEntryFocus::QueryEditor,
                     },
@@ -504,7 +505,7 @@ impl LeftPanelView {
                 ToolbeltButtonConfig {
                     icon: Icon::WarpDrive,
                     active_icon: None,
-                    tooltip_text: "Drive".to_string(),
+                    tooltip_text: t!("Drive").to_string(),
                     action: LeftPanelAction::WarpDrive,
                     render_with_active_state: false,
                     tooltip_keybinding: toolbelt_tooltip_keybinding(&tooltip_keybinding_names, ctx),
@@ -520,7 +521,7 @@ impl LeftPanelView {
                 ToolbeltButtonConfig {
                     icon: Icon::Conversation,
                     active_icon: Some(Icon::Conversation),
-                    tooltip_text: "Agent conversations".to_string(),
+                    tooltip_text: t!("Agent conversations").to_string(),
                     action: LeftPanelAction::ConversationListView,
                     render_with_active_state: false,
                     tooltip_keybinding: toolbelt_tooltip_keybinding(&tooltip_keybinding_names, ctx),
@@ -883,12 +884,12 @@ impl LeftPanelView {
 
         let tooltip = if let Some(keybinding) = tooltip_keybinding {
             ui_builder
-                .tool_tip_with_sublabel("Close panel".to_string(), keybinding)
+                .tool_tip_with_sublabel(t!("Close panel").to_string(), keybinding)
                 .build()
                 .finish()
         } else {
             ui_builder
-                .tool_tip("Close panel".to_string())
+                .tool_tip(t!("Close panel").to_string())
                 .build()
                 .finish()
         };

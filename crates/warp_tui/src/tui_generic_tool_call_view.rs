@@ -1,5 +1,6 @@
 //! Permission-capable view for tool calls without bespoke TUI bodies.
 
+use i18n::t;
 use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentActionType, AIConversationId, BlocklistAIActionEvent,
     BlocklistAIActionModel, CancellationReason, NewConversationDecision, mcp_server_name_for_id,
@@ -193,43 +194,53 @@ impl TuiGenericToolCallView {
     /// its server. `None` for non-MCP actions or unknown/legacy servers.
     fn permission_question(&self, server_name: Option<&str>) -> String {
         match &self.action.action {
-            AIAgentActionType::ReadFiles(_) => "Is it OK if I read these files?".to_owned(),
+            AIAgentActionType::ReadFiles(_) => t!("Is it OK if I read these files?").to_owned(),
             AIAgentActionType::SearchCodebase(_) => {
-                "Is it OK if I search this codebase?".to_owned()
+                t!("Is it OK if I search this codebase?").to_owned()
             }
-            AIAgentActionType::Grep { .. } => "Is it OK if I search these files?".to_owned(),
+            AIAgentActionType::Grep { .. } => t!("Is it OK if I search these files?").to_owned(),
             AIAgentActionType::FileGlob { .. } | AIAgentActionType::FileGlobV2 { .. } => {
-                "Is it OK if I find files matching these patterns?".to_owned()
+                t!("Is it OK if I find files matching these patterns?").to_owned()
             }
             AIAgentActionType::CallMCPTool { name, .. } => {
                 if name.is_empty() {
                     match server_name {
-                        Some(server) => format!("Is it OK if I call an MCP tool on {server}?"),
-                        None => "Is it OK if I call this MCP tool?".to_owned(),
+                        Some(server) => t!(
+                            "Is it OK if I call an MCP tool on {server}?",
+                            server = server
+                        ),
+                        None => t!("Is it OK if I call this MCP tool?").to_owned(),
                     }
                 } else {
                     match server_name {
-                        Some(server) => format!("Is it OK if I call MCP tool {name} on {server}?"),
-                        None => format!("Is it OK if I call MCP tool {name}?"),
+                        Some(server) => t!(
+                            "Is it OK if I call MCP tool {name} on {server}?",
+                            name = name,
+                            server = server
+                        ),
+                        None => t!("Is it OK if I call MCP tool {name}?", name = name),
                     }
                 }
             }
             AIAgentActionType::ReadMCPResource { .. } => {
-                "Is it OK if I read this MCP resource?".to_owned()
+                t!("Is it OK if I read this MCP resource?").to_owned()
             }
             AIAgentActionType::RequestComputerUse(_) => {
-                "Is it OK if I use the computer?".to_owned()
+                t!("Is it OK if I use the computer?").to_owned()
             }
             AIAgentActionType::WriteToLongRunningShellCommand { .. } => {
-                "Is it OK if I write this input to the running command?".to_owned()
+                t!("Is it OK if I write this input to the running command?").to_owned()
             }
             AIAgentActionType::SuggestNewConversation { .. } => {
-                "Should I start a new conversation?".to_owned()
+                t!("Should I start a new conversation?").to_owned()
             }
             AIAgentActionType::TransferShellCommandControlToUser { .. } => {
-                "Is it OK if I hand control of the running command to you?".to_owned()
+                t!("Is it OK if I hand control of the running command to you?").to_owned()
             }
-            action => format!("Is it OK if I {}?", action.user_friendly_name()),
+            action => t!(
+                "Is it OK if I {action}?",
+                action = action.user_friendly_name()
+            ),
         }
     }
 
@@ -247,28 +258,36 @@ impl TuiGenericToolCallView {
                 .collect::<Vec<_>>()
                 .join("\n"),
             AIAgentActionType::SearchCodebase(request) => match &request.codebase_path {
-                Some(path) => format!("{}\n  in {path}", request.query),
+                Some(path) => format!("{}\n{}", request.query, t!("  in {path}", path = path)),
                 None => request.query.clone(),
             },
             AIAgentActionType::Grep { queries, path } => {
-                format!("{}\n  in {path}", queries.join("\n"))
+                format!("{}\n{}", queries.join("\n"), t!("  in {path}", path = path))
             }
             AIAgentActionType::FileGlob { patterns, path } => {
                 let path = path.as_deref().unwrap_or(".");
-                format!("{}\n  in {path}", patterns.join("\n"))
+                format!(
+                    "{}\n{}",
+                    patterns.join("\n"),
+                    t!("  in {path}", path = path)
+                )
             }
             AIAgentActionType::FileGlobV2 {
                 patterns,
                 search_dir,
             } => {
                 let path = search_dir.as_deref().unwrap_or(".");
-                format!("{}\n  in {path}", patterns.join("\n"))
+                format!(
+                    "{}\n{}",
+                    patterns.join("\n"),
+                    t!("  in {path}", path = path)
+                )
             }
             AIAgentActionType::CallMCPTool { name, input, .. } => {
                 let input =
                     serde_json::to_string_pretty(input).unwrap_or_else(|_| input.to_string());
                 let header = match server_name {
-                    Some(server) => format!("{name} on {server}"),
+                    Some(server) => t!("{name} on {server}", name = name, server = server),
                     None => name.clone(),
                 };
                 if input == "{}" || input == "null" {
@@ -285,7 +304,7 @@ impl TuiGenericToolCallView {
                 String::from_utf8_lossy(input).into_owned()
             }
             AIAgentActionType::SuggestNewConversation { .. } => {
-                "Continue the agent's next step in a fresh conversation.".to_owned()
+                t!("Continue the agent's next step in a fresh conversation.").to_owned()
             }
             AIAgentActionType::TransferShellCommandControlToUser { reason } => reason.clone(),
             action => action.user_friendly_name(),

@@ -24,6 +24,7 @@ use std::path::Path;
 use ai::agent::action::FileEdit;
 use ai::agent::action_result::{AIAgentActionResultType, RequestFileEditsResult};
 use ai::diff_validation::{DiffDelta, DiffType};
+use i18n::t;
 use itertools::Itertools;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
@@ -467,17 +468,21 @@ impl TuiFileEditsView {
                     .chain(deleted_files.iter().map(String::as_str))
                     .unique()
                     .count();
-                let files_label = if files == 1 { "file" } else { "files" };
+                let edited = if files == 1 {
+                    t!("Edited 1 file").to_owned()
+                } else {
+                    t!("Edited {count} files", count = files)
+                };
                 match file_edit_stats_label(*lines_added, *lines_removed) {
-                    Some(stats) => format!("Edited {files} {files_label} ({stats})"),
-                    None => format!("Edited {files} {files_label}"),
+                    Some(stats) => format!("{edited} ({stats})"),
+                    None => edited,
                 }
             }
-            Some(RequestFileEditsResult::Cancelled) => "File edits cancelled".to_string(),
+            Some(RequestFileEditsResult::Cancelled) => t!("File edits cancelled").to_string(),
             Some(RequestFileEditsResult::DiffApplicationFailed { .. }) => {
-                "File edits failed".to_string()
+                t!("File edits failed").to_string()
             }
-            None => "Preparing edits…".to_string(),
+            None => t!("Preparing edits…").to_string(),
         }
     }
 
@@ -632,7 +637,7 @@ fn file_edit_header_label(
     subject: &str,
 ) -> String {
     let verb = if state == ToolCallDisplayState::Blocked {
-        "Editing"
+        t!("Editing")
     } else {
         completed_verb
     };
@@ -691,19 +696,19 @@ fn verb_and_name(diff: &FileDiff) -> (&'static str, String) {
     };
     let name = file_name(&diff.base.file_path);
     match &diff.diff_type {
-        DiffType::Create { .. } => ("Created", name),
-        DiffType::Delete { .. } => ("Deleted", name),
+        DiffType::Create { .. } => (t!("Created"), name),
+        DiffType::Delete { .. } => (t!("Deleted"), name),
         DiffType::Update {
             rename: Some(to), ..
         } => {
             let to_name = file_name(&to.to_string_lossy());
             if to_name == name {
-                ("Updated", name)
+                (t!("Updated"), name)
             } else {
-                ("Updated", format!("{name} → {to_name}"))
+                (t!("Updated"), format!("{name} → {to_name}"))
             }
         }
-        DiffType::Update { rename: None, .. } => ("Updated", name),
+        DiffType::Update { rename: None, .. } => (t!("Updated"), name),
     }
 }
 
@@ -782,14 +787,17 @@ impl TuiView for TuiFileEditsView {
         let builder = TuiUiBuilder::from_app(app);
         let expand_collapse_hint = TuiText::from_spans([
             ("e".to_owned(), builder.primary_text_style()),
-            (" to expand/collapse".to_owned(), builder.muted_text_style()),
+            (
+                t!(" to expand/collapse").to_owned(),
+                builder.muted_text_style(),
+            ),
         ])
         .truncate()
         .finish();
 
         render_permission_card(
             &self.permission_prompt,
-            "Is it OK if I make these file edits?",
+            t!("Is it OK if I make these file edits?"),
             Some(content),
             Some(expand_collapse_hint),
             app,
@@ -819,8 +827,8 @@ impl TuiFileEditsView {
             SectionKey::Summary,
             &file_edit_header_label(
                 self.display_state(app),
-                "Edited",
-                &format!("{} files", self.sections.len()),
+                t!("Edited"),
+                &t!("{count} files", count = self.sections.len()),
             ),
             self.aggregate_stats(app),
             &builder,

@@ -1,3 +1,4 @@
+use i18n::t;
 use std::iter;
 
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
@@ -101,7 +102,7 @@ impl PluginInstructionsBlock {
         let desc_element: Box<dyn Element> = if let Some(url) = link {
             let fragments = vec![
                 FormattedTextFragment::plain_text(format!("{description} ")),
-                FormattedTextFragment::hyperlink("Learn more", url),
+                FormattedTextFragment::hyperlink(t!("Learn more"), url),
             ];
             let formatted = FormattedText::new(vec![FormattedTextLine::Line(fragments)]);
             FormattedTextElement::new(
@@ -187,7 +188,7 @@ impl View for PluginInstructionsBlock {
         let theme = appearance.theme();
 
         let title = Text::new(
-            self.instructions.title.to_owned(),
+            t!(self.instructions.title).to_owned(),
             appearance.ui_font_family(),
             20.,
         )
@@ -196,12 +197,12 @@ impl View for PluginInstructionsBlock {
         .finish();
 
         let subtitle_text = if self.is_remote_session {
-            format!(
-                "{} Be sure to run these commands on your remote machine.",
-                self.instructions.subtitle
+            t!(
+                "{subtitle} Be sure to run these commands on your remote machine.",
+                subtitle = t!(self.instructions.subtitle)
             )
         } else {
-            self.instructions.subtitle.to_owned()
+            t!(self.instructions.subtitle).to_owned()
         };
 
         let subtitle = Text::new(subtitle_text, appearance.ui_font_family(), 14.)
@@ -228,7 +229,7 @@ impl View for PluginInstructionsBlock {
                 .unwrap_or(step.command);
             content.add_child(self.render_step(
                 step_index,
-                step.description,
+                t!(step.description),
                 command,
                 step.executable,
                 step.link,
@@ -238,7 +239,7 @@ impl View for PluginInstructionsBlock {
         }
 
         for note in self.instructions.post_install_notes {
-            let post_note = Text::new((*note).to_owned(), appearance.ui_font_family(), 14.)
+            let post_note = Text::new(t!(*note).to_owned(), appearance.ui_font_family(), 14.)
                 .with_color(theme.nonactive_ui_text_color().into_solid())
                 .finish();
             content.add_child(post_note);
@@ -293,7 +294,7 @@ impl TypedActionView for PluginInstructionsBlock {
                     let window_id = ctx.window_id();
                     ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                         toast_stack.add_ephemeral_toast(
-                            DismissibleToast::success("Copied to clipboard".to_owned()),
+                            DismissibleToast::success(t!("Copied to clipboard").to_owned()),
                             window_id,
                             ctx,
                         );

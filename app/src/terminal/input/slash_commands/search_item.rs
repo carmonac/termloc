@@ -1,3 +1,4 @@
+use i18n::t;
 use ordered_float::OrderedFloat;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::theme::Fill;
@@ -130,9 +131,12 @@ impl SearchItem for InlineItem {
         });
 
         if let Some(description) = self.description.clone() {
-            let mut description_text =
-                Text::new_inline(description, appearance.ui_font_family(), font_size)
-                    .with_color(secondary_color.into());
+            let mut description_text = Text::new_inline(
+                t!(&description).to_owned(),
+                appearance.ui_font_family(),
+                font_size,
+            )
+            .with_color(secondary_color.into());
 
             // Add bold highlighting for matching characters in the description
             if let Some(description_match) = &self.description_match_result
@@ -177,7 +181,10 @@ impl SearchItem for InlineItem {
     fn detail_data(&self) -> Option<SearchItemDetail> {
         Some(SearchItemDetail {
             title: self.name.clone(),
-            description: self.description.clone(),
+            description: self
+                .description
+                .as_deref()
+                .map(|description| t!(description).to_owned()),
             title_font_family: self.font_family,
         })
     }

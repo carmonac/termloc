@@ -1,3 +1,4 @@
+use i18n::t;
 use pathfinder_color::ColorU;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::theme::Fill;
@@ -143,7 +144,7 @@ impl Suggestion {
     pub fn tooltip(&self) -> String {
         match self {
             Suggestion::Rule { rule, .. } => {
-                format!("Add rule: {}", rule.content.clone())
+                t!("Add rule: {rule}", rule = rule.content)
             }
             Suggestion::AgentModeWorkflow { workflow, .. } => {
                 let prompt = if workflow.prompt.chars().count() > MAX_PROMPT_TOOLTIP_LENGTH {
@@ -156,7 +157,7 @@ impl Suggestion {
                 } else {
                     workflow.prompt.clone()
                 };
-                format!("Suggested prompt:\n{prompt}")
+                t!("Suggested prompt:\n{prompt}", prompt = prompt)
             }
         }
     }

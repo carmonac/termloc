@@ -45,6 +45,7 @@ field_mask = { path = "crates/field_mask" }
 fuzzy_match = { path = "crates/fuzzy_match" }
 handlebars = { path = "crates/handlebars" }
 egress = { path = "crates/egress" }
+i18n = { path = "crates/i18n" }
 http_client = { path = "crates/http_client" }
 local_agent = { path = "crates/local_agent" }
 http_server = { path = "crates/http_server" }
@@ -249,6 +250,7 @@ serde_json = { version = "1.0", features = ["raw_value"] }
 serde_urlencoded = "0.7"
 serde_with = "^3.21"
 serde_yaml = "0.8"
+sys-locale = "0.3.2"
 similar = { version = "2.7", features = ["inline"] }
 simplelog = "0.12.2"
 smallvec = "1.6.1"

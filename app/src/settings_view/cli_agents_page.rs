@@ -8,6 +8,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use enum_iterator::all;
+use i18n::t;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use regex::Regex;
 use settings::{Setting, ToggleableSetting};
@@ -66,7 +67,7 @@ impl CLIAgentsPageView {
         let cli_agent_footer_command_editor = ctx.add_typed_action_view(|ctx| {
             let mut input =
                 SubmittableTextInput::new(ctx).validate_on_edit(|s| Regex::new(s).is_ok());
-            input.set_placeholder_text("command (supports regex)", ctx);
+            input.set_placeholder_text(t!("command (supports regex)"), ctx);
             input
         });
         update_editor_interaction_state(
@@ -133,7 +134,7 @@ impl CLIAgentsPageView {
             Box::new(CLIAgentCommandsWidget),
             Box::new(CLIAgentToolbarLayoutWidget),
         ];
-        PageType::new_uncategorized(widgets, Some(PageTitle::new(PAGE_TITLE)))
+        PageType::new_uncategorized(widgets, Some(PageTitle::new(t!(PAGE_TITLE))))
     }
 
     fn create_cli_agent_dropdowns(
@@ -178,7 +179,7 @@ impl CLIAgentsPageView {
                     }
 
                     items.push(
-                        MenuItemFields::new("Other")
+                        MenuItemFields::new(t!("Other"))
                             .with_on_select_action(DropdownAction::select_action_and_close(
                                 CLIAgentsPageAction::SetCLIAgentForCommand {
                                     pattern: pattern_clone.clone(),
@@ -191,15 +192,15 @@ impl CLIAgentsPageView {
                     dropdown.set_rich_items(items, ctx);
 
                     dropdown.set_menu_header_text_override(|label| {
-                        if label == "Other" {
-                            "Select coding agent".to_string()
+                        if label == t!("Other") {
+                            t!("Select coding agent").to_string()
                         } else {
                             label.to_string()
                         }
                     });
 
                     let selected_name = if matches!(current_agent, CLIAgent::Unknown) {
-                        "Other"
+                        t!("Other")
                     } else {
                         current_agent.display_name()
                     };
@@ -421,7 +422,7 @@ impl SettingsWidget for CLIAgentWidget {
         let ai_settings = AISettings::as_ref(app);
 
         let cli_agent_footer_toggle = render_ai_setting_toggle::<ShouldRenderCLIAgentToolbar>(
-            "Show coding agent toolbar",
+            t!("Show coding agent toolbar"),
             CLIAgentsPageAction::ToggleCLIAgentToolbar,
             *ai_settings.should_render_cli_agent_footer,
             true,
@@ -431,13 +432,13 @@ impl SettingsWidget for CLIAgentWidget {
         );
 
         let description_fragments = vec![
-            FormattedTextFragment::plain_text(
-                "Show a toolbar with quick actions when running coding agents like ",
-            ),
+            FormattedTextFragment::plain_text(t!(
+                "Show a toolbar with quick actions when running coding agents like "
+            )),
             FormattedTextFragment::inline_code("claude"),
             FormattedTextFragment::plain_text(", "),
             FormattedTextFragment::inline_code("codex"),
-            FormattedTextFragment::plain_text(", or "),
+            FormattedTextFragment::plain_text(t!(", or ")),
             FormattedTextFragment::inline_code("gemini"),
             FormattedTextFragment::plain_text("."),
         ];
@@ -500,14 +501,14 @@ impl SettingsWidget for CLIAgentAutoToggleRichInputWidget {
         }
 
         let label = render_body_item_label::<CLIAgentsPageAction>(
-            "Auto show/hide Rich Input based on agent status".into(),
+            t!("Auto show/hide Rich Input based on agent status").into(),
             Some(styles::header_font_color(true, app)),
             Some(AdditionalInfo {
                 mouse_state: self.info_tooltip.clone(),
                 on_click_action: None,
                 secondary_text: None,
                 tooltip_override_text: Some(
-                    "Requires the agent plugin for your coding agent".to_owned(),
+                    t!("Requires the agent plugin for your coding agent").to_owned(),
                 ),
             }),
             LocalOnlyIconState::for_setting(
@@ -562,7 +563,7 @@ impl SettingsWidget for CLIAgentAutoOpenRichInputWidget {
         }
 
         render_ai_setting_toggle::<AutoOpenRichInputOnCLIAgentStart>(
-            "Auto open Rich Input when a coding agent session starts",
+            t!("Auto open Rich Input when a coding agent session starts"),
             CLIAgentsPageAction::ToggleAutoOpenRichInputOnCLIAgentStart,
             *AISettings::as_ref(app).auto_open_rich_input_on_cli_agent_start,
             true,
@@ -600,7 +601,7 @@ impl SettingsWidget for CLIAgentAutoDismissRichInputWidget {
         }
 
         render_ai_setting_toggle::<AutoDismissRichInputAfterSubmit>(
-            "Auto dismiss Rich Input after prompt submission",
+            t!("Auto dismiss Rich Input after prompt submission"),
             CLIAgentsPageAction::ToggleAutoDismissRichInputAfterSubmit,
             *AISettings::as_ref(app).auto_dismiss_rich_input_after_submit,
             true,
@@ -638,7 +639,7 @@ impl SettingsWidget for CLIAgentSubmitRichInputWidget {
         }
 
         render_ai_setting_toggle::<SubmitRichInputOnCtrlEnter>(
-            "Submit Rich Input with Ctrl+Enter",
+            t!("Submit Rich Input with Ctrl+Enter"),
             CLIAgentsPageAction::ToggleSubmitRichInputOnCtrlEnter,
             *AISettings::as_ref(app).submit_on_ctrl_enter,
             true,
@@ -676,7 +677,7 @@ impl SettingsWidget for CLIAgentCommandsWidget {
         list_column.add_child(
             appearance
                 .ui_builder()
-                .span("Commands that enable the toolbar".to_string())
+                .span(t!("Commands that enable the toolbar").to_string())
                 .with_style(UiComponentStyles {
                     font_size: Some(CONTENT_FONT_SIZE),
                     ..Default::default()
@@ -759,7 +760,9 @@ impl SettingsWidget for CLIAgentCommandsWidget {
 
         let description = appearance
             .ui_builder()
-            .paragraph("Add regex patterns to show the coding agent toolbar for matching commands.")
+            .paragraph(t!(
+                "Add regex patterns to show the coding agent toolbar for matching commands."
+            ))
             .with_style(UiComponentStyles {
                 font_size: Some(appearance.ui_font_size()),
                 font_color: Some(styles::description_font_color(true, app).into()),

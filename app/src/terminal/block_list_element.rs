@@ -1,3 +1,4 @@
+use i18n::t;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::mem;
@@ -1118,12 +1119,12 @@ impl BlockListElement {
                 if has_active_long_running_command && active_block.index() == block_index {
                     (
                         Some(TerminalAction::SetInputModeAgent),
-                        TAG_AGENT_FOR_ASSISTANCE_TEXT,
+                        t!(TAG_AGENT_FOR_ASSISTANCE_TEXT),
                     )
                 } else {
                     (
                         Some(TerminalAction::AskAIAssistant { block_index }),
-                        *ATTACH_AS_AGENT_MODE_CONTEXT_TEXT,
+                        t!(*ATTACH_AS_AGENT_MODE_CONTEXT_TEXT),
                     )
                 }
             } else {
@@ -1179,7 +1180,7 @@ impl BlockListElement {
                 render_hoverable_block_button(
                     icon,
                     Some(ToolbeltButtonTooltip {
-                        label: SAVE_AS_WORKFLOW_SECRETS_TEXT.to_owned(),
+                        label: t!(SAVE_AS_WORKFLOW_SECRETS_TEXT).to_owned(),
                         tool_tip_below_button: should_render_tooltip_below_button,
                     }),
                     false,
@@ -1199,7 +1200,7 @@ impl BlockListElement {
                 render_hoverable_block_button(
                     icon,
                     Some(ToolbeltButtonTooltip {
-                        label: SAVE_AS_WORKFLOW_TEXT.to_owned(),
+                        label: t!(SAVE_AS_WORKFLOW_TEXT).to_owned(),
                         tool_tip_below_button: should_render_tooltip_below_button,
                     }),
                     false,
@@ -3108,21 +3109,21 @@ impl Element for BlockListElement {
 
                     // we want to show different text in the separator if this is an individual conversation
                     // restored from the command palette
-                    let banner_intro_text = if is_historical_conversation_restoration {
-                        "Conversation restored".to_string()
-                    } else {
-                        "Previous session".to_string()
+                    let separator_text = match (
+                        (*model).block_list().restored_session_ts(),
+                        is_historical_conversation_restoration,
+                    ) {
+                        (Some(ts), true) => t!(
+                            "Conversation restored from {date}",
+                            date = ts.format("%a %b %-d at %-I:%M %p")
+                        ),
+                        (Some(ts), false) => t!(
+                            "Previous session from {date}",
+                            date = ts.format("%a %b %-d at %-I:%M %p")
+                        ),
+                        (None, true) => t!("Conversation restored").to_string(),
+                        (None, false) => t!("Previous session").to_string(),
                     };
-
-                    let separator_text =
-                        if let Some(ts) = (*model).block_list().restored_session_ts() {
-                            format!(
-                                "{banner_intro_text} from {}",
-                                ts.format("%a %b %-d at %-I:%M %p")
-                            )
-                        } else {
-                            banner_intro_text
-                        };
                     self.restored_session_separator = Some(
                         Text::new_inline(
                             separator_text,

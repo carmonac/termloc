@@ -10,6 +10,7 @@
 //! through [`TuiOptionSelector::handle_back`].
 use std::collections::{HashMap, HashSet};
 
+use i18n::t;
 use warp_search_core::inline_menu::InlineMenuSelection;
 use warpui_core::elements::MouseStateHandle;
 use warpui_core::elements::tui::{
@@ -1096,7 +1097,7 @@ impl TuiOptionSelector {
             ));
         }
         spans.push((row.label.clone(), label_style));
-        let badge = row.badge.map(|OptionBadge::Recommended| "recommended");
+        let badge = row.badge.map(|OptionBadge::Recommended| t!("recommended"));
         if let Some(badge) = badge {
             spans.push((format!("  ({badge})"), detail_style));
         }
@@ -1211,7 +1212,7 @@ impl TuiOptionSelector {
                 .any(|item| matches!(item, SelectorItem::Row(_)))
         {
             column.add_child(
-                TuiText::new("No matches")
+                TuiText::new(t!("No matches"))
                     .with_style(builder.dim_text_style())
                     .truncate()
                     .finish(),
@@ -1255,7 +1256,7 @@ impl TuiOptionSelector {
                                 &self.custom_text.editor,
                                 self.custom_text
                                     .error_is_visible()
-                                    .then_some(CUSTOM_TEXT_EMPTY_ERROR),
+                                    .then_some(t!(CUSTOM_TEXT_EMPTY_ERROR)),
                                 self.show_selection_markers
                                     .then_some(self.custom_text.committed_value.is_some()),
                                 builder,
@@ -1347,7 +1348,7 @@ impl TuiView for TuiOptionSelector {
         {
             content.add_child(self.render_editor_field(
                 String::new(),
-                "Search",
+                t!("Search"),
                 search_field,
                 None,
                 None,

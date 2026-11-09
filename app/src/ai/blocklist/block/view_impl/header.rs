@@ -1,5 +1,6 @@
 //! Renders the AI block "header", which includes a version of the AI "prompt" as it was rendered
 //! when the query was submitted.
+use i18n::t;
 use warp_core::features::FeatureFlag;
 use warp_util::path::user_friendly_path;
 use warpui::elements::{
@@ -84,9 +85,9 @@ pub(super) fn render(props: Props, app: &AppContext) -> Option<Box<dyn Element>>
             props.has_attached_context_selected_text,
             props.num_attached_context_blocks,
         ) {
-            (true, _) => "selected text".to_owned(),
-            (false, 1) => "1 block".to_owned(),
-            (false, n) => format!("{n} blocks"),
+            (true, _) => t!("selected text").to_owned(),
+            (false, 1) => t!("1 block").to_owned(),
+            (false, n) => t!("{count} blocks", count = n),
         };
 
         left_row.add_child(render_attached_context_chip(

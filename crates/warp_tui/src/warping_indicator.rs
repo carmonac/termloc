@@ -15,6 +15,7 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
+use i18n::t;
 use warpui_core::AppContext;
 use warpui_core::elements::animation::{AnimationClock, Keyframe, KeyframeTimeline};
 use warpui_core::elements::shimmer_math::ShimmerConfig;
@@ -123,7 +124,7 @@ pub(crate) fn render_warping_indicator_row(
         .child(
             TuiText::from_spans([
                 ("  Ctrl + C".to_owned(), builder.primary_text_style()),
-                (" to stop".to_owned(), builder.muted_text_style()),
+                (t!(" to stop").to_owned(), builder.muted_text_style()),
             ])
             .truncate()
             .finish(),

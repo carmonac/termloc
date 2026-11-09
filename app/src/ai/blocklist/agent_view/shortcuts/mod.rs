@@ -2,6 +2,7 @@ mod model;
 
 use std::borrow::Cow;
 
+use i18n::t;
 pub use model::*;
 use pathfinder_color::ColorU;
 use warp_core::features::FeatureFlag;
@@ -107,7 +108,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
                 key: "!".to_owned(),
                 ..Default::default()
             },
-            text: "input shell command".into(),
+            text: t!("input shell command").into(),
             ..Default::default()
         },
         app,
@@ -119,7 +120,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
                 key: "/".to_owned(),
                 ..Default::default()
             },
-            text: "for slash commands".into(),
+            text: t!("for slash commands").into(),
             ..Default::default()
         },
         app,
@@ -131,7 +132,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
                 key: "@".to_owned(),
                 ..Default::default()
             },
-            text: "for file paths and attaching other context".into(),
+            text: t!("for file paths and attaching other context").into(),
             ..Default::default()
         },
         app,
@@ -141,7 +142,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
         shortcuts.push(render_shortcut(
             ShortcutProps {
                 keystroke,
-                text: "open code review".into(),
+                text: t!("open code review").into(),
                 ..Default::default()
             },
             app,
@@ -155,7 +156,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
         shortcuts.push(render_shortcut(
             ShortcutProps {
                 keystroke,
-                text: "toggle conversation list".into(),
+                text: t!("toggle conversation list").into(),
                 ..Default::default()
             },
             app,
@@ -165,7 +166,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
     shortcuts.push(render_shortcut(
         ShortcutProps {
             keystroke: Keystroke::parse(cmd_or_ctrl_shift("y")).expect("is valid keystroke"),
-            text: "search and continue conversations".into(),
+            text: t!("search and continue conversations").into(),
             ..Default::default()
         },
         app,
@@ -174,7 +175,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
     shortcuts.push(render_shortcut(
         ShortcutProps {
             keystroke: ENTER_AGENT_VIEW_NEW_CONVERSATION_KEYSTROKE.clone(),
-            text: "start a new conversation".into(),
+            text: t!("start a new conversation").into(),
             ..Default::default()
         },
         app,
@@ -184,7 +185,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
         shortcuts.push(render_shortcut(
             ShortcutProps {
                 keystroke,
-                text: "toggle auto-accept".into(),
+                text: t!("toggle auto-accept").into(),
                 ..Default::default()
             },
             app,
@@ -198,7 +199,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
                 ctrl: true,
                 ..Default::default()
             },
-            text: "pause agent".into(),
+            text: t!("pause agent").into(),
             ..Default::default()
         },
         app,
@@ -210,7 +211,7 @@ pub fn render_agent_shortcuts_view(app: &AppContext) -> Box<dyn Element> {
                 key: "escape".to_owned(),
                 ..Default::default()
             },
-            text: "go back to terminal".into(),
+            text: t!("go back to terminal").into(),
             ..Default::default()
         },
         app,

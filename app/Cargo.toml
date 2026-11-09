@@ -148,6 +148,7 @@ rayon.workspace = true
 regex-automata.workspace = true
 regex.workspace = true
 egress.workspace = true
+i18n.workspace = true
 reqwest.workspace = true
 rust-embed.workspace = true
 inventory = "0.3"

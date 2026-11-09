@@ -1,5 +1,6 @@
 //! Reusable interaction for TUI tool-call permission requests.
 
+use i18n::t;
 use warp::tui_export::{AIAgentActionId, BlocklistAIActionEvent, BlocklistAIActionModel};
 use warpui_core::elements::CrossAxisAlignment;
 use warpui_core::elements::tui::{
@@ -105,13 +106,13 @@ impl TuiPermissionPrompt {
             let rows = vec![
                 OptionRow {
                     id: YES_ID.to_owned(),
-                    label: "yes".to_owned(),
+                    label: t!("yes").to_owned(),
                     badge: None,
                     disabled_reason: None,
                 },
                 OptionRow {
                     id: NO_ID.to_owned(),
-                    label: "no".to_owned(),
+                    label: t!("no").to_owned(),
                     badge: None,
                     disabled_reason: None,
                 },
@@ -122,7 +123,7 @@ impl TuiPermissionPrompt {
                         rows,
                         selected_id: Some(YES_ID.to_owned()),
                         footer: Some(OptionFooter::CustomText {
-                            label: "Other".to_owned(),
+                            label: t!("Other").to_owned(),
                         }),
                     },
                     searchable: false,
@@ -240,15 +241,15 @@ impl TuiPermissionPrompt {
         // When the body editor owns focus, Esc exits the editor rather than
         // cancelling the whole tool call — reflect that in the visible hint.
         let esc_hint = if self.body_editor_is_focused(app) {
-            " to exit editor  "
+            t!(" to exit editor  ")
         } else {
-            " to cancel  "
+            t!(" to cancel  ")
         };
         let spans = vec![
             ("Esc".to_owned(), builder.primary_text_style()),
             (esc_hint.to_owned(), builder.muted_text_style()),
             ("Enter".to_owned(), builder.primary_text_style()),
-            (" to run".to_owned(), builder.muted_text_style()),
+            (t!(" to run").to_owned(), builder.muted_text_style()),
         ];
         TuiText::from_spans(spans).truncate().finish()
     }

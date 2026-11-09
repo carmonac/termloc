@@ -1,3 +1,4 @@
+use i18n::t;
 use pathfinder_geometry::vector::vec2f;
 use warp_core::ui::theme::Fill;
 use warp_core::ui::theme::phenomenon::PhenomenonStyle;
@@ -84,7 +85,7 @@ pub fn render_welcome_banner(
     );
 
     // "New" badge
-    let text = Text::new_inline("New".to_string(), appearance.ui_font_family(), 14.)
+    let text = Text::new_inline(t!("New").to_string(), appearance.ui_font_family(), 14.)
         .with_color(PhenomenonStyle::modal_badge_text())
         .finish();
     let badge = ConstrainedBox::new(
@@ -105,7 +106,7 @@ pub fn render_welcome_banner(
 
     // Title
     let title = Text::new(
-        "Introducing universal agent support: level up any coding agent with Termloc",
+        t!("Introducing universal agent support: level up any coding agent with Termloc"),
         appearance.ui_font_family(),
         20.,
     )
@@ -132,12 +133,12 @@ pub fn render_welcome_banner(
             .with_cross_axis_alignment(CrossAxisAlignment::Start)
             .with_spacing(2.)
             .with_child(
-                Text::new_inline(item.title.to_string(), appearance.ui_font_family(), 14.)
+                Text::new_inline(t!(item.title).to_string(), appearance.ui_font_family(), 14.)
                     .with_color(PhenomenonStyle::modal_feature_title_text())
                     .finish(),
             )
             .with_child(
-                Text::new(item.description, appearance.ui_font_family(), 14.)
+                Text::new(t!(item.description), appearance.ui_font_family(), 14.)
                     .with_color(PhenomenonStyle::modal_feature_description_text())
                     .finish(),
             )

@@ -12,6 +12,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use i18n::t;
 use itertools::Itertools;
 use markdown_parser::{FormattedText, FormattedTextInline, TableAlignment};
 use pathfinder_color::ColorU;
@@ -201,9 +202,21 @@ pub struct ForceRefreshButtonProps<'a> {
 /// Names the model in a status message, keeping the trailing ellipsis at the end:
 /// `"Generating plan..."` becomes `"Generating plan with Claude Sonnet 4.5..."`.
 pub fn status_message_naming_model(message: &str, model_display_name: &str) -> String {
+    let message = t!(message);
     match message.strip_suffix(STATUS_MESSAGE_ELLIPSIS) {
-        Some(stem) => format!("{stem} with {model_display_name}{STATUS_MESSAGE_ELLIPSIS}"),
-        None => format!("{message} with {model_display_name}"),
+        Some(stem) => format!(
+            "{}{STATUS_MESSAGE_ELLIPSIS}",
+            t!(
+                "{message} with {model}",
+                message = stem,
+                model = model_display_name
+            )
+        ),
+        None => t!(
+            "{message} with {model}",
+            message = message,
+            model = model_display_name
+        ),
     }
 }
 
@@ -296,7 +309,7 @@ pub fn render_warping_indicator<V: View>(
     let model_in_use_name = props.model_in_use_name.clone();
     let naming_model = |message: &str| match model_in_use_name.as_deref() {
         Some(model_display_name) => status_message_naming_model(message, model_display_name),
-        None => message.to_owned(),
+        None => t!(message).to_owned(),
     };
     let message = if let Some(summarization_type) = summarization_type {
         // Choose the appropriate message based on summarization type
@@ -321,9 +334,9 @@ pub fn render_warping_indicator<V: View>(
             // Move the timer / token text outside of the base message, we don't want it to shimmer
             // since that would cause the animation to reset every time the tokens or time changes.
             non_shimmering_text = Some(timer_text.to_string());
-            base_message.into()
+            t!(base_message).into()
         } else {
-            base_message.to_string()
+            t!(base_message).to_string()
         }
     } else if props.model.contains_update_document_action(app) {
         naming_model(LOAD_OUTPUT_MESSAGE_FOR_UPDATING_PLAN)
@@ -336,7 +349,7 @@ pub fn render_warping_indicator<V: View>(
     } else if is_last_message_asking_user_question {
         naming_model(LOAD_OUTPUT_MESSAGE_FOR_PREPARING_QUESTION)
     } else if is_searching_web {
-        LOAD_OUTPUT_MESSAGE_FOR_WEB_SEARCH.to_string()
+        t!(LOAD_OUTPUT_MESSAGE_FOR_WEB_SEARCH).to_string()
     } else if is_interrupt_query_for_same_conversation
         && output_to_render
             .as_ref()
@@ -351,9 +364,9 @@ pub fn render_warping_indicator<V: View>(
             .map(|action| &action.action)
         {
             Some(AIAgentActionType::SearchCodebase(..)) => {
-                LOAD_OUTPUT_MESSAGE_FOR_SEARCH_CODEBASE.to_owned()
+                t!(LOAD_OUTPUT_MESSAGE_FOR_SEARCH_CODEBASE).to_owned()
             }
-            Some(AIAgentActionType::Grep { .. }) => LOAD_OUTPUT_MESSAGE_FOR_GREP.to_owned(),
+            Some(AIAgentActionType::Grep { .. }) => t!(LOAD_OUTPUT_MESSAGE_FOR_GREP).to_owned(),
             Some(AIAgentActionType::CallMCPTool {
                 server_id, name, ..
             }) => {
@@ -361,19 +374,23 @@ pub fn render_warping_indicator<V: View>(
                     .as_ref()
                     .and_then(|id| TemplatableMCPServerManager::get_mcp_name(id, app))
                 {
-                    Some(server) => format!("Calling \"{name}\" MCP tool on {server}..."),
-                    None => format!("Calling \"{name}\" MCP tool..."),
+                    Some(server) => t!(
+                        "Calling \"{name}\" MCP tool on {server}...",
+                        name = name,
+                        server = server
+                    ),
+                    None => t!("Calling \"{name}\" MCP tool...", name = name),
                 }
             }
             Some(AIAgentActionType::ReadMCPResource { name, .. }) => {
-                format!("Reading \"{name}\" MCP resource...")
+                t!("Reading \"{name}\" MCP resource...", name = name)
             }
             Some(AIAgentActionType::FileGlob { .. })
             | Some(AIAgentActionType::FileGlobV2 { .. }) => {
-                LOAD_OUTPUT_MESSAGE_FOR_FILE_GLOB.to_owned()
+                t!(LOAD_OUTPUT_MESSAGE_FOR_FILE_GLOB).to_owned()
             }
             Some(AIAgentActionType::WriteToLongRunningShellCommand { .. }) => {
-                LOAD_OUTPUT_MESSAGE_FOR_WRITING_TO_COMMAND.to_owned()
+                t!(LOAD_OUTPUT_MESSAGE_FOR_WRITING_TO_COMMAND).to_owned()
             }
             action => {
                 let active_block = props.terminal_model.block_list().active_block();
@@ -383,7 +400,7 @@ pub fn render_warping_indicator<V: View>(
                 {
                     if action.is_none() {
                         should_render_waiting_icon = true;
-                        WAITING_FOR_USER_INPUT_MESSAGE.to_owned()
+                        t!(WAITING_FOR_USER_INPUT_MESSAGE).to_owned()
                     } else {
                         // Choose the base message depending on whether the agent is waiting
                         // for the command to exit or polling at a fixed interval.
@@ -419,16 +436,16 @@ pub fn render_warping_indicator<V: View>(
                             } else {
                                 format!("{}m", secs / 60)
                             };
-                            let suffix = format!(" · Next check in {formatted}");
+                            let suffix = t!(" · Next check in {time}", time = formatted);
 
                             // Keep the base message constant so the shimmering animation
                             // isn't interrupted every time the countdown ticks. The
                             // suffix is rendered as a separate non-shimmering element,
                             // matching the same pattern used by the summarization timer.
                             non_shimmering_text = Some(suffix);
-                            base.to_owned()
+                            t!(base).to_owned()
                         } else {
-                            base.to_owned()
+                            t!(base).to_owned()
                         }
                     }
                 } else {
@@ -455,8 +472,8 @@ pub fn render_warping_indicator<V: View>(
     if let Some(take_over_button_props) = props.take_over_lrc_control_button {
         has_buttons = true;
         buttons_row.add_child(render_switch_control_to_user_button(
-            "Take over",
-            "Take over control of the command",
+            t!("Take over"),
+            t!("Take over control of the command"),
             take_over_button_props,
             appearance,
         ));
@@ -780,9 +797,9 @@ fn render_hide_responses_button(
 ) -> Box<dyn Element> {
     let theme = appearance.theme();
     let button_text = if should_hide_responses {
-        "Show responses"
+        t!("Show responses")
     } else {
-        "Hide responses"
+        t!("Hide responses")
     };
     let text = Container::new(
         Text::new(
@@ -796,9 +813,9 @@ fn render_hide_responses_button(
     .finish();
 
     let tooltip_text = if should_hide_responses {
-        "Show agent responses"
+        t!("Show agent responses")
     } else {
-        "Hide agent responses"
+        t!("Hide agent responses")
     };
 
     render_warping_indicator_button(
@@ -862,7 +879,7 @@ fn render_stop_button(props: ButtonProps, appearance: &Appearance) -> Box<dyn El
         appearance,
         stop_icon,
         props.keystroke,
-        "Stop agent task".to_string(),
+        t!("Stop agent task").to_string(),
         props.is_active,
         false,
         |ctx: &mut EventContext<'_>| {
@@ -890,9 +907,9 @@ fn render_queue_next_prompt_button(
     .finish();
 
     let tooltip_text = if props.is_active {
-        "Auto-queue is on: your next prompt will be queued"
+        t!("Auto-queue is on: your next prompt will be queued")
     } else {
-        "Auto-queue next prompt while agent is responding"
+        t!("Auto-queue next prompt while agent is responding")
     };
 
     render_warping_indicator_button(
@@ -934,11 +951,11 @@ fn render_auto_approve_button(
     .finish();
 
     let tooltip_text = if props.is_locked {
-        "Fast forward is always enabled for cloud agent conversations"
+        t!("Fast forward is always enabled for cloud agent conversations")
     } else if is_active {
-        "Turn off auto-approve all agent actions"
+        t!("Turn off auto-approve all agent actions")
     } else {
-        "Auto-approve all agent actions for this task"
+        t!("Auto-approve all agent actions for this task")
     };
 
     render_warping_indicator_button(
@@ -992,7 +1009,7 @@ fn render_force_refresh_inline(
         // Mirror `render_output_status_text` exactly: same `Text` configuration plus
         // the `Container::with_margin_top(1.)` wrapper so this sits on the same
         // baseline as the adjacent `Last seen by agent ...` text.
-        let text = Text::new(" · Check now".to_string(), font_family, font_size)
+        let text = Text::new(t!(" · Check now").to_string(), font_family, font_size)
             .with_color(color)
             .with_style(Properties::default())
             .with_clip(ClipConfig::end())
@@ -1006,7 +1023,9 @@ fn render_force_refresh_inline(
         let mut stack = Stack::new().with_child(text_with_margin);
         if state.is_hovered() {
             let tool_tip = ui_builder
-                .tool_tip("Ask the agent to check this command now, skipping its timer.".to_owned())
+                .tool_tip(
+                    t!("Ask the agent to check this command now, skipping its timer.").to_owned(),
+                )
                 .build()
                 .finish();
             stack.add_positioned_overlay_child(
@@ -2208,7 +2227,7 @@ fn render_mermaid_diagram_section<A: Action>(
         .finish();
 
     render_visual_card(
-        "Mermaid diagram".to_string(),
+        t!("Mermaid diagram").to_string(),
         Icon::Dataflow,
         Container::new(mermaid_canvas)
             .with_background(theme.background())
@@ -3179,7 +3198,7 @@ pub(crate) fn render_debug_footer<V: View>(
 
     // render the conversation's debug id so screenshots automatically show the debug id
     let debug_text = Text::new(
-        format!("Debug information: {debug_info}"),
+        t!("Debug information: {debug_info}", debug_info = debug_info),
         appearance.ui_font_family(),
         appearance.monospace_font_size(),
     )
@@ -3223,7 +3242,7 @@ pub(crate) fn render_debug_footer<V: View>(
     })
     .finish();
     let copy_button_with_tooltip = appearance.ui_builder().tool_tip_on_element(
-        "Copy debug ID".to_string(),
+        t!("Copy debug ID").to_string(),
         props.debug_copy_button_handle,
         copy_button,
         warpui::elements::ParentAnchor::TopRight,

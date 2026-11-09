@@ -1,5 +1,6 @@
 //! Searchable TUI team switcher backing `/team`.
 
+use i18n::t;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{ServerId, UserWorkspaces, UserWorkspacesEvent};
 use warp_editor::model::CoreEditorModel;
@@ -168,7 +169,7 @@ impl TuiTeamMenuModel {
         };
         Some(TuiInlineMenuSnapshot {
             header: Some(TuiInlineMenuHeader {
-                title: Some("Teams".to_owned()),
+                title: Some(t!("Teams").to_owned()),
                 tabs: Vec::new(),
             }),
             rows: list.rows().iter().map(snapshot_row).collect(),
@@ -179,7 +180,7 @@ impl TuiTeamMenuModel {
             status: list
                 .rows()
                 .is_empty()
-                .then(|| TuiInlineMenuStatus::Empty("No teams found".to_owned())),
+                .then(|| TuiInlineMenuStatus::Empty(t!("No teams found").to_owned())),
         })
     }
 
@@ -236,7 +237,7 @@ fn snapshot_row(row: &TuiTeamMenuRow) -> TuiInlineMenuRow {
         title: row.title.clone(),
         prefix: None,
         description: None,
-        state_suffix: row.is_active.then(|| "(active)".to_owned()),
+        state_suffix: row.is_active.then(|| t!("(active)").to_owned()),
         promotional_suffix: None,
         is_selectable: row.is_selectable(),
         style: TuiInlineMenuRowStyle::Default,

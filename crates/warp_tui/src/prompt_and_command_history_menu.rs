@@ -4,6 +4,7 @@
 //! the shared GUI/TUI history combiner. Agent mode shows prompts and commands;
 //! shell mode shows commands only. Selection previews both text and input type,
 //! while dismissing restores the original buffer and input type.
+use i18n::t;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 use warp::tui_export::{
     ActiveSession, BlocklistAIHistoryEvent, BlocklistAIHistoryModel, BlocklistAIInputModel,
@@ -272,14 +273,14 @@ impl TuiPromptAndCommandHistoryMenuModel {
         };
         let status = list.rows().is_empty().then(|| {
             if query.trim().is_empty() {
-                TuiInlineMenuStatus::Empty("No history".to_owned())
+                TuiInlineMenuStatus::Empty(t!("No history").to_owned())
             } else {
-                TuiInlineMenuStatus::Empty("No matching history".to_owned())
+                TuiInlineMenuStatus::Empty(t!("No matching history").to_owned())
             }
         });
         Some(TuiInlineMenuSnapshot {
             header: Some(TuiInlineMenuHeader {
-                title: Some("History".to_owned()),
+                title: Some(t!("History").to_owned()),
                 tabs: Vec::new(),
             }),
             rows: list

@@ -1,3 +1,4 @@
+use i18n::t;
 use std::path::PathBuf;
 
 use lsp::supported_servers::LSPServerType;
@@ -126,7 +127,7 @@ pub fn render_lsp_selector_block(
     );
 
     let title_element = Span::new(
-        "Would you like to enable available language support for this codebase? This will give you smarter code navigation and inline error checking.",
+        t!("Would you like to enable available language support for this codebase? This will give you smarter code navigation and inline error checking."),
         UiComponentStyles {
             font_family_id: Some(appearance.ui_font_family()),
             font_color: Some(blended_colors::text_main(appearance.theme(), header_background)),
@@ -159,7 +160,7 @@ pub fn render_lsp_selector_block(
     let skip_button = appearance
         .ui_builder()
         .button(ButtonVariant::Text, skip_mouse_state.clone())
-        .with_text_label("Skip for now".to_string())
+        .with_text_label(t!("Skip for now").to_string())
         .build()
         .on_click(|ctx, _, _| {
             ctx.dispatch_typed_action(InitProjectBlockAction::SkipLanguageServers);
@@ -172,9 +173,9 @@ pub fn render_lsp_selector_block(
     let any_needs_download = selected_items.iter().any(|info| !info.is_installed);
 
     let enable_label = if any_needs_download {
-        "Install and enable"
+        t!("Install and enable")
     } else {
-        "Enable language support"
+        t!("Enable language support")
     };
 
     // Create keyboard shortcut for Enter

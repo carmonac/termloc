@@ -6,6 +6,7 @@ pub(crate) mod positioning;
 pub mod styles;
 mod view;
 
+use i18n::t;
 pub use message_bar::{InlineMenuMessageArgs, InlineMenuMessageBarArgs};
 pub use message_provider::{InlineMenuMessageProvider, default_navigation_message_items};
 pub use model::{InlineMenuModel, InlineMenuModelEvent, InlineMenuTabConfig};
@@ -60,7 +61,7 @@ impl InlineMenuType {
             InlineMenuType::SkillMenu => "/Skills",
             InlineMenuType::UserQueryMenu => "/Fork",
             InlineMenuType::RewindMenu => "/Rewind",
-            InlineMenuType::InlineHistoryMenu => "History",
+            InlineMenuType::InlineHistoryMenu => t!("History"),
             InlineMenuType::IndexedReposMenu => "/Repos",
             InlineMenuType::PlanMenu => "/Plans",
         }

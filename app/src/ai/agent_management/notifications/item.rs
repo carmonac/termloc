@@ -1,4 +1,5 @@
 use enum_iterator::Sequence;
+use i18n::t;
 use instant::Instant;
 use uuid::Uuid;
 use warpui::EntityId;
@@ -35,9 +36,9 @@ pub enum NotificationFilter {
 impl NotificationFilter {
     pub(crate) fn label(&self) -> &'static str {
         match self {
-            NotificationFilter::All => "All tabs",
-            NotificationFilter::Unread => "Unread",
-            NotificationFilter::Errors => "Errors",
+            NotificationFilter::All => t!("All tabs"),
+            NotificationFilter::Unread => t!("Unread"),
+            NotificationFilter::Errors => t!("Errors"),
         }
     }
 }

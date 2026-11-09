@@ -3,6 +3,7 @@ use std::cmp::Reverse;
 use std::path::Path;
 use std::sync::Arc;
 
+use i18n::t;
 use itertools::Itertools as _;
 use markdown_parser::parse_markdown;
 use parking_lot::FairMutex;
@@ -285,17 +286,17 @@ impl View for AgentViewZeroStateBlock {
 
         let header_props = {
             let mut local_description =
-                "Send a prompt below to start a new conversation".to_owned();
+                t!("Send a prompt below to start a new conversation").to_owned();
             let active_session = self.active_session(app);
             let location_label = active_session.as_deref().and_then(|session| {
                 format_session_location(session, self.current_working_directory.as_deref())
             });
             if let Some(location_label) = location_label {
-                local_description += &format!(" in `{location_label}`");
+                local_description += &t!(" in `{location}`", location = location_label);
             }
 
             HeaderProps {
-                title: "New Local Agent conversation".into(),
+                title: t!("New Local Agent conversation").into(),
                 description: vec![local_description.into()],
                 icon: IconWithStatusVariant::LocalAgent {
                     status: None,
@@ -515,7 +516,7 @@ fn render_body(props: ZeroStateBodyProps<'_>, app: &AppContext) -> Vec<Box<dyn E
                             MessageItem::keystroke(
                                 ENTER_AGENT_VIEW_NEW_CONVERSATION_KEYSTROKE.clone(),
                             ),
-                            MessageItem::text("start a new agent conversation"),
+                            MessageItem::text(t!("start a new agent conversation")),
                         ],
                         |ctx| {
                             ctx.dispatch_typed_action(TerminalAction::StartNewAgentConversation {
@@ -535,7 +536,7 @@ fn render_body(props: ZeroStateBodyProps<'_>, app: &AppContext) -> Vec<Box<dyn E
                                 key: "/model".to_owned(),
                                 ..Default::default()
                             }),
-                            MessageItem::text("switch model"),
+                            MessageItem::text(t!("switch model")),
                         ],
                         |ctx| {
                             ctx.dispatch_typed_action(TerminalAction::OpenModelSelector);
@@ -553,7 +554,7 @@ fn render_body(props: ZeroStateBodyProps<'_>, app: &AppContext) -> Vec<Box<dyn E
                             key: "escape".to_owned(),
                             ..Default::default()
                         }),
-                        MessageItem::text("go back to terminal"),
+                        MessageItem::text(t!("go back to terminal")),
                     ],
                     |ctx| {
                         ctx.dispatch_typed_action(TerminalAction::ExitAgentView);
@@ -576,9 +577,9 @@ fn render_body(props: ZeroStateBodyProps<'_>, app: &AppContext) -> Vec<Box<dyn E
                 key: "/init".to_owned(),
                 ..Default::default()
             }),
-            MessageItem::text(
-                "to index this codebase and generate an AGENTS.md for optimal performance",
-            ),
+            MessageItem::text(t!(
+                "to index this codebase and generate an AGENTS.md for optimal performance"
+            )),
         ])
         .with_text_color(main_text_color);
         body_items.push(
@@ -648,7 +649,7 @@ fn render_recent_conversations_section(
         .with_child(
             Container::new(
                 Text::new(
-                    "RECENT ACTIVITY",
+                    t!("RECENT ACTIVITY"),
                     appearance.ui_font_family(),
                     header_font_size,
                 )

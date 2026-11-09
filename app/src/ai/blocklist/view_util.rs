@@ -1,6 +1,7 @@
 //! This module contains common utilities for rendering Blocklist AI UI.
 use std::sync::LazyLock;
 
+use i18n::t;
 use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::vec2f;
 use warp_core::ui::appearance::Appearance;
@@ -72,11 +73,13 @@ pub fn failed_output_presentation(error: &RenderableAIError) -> Option<FailedOut
 
     Some(match error {
         RenderableAIError::InternalWarpError => FailedOutputPresentation::Message(format!(
-            "{ERROR_APOLOGY_TEXT}\n\n{INTERNAL_WARP_ERROR}"
+            "{}\n\n{}",
+            t!(ERROR_APOLOGY_TEXT),
+            t!(INTERNAL_WARP_ERROR)
         )),
         RenderableAIError::ContextWindowExceeded(message) => {
             FailedOutputPresentation::ContextWindowExceeded {
-                message: message.clone(),
+                message: t!(message.as_str()).to_owned(),
             }
         }
         RenderableAIError::TransientNetworkError { .. } => {
@@ -84,10 +87,14 @@ pub fn failed_output_presentation(error: &RenderableAIError) -> Option<FailedOut
         }
         RenderableAIError::AgentStreamFailure { error_message }
         | RenderableAIError::Other { error_message, .. } => {
-            FailedOutputPresentation::Message(format!("{ERROR_APOLOGY_TEXT}\n\n{error_message}"))
+            FailedOutputPresentation::Message(format!(
+                "{}\n\n{}",
+                t!(ERROR_APOLOGY_TEXT),
+                t!(error_message.as_str())
+            ))
         }
         RenderableAIError::AgentExitedShell { .. } => {
-            FailedOutputPresentation::Message(format!("{ERROR_APOLOGY_TEXT}\n\n{error}"))
+            FailedOutputPresentation::Message(format!("{}\n\n{error}", t!(ERROR_APOLOGY_TEXT)))
         }
     })
 }
@@ -116,7 +123,7 @@ pub fn render_ai_follow_up_icon(
             let tooltip_background = appearance.theme().tooltip_background();
             let tool_tip = appearance
                 .ui_builder()
-                .tool_tip("Follow up with existing conversation".to_owned())
+                .tool_tip(t!("Follow up with existing conversation").to_owned())
                 .with_style(UiComponentStyles {
                     font_size: Some(12.),
                     background: Some(warpui::elements::Fill::Solid(tooltip_background)),

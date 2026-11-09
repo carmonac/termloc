@@ -3,6 +3,7 @@
 //! This is tightly coupled to the pane header so that different overlays (context menus, the
 //! sharing dialog, and so on) are correctly displayed.
 
+use i18n::t;
 use warp_core::ui::appearance::Appearance;
 use warp_core::ui::theme::Fill;
 use warpui::elements::{ConstrainedBox, MouseStateHandle, ParentElement};
@@ -152,10 +153,10 @@ impl<P: BackingView> PaneHeader<P> {
                 (
                     Icon::Share,
                     self.open_overlay == OpenOverlay::SharingDialog,
-                    "Share".to_string(),
+                    t!("Share").to_string(),
                 )
             } else {
-                (Icon::Link, false, "Copy link".to_string())
+                (Icon::Link, false, t!("Copy link").to_string())
             };
 
         let ui_builder = appearance.ui_builder().clone();

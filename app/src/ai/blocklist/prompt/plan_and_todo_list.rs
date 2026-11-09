@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use i18n::t;
 use pathfinder_geometry::vector::vec2f;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::Icon;
@@ -255,9 +256,9 @@ impl PlanAndTodoListView {
                 chip_content.finish(),
                 self.plan_button_mouse_state.clone(),
                 if is_agent_unaware_of_plan_edits {
-                    "Agent is unaware of recent plan edits".to_string()
+                    t!("Agent is unaware of recent plan edits").to_string()
                 } else {
-                    "View plan".to_string()
+                    t!("View plan").to_string()
                 },
                 corner_radius,
                 appearance,
@@ -412,7 +413,7 @@ impl PlanAndTodoListView {
             .render_chip_button(
                 content,
                 self.todo_button_mouse_state.clone(),
-                "View todo list".to_string(),
+                t!("View todo list").to_string(),
                 corner_radius,
                 appearance,
             )

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use i18n::t;
 use parking_lot::FairMutex;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::appearance::Appearance;
@@ -330,14 +331,14 @@ impl View for AgentMessageBar {
             Some(FigmaMcpStatus::NotInstalled) => {
                 message.items.push(figma_chip(
                     self.mouse_states.figma_install_button.clone(),
-                    "Get Figma MCP",
+                    t!("Get Figma MCP"),
                     Some(InputAction::FigmaAddButtonClicked),
                 ));
             }
             Some(FigmaMcpStatus::Installed) => {
                 message.items.push(figma_chip(
                     self.mouse_states.figma_enable_button.clone(),
-                    "Enable Figma MCP",
+                    t!("Enable Figma MCP"),
                     Some(InputAction::FigmaEnableButtonClicked),
                 ));
             }
@@ -345,7 +346,7 @@ impl View for AgentMessageBar {
                 message.items.push(
                     figma_chip(
                         self.mouse_states.figma_enable_button.clone(),
-                        "Enabling...",
+                        t!("Enabling..."),
                         None,
                     )
                     .with_is_disabled(true),
@@ -413,7 +414,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for BootstrappingMessageProducer {
         if args.terminal_model.block_list().is_bootstrapped() {
             None
         } else {
-            Some(Message::from_text("Starting shell..."))
+            Some(Message::from_text(t!("Starting shell...")))
         }
     }
 }
@@ -464,7 +465,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
             items.push(MessageItem::clickable(
                 vec![
                     MessageItem::keystroke(resume_keystroke),
-                    MessageItem::text("to resume conversation"),
+                    MessageItem::text(t!("to resume conversation")),
                 ],
                 |ctx| {
                     ctx.dispatch_typed_action(TerminalAction::ResumeConversation);
@@ -493,7 +494,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
                         background_color: bg_color_override_for_shortcuts_and_commands,
                     },
                     MessageItem::Text {
-                        content: "for help".into(),
+                        content: t!("for help").into(),
                         color: color_override_for_shortcuts_and_commands,
                     },
                 ],
@@ -517,7 +518,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
                         background_color: bg_color_override_for_shortcuts_and_commands,
                     },
                     MessageItem::Text {
-                        content: "for commands".into(),
+                        content: t!("for commands").into(),
                         color: color_override_for_shortcuts_and_commands,
                     },
                 ],
@@ -545,7 +546,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
             items.push(MessageItem::clickable(
                 vec![
                     MessageItem::keystroke(conversations_keystroke),
-                    MessageItem::text("open conversation"),
+                    MessageItem::text(t!("open conversation")),
                 ],
                 |ctx| {
                     ctx.dispatch_typed_action(InputAction::ToggleConversationsMenu);
@@ -565,7 +566,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
             items.push(MessageItem::clickable(
                 vec![
                     MessageItem::keystroke(code_review_keystroke),
-                    MessageItem::text("for code review"),
+                    MessageItem::text(t!("for code review")),
                 ],
                 |ctx| {
                     ctx.dispatch_typed_action(WorkspaceAction::ToggleRightPanel);
@@ -591,11 +592,11 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
                         Keystroke::parse("cmdorctrl-alt-p").expect("keystroke should parse"),
                     ),
                     MessageItem::text(if is_plan_for_this_conversation_open {
-                        "to hide plan"
+                        t!("to hide plan")
                     } else if plan_count > 1 {
-                        "to view plans"
+                        t!("to view plans")
                     } else {
-                        "to view plan"
+                        t!("to view plan")
                     }),
                 ],
                 |ctx| {
@@ -615,7 +616,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ZeroStateMessageProducer {
             items.push(MessageItem::clickable(
                 vec![
                     MessageItem::keystroke(fork_keystroke),
-                    MessageItem::text("to fork and continue"),
+                    MessageItem::text(t!("to fork and continue")),
                 ],
                 |ctx| {
                     ctx.dispatch_typed_action(
@@ -722,9 +723,9 @@ impl MessageProvider<AgentMessageArgs<'_>> for ForkSlashCommandMessageProducer {
                 key: "enter".to_owned(),
                 ..Default::default()
             }),
-            MessageItem::text(" new pane"),
+            MessageItem::text(t!(" new pane")),
             MessageItem::keystroke(modifier_keystroke),
-            MessageItem::text(" new tab"),
+            MessageItem::text(t!(" new tab")),
         ]))
     }
 }
@@ -743,7 +744,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for HideShortcutsMessageProducer {
                     key: "?".to_owned(),
                     ..Default::default()
                 }),
-                MessageItem::text("to hide help"),
+                MessageItem::text(t!("to hide help")),
             ],
             |ctx| {
                 ctx.dispatch_typed_action(InputAction::ToggleAgentViewShortcuts);
@@ -775,12 +776,12 @@ impl MessageProvider<AgentMessageArgs<'_>> for AutodetectedBashModeMessageProduc
 
         let message = match keybinding_name_to_keystroke(SET_INPUT_MODE_AGENT_ACTION_NAME, app) {
             Some(keystroke) => Message::new(vec![
-                MessageItem::text("autodetected shell command, "),
+                MessageItem::text(t!("autodetected shell command, ")),
                 MessageItem::keystroke(keystroke),
-                MessageItem::text(" to override"),
+                MessageItem::text(t!(" to override")),
             ])
             .with_text_color(appearance.theme().ansi_fg_blue()),
-            None => Message::from_text("autodetected shell command"),
+            None => Message::from_text(t!("autodetected shell command")),
         };
 
         Some(message)
@@ -812,7 +813,7 @@ impl MessageProvider<AgentMessageArgs<'_>> for ExitBashModeMessageProducer {
                     color: None,
                     background_color: None,
                 },
-                MessageItem::text("to exit shell mode"),
+                MessageItem::text(t!("to exit shell mode")),
             ])
             .with_text_color(text_color),
         )

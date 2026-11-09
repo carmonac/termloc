@@ -1,6 +1,7 @@
 use std::sync::{Arc, Weak};
 use std::{error, fmt};
 
+use i18n::t;
 use parking_lot::FairMutex;
 use warp::tui_export::{BlocklistAIInputModel, CLISubagentController, TerminalModel};
 use warpui_core::keymap::Context;
@@ -470,7 +471,7 @@ impl TuiTerminalSessionState {
             return None;
         }
         Some(match agent_editor.mode {
-            TuiComposerMode::Shell => SHELL_HINT.to_owned(),
+            TuiComposerMode::Shell => t!(SHELL_HINT).to_owned(),
             TuiComposerMode::Agent { .. } => agent_input_hint(state.transcript_is_empty),
         })
     }
@@ -491,10 +492,10 @@ impl TuiTerminalSessionState {
         let agent_editor = match &state.interaction {
             TuiInteractionState::Blocking(BlockingInputSource::LongRunningCommand) => {
                 return vec![TuiShortcutSection {
-                    title: "Terminal",
+                    title: t!("Terminal"),
                     shortcuts: vec![TuiShortcut {
                         key: "ctrl-c".to_owned(),
-                        description: "interrupt command",
+                        description: t!("interrupt command"),
                     }],
                 }];
             }
@@ -505,10 +506,10 @@ impl TuiTerminalSessionState {
             | TuiInteractionState::Pty(TuiPtyState::Process) => return Vec::new(),
             TuiInteractionState::Pty(TuiPtyState::UserControlledTerminalUse) => {
                 return vec![TuiShortcutSection {
-                    title: "Terminal",
+                    title: t!("Terminal"),
                     shortcuts: vec![TuiShortcut {
                         key: HAND_BACK_KEY_BINDING.to_owned(),
-                        description: "hand back control",
+                        description: t!("hand back control"),
                     }],
                 }];
             }
@@ -517,38 +518,38 @@ impl TuiTerminalSessionState {
 
         let mut shortcuts = vec![TuiShortcut {
             key: "?".to_owned(),
-            description: "shortcuts",
+            description: t!("shortcuts"),
         }];
         match agent_editor.mode {
             TuiComposerMode::Agent { .. } => shortcuts.extend([
                 TuiShortcut {
                     key: "/".to_owned(),
-                    description: "commands",
+                    description: t!("commands"),
                 },
                 TuiShortcut {
                     key: "!".to_owned(),
-                    description: "shell mode",
+                    description: t!("shell mode"),
                 },
                 TuiShortcut {
                     key: "←".to_owned(),
-                    description: "conversations",
+                    description: t!("conversations"),
                 },
             ]),
             TuiComposerMode::Shell => shortcuts.push(TuiShortcut {
                 key: "Esc".to_owned(),
-                description: "agent mode",
+                description: t!("agent mode"),
             }),
         }
         if matches!(agent_editor.mode, TuiComposerMode::Agent { .. }) {
             shortcuts.push(TuiShortcut {
                 key: "↑".to_owned(),
-                description: "input history",
+                description: t!("input history"),
             });
         }
         if let Some(key) = binding_hint(AUTO_APPROVE_TOGGLE_BINDING_NAME, context, ctx) {
             shortcuts.push(TuiShortcut {
                 key,
-                description: "toggle auto-approve",
+                description: t!("toggle auto-approve"),
             });
         }
         if state.plan_available
@@ -556,12 +557,12 @@ impl TuiTerminalSessionState {
         {
             shortcuts.push(TuiShortcut {
                 key,
-                description: "expand/collapse plans",
+                description: t!("expand/collapse plans"),
             });
         }
 
         let mut sections = vec![TuiShortcutSection {
-            title: "Shortcuts",
+            title: t!("Shortcuts"),
             shortcuts,
         }];
         if matches!(
@@ -571,10 +572,10 @@ impl TuiTerminalSessionState {
             }
         ) {
             sections.push(TuiShortcutSection {
-                title: "Terminal use",
+                title: t!("Terminal use"),
                 shortcuts: vec![TuiShortcut {
                     key: TAKE_CONTROL_KEY_BINDING.to_owned(),
-                    description: "take control",
+                    description: t!("take control"),
                 }],
             });
         } else if state.agent_is_tagged_in
@@ -582,10 +583,10 @@ impl TuiTerminalSessionState {
                 binding_hint(DETACH_AGENT_FROM_RUNNING_COMMAND_BINDING_NAME, context, ctx)
         {
             sections.push(TuiShortcutSection {
-                title: "Terminal use",
+                title: t!("Terminal use"),
                 shortcuts: vec![TuiShortcut {
                     key,
-                    description: "return control to command",
+                    description: t!("return control to command"),
                 }],
             });
         }
@@ -604,7 +605,11 @@ fn agent_input_hint(transcript_is_empty: bool) -> String {
             COMMANDS_HINT,
         ]
     };
-    hints.join(HINT_SEPARATOR)
+    hints
+        .iter()
+        .map(|hint| t!(*hint))
+        .collect::<Vec<_>>()
+        .join(HINT_SEPARATOR)
 }
 
 #[cfg(test)]

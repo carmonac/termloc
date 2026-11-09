@@ -3,6 +3,7 @@
 
 use std::path::Path;
 
+use i18n::t;
 use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentActionResultType, AIAgentActionType,
     AskUserQuestionResult, FileGlobV2Result, GrepResult, RequestCommandOutputResult,
@@ -185,7 +186,7 @@ pub(crate) fn tool_call_label_with_server(
         .map(|result| &result.result);
     let label = label_for_action(&action.action, state, result, block, server_name);
     match state {
-        State::Blocked => format!("{label} (awaiting approval)"),
+        State::Blocked => t!("{label} (awaiting approval)", label = label),
         State::Constructing
         | State::Pending
         | State::Running
@@ -237,59 +238,67 @@ fn label_for_action(
             // the complete command instead of capping it at MAX_INLINE_LEN.
             let cmd = executed.unwrap_or(command).trim_end();
             match state {
-                State::Constructing => "Generating command…".to_owned(),
-                State::Pending | State::Blocked => format!("Run `{cmd}`"),
-                State::Running => format!("Running `{cmd}`"),
+                State::Constructing => t!("Generating command…").to_owned(),
+                State::Pending | State::Blocked => t!("Run `{cmd}`", cmd = cmd),
+                State::Running => t!("Running `{cmd}`", cmd = cmd),
                 State::Succeeded => match block_state {
-                    Some(CommandBlockState::Finished { .. }) => format!("Ran `{cmd}`"),
+                    Some(CommandBlockState::Finished { .. }) => t!("Ran `{cmd}`", cmd = cmd),
                     // No local block: fall back to the stored result. A
                     // snapshot result means the command was still running at
                     // the last point we could observe it.
                     Some(CommandBlockState::Running) | None => match result {
                         Some(AIAgentActionResultType::RequestCommandOutput(
                             RequestCommandOutputResult::LongRunningCommandSnapshot { .. },
-                        )) => format!("`{cmd}` is still running"),
-                        _ => format!("Ran `{cmd}`"),
+                        )) => t!("`{cmd}` is still running", cmd = cmd),
+                        _ => t!("Ran `{cmd}`", cmd = cmd),
                     },
                 },
                 State::Failed => match block_state {
                     Some(CommandBlockState::Finished { exit_code }) => {
-                        format!("`{cmd}` exited with code {}", exit_code.value())
+                        t!(
+                            "`{cmd}` exited with code {code}",
+                            cmd = cmd,
+                            code = exit_code.value()
+                        )
                     }
                     Some(CommandBlockState::Running) | None => match result {
                         Some(AIAgentActionResultType::RequestCommandOutput(
                             RequestCommandOutputResult::Completed { exit_code, .. },
-                        )) => format!("`{cmd}` exited with code {}", exit_code.value()),
+                        )) => t!(
+                            "`{cmd}` exited with code {code}",
+                            cmd = cmd,
+                            code = exit_code.value()
+                        ),
                         Some(AIAgentActionResultType::RequestCommandOutput(
                             RequestCommandOutputResult::Denylisted { .. },
-                        )) => format!("`{cmd}` denied (denylisted)"),
+                        )) => t!("`{cmd}` denied (denylisted)", cmd = cmd),
                         Some(AIAgentActionResultType::RequestCommandOutput(
                             RequestCommandOutputResult::TerminalBusy { .. },
-                        )) => format!("`{cmd}` not started (terminal busy)"),
-                        _ => format!("`{cmd}` failed"),
+                        )) => t!("`{cmd}` not started (terminal busy)", cmd = cmd),
+                        _ => t!("`{cmd}` failed", cmd = cmd),
                     },
                 },
-                State::Cancelled => format!("Cancelled `{cmd}`"),
+                State::Cancelled => t!("Cancelled `{cmd}`", cmd = cmd),
             }
         }
         AIAgentActionType::WriteToLongRunningShellCommand { .. } => match state {
-            State::Constructing => "Writing command input…".to_owned(),
-            State::Pending | State::Blocked => "Write input to running command".to_owned(),
-            State::Running => "Writing input to running command…".to_owned(),
-            State::Succeeded => "Wrote input to running command".to_owned(),
-            State::Failed => "Failed to write to running command".to_owned(),
-            State::Cancelled => "Write to running command cancelled".to_owned(),
+            State::Constructing => t!("Writing command input…").to_owned(),
+            State::Pending | State::Blocked => t!("Write input to running command").to_owned(),
+            State::Running => t!("Writing input to running command…").to_owned(),
+            State::Succeeded => t!("Wrote input to running command").to_owned(),
+            State::Failed => t!("Failed to write to running command").to_owned(),
+            State::Cancelled => t!("Write to running command cancelled").to_owned(),
         },
         AIAgentActionType::ReadFiles(request) => {
             let files = files_summary(request.locations.iter().map(|location| &location.name));
             match state {
-                State::Constructing => "Reading files…".to_owned(),
+                State::Constructing => t!("Reading files…").to_owned(),
                 State::Pending | State::Blocked | State::Succeeded => {
-                    format!("Read {files}")
+                    t!("Read {files}", files = files)
                 }
-                State::Running => format!("Reading {files}"),
-                State::Failed => format!("Failed to read {files}"),
-                State::Cancelled => format!("Cancelled reading {files}"),
+                State::Running => t!("Reading {files}", files = files),
+                State::Failed => t!("Failed to read {files}", files = files),
+                State::Cancelled => t!("Cancelled reading {files}", files = files),
             }
         }
         AIAgentActionType::SearchCodebase(request) => {
@@ -297,27 +306,45 @@ fn label_for_action(
             let scope = request
                 .codebase_path
                 .as_deref()
-                .map(|path| format!(" in {}", base_name(path)))
+                .map(|path| t!(" in {path}", path = base_name(path)))
                 .unwrap_or_default();
             match state {
-                State::Constructing => "Searching codebase…".to_owned(),
+                State::Constructing => t!("Searching codebase…").to_owned(),
                 State::Pending | State::Blocked => {
-                    format!("Search for \"{query}\"{scope}")
+                    t!(
+                        "Search for \"{query}\"{scope}",
+                        query = query,
+                        scope = scope
+                    )
                 }
-                State::Running => format!("Searching for \"{query}\"{scope}"),
+                State::Running => t!(
+                    "Searching for \"{query}\"{scope}",
+                    query = query,
+                    scope = scope
+                ),
                 State::Succeeded => match result {
                     Some(AIAgentActionResultType::SearchCodebase(
                         SearchCodebaseResult::Success { files },
                     )) if files.is_empty() => {
-                        format!("Searched for \"{query}\"{scope}, no results")
+                        t!(
+                            "Searched for \"{query}\"{scope}, no results",
+                            query = query,
+                            scope = scope
+                        )
                     }
                     Some(AIAgentActionResultType::SearchCodebase(
                         SearchCodebaseResult::Success { files },
-                    )) => format!(
-                        "Searched for \"{query}\"{scope}, {}",
-                        count_label(files.len(), "result", "results")
+                    )) => t!(
+                        "Searched for \"{query}\"{scope}, {results}",
+                        query = query,
+                        scope = scope,
+                        results = count_label(files.len(), "1 result", "{count} results")
                     ),
-                    _ => format!("Searched for \"{query}\"{scope}"),
+                    _ => t!(
+                        "Searched for \"{query}\"{scope}",
+                        query = query,
+                        scope = scope
+                    ),
                 },
                 State::Failed => match result {
                     Some(AIAgentActionResultType::SearchCodebase(
@@ -325,12 +352,22 @@ fn label_for_action(
                             reason: SearchCodebaseFailureReason::CodebaseNotIndexed,
                             ..
                         },
-                    )) => format!(
-                        "Search for \"{query}\"{scope} failed because the codebase isn't indexed"
+                    )) => t!(
+                        "Search for \"{query}\"{scope} failed because the codebase isn't indexed",
+                        query = query,
+                        scope = scope
                     ),
-                    _ => format!("Search for \"{query}\"{scope} failed"),
+                    _ => t!(
+                        "Search for \"{query}\"{scope} failed",
+                        query = query,
+                        scope = scope
+                    ),
                 },
-                State::Cancelled => format!("Search for \"{query}\"{scope} cancelled"),
+                State::Cancelled => t!(
+                    "Search for \"{query}\"{scope} cancelled",
+                    query = query,
+                    scope = scope
+                ),
             }
         }
         // Rendered by its own stateful child view (`TuiFileEditsView`); the
@@ -343,22 +380,40 @@ fn label_for_action(
             let queries = single_line(&queries.join(", "));
             let path = display_path(path);
             match state {
-                State::Constructing => "Grepping…".to_owned(),
+                State::Constructing => t!("Grepping…").to_owned(),
                 State::Pending | State::Blocked => {
-                    format!("Grep for {queries} in {path}")
+                    t!(
+                        "Grep for {queries} in {path}",
+                        queries = queries,
+                        path = path
+                    )
                 }
-                State::Running => format!("Grepping for {queries} in {path}"),
+                State::Running => t!(
+                    "Grepping for {queries} in {path}",
+                    queries = queries,
+                    path = path
+                ),
                 State::Succeeded => match result {
                     Some(AIAgentActionResultType::Grep(GrepResult::Success { matched_files })) => {
-                        format!(
-                            "Grepped for {queries} in {path}, {}",
-                            count_label(matched_files.len(), "matching file", "matching files")
+                        t!(
+                            "Grepped for {queries} in {path}, {matches}",
+                            queries = queries,
+                            path = path,
+                            matches = count_label(
+                                matched_files.len(),
+                                "1 matching file",
+                                "{count} matching files"
+                            )
                         )
                     }
-                    _ => format!("Grepped for {queries} in {path}"),
+                    _ => t!(
+                        "Grepped for {queries} in {path}",
+                        queries = queries,
+                        path = path
+                    ),
                 },
-                State::Failed => format!("Grep for {queries} failed"),
-                State::Cancelled => format!("Grep for {queries} cancelled"),
+                State::Failed => t!("Grep for {queries} failed", queries = queries),
+                State::Cancelled => t!("Grep for {queries} cancelled", queries = queries),
             }
         }
         AIAgentActionType::FileGlob { patterns, path } => {
@@ -383,14 +438,14 @@ fn label_for_action(
                 // The resource name arrives with the tool-call header (not
                 // the streamed args), so include it when present, like the
                 // GUI's "Reading \"{name}\" MCP resource..." loading text.
-                State::Constructing if name.is_empty() => "Reading MCP resource…".to_owned(),
-                State::Constructing => format!("Reading \"{name}\" MCP resource…"),
+                State::Constructing if name.is_empty() => t!("Reading MCP resource…").to_owned(),
+                State::Constructing => t!("Reading \"{name}\" MCP resource…", name = name),
                 State::Pending | State::Blocked | State::Succeeded => {
-                    format!("Read MCP resource {resource}")
+                    t!("Read MCP resource {resource}", resource = resource)
                 }
-                State::Running => format!("Reading MCP resource {resource}"),
-                State::Failed => format!("MCP resource {resource} failed"),
-                State::Cancelled => format!("MCP resource {resource} cancelled"),
+                State::Running => t!("Reading MCP resource {resource}", resource = resource),
+                State::Failed => t!("MCP resource {resource} failed", resource = resource),
+                State::Cancelled => t!("MCP resource {resource} cancelled", resource = resource),
             }
         }
         AIAgentActionType::CallMCPTool { name, .. } => {
@@ -398,147 +453,182 @@ fn label_for_action(
             // Append the originating server when known so MCP tool calls
             // surface both identities, with a deterministic no-server fallback.
             let suffix = server_name
-                .map(|server| format!(" on {server}"))
+                .map(|server| t!(" on {server}", server = server))
                 .unwrap_or_default();
             match state {
                 // Like the GUI's "Calling \"{name}\" MCP tool..." loading
                 // text; the tool name is available before its args finish.
                 State::Constructing if name.is_empty() => {
-                    format!("Calling MCP tool{suffix}…")
+                    t!("Calling MCP tool{suffix}…", suffix = suffix)
                 }
-                State::Constructing => format!("Calling \"{name}\" MCP tool{suffix}…"),
-                State::Pending | State::Blocked => format!("Call MCP tool {name}{suffix}"),
-                State::Running => format!("Calling MCP tool {name}{suffix}"),
-                State::Succeeded => format!("Called MCP tool {name}{suffix}"),
-                State::Failed => format!("MCP tool {name}{suffix} failed"),
-                State::Cancelled => format!("MCP tool {name}{suffix} cancelled"),
+                State::Constructing => t!(
+                    "Calling \"{name}\" MCP tool{suffix}…",
+                    name = name,
+                    suffix = suffix
+                ),
+                State::Pending | State::Blocked => {
+                    t!("Call MCP tool {name}{suffix}", name = name, suffix = suffix)
+                }
+                State::Running => t!(
+                    "Calling MCP tool {name}{suffix}",
+                    name = name,
+                    suffix = suffix
+                ),
+                State::Succeeded => t!(
+                    "Called MCP tool {name}{suffix}",
+                    name = name,
+                    suffix = suffix
+                ),
+                State::Failed => t!(
+                    "MCP tool {name}{suffix} failed",
+                    name = name,
+                    suffix = suffix
+                ),
+                State::Cancelled => t!(
+                    "MCP tool {name}{suffix} cancelled",
+                    name = name,
+                    suffix = suffix
+                ),
             }
         }
         AIAgentActionType::SuggestNewConversation { .. } => match state {
-            State::Constructing => "Suggesting a new conversation…".to_owned(),
+            State::Constructing => t!("Suggesting a new conversation…").to_owned(),
             State::Pending | State::Blocked | State::Running | State::Failed => {
-                "Suggested starting a new conversation".to_owned()
+                t!("Suggested starting a new conversation").to_owned()
             }
             State::Succeeded => match result {
                 Some(AIAgentActionResultType::SuggestNewConversation(
                     SuggestNewConversationResult::Rejected,
-                )) => "Continuing current conversation".to_owned(),
-                _ => "New conversation started".to_owned(),
+                )) => t!("Continuing current conversation").to_owned(),
+                _ => t!("New conversation started").to_owned(),
             },
-            State::Cancelled => "New conversation suggestion cancelled".to_owned(),
+            State::Cancelled => t!("New conversation suggestion cancelled").to_owned(),
         },
         AIAgentActionType::SuggestPrompt(_)
         | AIAgentActionType::InitProject
         | AIAgentActionType::OpenCodeReview => fallback_label(action, state),
         AIAgentActionType::ReadDocuments(request) => {
-            let documents = count_label(request.document_ids.len(), "document", "documents");
+            let documents = count_label(
+                request.document_ids.len(),
+                "1 document",
+                "{count} documents",
+            );
             match state {
-                State::Constructing => "Reading documents…".to_owned(),
+                State::Constructing => t!("Reading documents…").to_owned(),
                 State::Pending | State::Blocked | State::Succeeded => {
-                    format!("Read {documents}")
+                    t!("Read {documents}", documents = documents)
                 }
-                State::Running => format!("Reading {documents}"),
-                State::Failed => "Failed to read documents".to_owned(),
-                State::Cancelled => "Cancelled reading documents".to_owned(),
+                State::Running => t!("Reading {documents}", documents = documents),
+                State::Failed => t!("Failed to read documents").to_owned(),
+                State::Cancelled => t!("Cancelled reading documents").to_owned(),
             }
         }
         AIAgentActionType::EditDocuments(request) => match state {
-            State::Pending | State::Blocked => "Update plan".to_owned(),
-            State::Constructing | State::Running => "Updating plan…".to_owned(),
-            State::Succeeded => format!(
-                "Updated plan ({})",
-                count_label(request.diffs.len(), "edit", "edits")
+            State::Pending | State::Blocked => t!("Update plan").to_owned(),
+            State::Constructing | State::Running => t!("Updating plan…").to_owned(),
+            State::Succeeded => t!(
+                "Updated plan ({edits})",
+                edits = count_label(request.diffs.len(), "1 edit", "{count} edits")
             ),
-            State::Failed => "Failed to update plan".to_owned(),
-            State::Cancelled => "Update plan cancelled".to_owned(),
+            State::Failed => t!("Failed to update plan").to_owned(),
+            State::Cancelled => t!("Update plan cancelled").to_owned(),
         },
         AIAgentActionType::CreateDocuments(request) => match state {
-            State::Pending | State::Blocked => "Create plan".to_owned(),
-            State::Constructing | State::Running => "Generating plan…".to_owned(),
+            State::Pending | State::Blocked => t!("Create plan").to_owned(),
+            State::Constructing | State::Running => t!("Generating plan…").to_owned(),
             State::Succeeded => {
                 let count = request.documents.len();
                 if count > 1 {
-                    format!("Created {count} documents")
+                    t!("Created {count} documents", count = count)
                 } else {
-                    "Created plan".to_owned()
+                    t!("Created plan").to_owned()
                 }
             }
-            State::Failed => "Failed to create plan".to_owned(),
-            State::Cancelled => "Create plan cancelled".to_owned(),
+            State::Failed => t!("Failed to create plan").to_owned(),
+            State::Cancelled => t!("Create plan cancelled").to_owned(),
         },
         AIAgentActionType::ReadShellCommandOutput { .. } => match state {
-            State::Pending | State::Blocked | State::Succeeded => "Read command output".to_owned(),
-            State::Constructing | State::Running => "Reading command output…".to_owned(),
-            State::Failed => "Failed to read command output".to_owned(),
-            State::Cancelled => "Read command output cancelled".to_owned(),
+            State::Pending | State::Blocked | State::Succeeded => {
+                t!("Read command output").to_owned()
+            }
+            State::Constructing | State::Running => t!("Reading command output…").to_owned(),
+            State::Failed => t!("Failed to read command output").to_owned(),
+            State::Cancelled => t!("Read command output cancelled").to_owned(),
         },
         AIAgentActionType::UseComputer(request) => summary_label(&request.action_summary, state),
         AIAgentActionType::InsertCodeReviewComments { comments, .. } => {
-            let comments = count_label(comments.len(), "review comment", "review comments");
+            let comments = count_label(
+                comments.len(),
+                "1 review comment",
+                "{count} review comments",
+            );
             match state {
-                State::Constructing => "Preparing review comments…".to_owned(),
-                State::Pending | State::Blocked => format!("Insert {comments}"),
-                State::Running => format!("Inserting {comments}…"),
-                State::Succeeded => format!("Inserted {comments}"),
-                State::Failed => "Failed to insert review comments".to_owned(),
-                State::Cancelled => "Insert review comments cancelled".to_owned(),
+                State::Constructing => t!("Preparing review comments…").to_owned(),
+                State::Pending | State::Blocked => t!("Insert {comments}", comments = comments),
+                State::Running => t!("Inserting {comments}…", comments = comments),
+                State::Succeeded => t!("Inserted {comments}", comments = comments),
+                State::Failed => t!("Failed to insert review comments").to_owned(),
+                State::Cancelled => t!("Insert review comments cancelled").to_owned(),
             }
         }
         AIAgentActionType::RequestComputerUse(request) => {
             summary_label(&request.task_summary, state)
         }
         AIAgentActionType::StartRecording { .. } => match state {
-            State::Pending | State::Blocked => "Start recording".to_owned(),
-            State::Constructing | State::Running => "Starting recording…".to_owned(),
-            State::Succeeded => "Started screen recording".to_owned(),
-            State::Failed => "Recording failed to start".to_owned(),
-            State::Cancelled => "Start recording cancelled".to_owned(),
+            State::Pending | State::Blocked => t!("Start recording").to_owned(),
+            State::Constructing | State::Running => t!("Starting recording…").to_owned(),
+            State::Succeeded => t!("Started screen recording").to_owned(),
+            State::Failed => t!("Recording failed to start").to_owned(),
+            State::Cancelled => t!("Start recording cancelled").to_owned(),
         },
         AIAgentActionType::StopRecording { .. } => match state {
-            State::Pending | State::Blocked => "Stop recording".to_owned(),
-            State::Constructing | State::Running => "Stopping recording…".to_owned(),
+            State::Pending | State::Blocked => t!("Stop recording").to_owned(),
+            State::Constructing | State::Running => t!("Stopping recording…").to_owned(),
             State::Succeeded => match result {
                 Some(AIAgentActionResultType::StopRecording(StopRecordingResult::Discarded)) => {
-                    "Discarded screen recording".to_owned()
+                    t!("Discarded screen recording").to_owned()
                 }
-                _ => "Saved screen recording".to_owned(),
+                _ => t!("Saved screen recording").to_owned(),
             },
-            State::Failed => "Failed to save recording".to_owned(),
-            State::Cancelled => "Stop recording cancelled".to_owned(),
+            State::Failed => t!("Failed to save recording").to_owned(),
+            State::Cancelled => t!("Stop recording cancelled").to_owned(),
         },
         AIAgentActionType::ReadSkill(request) => {
             let skill = single_line(&request.skill.display_label());
             match state {
-                State::Constructing => "Reading skill…".to_owned(),
+                State::Constructing => t!("Reading skill…").to_owned(),
                 State::Pending | State::Blocked | State::Succeeded => {
-                    format!("Read skill {skill}")
+                    t!("Read skill {skill}", skill = skill)
                 }
-                State::Running => format!("Reading skill {skill}"),
-                State::Failed => format!("Failed to read skill {skill}"),
-                State::Cancelled => format!("Cancelled reading skill {skill}"),
+                State::Running => t!("Reading skill {skill}", skill = skill),
+                State::Failed => t!("Failed to read skill {skill}", skill = skill),
+                State::Cancelled => t!("Cancelled reading skill {skill}", skill = skill),
             }
         }
         AIAgentActionType::FetchConversation { .. } => match state {
-            State::Pending | State::Blocked => "Fetch conversation".to_owned(),
-            State::Constructing | State::Running => "Fetching conversation…".to_owned(),
-            State::Succeeded => "Fetched conversation".to_owned(),
-            State::Failed => "Fetch conversation failed".to_owned(),
-            State::Cancelled => "Fetch conversation cancelled".to_owned(),
+            State::Pending | State::Blocked => t!("Fetch conversation").to_owned(),
+            State::Constructing | State::Running => t!("Fetching conversation…").to_owned(),
+            State::Succeeded => t!("Fetched conversation").to_owned(),
+            State::Failed => t!("Fetch conversation failed").to_owned(),
+            State::Cancelled => t!("Fetch conversation cancelled").to_owned(),
         },
         AIAgentActionType::TransferShellCommandControlToUser { reason } => match state {
-            State::Constructing => "Handing control to you…".to_owned(),
+            State::Constructing => t!("Handing control to you…").to_owned(),
             State::Pending | State::Blocked | State::Running => {
-                format!("Handing control to you: {}", single_line(reason))
+                t!(
+                    "Handing control to you: {reason}",
+                    reason = single_line(reason)
+                )
             }
-            State::Succeeded => "You are in control".to_owned(),
-            State::Failed => "Control transfer failed".to_owned(),
-            State::Cancelled => "Control transfer cancelled".to_owned(),
+            State::Succeeded => t!("You are in control").to_owned(),
+            State::Failed => t!("Control transfer failed").to_owned(),
+            State::Cancelled => t!("Control transfer cancelled").to_owned(),
         },
         AIAgentActionType::AskUserQuestion { questions } => match state {
-            State::Constructing => "Preparing question…".to_owned(),
-            State::Pending | State::Blocked | State::Running => format!(
-                "Asking {}",
-                count_label(questions.len(), "question", "questions")
+            State::Constructing => t!("Preparing question…").to_owned(),
+            State::Pending | State::Blocked | State::Running => t!(
+                "Asking {questions}",
+                questions = count_label(questions.len(), "1 question", "{count} questions")
             ),
             State::Succeeded => match result {
                 Some(AIAgentActionResultType::AskUserQuestion(
@@ -547,22 +637,26 @@ fn label_for_action(
                     let total = answers.len();
                     let answered = answers.iter().filter(|answer| !answer.is_skipped()).count();
                     if answered == 0 {
-                        "Questions skipped".to_owned()
+                        t!("Questions skipped").to_owned()
                     } else if answered == total && total == 1 {
-                        "Answered question".to_owned()
+                        t!("Answered question").to_owned()
                     } else if answered == total {
-                        format!("Answered all {total} questions")
+                        t!("Answered all {total} questions", total = total)
                     } else {
-                        format!("Answered {answered} of {total} questions")
+                        t!(
+                            "Answered {answered} of {total} questions",
+                            answered = answered,
+                            total = total
+                        )
                     }
                 }
                 Some(AIAgentActionResultType::AskUserQuestion(
                     AskUserQuestionResult::SkippedByAutoApprove { .. },
-                )) => "Questions skipped".to_owned(),
-                _ => "Answered questions".to_owned(),
+                )) => t!("Questions skipped").to_owned(),
+                _ => t!("Answered questions").to_owned(),
             },
-            State::Failed => "Questions failed".to_owned(),
-            State::Cancelled => "Questions cancelled".to_owned(),
+            State::Failed => t!("Questions failed").to_owned(),
+            State::Cancelled => t!("Questions cancelled").to_owned(),
         },
     }
 }
@@ -578,20 +672,29 @@ fn file_glob_label(
     let patterns = single_line(&patterns.join(", "));
     let path = display_path(path.unwrap_or("."));
     match state {
-        State::Constructing => "Finding files…".to_owned(),
+        State::Constructing => t!("Finding files…").to_owned(),
         State::Pending | State::Blocked => {
-            format!("Find files matching {patterns} in {path}")
+            t!(
+                "Find files matching {patterns} in {path}",
+                patterns = patterns,
+                path = path
+            )
         }
-        State::Running => format!("Finding files matching {patterns} in {path}"),
+        State::Running => t!(
+            "Finding files matching {patterns} in {path}",
+            patterns = patterns,
+            path = path
+        ),
         State::Succeeded => match matched_count {
-            Some(count) => format!(
-                "Found {} matching {patterns}",
-                count_label(count, "file", "files")
+            Some(count) => t!(
+                "Found {files} matching {patterns}",
+                files = count_label(count, "1 file", "{count} files"),
+                patterns = patterns
             ),
-            None => format!("Found files matching {patterns}"),
+            None => t!("Found files matching {patterns}", patterns = patterns),
         },
-        State::Failed => format!("File search for {patterns} failed"),
-        State::Cancelled => format!("File search for {patterns} cancelled"),
+        State::Failed => t!("File search for {patterns} failed", patterns = patterns),
+        State::Cancelled => t!("File search for {patterns} cancelled", patterns = patterns),
     }
 }
 
@@ -601,10 +704,10 @@ fn file_glob_label(
 fn summary_label(summary: &str, state: State) -> String {
     let summary = single_line(summary);
     match state {
-        State::Constructing => "Preparing computer use…".to_owned(),
+        State::Constructing => t!("Preparing computer use…").to_owned(),
         State::Pending | State::Blocked | State::Running | State::Succeeded => summary,
-        State::Failed => format!("{summary} — failed"),
-        State::Cancelled => format!("{summary} — cancelled"),
+        State::Failed => t!("{summary} — failed", summary = summary),
+        State::Cancelled => t!("{summary} — cancelled", summary = summary),
     }
 }
 
@@ -615,9 +718,9 @@ fn fallback_label(action: &AIAgentActionType, state: State) -> String {
     match state {
         State::Pending | State::Blocked => name,
         State::Constructing | State::Running => format!("{name}…"),
-        State::Succeeded => format!("{name} — done"),
-        State::Failed => format!("{name} — failed"),
-        State::Cancelled => format!("{name} — cancelled"),
+        State::Succeeded => t!("{name} — done", name = name),
+        State::Failed => t!("{name} — failed", name = name),
+        State::Cancelled => t!("{name} — cancelled", name = name),
     }
 }
 
@@ -635,7 +738,7 @@ fn single_line(text: &str) -> String {
 /// Renders a search path for display, mirroring the GUI's treatment of `.`.
 fn display_path(path: &str) -> String {
     if path == "." {
-        "the current directory".to_owned()
+        t!("the current directory").to_owned()
     } else {
         single_line(path)
     }
@@ -652,20 +755,24 @@ fn base_name(path: &str) -> String {
 /// Summarizes file paths as comma-joined base names for up to 3 files, else a count.
 fn files_summary<'a>(paths: impl ExactSizeIterator<Item = &'a String>) -> String {
     if paths.len() > 3 {
-        return count_label(paths.len(), "file", "files");
+        return count_label(paths.len(), "1 file", "{count} files");
     }
     let names: Vec<String> = paths.map(|path| base_name(path)).collect();
     if names.is_empty() {
-        "files".to_owned()
+        t!("files").to_owned()
     } else {
         names.join(", ")
     }
 }
 
-/// Pluralizes a counted noun, e.g. `count_label(2, "file", "files")` → "2 files".
-fn count_label(count: usize, singular: &str, plural: &str) -> String {
-    let noun = if count == 1 { singular } else { plural };
-    format!("{count} {noun}")
+/// Translates the label for a counted noun: `one` when `count` is 1, else `many` with its
+/// `{count}` placeholder filled, e.g. `count_label(2, "1 file", "{count} files")` → "2 files".
+fn count_label(count: usize, one: &str, many: &str) -> String {
+    if count == 1 {
+        t!(one).to_owned()
+    } else {
+        t!(many, count = count)
+    }
 }
 
 #[cfg(test)]

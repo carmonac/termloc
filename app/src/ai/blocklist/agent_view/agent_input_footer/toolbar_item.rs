@@ -1,3 +1,4 @@
+use i18n::t;
 use serde::{Deserialize, Serialize};
 use warpui::SingletonEntity;
 
@@ -85,16 +86,16 @@ impl AgentToolbarItemKind {
 
     pub fn display_label(&self) -> &'static str {
         match self {
-            Self::ContextChip(_) => "Context Chip",
-            Self::ModelSelector => "Model Selector",
-            Self::NLDToggle => "Autodetection",
-            Self::VoiceInput => "Voice Input",
-            Self::FileAttach => "Attach File",
-            Self::ContextWindowUsage => "Context Usage",
-            Self::FileExplorer => "File Explorer",
-            Self::RichInput => "Rich Input",
-            Self::Settings => "Settings",
-            Self::FastForwardToggle => "Fast Forward",
+            Self::ContextChip(_) => t!("Context Chip"),
+            Self::ModelSelector => t!("Model Selector"),
+            Self::NLDToggle => t!("Autodetection"),
+            Self::VoiceInput => t!("Voice Input"),
+            Self::FileAttach => t!("Attach File"),
+            Self::ContextWindowUsage => t!("Context Usage"),
+            Self::FileExplorer => t!("File Explorer"),
+            Self::RichInput => t!("Rich Input"),
+            Self::Settings => t!("Settings"),
+            Self::FastForwardToggle => t!("Fast Forward"),
         }
     }
 

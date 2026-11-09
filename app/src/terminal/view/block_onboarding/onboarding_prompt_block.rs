@@ -1,3 +1,4 @@
+use i18n::t;
 use settings::Setting as _;
 use warp_errors::report_if_error;
 use warpui::elements::{
@@ -64,14 +65,14 @@ impl OnboardingPromptBlock {
         Flex::column()
             .with_children([
                 Container::new(
-                    Text::new(LINE_ONE, font_family, font_size)
+                    Text::new(t!(LINE_ONE), font_family, font_size)
                         .with_color(font_color.into_solid())
                         .finish(),
                 )
                 .with_margin_top(14.)
                 .finish(),
                 Container::new(
-                    Text::new(LINE_TWO, font_family, font_size)
+                    Text::new(t!(LINE_TWO), font_family, font_size)
                         .with_color(font_color.into_solid())
                         .finish(),
                 )
@@ -96,7 +97,7 @@ impl OnboardingPromptBlock {
                 font_size: Some(14.),
                 ..Default::default()
             })
-            .with_centered_text_label("Confirm".to_owned());
+            .with_centered_text_label(t!("Confirm").to_owned());
         if self.selected_prompt.is_none() {
             confirm_button = confirm_button.disabled();
         }
@@ -243,7 +244,7 @@ impl OnboardingPromptBlock {
                 .with_corner_radius(CornerRadius::with_all(Radius::Pixels(CORNER_RADIUS_PIXELS)))
                 .finish()
         } else {
-            Text::new_inline(NO_PS1_TEXT, font_family, font_size)
+            Text::new_inline(t!(NO_PS1_TEXT), font_family, font_size)
                 .with_color(font_color.into_solid())
                 .finish()
         };
@@ -257,7 +258,7 @@ impl OnboardingPromptBlock {
         Flex::column()
             .with_child(
                 Container::new(
-                    Text::new_inline(HEADER_TEXT, font_family, font_size)
+                    Text::new_inline(t!(HEADER_TEXT), font_family, font_size)
                         .with_color(font_color.into_solid())
                         .finish(),
                 )
@@ -271,7 +272,7 @@ impl OnboardingPromptBlock {
                     Align::new(
                         Flex::row()
                             .with_children([
-                                Text::new_inline(CORRECTION_TEXT, font_family, font_size)
+                                Text::new_inline(t!(CORRECTION_TEXT), font_family, font_size)
                                     .with_color(
                                         font_color.with_opacity(CORRECTION_OPACITY).into_solid(),
                                     )
@@ -279,7 +280,7 @@ impl OnboardingPromptBlock {
                                 appearance
                                     .ui_builder()
                                     .link(
-                                        LINK_TEXT.to_string(),
+                                        t!(LINK_TEXT).to_string(),
                                         Some(LINK_DESTINATION.to_string()),
                                         None,
                                         self.mouse_state_handle_look_incorrect.clone(),
@@ -355,7 +356,7 @@ impl OnboardingPromptBlock {
         Flex::column()
             .with_child(
                 Container::new(
-                    Text::new_inline(HEADER_TEXT, font_family, appearance.ui_font_size())
+                    Text::new_inline(t!(HEADER_TEXT), font_family, appearance.ui_font_size())
                         .with_color(font_color.into_solid())
                         .finish(),
                 )
@@ -368,7 +369,7 @@ impl OnboardingPromptBlock {
                     1.,
                     Align::new(
                         Text::new_inline(
-                            "Customizable in appearance settings.",
+                            t!("Customizable in appearance settings."),
                             font_family,
                             ui_font_size,
                         )

@@ -7,6 +7,7 @@ use ai::agent::{
     AskUserQuestionAction, AskUserQuestionCurrent, AskUserQuestionEffect, AskUserQuestionPhase,
     AskUserQuestionSession, QuestionDraft,
 };
+use i18n::t;
 use itertools::Itertools;
 use warp_core::ui::theme::WarpTheme;
 use warp_core::ui::theme::color::internal_colors;
@@ -221,7 +222,7 @@ impl AskUserQuestionView {
             ctx,
         );
         let skip_button = CompactibleActionButton::new(
-            "Skip all".to_string(),
+            t!("Skip all").to_string(),
             Some(KeystrokeSource::Fixed(CTRL_C_KEYSTROKE.clone())),
             ButtonSize::InlineActionHeader,
             AskUserQuestionViewAction::SkipAll,
@@ -230,7 +231,7 @@ impl AskUserQuestionView {
             ctx,
         );
         let next_button = CompactibleActionButton::new(
-            "Next".to_string(),
+            t!("Next").to_string(),
             Some(KeystrokeSource::Fixed(
                 Keystroke::parse("enter").expect("keystroke should parse"),
             )),
@@ -525,7 +526,7 @@ impl AskUserQuestionView {
             number,
             accepted_text
                 .clone()
-                .unwrap_or_else(|| "Other...".to_string()),
+                .unwrap_or_else(|| t!("Other...").to_string()),
             accepted_text.is_some(),
             false,
             true,
@@ -541,7 +542,7 @@ impl AskUserQuestionView {
         let initial_text = initial_text.map(String::from);
         let input = ctx.add_view(move |ctx| {
             let input = compact_agent_input::CompactAgentInput::new(ctx);
-            input.set_placeholder_text("Type your answer and press Enter", ctx);
+            input.set_placeholder_text(t!("Type your answer and press Enter"), ctx);
             if let Some(initial_text) = initial_text.as_deref() {
                 input.set_text(initial_text, ctx);
             }
@@ -747,7 +748,7 @@ impl AskUserQuestionView {
                 .finish(),
         );
         content.add_child(
-            HeaderConfig::new("Agent questions", app)
+            HeaderConfig::new(t!("Agent questions"), app)
                 .with_icon(yellow_stop_icon(appearance))
                 .with_corner_radius_override(CornerRadius::with_top(Radius::Pixels(8.)))
                 .render_header(app, Some(header_right.finish())),
@@ -801,7 +802,7 @@ impl AskUserQuestionView {
 
     fn render_unavailable(&self, appearance: &Appearance, app: &AppContext) -> Box<dyn Element> {
         wrap_with_agent_output_item_spacing(
-            HeaderConfig::new("Questions unavailable".to_string(), app)
+            HeaderConfig::new(t!("Questions unavailable").to_string(), app)
                 .with_icon(inline_action_icons::reverted_icon(appearance))
                 .render(app),
             app,
@@ -841,12 +842,12 @@ impl AskUserQuestionView {
             }
             AskUserQuestionResult::Error(_) | AskUserQuestionResult::Cancelled => (
                 None,
-                "Questions skipped".to_string(),
+                t!("Questions skipped").to_string(),
                 inline_action_icons::reverted_icon(appearance),
             ),
             AskUserQuestionResult::SkippedByAutoApprove { .. } => (
                 None,
-                "Questions skipped due to auto-approve".to_string(),
+                t!("Questions skipped due to auto-approve").to_string(),
                 inline_action_icons::reverted_icon(appearance),
             ),
         };
@@ -931,7 +932,7 @@ impl AskUserQuestionView {
         let theme = appearance.theme();
         let dropdown = self.speedbump_dropdown.as_ref()?;
         let row = render_autonomy_dropdown_setting_speedbump_footer(
-            "Allow the agent to ask questions:",
+            t!("Allow the agent to ask questions:"),
             dropdown,
             settings_link_handle,
             app,
@@ -951,7 +952,7 @@ impl AskUserQuestionView {
     fn question_display_text(question: &AskUserQuestionItem) -> String {
         let mut text = question.question.clone();
         if question.is_multiselect() {
-            text.push_str(" (select all that apply)");
+            text.push_str(t!(" (select all that apply)"));
         }
         text
     }
@@ -1103,7 +1104,10 @@ impl AskUserQuestionView {
 
         let nav_message = Message::new(vec![
             MessageItem::clickable(
-                vec![MessageItem::keystroke(left_key), MessageItem::text("prev")],
+                vec![
+                    MessageItem::keystroke(left_key),
+                    MessageItem::text(t!("prev")),
+                ],
                 |ctx| {
                     ctx.dispatch_typed_action(AskUserQuestionViewAction::NavigatePrev);
                 },
@@ -1111,7 +1115,10 @@ impl AskUserQuestionView {
             ),
             MessageItem::text(" / "),
             MessageItem::clickable(
-                vec![MessageItem::keystroke(right_key), MessageItem::text("next")],
+                vec![
+                    MessageItem::keystroke(right_key),
+                    MessageItem::text(t!("next")),
+                ],
                 |ctx| {
                     ctx.dispatch_typed_action(AskUserQuestionViewAction::NavigateNext);
                 },
@@ -1299,20 +1306,21 @@ fn ask_user_question_completion_state(
 
     if answered_count == 0 {
         AskUserQuestionCompletionState {
-            label: "Questions skipped".to_string(),
+            label: t!("Questions skipped").to_string(),
             status_icon: inline_action_icons::reverted_icon(appearance),
         }
     } else {
         let label = if answered_count == total {
             if total == 1 {
-                "Answered question".to_string()
+                t!("Answered question").to_string()
             } else {
-                format!("Answered all {total} questions")
+                t!("Answered all {total} questions", total = total)
             }
         } else {
-            format!(
-                "Answered {answered_count} of {total} question{}",
-                if total == 1 { "" } else { "s" }
+            t!(
+                "Answered {answered_count} of {total} questions",
+                answered_count = answered_count,
+                total = total
             )
         };
         AskUserQuestionCompletionState {
@@ -1343,7 +1351,7 @@ fn render_answers(
             "A: {}",
             answer
                 .map(AskUserQuestionAnswerItem::display_text)
-                .unwrap_or_else(|| "Skipped".to_string())
+                .unwrap_or_else(|| t!("Skipped").to_string())
         );
         let answer_label =
             render_text_with_markdown_support(&answer_text, font_size, muted_color, appearance);

@@ -21,6 +21,7 @@ test-util = []
 
 [dependencies]
 warp_errors.workspace = true
+i18n.workspace = true
 anyhow = "1.0"
 async-broadcast.workspace = true
 async-channel.workspace = true

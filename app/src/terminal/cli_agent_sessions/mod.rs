@@ -3,6 +3,7 @@ pub mod listener;
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod plugin_manager;
 
+use i18n::t;
 use std::collections::{HashMap, HashSet};
 
 use event::{CLIAgentEvent, CLIAgentEventSource, CLIAgentEventType};
@@ -238,7 +239,7 @@ impl CLIAgentSession {
                     .payload
                     .summary
                     .clone()
-                    .or_else(|| Some("Waiting for your answer".to_owned())),
+                    .or_else(|| Some(t!("Waiting for your answer").to_owned())),
                 source: BlockedSource::QuestionAsked,
             },
             CLIAgentEventType::NeedsInput => CLIAgentSessionStatus::Blocked {
@@ -246,7 +247,7 @@ impl CLIAgentSession {
                     .payload
                     .summary
                     .clone()
-                    .or_else(|| Some(NEEDS_INPUT_STATUS_MESSAGE.to_owned())),
+                    .or_else(|| Some(t!(NEEDS_INPUT_STATUS_MESSAGE).to_owned())),
                 source: BlockedSource::NeedsInput,
             },
             CLIAgentEventType::PermissionReplied => {

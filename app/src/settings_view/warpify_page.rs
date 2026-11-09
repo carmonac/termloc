@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::Display;
 
+use i18n::t;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use regex::Regex;
 use settings::{Setting, ToggleableSetting};
@@ -92,7 +93,7 @@ impl WarpifyPageView {
         let add_added_commands_editor = ctx.add_typed_action_view(|ctx| {
             let mut input =
                 SubmittableTextInput::new(ctx).validate_on_edit(|regex| Regex::new(regex).is_ok());
-            input.set_placeholder_text("command (supports regex)", ctx);
+            input.set_placeholder_text(t!("command (supports regex)"), ctx);
             input
         });
 
@@ -103,7 +104,7 @@ impl WarpifyPageView {
 
         let add_denylisted_commands_editor = ctx.add_typed_action_view(|ctx| {
             let mut input = SubmittableTextInput::new(ctx);
-            input.set_placeholder_text("command (supports regex)", ctx);
+            input.set_placeholder_text(t!("command (supports regex)"), ctx);
             input
         });
 
@@ -128,8 +129,8 @@ impl WarpifyPageView {
         let mut categories = vec![
             Category::new("", vec![Box::new(TitleWidget::default())]),
             Category::with_header(
-                CategoryHeader::new("Subshells")
-                    .with_subtitle("Subshells supported: bash, zsh, and fish."),
+                CategoryHeader::new(t!("Subshells"))
+                    .with_subtitle(t!("Subshells supported: bash, zsh, and fish.")),
                 vec![Box::new(SubshellsWidget::default())],
             ),
         ];
@@ -140,8 +141,9 @@ impl WarpifyPageView {
             .is_supported_on_current_platform()
         {
             categories.push(Category::with_header(
-                CategoryHeader::new("SSH")
-                    .with_subtitle("Enable shell integration in your interactive SSH sessions."),
+                CategoryHeader::new("SSH").with_subtitle(t!(
+                    "Enable shell integration in your interactive SSH sessions."
+                )),
                 vec![Box::new(SSHWidget::default())],
             ));
         }
@@ -361,10 +363,9 @@ struct TitleWidget {}
 
 impl TitleWidget {
     fn render_top_of_page(&self, appearance: &Appearance, _app: &AppContext) -> Box<dyn Element> {
-        let warpify_description = vec![FormattedTextFragment::plain_text(
-            "Configure whether Termloc enables shell integration (support for blocks, \
-                    input modes, etc) in certain shells.",
-        )];
+        let warpify_description = vec![FormattedTextFragment::plain_text(t!(
+            "Configure whether Termloc enables shell integration (support for blocks, input modes, etc) in certain shells."
+        ))];
 
         let warpify_description = FormattedTextElement::new(
             FormattedText::new([FormattedTextLine::Line(warpify_description)]),
@@ -378,7 +379,7 @@ impl TitleWidget {
 
         Flex::column()
             .with_child(render_page_title(
-                "Shell integration",
+                t!("Shell integration"),
                 HEADER_FONT_SIZE,
                 appearance,
             ))
@@ -422,7 +423,7 @@ impl SubshellsWidget {
 
         column.add_child(
             view.build_input_list(
-                "Added commands",
+                t!("Added commands"),
                 &warpify_settings.added_subshell_commands,
                 &view.remove_added_command_button_states,
                 WarpifyPageAction::RemoveAddedCommand,
@@ -434,7 +435,7 @@ impl SubshellsWidget {
 
         column.add_child(
             view.build_input_list(
-                "Denylisted commands",
+                t!("Denylisted commands"),
                 &warpify_settings.subshell_command_denylist,
                 &view.remove_denylisted_command_button_states,
                 WarpifyPageAction::RemoveDenylistedCommand,
@@ -503,7 +504,7 @@ impl SettingsWidget for SSHWidget {
             &WarpifySettings::as_ref(app).enable_ssh_warpification,
             move || {
                 render_body_item::<WarpifyPageAction>(
-                    "Enable shell integration in SSH sessions".into(),
+                    t!("Enable shell integration in SSH sessions").into(),
                     None,
                     LocalOnlyIconState::for_setting(
                         EnableSshWarpification::storage_key(),
@@ -535,7 +536,7 @@ impl SettingsWidget for SSHWidget {
             move || {
                 let mut column = Flex::column();
                 column.add_child(render_body_item::<WarpifyPageAction>(
-                    "Reuse existing SSH ControlMaster".into(),
+                    t!("Reuse existing SSH ControlMaster").into(),
                     None,
                     LocalOnlyIconState::for_setting(
                         ReuseExistingSshControlMaster::storage_key(),
@@ -563,7 +564,7 @@ impl SettingsWidget for SSHWidget {
                 ));
                 column.add_child(
                     ui_builder
-                        .paragraph(SSH_REUSE_CONTROL_MASTER_DESCRIPTION.to_owned())
+                        .paragraph(t!(SSH_REUSE_CONTROL_MASTER_DESCRIPTION).to_owned())
                         .with_style(UiComponentStyles {
                             font_color: Some(description_text_color.into_solid()),
                             margin: Some(

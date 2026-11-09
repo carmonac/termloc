@@ -7,14 +7,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_channel::Sender;
+use i18n::t;
 use instant::Instant;
 use parking_lot::FairMutex;
 use warp::editor::{CodeEditorModel, CodeEditorModelEvent};
 #[cfg(feature = "voice_input")]
 use warp::settings::TuiVoiceSettings;
 use warp::settings::{
-    AISettings, AISettingsChangedEvent, AppEditorSettings, SettingsFileError, TuiStatuslineConfig,
-    TuiTheme, TuiThemeSettings,
+    AISettings, AISettingsChangedEvent, AppEditorSettings, LanguagePreference, LanguageSettings,
+    SettingsFileError, TuiStatuslineConfig, TuiTheme, TuiThemeSettings,
 };
 #[cfg(feature = "voice_input")]
 use warp::tui_export::slash_commands;
@@ -258,7 +259,7 @@ fn render_mcp_install_footer(
     }
     spans.extend([
         ("Esc".to_owned(), builder.primary_text_style()),
-        (" to cancel".to_owned(), builder.muted_text_style()),
+        (t!(" to cancel").to_owned(), builder.muted_text_style()),
     ]);
     TuiFlex::row().child(TuiText::from_spans(spans).truncate().finish())
 }
@@ -331,6 +332,9 @@ const VIM_MODE_ENABLED_HINT: &str = "Vim mode enabled.";
 const VIM_MODE_DISABLED_HINT: &str = "Vim mode disabled.";
 const VIM_MODE_PERSISTENCE_FAILED_HINT: &str = "Could not save the vim mode setting.";
 const THEME_PERSISTENCE_FAILED_HINT: &str = "Could not save the theme setting.";
+const LANGUAGE_INVALID_ARGUMENT_HINT: &str =
+    "Language must be system, en, es, pt, fr, de, it, uk, ja, or zh.";
+const LANGUAGE_PERSISTENCE_FAILED_HINT: &str = "Could not save the language setting.";
 const ZERO_STATE_ASCII_INITIAL_LOAD_FAILED_HINT: &str =
     "Could not load custom ASCII art. Using the built-in logo.";
 const ZERO_STATE_ASCII_RELOAD_FAILED_HINT: &str =
@@ -344,7 +348,7 @@ const STATUSLINE_RESET_HINT: &str = "Statusline reset to defaults.";
 const STATUSLINE_PERSISTENCE_FAILED_HINT: &str = "Could not save the statusline configuration.";
 
 fn log_bundle_success_message(path: &Path) -> String {
-    format!("Log bundle saved to {}", path.display())
+    t!("Log bundle saved to {path}", path = path.display())
 }
 
 /// Shell command that invokes the TUI for the current build channel.
@@ -404,11 +408,11 @@ fn bordered_input(
 
 fn mcp_primary_action_hint(action: TuiMcpAction) -> Option<&'static str> {
     match action {
-        TuiMcpAction::Enable(_) => Some("to install and enable"),
-        TuiMcpAction::Start(_) => Some("to start"),
-        TuiMcpAction::Stop(_) => Some("to stop"),
-        TuiMcpAction::Retry(_) => Some("to retry"),
-        TuiMcpAction::ReopenAuthorization(_) => Some("to authenticate"),
+        TuiMcpAction::Enable(_) => Some(t!("to install and enable")),
+        TuiMcpAction::Start(_) => Some(t!("to start")),
+        TuiMcpAction::Stop(_) => Some(t!("to stop")),
+        TuiMcpAction::Retry(_) => Some(t!("to retry")),
+        TuiMcpAction::ReopenAuthorization(_) => Some(t!("to authenticate")),
         TuiMcpAction::LogOut(_) | TuiMcpAction::ReloadConfig => None,
     }
 }
@@ -429,14 +433,14 @@ fn render_mcp_menu_footer(
         spans.extend([
             ("Ctrl+R".to_owned(), builder.primary_text_style()),
             (
-                " to log out & remove credentials  ".to_owned(),
+                t!(" to log out & remove credentials  ").to_owned(),
                 builder.muted_text_style(),
             ),
         ]);
     }
     spans.extend([
         ("Esc".to_owned(), builder.primary_text_style()),
-        (" to close".to_owned(), builder.muted_text_style()),
+        (t!(" to close").to_owned(), builder.muted_text_style()),
     ]);
     TuiFlex::row().child(TuiText::from_spans(spans).truncate().finish())
 }
@@ -480,9 +484,12 @@ enum ConversationRestoreState {
 fn export_file_success_message(export: &ConversationFileExport) -> String {
     let path = export.path().display();
     if export.overwrote_existing() {
-        format!("Conversation exported to {path} (overwrote existing file)")
+        t!(
+            "Conversation exported to {path} (overwrote existing file)",
+            path = path
+        )
     } else {
-        format!("Conversation exported to {path}")
+        t!("Conversation exported to {path}", path = path)
     }
 }
 
@@ -499,19 +506,19 @@ fn resolve_status_email(
     is_logged_in: bool,
 ) -> String {
     if !is_logged_in {
-        return STATUS_NOT_SIGNED_IN.to_owned();
+        return t!(STATUS_NOT_SIGNED_IN).to_owned();
     }
     email
         .filter(|e| !e.is_empty())
         .or_else(|| username.filter(|u| !u.is_empty()))
         .or_else(|| user_id.filter(|id| !id.is_empty()))
-        .unwrap_or_else(|| STATUS_NOT_SIGNED_IN.to_owned())
+        .unwrap_or_else(|| t!(STATUS_NOT_SIGNED_IN).to_owned())
 }
 
 fn format_status_conversation_id(conversation_id: Option<AIConversationId>) -> String {
     conversation_id
         .map(|id| id.to_string())
-        .unwrap_or_else(|| "None".to_owned())
+        .unwrap_or_else(|| t!("None").to_owned())
 }
 
 /// Typed actions handled by [`TuiTerminalSessionView`].
@@ -871,7 +878,7 @@ impl TuiTerminalSessionView {
             manager.install_and_enable(id, values, ctx)
         });
         match result {
-            Ok(_) => self.show_success_hint(format!("{name} installed and starting"), ctx),
+            Ok(_) => self.show_success_hint(t!("{name} installed and starting", name = name), ctx),
             Err(message) => self.show_error_hint(message, ctx),
         }
     }
@@ -1635,7 +1642,7 @@ impl TuiTerminalSessionView {
                 Ok(()) => view.show_copy_hint(ctx),
                 Err(error) => {
                     log::warn!("Failed to copy TUI selection: {error}");
-                    view.show_transient_hint(COPY_FAILED_HINT.to_owned(), ctx);
+                    view.show_transient_hint(t!(COPY_FAILED_HINT).to_owned(), ctx);
                 }
             },
             TuiTranscriptViewEvent::BlockingStateChanged => {
@@ -1685,7 +1692,7 @@ impl TuiTerminalSessionView {
             }
             TuiInputViewEvent::ClipboardCopySucceeded => view.show_copy_hint(ctx),
             TuiInputViewEvent::ClipboardCopyFailed => {
-                view.show_transient_hint(COPY_FAILED_HINT.to_owned(), ctx);
+                view.show_transient_hint(t!(COPY_FAILED_HINT).to_owned(), ctx);
             }
             // The vim mode changed — re-render so the footer indicator (NOR/VIS/REP)
             // updates. The indicator is rendered by this view's render_footer, not
@@ -2201,14 +2208,14 @@ impl TuiTerminalSessionView {
             .as_ref(ctx)
             .selected_conversation(ctx)
             .and_then(|conversation| conversation.title())
-            .unwrap_or_else(|| STATUS_UNTITLED_SESSION.to_owned());
+            .unwrap_or_else(|| t!(STATUS_UNTITLED_SESSION).to_owned());
         let conversation_id = self
             .conversation_selection
             .as_ref(ctx)
             .selected_conversation_id(ctx);
         let version = ChannelState::app_version()
             .map(ToOwned::to_owned)
-            .unwrap_or_else(|| STATUS_DEV_BUILD.to_owned());
+            .unwrap_or_else(|| t!(STATUS_DEV_BUILD).to_owned());
         let org = user_info
             .org
             .unwrap_or_else(|| STATUS_UNAVAILABLE.to_owned());
@@ -2299,7 +2306,7 @@ impl TuiTerminalSessionView {
             Some(CloudConversationData::CLIAgent(_)) => {
                 self.fail_conversation_restore(
                     request_id,
-                    "Termloc TUI only supports Local Agent conversations.".to_owned(),
+                    t!("Termloc TUI only supports Local Agent conversations.").to_owned(),
                     ctx,
                 );
                 return;
@@ -2307,7 +2314,7 @@ impl TuiTerminalSessionView {
             None => {
                 self.fail_conversation_restore(
                     request_id,
-                    "The conversation could not be loaded.".to_owned(),
+                    t!("The conversation could not be loaded.").to_owned(),
                     ctx,
                 );
                 return;
@@ -2325,7 +2332,8 @@ impl TuiTerminalSessionView {
         if !matches_target {
             self.fail_conversation_restore(
                 request_id,
-                "The restored conversation did not match the requested conversation.".to_owned(),
+                t!("The restored conversation did not match the requested conversation.")
+                    .to_owned(),
                 ctx,
             );
             return;
@@ -2640,11 +2648,11 @@ impl TuiTerminalSessionView {
                 .pending_query_autoexecute_override(ctx)
                 .is_autoexecute_any_action();
             self.show_success_hint(
-                if enabled {
+                t!(if enabled {
                     AUTO_APPROVE_ENABLED_HINT
                 } else {
                     AUTO_APPROVE_DISABLED_HINT
-                }
+                })
                 .to_owned(),
                 ctx,
             );
@@ -2707,16 +2715,19 @@ impl TuiTerminalSessionView {
         failure: ZeroStateAnimationLoadFailure,
         ctx: &mut ViewContext<Self>,
     ) {
-        self.show_error_hint(zero_state_ascii_load_failure_hint(failure).to_owned(), ctx);
+        self.show_error_hint(
+            t!(zero_state_ascii_load_failure_hint(failure)).to_owned(),
+            ctx,
+        );
     }
 
     fn show_settings_file_error(&mut self, error: &SettingsFileError, ctx: &mut ViewContext<Self>) {
-        self.show_error_hint(settings_file_error_hint(error).to_owned(), ctx);
+        self.show_error_hint(t!(settings_file_error_hint(error)).to_owned(), ctx);
     }
 
     /// Displays success-colored feedback in the transient footer slot.
     fn show_copy_hint(&mut self, ctx: &mut ViewContext<Self>) {
-        self.show_success_hint(COPY_SELECTION_HINT.to_owned(), ctx);
+        self.show_success_hint(t!(COPY_SELECTION_HINT).to_owned(), ctx);
     }
 
     /// Handles a ctrl-c press.
@@ -2845,10 +2856,11 @@ impl TuiTerminalSessionView {
         }
         let auto_approve = TuiHoverable::new(
             self.warping_auto_approve_mouse.clone(),
-            TuiText::new(format!(
-                "▶▶ Auto approve {}",
-                if enabled { "on" } else { "off" }
-            ))
+            TuiText::new(if enabled {
+                t!("▶▶ Auto approve on")
+            } else {
+                t!("▶▶ Auto approve off")
+            })
             .with_style(style)
             .truncate()
             .finish(),
@@ -3053,7 +3065,7 @@ impl TuiTerminalSessionView {
             return;
         };
         if is_pty_busy {
-            self.show_transient_hint(COMMAND_ALREADY_RUNNING_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(COMMAND_ALREADY_RUNNING_HINT).to_owned(), ctx);
             return;
         }
 
@@ -3231,7 +3243,7 @@ impl TuiTerminalSessionView {
                 self.show_transient_hint(hint.clone(), ctx);
             }
             TuiVoiceInputEvent::Cancelled => {
-                self.show_transient_hint("Voice input cancelled".to_owned(), ctx);
+                self.show_transient_hint(t!("Voice input cancelled").to_owned(), ctx);
             }
             TuiVoiceInputEvent::StateChanged(_) => ctx.notify(),
         }
@@ -3245,7 +3257,7 @@ impl TuiTerminalSessionView {
         #[cfg(feature = "voice_input")]
         {
             if voice_command_argument(input).is_some_and(|argument| !argument.trim().is_empty()) {
-                self.show_transient_hint(VOICE_USAGE_HINT.to_owned(), ctx);
+                self.show_transient_hint(t!(VOICE_USAGE_HINT).to_owned(), ctx);
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
                 return;
             }
@@ -3335,7 +3347,7 @@ impl TuiTerminalSessionView {
         ctx: &mut ViewContext<Self>,
     ) {
         if self.is_conversation_restore_loading() {
-            self.show_transient_hint(SWITCH_LOADING_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(SWITCH_LOADING_HINT).to_owned(), ctx);
             return;
         }
         if !self
@@ -3343,7 +3355,7 @@ impl TuiTerminalSessionView {
             .as_ref(ctx)
             .can_start_new_conversation()
         {
-            self.show_transient_hint(SWITCH_COMMAND_RUNNING_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(SWITCH_COMMAND_RUNNING_HINT).to_owned(), ctx);
             return;
         }
         let current_conversation_is_busy = self
@@ -3354,13 +3366,13 @@ impl TuiTerminalSessionView {
                 !conversation.is_empty() && !conversation.status().is_done()
             });
         if current_conversation_is_busy {
-            self.show_transient_hint(SWITCH_CONVERSATION_RUNNING_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(SWITCH_CONVERSATION_RUNNING_HINT).to_owned(), ctx);
             return;
         }
 
         let Some(entry) = AgentConversationsModel::as_ref(ctx).get_entry_by_id(&entry_id, ctx)
         else {
-            self.show_transient_hint(SWITCH_UNAVAILABLE_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(SWITCH_UNAVAILABLE_HINT).to_owned(), ctx);
             return;
         };
         if self
@@ -3369,7 +3381,7 @@ impl TuiTerminalSessionView {
             .classify_entry(&entry, ctx)
             != AgentConversationListEntryState::Available
         {
-            self.show_transient_hint(SWITCH_UNAVAILABLE_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(SWITCH_UNAVAILABLE_HINT).to_owned(), ctx);
             return;
         }
         let target = match (
@@ -3379,7 +3391,7 @@ impl TuiTerminalSessionView {
             (Some(conversation_id), _) => TuiConversationRestoreTarget::Local(conversation_id),
             (None, Some(server_token)) => TuiConversationRestoreTarget::Server(server_token),
             (None, None) => {
-                self.show_transient_hint(SWITCH_UNAVAILABLE_HINT.to_owned(), ctx);
+                self.show_transient_hint(t!(SWITCH_UNAVAILABLE_HINT).to_owned(), ctx);
                 return;
             }
         };
@@ -3418,7 +3430,7 @@ impl TuiTerminalSessionView {
                             .update(ctx, |flow, ctx| flow.start(request, ctx))
                         {
                             self.show_error_hint(
-                                "Unable to open the MCP installation flow".to_owned(),
+                                t!("Unable to open the MCP installation flow").to_owned(),
                                 ctx,
                             );
                         }
@@ -3510,7 +3522,7 @@ impl TuiTerminalSessionView {
             .as_ref(ctx)
             .can_start_new_conversation()
         {
-            self.show_transient_hint(NEW_CONVERSATION_COMMAND_RUNNING_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(NEW_CONVERSATION_COMMAND_RUNNING_HINT).to_owned(), ctx);
             return false;
         }
         self.cancel_active_conversation(ctx);
@@ -3543,7 +3555,7 @@ impl TuiTerminalSessionView {
             .as_ref(ctx)
             .can_start_new_conversation()
         {
-            self.show_error_hint(NEW_CONVERSATION_COMMAND_RUNNING_HINT.to_owned(), ctx);
+            self.show_error_hint(t!(NEW_CONVERSATION_COMMAND_RUNNING_HINT).to_owned(), ctx);
             return false;
         }
         let Some(source_conversation_id) = self
@@ -3551,24 +3563,24 @@ impl TuiTerminalSessionView {
             .as_ref(ctx)
             .selected_conversation_id(ctx)
         else {
-            self.show_error_hint(FORK_NO_ACTIVE_CONVERSATION_HINT.to_owned(), ctx);
+            self.show_error_hint(t!(FORK_NO_ACTIVE_CONVERSATION_HINT).to_owned(), ctx);
             return false;
         };
         let Some(source_conversation) = BlocklistAIHistoryModel::as_ref(ctx)
             .conversation(&source_conversation_id)
             .cloned()
         else {
-            self.show_error_hint(FORK_NO_ACTIVE_CONVERSATION_HINT.to_owned(), ctx);
+            self.show_error_hint(t!(FORK_NO_ACTIVE_CONVERSATION_HINT).to_owned(), ctx);
             return false;
         };
         if let Err(ForkConversationError::EmptyConversation) =
             BlocklistAIHistoryModel::validate_fork_source(&source_conversation)
         {
-            self.show_error_hint(FORK_EMPTY_CONVERSATION_HINT.to_owned(), ctx);
+            self.show_error_hint(t!(FORK_EMPTY_CONVERSATION_HINT).to_owned(), ctx);
             return false;
         }
         let Some(source_token) = source_conversation.server_conversation_token().cloned() else {
-            self.show_error_hint(FORK_NO_RESUME_ID_HINT.to_owned(), ctx);
+            self.show_error_hint(t!(FORK_NO_RESUME_ID_HINT).to_owned(), ctx);
             return false;
         };
 
@@ -3581,11 +3593,11 @@ impl TuiTerminalSessionView {
             Err(error) => {
                 match error.downcast_ref::<ForkConversationError>() {
                     Some(ForkConversationError::EmptyConversation) => {
-                        self.show_error_hint(FORK_EMPTY_CONVERSATION_HINT.to_owned(), ctx);
+                        self.show_error_hint(t!(FORK_EMPTY_CONVERSATION_HINT).to_owned(), ctx);
                     }
                     None => {
                         report_error!(error.context("TUI conversation forking failed"));
-                        self.show_error_hint(FORK_FAILED_HINT.to_owned(), ctx);
+                        self.show_error_hint(t!(FORK_FAILED_HINT).to_owned(), ctx);
                     }
                 }
                 return false;
@@ -3600,8 +3612,9 @@ impl TuiTerminalSessionView {
             tui_resume_shell_command(ChannelState::channel(), source_token.as_str());
         self.transcript.update(ctx, |transcript, ctx| {
             transcript.append_notice(
-                format!(
-                    "Forked conversation. To resume the original in another session, run: {resume_command}"
+                t!(
+                    "Forked conversation. To resume the original in another session, run: {resume_command}",
+                    resume_command = resume_command
                 ),
                 ctx,
             );
@@ -3695,13 +3708,13 @@ impl TuiTerminalSessionView {
                         }
                         Ok(Err(error)) => {
                             report_error!(error.context("Failed to create TUI log bundle"));
-                            me.show_transient_hint(LOG_BUNDLE_FAILED_HINT.to_owned(), ctx);
+                            me.show_transient_hint(t!(LOG_BUNDLE_FAILED_HINT).to_owned(), ctx);
                         }
                         Err(error) => {
                             report_error!(
                                 anyhow::Error::new(error).context("TUI log bundle task failed")
                             );
-                            me.show_transient_hint(LOG_BUNDLE_FAILED_HINT.to_owned(), ctx);
+                            me.show_transient_hint(t!(LOG_BUNDLE_FAILED_HINT).to_owned(), ctx);
                         }
                     },
                 );
@@ -3710,7 +3723,7 @@ impl TuiTerminalSessionView {
                 #[cfg(feature = "voice_input")]
                 {
                     if !voice_argument_is_empty(argument) {
-                        self.show_transient_hint(VOICE_USAGE_HINT.to_owned(), ctx);
+                        self.show_transient_hint(t!(VOICE_USAGE_HINT).to_owned(), ctx);
                         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
                         return;
                     }
@@ -3723,7 +3736,7 @@ impl TuiTerminalSessionView {
                     .filter(|argument| !argument.is_empty())
                 else {
                     self.show_transient_hint(
-                        "Please describe the project you want to create after /create-new-project"
+                        t!("Please describe the project you want to create after /create-new-project")
                             .to_owned(),
                         ctx,
                     );
@@ -3745,17 +3758,20 @@ impl TuiTerminalSessionView {
                     match copy_to_clipboard(&markdown) {
                         Ok(()) => {
                             self.show_success_hint(
-                                "Conversation copied to clipboard".to_owned(),
+                                t!("Conversation copied to clipboard").to_owned(),
                                 ctx,
                             );
                         }
                         Err(error) => {
                             log::warn!("Failed to export TUI conversation: {error}");
-                            self.show_transient_hint(COPY_FAILED_HINT.to_owned(), ctx);
+                            self.show_transient_hint(t!(COPY_FAILED_HINT).to_owned(), ctx);
                         }
                     }
                 } else {
-                    self.show_transient_hint("No active conversation to export".to_owned(), ctx);
+                    self.show_transient_hint(
+                        t!("No active conversation to export").to_owned(),
+                        ctx,
+                    );
                 }
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
             }
@@ -3765,7 +3781,10 @@ impl TuiTerminalSessionView {
                     .as_ref(ctx)
                     .selected_conversation(ctx)
                 else {
-                    self.show_transient_hint("No active conversation to export".to_owned(), ctx);
+                    self.show_transient_hint(
+                        t!("No active conversation to export").to_owned(),
+                        ctx,
+                    );
                     return;
                 };
                 let title = conversation.title();
@@ -3808,15 +3827,15 @@ impl TuiTerminalSessionView {
                 match debugging_payload {
                     Some(debugging_payload) => match copy_to_clipboard(&debugging_payload) {
                         Ok(()) => {
-                            self.show_success_hint(COPY_DEBUGGING_ID_HINT.to_owned(), ctx);
+                            self.show_success_hint(t!(COPY_DEBUGGING_ID_HINT).to_owned(), ctx);
                         }
                         Err(error) => {
                             log::warn!("Failed to copy TUI debugging information: {error}");
-                            self.show_error_hint(COPY_FAILED_HINT.to_owned(), ctx);
+                            self.show_error_hint(t!(COPY_FAILED_HINT).to_owned(), ctx);
                         }
                     },
                     None => {
-                        self.show_error_hint(COPY_DEBUGGING_ID_NO_TOKEN_HINT.to_owned(), ctx);
+                        self.show_error_hint(t!(COPY_DEBUGGING_ID_NO_TOKEN_HINT).to_owned(), ctx);
                     }
                 }
                 self.input_view.update(ctx, |input, ctx| input.clear(ctx));
@@ -3843,6 +3862,9 @@ impl TuiTerminalSessionView {
             }
             SlashCommandKind::Theme => {
                 self.toggle_theme(argument.map(String::as_str), ctx);
+            }
+            SlashCommandKind::Language => {
+                self.set_language(argument.map(String::as_str), ctx);
             }
             SlashCommandKind::AddMcp
             | SlashCommandKind::CreateDockerSandbox
@@ -3926,10 +3948,10 @@ impl TuiTerminalSessionView {
         self.statusline_config_view = None;
         self.reconcile_focus(ctx);
         match result {
-            Ok(()) => self.show_success_hint(success_hint.to_owned(), ctx),
+            Ok(()) => self.show_success_hint(t!(success_hint).to_owned(), ctx),
             Err(error) => {
                 report_error!(error.context("failed to persist the TUI statusline config"));
-                self.show_transient_hint(STATUSLINE_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
+                self.show_transient_hint(t!(STATUSLINE_PERSISTENCE_FAILED_HINT).to_owned(), ctx);
             }
         }
     }
@@ -3954,7 +3976,7 @@ impl TuiTerminalSessionView {
                 } else {
                     NLD_DISABLED_HINT
                 };
-                self.show_success_hint(hint.to_owned(), ctx);
+                self.show_success_hint(t!(hint).to_owned(), ctx);
             }
             Err(error) => {
                 if enabled {
@@ -3962,7 +3984,7 @@ impl TuiTerminalSessionView {
                 } else {
                     log::warn!("Failed to disable TUI natural language detection: {error}");
                 }
-                self.show_transient_hint(NLD_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
+                self.show_transient_hint(t!(NLD_PERSISTENCE_FAILED_HINT).to_owned(), ctx);
             }
         }
     }
@@ -3975,7 +3997,7 @@ impl TuiTerminalSessionView {
         // instead of panicking on an unregistered singleton.
         if !ctx.has_singleton_model::<AppEditorSettings>() {
             log::warn!("TUI vim mode toggle ignored: AppEditorSettings not registered");
-            self.show_transient_hint(VIM_MODE_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(VIM_MODE_PERSISTENCE_FAILED_HINT).to_owned(), ctx);
             return;
         }
         let enabled = !AppEditorSettings::as_ref(ctx).vim_mode_enabled();
@@ -3995,7 +4017,7 @@ impl TuiTerminalSessionView {
                 } else {
                     VIM_MODE_DISABLED_HINT
                 };
-                self.show_success_hint(hint.to_owned(), ctx);
+                self.show_success_hint(t!(hint).to_owned(), ctx);
             }
             Err(error) => {
                 if enabled {
@@ -4003,7 +4025,7 @@ impl TuiTerminalSessionView {
                 } else {
                     log::warn!("Failed to disable TUI vim mode: {error}");
                 }
-                self.show_transient_hint(VIM_MODE_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
+                self.show_transient_hint(t!(VIM_MODE_PERSISTENCE_FAILED_HINT).to_owned(), ctx);
             }
         }
     }
@@ -4012,7 +4034,7 @@ impl TuiTerminalSessionView {
         self.input_view.update(ctx, |input, ctx| input.clear(ctx));
         let Some(theme) = argument.and_then(|argument| argument.trim().parse::<TuiTheme>().ok())
         else {
-            self.show_transient_hint(THEME_INVALID_ARGUMENT_HINT.to_owned(), ctx);
+            self.show_transient_hint(t!(THEME_INVALID_ARGUMENT_HINT).to_owned(), ctx);
             return;
         };
         let result = TuiThemeSettings::handle(ctx)
@@ -4026,19 +4048,46 @@ impl TuiTerminalSessionView {
                     );
                 });
                 let hint = match theme {
-                    TuiTheme::Auto => format!(
-                        "Theme set to auto mode (currently {}).",
-                        TuiTheme::from(Appearance::as_ref(ctx).theme()).display_name()
+                    TuiTheme::Auto => t!(
+                        "Theme set to auto mode (currently {theme}).",
+                        theme = t!(TuiTheme::from(Appearance::as_ref(ctx).theme()).display_name())
                     ),
                     TuiTheme::Light | TuiTheme::Dark => {
-                        format!("Theme set to {} mode.", theme.display_name())
+                        t!(
+                            "Theme set to {theme} mode.",
+                            theme = t!(theme.display_name())
+                        )
                     }
                 };
                 self.show_success_hint(hint, ctx);
             }
             Err(error) => {
                 log::warn!("Failed to save TUI theme selection: {error}");
-                self.show_transient_hint(THEME_PERSISTENCE_FAILED_HINT.to_owned(), ctx);
+                self.show_transient_hint(t!(THEME_PERSISTENCE_FAILED_HINT).to_owned(), ctx);
+            }
+        }
+    }
+
+    fn set_language(&mut self, argument: Option<&str>, ctx: &mut ViewContext<Self>) {
+        self.input_view.update(ctx, |input, ctx| input.clear(ctx));
+        let Some(preference) = argument.and_then(LanguagePreference::from_command_name) else {
+            self.show_transient_hint(t!(LANGUAGE_INVALID_ARGUMENT_HINT).to_owned(), ctx);
+            return;
+        };
+        let result = LanguageSettings::handle(ctx).update(ctx, |settings, ctx| {
+            settings.language.set_value(preference, ctx)
+        });
+        match result {
+            Ok(()) => {
+                let hint = t!(
+                    "Interface language set to {language}.",
+                    language = preference.display_name()
+                );
+                self.show_success_hint(hint, ctx);
+            }
+            Err(error) => {
+                log::warn!("Failed to save the language selection: {error}");
+                self.show_transient_hint(t!(LANGUAGE_PERSISTENCE_FAILED_HINT).to_owned(), ctx);
             }
         }
     }
@@ -4379,7 +4428,7 @@ impl TuiTerminalSessionView {
         if show_starting_shell_hint {
             content = content.child(
                 TuiContainer::new(
-                    TuiText::new(STARTING_SHELL_HINT)
+                    TuiText::new(t!(STARTING_SHELL_HINT))
                         .with_style(builder.muted_text_style())
                         .truncate()
                         .finish(),
@@ -4416,9 +4465,9 @@ impl TuiTerminalSessionView {
                     .and_then(|exchange| exchange.time_since_start());
                 if let Some(elapsed) = warping_elapsed {
                     let label = if conversation.is_summarizing() {
-                        "Summarizing conversation"
+                        t!("Summarizing conversation")
                     } else {
-                        "Working"
+                        t!("Working")
                     };
                     content = content.child(
                         TuiContainer::new(self.render_warping_indicator(label, elapsed, ctx))
@@ -4625,7 +4674,7 @@ impl TypedActionView for TuiTerminalSessionView {
                     Ok(()) => self.show_copy_hint(ctx),
                     Err(error) => {
                         log::warn!("Failed to copy TUI read-only menu selection: {error}");
-                        self.show_transient_hint(COPY_FAILED_HINT.to_owned(), ctx);
+                        self.show_transient_hint(t!(COPY_FAILED_HINT).to_owned(), ctx);
                     }
                 }
             }

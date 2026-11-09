@@ -1,3 +1,4 @@
+use i18n::t;
 use warp_core::ui::theme::color::internal_colors;
 use warp_errors::report_error;
 use warpui::elements::new_scrollable::{ScrollableAppearance, SingleAxisConfig};
@@ -121,7 +122,7 @@ impl NotificationMailboxView {
             ActionButton::new("", NakedTheme)
                 .with_icon(Icon::X)
                 .with_size(ButtonSize::XSmall)
-                .with_tooltip("Close")
+                .with_tooltip(t!("Close"))
                 .with_tooltip_sublabel("Esc")
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(NotificationMailboxViewAction::Dismiss);
@@ -129,7 +130,7 @@ impl NotificationMailboxView {
         });
 
         let mark_all_read_button = ctx.add_typed_action_view(|_| {
-            ActionButton::new("Mark all as read", NakedTheme)
+            ActionButton::new(t!("Mark all as read"), NakedTheme)
                 .with_size(ButtonSize::Small)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(NotificationMailboxViewAction::MarkAllRead);
@@ -413,7 +414,7 @@ impl NotificationMailboxView {
 
         let label = appearance
             .ui_builder()
-            .wrappable_text("Notifications".to_string(), false)
+            .wrappable_text(t!("Notifications").to_string(), false)
             .with_style(UiComponentStyles {
                 font_size: Some(14.),
                 font_color: Some(theme.main_text_color(theme.surface_2()).into()),
@@ -550,7 +551,7 @@ impl NotificationMailboxView {
         Container::new(
             appearance
                 .ui_builder()
-                .wrappable_text("No notifications".to_string(), false)
+                .wrappable_text(t!("No notifications").to_string(), false)
                 .with_style(UiComponentStyles {
                     font_size: Some(14.),
                     font_color: Some(theme.sub_text_color(theme.surface_2()).into()),

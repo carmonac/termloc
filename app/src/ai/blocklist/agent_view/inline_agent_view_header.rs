@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use ai::agent::action::{AIAgentActionType, ShellCommandDelay};
+use i18n::t;
 use parking_lot::FairMutex;
 use warp_core::ui::appearance::Appearance;
 use warpui::elements::{CornerRadius, Radius};
@@ -19,7 +20,6 @@ use crate::terminal::model::session::Sessions;
 use crate::ui_components::blended_colors;
 use crate::ui_components::icons::Icon;
 
-const AGENT_PROMPT_TO_INTERACT_MESSAGE: &str = "Prompt agent to interact with";
 const AGENT_WAITING_ON_INSTRUCTIONS_MESSAGE: &str = "Agent is waiting on instructions";
 const AGENT_WAITING_FOR_COMMAND_TO_EXIT_MESSAGE: &str = "Agent is waiting for command to exit";
 const AGENT_BLOCKED_MESSAGE: &str = "Agent needs your permission to continue";
@@ -123,9 +123,12 @@ impl View for InlineAgentViewHeader {
                 blended_colors::text_main(appearance.theme(), header_background).into(),
             );
             let message = if let Some(command) = top_level_command.as_deref() {
-                format!("{AGENT_PROMPT_TO_INTERACT_MESSAGE} `{command}`")
+                t!(
+                    "Prompt agent to interact with `{command}`",
+                    command = command
+                )
             } else {
-                format!("{AGENT_PROMPT_TO_INTERACT_MESSAGE} the running command")
+                t!("Prompt agent to interact with the running command").to_owned()
             };
             return HeaderConfig::new(message, app)
                 .with_icon(icon)
@@ -148,15 +151,15 @@ impl View for InlineAgentViewHeader {
         let is_waiting_on_instructions =
             action.is_none() && !is_streaming && is_agent_in_control && !is_action_blocked;
         let message = if is_user_in_control {
-            USER_IN_CONTROL_MESSAGE.to_owned()
+            t!(USER_IN_CONTROL_MESSAGE).to_owned()
         } else if is_action_blocked {
-            AGENT_BLOCKED_MESSAGE.to_owned()
+            t!(AGENT_BLOCKED_MESSAGE).to_owned()
         } else if is_waiting_for_command_to_exit {
-            AGENT_WAITING_FOR_COMMAND_TO_EXIT_MESSAGE.to_owned()
+            t!(AGENT_WAITING_FOR_COMMAND_TO_EXIT_MESSAGE).to_owned()
         } else if is_waiting_on_instructions {
-            AGENT_WAITING_ON_INSTRUCTIONS_MESSAGE.to_owned()
+            t!(AGENT_WAITING_ON_INSTRUCTIONS_MESSAGE).to_owned()
         } else {
-            AGENT_IN_CONTROL_MESSAGE.to_owned()
+            t!(AGENT_IN_CONTROL_MESSAGE).to_owned()
         };
 
         let icon = if is_user_in_control || is_waiting_on_instructions {

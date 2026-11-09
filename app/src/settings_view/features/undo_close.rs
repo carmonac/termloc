@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::Duration;
 
+use i18n::t;
 use settings::{Setting, ToggleableSetting};
 use warp_errors::report_if_error;
 use warpui::elements::{
@@ -133,7 +134,7 @@ impl UndoCloseView {
             .with_child(
                 Container::new(
                     Text::new_inline(
-                        "Grace period (seconds)",
+                        t!("Grace period (seconds)"),
                         appearance.ui_font_family(),
                         appearance.ui_font_size(),
                     )
@@ -174,7 +175,7 @@ impl View for UndoCloseView {
         let mut column = Flex::column()
             .with_cross_axis_alignment(CrossAxisAlignment::Stretch)
             .with_child(render_body_item::<Action>(
-                "Enable reopening of closed sessions".into(),
+                t!("Enable reopening of closed sessions").into(),
                 None,
                 LocalOnlyIconState::for_setting(
                     UndoCloseEnabled::storage_key(),

@@ -1,3 +1,4 @@
+use i18n::t;
 use std::sync::Arc;
 
 use parking_lot::FairMutex;
@@ -31,12 +32,12 @@ impl WarpifyFooterView {
 
         let warpify_button = ctx.add_typed_action_view(|_ctx| {
             ActionButton::new(
-                "Enable shell integration",
+                t!("Enable shell integration"),
                 AgentFooterButtonTheme::new(None),
             )
             .with_icon(Icon::Warp)
             .with_size(button_size)
-            .with_tooltip("Enable shell integration in this session")
+            .with_tooltip(t!("Enable shell integration in this session"))
             .with_tooltip_alignment(TooltipAlignment::Left)
             .on_click(|ctx| {
                 ctx.dispatch_typed_action(WarpifyFooterViewAction::Warpify);
@@ -44,11 +45,11 @@ impl WarpifyFooterView {
         });
 
         let use_agent_button = ctx.add_typed_action_view(|ctx| {
-            ActionButton::new("Use agent", AgentFooterButtonTheme::new(None))
+            ActionButton::new(t!("Use agent"), AgentFooterButtonTheme::new(None))
                 .with_icon(Icon::Agent)
                 .with_keybinding(KeystrokeSource::Fixed(USE_AGENT_KEYSTROKE.clone()), ctx)
                 .with_size(button_size)
-                .with_tooltip("Ask the local agent to assist")
+                .with_tooltip(t!("Ask the local agent to assist"))
                 .with_tooltip_alignment(TooltipAlignment::Left)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(WarpifyFooterViewAction::UseAgent);
@@ -56,7 +57,7 @@ impl WarpifyFooterView {
         });
 
         let dismiss_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Dismiss", AgentFooterButtonTheme::new(None))
+            ActionButton::new(t!("Dismiss"), AgentFooterButtonTheme::new(None))
                 .with_size(button_size)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(WarpifyFooterViewAction::Dismiss);

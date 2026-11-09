@@ -1,3 +1,4 @@
+use i18n::t;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use pathfinder_color::ColorU;
 use pathfinder_geometry::rect::RectF;
@@ -179,7 +180,7 @@ pub fn render_never_warpify_ssh_link(
     let link = appearance
         .ui_builder()
         .link(
-            "Never enable shell integration on this host".into(),
+            t!("Never enable shell integration on this host").into(),
             None,
             Some(Box::new({
                 let ssh_host = ssh_host.clone();

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
+use i18n::t;
 use parking_lot::FairMutex;
 use warp::tui_export::{
     AIAgentAction, AIAgentActionType, AIAgentInput, AIAgentPtyWriteMode, AIBlockModel,
@@ -34,35 +35,37 @@ fn terminal_use_status_text(
     output_streaming: bool,
 ) -> String {
     if command_finished {
-        return "Command finished".to_owned();
+        return t!("Command finished").to_owned();
     }
     let (status, key_binding, action) = match control_state {
         LongRunningCommandControlState::Agent {
             is_blocked: true, ..
-        } => return "Agent needs your input".to_owned(),
+        } => return t!("Agent needs your input").to_owned(),
         LongRunningCommandControlState::Agent { .. } if output_streaming => (
-            "Agent is monitoring command",
+            t!("Agent is monitoring command"),
             TAKE_CONTROL_KEY_BINDING,
-            "to take control",
+            t!("to take control"),
         ),
         LongRunningCommandControlState::Agent { .. } => (
-            "Agent waiting for instructions",
+            t!("Agent waiting for instructions"),
             TAKE_CONTROL_KEY_BINDING,
-            "to take control",
+            t!("to take control"),
         ),
         LongRunningCommandControlState::User { reason } => match reason {
-            UserTakeOverReason::Manual => {
-                ("User is in control", HAND_BACK_KEY_BINDING, "to hand back")
-            }
-            UserTakeOverReason::Stop { .. } => (
-                "Agent paused · user is in control",
+            UserTakeOverReason::Manual => (
+                t!("User is in control"),
                 HAND_BACK_KEY_BINDING,
-                "to hand back",
+                t!("to hand back"),
+            ),
+            UserTakeOverReason::Stop { .. } => (
+                t!("Agent paused · user is in control"),
+                HAND_BACK_KEY_BINDING,
+                t!("to hand back"),
             ),
             UserTakeOverReason::TransferFromAgent { .. } => (
-                "Agent handed control to you",
+                t!("Agent handed control to you"),
                 HAND_BACK_KEY_BINDING,
-                "to hand back",
+                t!("to hand back"),
             ),
         },
     };
@@ -94,21 +97,21 @@ fn blocked_action_presentation(action: &AIAgentActionType) -> BlockedActionPrese
     let (summary, detail) = match action {
         AIAgentActionType::WriteToLongRunningShellCommand { input, mode, .. } => {
             let input_kind = match mode {
-                AIAgentPtyWriteMode::Raw => "Input",
-                AIAgentPtyWriteMode::Line => "Line input",
-                AIAgentPtyWriteMode::Block => "Pasted input",
+                AIAgentPtyWriteMode::Raw => t!("Input"),
+                AIAgentPtyWriteMode::Line => t!("Line input"),
+                AIAgentPtyWriteMode::Block => t!("Pasted input"),
             };
             (
-                "Agent wants to write to the running command".to_owned(),
+                t!("Agent wants to write to the running command").to_owned(),
                 Some(format!("{input_kind}:\n{}", display_pty_input(input))),
             )
         }
         AIAgentActionType::TransferShellCommandControlToUser { reason } => (
-            "Agent wants to hand command control to you".to_owned(),
-            Some(format!("Reason: {reason}")),
+            t!("Agent wants to hand command control to you").to_owned(),
+            Some(t!("Reason: {reason}", reason = reason)),
         ),
         AIAgentActionType::ReadFiles(request) => (
-            "Agent wants to read files".to_owned(),
+            t!("Agent wants to read files").to_owned(),
             Some(
                 request
                     .locations
@@ -119,48 +122,56 @@ fn blocked_action_presentation(action: &AIAgentActionType) -> BlockedActionPrese
             ),
         ),
         AIAgentActionType::SearchCodebase(request) => {
-            let mut detail = format!("Query: {}", request.query);
+            let mut detail = t!("Query: {query}", query = request.query);
             if let Some(path) = request.codebase_path.as_deref() {
-                detail.push_str(&format!("\nPath: {path}"));
+                detail.push('\n');
+                detail.push_str(&t!("Path: {path}", path = path));
             }
             if let Some(paths) = request
                 .partial_paths
                 .as_ref()
                 .filter(|paths| !paths.is_empty())
             {
-                detail.push_str(&format!("\nFiles: {}", paths.join(", ")));
+                detail.push('\n');
+                detail.push_str(&t!("Files: {files}", files = paths.join(", ")));
             }
             (
-                "Agent wants to search the codebase".to_owned(),
+                t!("Agent wants to search the codebase").to_owned(),
                 Some(detail),
             )
         }
         AIAgentActionType::Grep { queries, path } => (
-            "Agent wants to search file contents".to_owned(),
-            Some(format!("Patterns: {}\nPath: {path}", queries.join(", "))),
+            t!("Agent wants to search file contents").to_owned(),
+            Some(patterns_detail(&queries.join(", "), path)),
         ),
         AIAgentActionType::FileGlob { patterns, path } => (
-            "Agent wants to find files".to_owned(),
-            Some(format!(
-                "Patterns: {}\nPath: {}",
-                patterns.join(", "),
-                path.as_deref().unwrap_or(".")
+            t!("Agent wants to find files").to_owned(),
+            Some(patterns_detail(
+                &patterns.join(", "),
+                path.as_deref().unwrap_or("."),
             )),
         ),
         AIAgentActionType::FileGlobV2 {
             patterns,
             search_dir,
         } => (
-            "Agent wants to find files".to_owned(),
-            Some(format!(
-                "Patterns: {}\nPath: {}",
-                patterns.join(", "),
-                search_dir.as_deref().unwrap_or(".")
+            t!("Agent wants to find files").to_owned(),
+            Some(patterns_detail(
+                &patterns.join(", "),
+                search_dir.as_deref().unwrap_or("."),
             )),
         ),
         _ => (action.user_friendly_name(), None),
     };
     BlockedActionPresentation { summary, detail }
+}
+
+fn patterns_detail(patterns: &str, path: &str) -> String {
+    format!(
+        "{}\n{}",
+        t!("Patterns: {patterns}", patterns = patterns),
+        t!("Path: {path}", path = path)
+    )
 }
 
 fn execute_blocked_action(
@@ -202,9 +213,9 @@ fn remaining_for_fixed_delay(delay: Duration, elapsed: Duration) -> Option<Durat
 fn format_next_check_remaining(remaining: Duration) -> String {
     let seconds = remaining.as_secs();
     if seconds < 60 {
-        format!(" · Check in {seconds}s")
+        t!(" · Check in {seconds}s", seconds = seconds)
     } else {
-        format!(" · Check in {}m", seconds / 60)
+        t!(" · Check in {minutes}m", minutes = seconds / 60)
     }
 }
 
@@ -454,10 +465,13 @@ impl TuiCLISubagentView {
         );
         if let Some(instruction) = self.latest_instruction(target, app) {
             content.add_child(
-                TuiText::new(format!("Last instruction: {instruction}"))
-                    .with_style(builder.muted_text_style())
-                    .truncate()
-                    .finish(),
+                TuiText::new(t!(
+                    "Last instruction: {instruction}",
+                    instruction = instruction
+                ))
+                .with_style(builder.muted_text_style())
+                .truncate()
+                .finish(),
             );
         }
         if target.control_state.is_agent_blocked() {
@@ -484,14 +498,14 @@ impl TuiCLISubagentView {
                 TuiContainer::new(
                     TuiFlex::row()
                         .child(Self::render_action(
-                            "Allow · Ctrl+Enter",
+                            t!("Allow · Ctrl+Enter"),
                             &self.allow_mouse_state,
                             TuiTerminalSessionAction::AcceptBlockedTerminalUseAction,
                             app,
                         ))
                         .child(TuiText::new("  ").finish())
                         .child(Self::render_action(
-                            "Reject · Ctrl+C",
+                            t!("Reject · Ctrl+C"),
                             &self.reject_mouse_state,
                             TuiTerminalSessionAction::RejectBlockedTerminalUseAction,
                             app,

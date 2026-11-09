@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use i18n::t;
 use parking_lot::FairMutex;
 use pathfinder_color::ColorU;
 use warp_core::ui::theme::WarpTheme;
@@ -172,8 +173,11 @@ impl MessageProvider<TerminalMessageArgs<'_>> for ErroredBlockMessageProducer {
         Some(Message::new(vec![
             MessageItem::keystroke(keystroke),
             MessageItem::text(format!(
-                " attach `{}` output as agent context",
-                truncated_command_for_block(&block.command_to_string())
+                " {}",
+                t!(
+                    "attach `{command}` output as agent context",
+                    command = truncated_command_for_block(&block.command_to_string())
+                )
             )),
         ]))
     }
@@ -200,7 +204,7 @@ impl MessageProvider<TerminalMessageArgs<'_>> for AgentMessageProducer {
                     key: "enter".to_owned(),
                     ..Default::default()
                 }),
-                MessageItem::text(" new conversation"),
+                MessageItem::text(format!(" {}", t!("new conversation"))),
             ])
             .with_color(message_magenta(theme)),
         )
@@ -231,7 +235,7 @@ impl MessageProvider<TerminalMessageArgs<'_>> for PlanMessageProducer {
                     key: "enter".to_owned(),
                     ..Default::default()
                 }),
-                MessageItem::text(" plan with agent"),
+                MessageItem::text(format!(" {}", t!("plan with agent"))),
             ])
             .with_color(message_magenta(theme)),
         )
@@ -253,7 +257,7 @@ impl MessageProvider<TerminalMessageArgs<'_>> for ContinueConversationMessagePro
         let keystroke = keybinding_name_to_keystroke(commands::CONVERSATIONS.name, args.app)?;
         Some(Message::new(vec![
             MessageItem::keystroke(keystroke),
-            MessageItem::text(" to continue conversation"),
+            MessageItem::text(format!(" {}", t!("to continue conversation"))),
         ]))
     }
 }
@@ -338,13 +342,13 @@ impl MessageProvider<TerminalMessageArgs<'_>> for DefaultMessageProducer {
         };
 
         if let Some(keystroke) = keystroke {
-            let text = " new /agent conversation".to_string();
+            let text = format!(" {}", t!("new /agent conversation"));
             let items = vec![MessageItem::keystroke(keystroke), MessageItem::text(text)];
             Some(Message::new(items))
         } else {
-            Some(Message::new(vec![MessageItem::text(
-                "/agent for new conversation",
-            )]))
+            Some(Message::new(vec![MessageItem::text(t!(
+                "/agent for new conversation"
+            ))]))
         }
     }
 }
@@ -358,13 +362,16 @@ impl MessageProvider<Option<&AcceptHistoryItem>> for InlineHistoryMessageProduce
         });
         let items = match selected {
             Some(AcceptHistoryItem::Command { .. }) => {
-                vec![enter, MessageItem::text(" to execute")]
+                vec![enter, MessageItem::text(format!(" {}", t!("to execute")))]
             }
             Some(AcceptHistoryItem::AIPrompt { .. }) => {
-                vec![enter, MessageItem::text(" to send")]
+                vec![enter, MessageItem::text(format!(" {}", t!("to send")))]
             }
             Some(AcceptHistoryItem::Conversation { title, .. }) => {
-                vec![enter, MessageItem::text(format!(" to open '{title}'"))]
+                vec![
+                    enter,
+                    MessageItem::text(format!(" {}", t!("to open '{title}'", title = title))),
+                ]
             }
             None => {
                 vec![MessageItem::text("")]
@@ -397,9 +404,9 @@ impl MessageTransformer<TerminalMessageArgs<'_>> for AutodetectedPromptMessageTr
                     });
 
             message.items.extend([
-                MessageItem::text(" (autodetected) "),
+                MessageItem::text(format!(" ({}) ", t!("autodetected"))),
                 MessageItem::keystroke(set_terminal_mode_keystroke),
-                MessageItem::text(" to override"),
+                MessageItem::text(format!(" {}", t!("to override"))),
             ]);
         }
         message.set_color(message_magenta(Appearance::as_ref(args.app).theme()));
@@ -424,15 +431,27 @@ impl MessageTransformer<TerminalMessageArgs<'_>> for AttachedBlocksMessageTransf
         };
 
         if context_block_ids.len() == 1 {
-            message.append_text(format!(" with `{}` attached", block_command).as_str());
+            message.append_text(&format!(
+                " {}",
+                t!("with `{command}` attached", command = block_command)
+            ));
         } else {
             let text = if context_block_ids.len() == 2 {
-                format!(" with `{}` and 1 other command attached", block_command)
+                format!(
+                    " {}",
+                    t!(
+                        "with `{command}` and 1 other command attached",
+                        command = block_command
+                    )
+                )
             } else {
                 format!(
-                    " with `{}` and {} other commands attached",
-                    block_command,
-                    context_block_ids.len().saturating_sub(1)
+                    " {}",
+                    t!(
+                        "with `{command}` and {count} other commands attached",
+                        command = block_command,
+                        count = context_block_ids.len().saturating_sub(1)
+                    )
                 )
             };
             message.append_text(text.as_str());
@@ -450,7 +469,7 @@ impl MessageTransformer<TerminalMessageArgs<'_>> for AttachedTextSelectionMessag
         {
             return false;
         }
-        message.append_text(" with text selection attached");
+        message.append_text(&format!(" {}", t!("with text selection attached")));
         true
     }
 }

@@ -1,5 +1,6 @@
 //! Inline conversation menu view for selecting AI conversations.
 
+use i18n::t;
 use std::collections::HashSet;
 use std::sync::LazyLock;
 
@@ -38,13 +39,13 @@ static TAB_CONFIGS: LazyLock<Vec<InlineMenuTabConfig<InlineConversationMenuTab>>
     LazyLock::new(|| {
         let mut configs = vec![InlineMenuTabConfig {
             id: InlineConversationMenuTab::All,
-            label: "All".to_string(),
+            label: t!("All").to_string(),
             filters: HashSet::new(),
         }];
         if FeatureFlag::InlineMenuHeaders.is_enabled() {
             configs.push(InlineMenuTabConfig {
                 id: InlineConversationMenuTab::CurrentDirectory,
-                label: "Current Directory".to_string(),
+                label: t!("Current Directory").to_string(),
                 filters: HashSet::from([QueryFilter::CurrentDirectoryConversations]),
             });
         }

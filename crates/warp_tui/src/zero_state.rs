@@ -14,6 +14,7 @@ use std::time::Duration;
 use ai::project_context::model::{
     ProjectContextModel, ProjectContextModelEvent, ProjectRulesResult,
 };
+use i18n::t;
 use warp::settings::{TuiZeroStateSettings, TuiZeroStateSettingsChangedEvent};
 use warp::tui_export::{
     ActiveSession, ActiveSessionEvent, SkillManager, SkillManagerEvent, TuiMcpManager,
@@ -636,7 +637,11 @@ fn render_first_run_top_section(
         .child(render_welcome_title(builder))
         .child(render_version_line(builder));
     if visibility.signed_in_user {
-        column = column.child(render_login_line_with_prefix("logged in as", builder, app));
+        column = column.child(render_login_line_with_prefix(
+            t!("logged in as"),
+            builder,
+            app,
+        ));
     }
     column = column.child(blank_row()).child(blank_row());
     column = append_welcome_capability_section(column, builder);
@@ -733,7 +738,7 @@ impl McpStatusCounts {
 
 fn mcp_status_label(snapshot: &warp::tui_export::TuiMcpSnapshot) -> (String, bool) {
     if snapshot.servers.is_empty() && snapshot.diagnostics.is_empty() {
-        return ("No servers available · run /mcp".to_owned(), false);
+        return (t!("No servers available · run /mcp").to_owned(), false);
     }
     let mut counts = McpStatusCounts::default();
     for server in &snapshot.servers {
@@ -750,28 +755,31 @@ fn mcp_status_label(snapshot: &warp::tui_export::TuiMcpSnapshot) -> (String, boo
     } = counts;
     let mut parts = Vec::new();
     if running > 0 {
-        parts.push(format!("{running} connected"));
+        parts.push(t!("{count} connected", count = running));
     }
     if starting > 0 {
-        parts.push(format!("{starting} starting"));
+        parts.push(t!("{count} starting", count = starting));
     }
     if authenticating > 0 {
-        parts.push(format!("{authenticating} needs auth"));
+        parts.push(t!("{count} needs auth", count = authenticating));
     }
     if stopping > 0 {
-        parts.push(format!("{stopping} stopping"));
+        parts.push(t!("{count} stopping", count = stopping));
     }
     if failed > 0 {
-        parts.push(format!("{failed} failed"));
+        parts.push(t!("{count} failed", count = failed));
     }
     if offline > 0 {
-        parts.push(format!("{offline} offline"));
+        parts.push(t!("{count} offline", count = offline));
     }
     if available > 0 {
-        parts.push(format!("{available} available"));
+        parts.push(t!("{count} available", count = available));
     }
     if !snapshot.diagnostics.is_empty() {
-        parts.push(format!("{} config errors", snapshot.diagnostics.len()));
+        parts.push(t!(
+            "{count} config errors",
+            count = snapshot.diagnostics.len()
+        ));
     }
     (
         format!("{} · /mcp", parts.join(" · ")),
@@ -784,7 +792,7 @@ fn mcp_status_label(snapshot: &warp::tui_export::TuiMcpSnapshot) -> (String, boo
 /// not. The zero state is normally only shown after login, but the unauthenticated
 /// branch keeps the surface honest if it is ever rendered before auth completes.
 fn render_login_line(builder: &TuiUiBuilder, app: &AppContext) -> Box<dyn TuiElement> {
-    render_login_line_with_prefix("Signed in as", builder, app)
+    render_login_line_with_prefix(t!("Signed in as"), builder, app)
 }
 
 fn render_login_line_with_prefix(
@@ -798,7 +806,7 @@ fn render_login_line_with_prefix(
     let (label, style) = if let Some(label) = login_line_label(signed_in_prefix, user_info) {
         (label, muted)
     } else {
-        ("Not signed in".to_owned(), dim)
+        (t!("Not signed in").to_owned(), dim)
     };
     TuiText::new(label).with_style(style).truncate().finish()
 }
@@ -817,7 +825,7 @@ fn login_line_label(signed_in_prefix: &str, user_info: TuiUserInfoSnapshot) -> O
 
 /// The version line: the release version, or "dev build".
 fn render_version_line(builder: &TuiUiBuilder) -> Box<dyn TuiElement> {
-    TuiText::new(ChannelState::app_version().unwrap_or("dev build"))
+    TuiText::new(ChannelState::app_version().unwrap_or(t!("dev build")))
         .with_style(builder.muted_text_style())
         .truncate()
         .finish()
@@ -867,7 +875,7 @@ fn render_project_context_body(
         // nothing may be known yet; this also covers projects with no
         // context at all.
         return column.child(
-            TuiText::new("Discovering project context…")
+            TuiText::new(t!("Discovering project context…"))
                 .with_style(builder.dim_text_style())
                 .truncate()
                 .finish(),
@@ -883,14 +891,15 @@ fn render_project_context_body(
         )
     };
     for file in rule_files {
-        column = status_row(column, format!("{file} loaded"));
+        column = status_row(column, t!("{file} loaded", file = file));
     }
     if project_skill_count > 0 {
-        let plural = if project_skill_count == 1 { "" } else { "s" };
-        column = status_row(
-            column,
-            format!("{project_skill_count} skill{plural} discovered"),
-        );
+        let label = if project_skill_count == 1 {
+            t!("1 skill discovered").to_owned()
+        } else {
+            t!("{count} skills discovered", count = project_skill_count)
+        };
+        column = status_row(column, label);
     }
     column
 }

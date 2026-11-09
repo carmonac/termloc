@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use i18n::t;
 use warp::editor::CodeEditorModel;
 use warp::tui_export::{
     ActiveSession, BlocklistAIContextEvent, BlocklistAIContextModel, BlocklistAIInputModel,
@@ -323,15 +324,16 @@ impl TuiAttachmentModel {
 
     fn validate_new_images(&self, count: usize, ctx: &AppContext) -> Result<(), String> {
         if !FeatureFlag::ImageAsContext.is_enabled() {
-            return Err("Image attachments are unavailable.".to_owned());
+            return Err(t!("Image attachments are unavailable.").to_owned());
         }
         if self.is_processing() {
-            return Err("Wait for the current image attachment to finish.".to_owned());
+            return Err(t!("Wait for the current image attachment to finish.").to_owned());
         }
         let attached_images = self.context_model.as_ref(ctx).pending_images().len();
         if attached_images + count > MAX_IMAGE_COUNT_FOR_QUERY {
-            return Err(format!(
-                "Image attachment limit is {MAX_IMAGE_COUNT_FOR_QUERY} per query."
+            return Err(t!(
+                "Image attachment limit is {limit} per query.",
+                limit = MAX_IMAGE_COUNT_FOR_QUERY
             ));
         }
         if !LLMPreferences::as_ref(ctx).vision_supported(
@@ -339,7 +341,7 @@ impl TuiAttachmentModel {
             ctx,
             Some(self.terminal_surface_id),
         ) {
-            return Err("The selected model does not support image attachments.".to_owned());
+            return Err(t!("The selected model does not support image attachments.").to_owned());
         }
         Ok(())
     }

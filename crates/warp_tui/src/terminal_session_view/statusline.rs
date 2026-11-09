@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use chrono::{Local, NaiveDateTime};
+use i18n::t;
 use vim::vim::{MotionType, VimMode};
 use warp::settings::{AISettings, TuiStatuslineConfig, TuiStatuslineItem};
 use warp::tui_export::{
@@ -207,7 +208,7 @@ pub(super) fn render_status_footer_row(
         match segment {
             FooterSegment::ShellMode => {
                 row = row.child(
-                    TuiText::new(SHELL_MODE_HINT)
+                    TuiText::new(t!(SHELL_MODE_HINT))
                         .with_style(builder.shell_command_accent_style())
                         .truncate()
                         .finish(),
@@ -257,7 +258,7 @@ pub(super) fn render_status_footer_row(
                             format!("{} {}% ", usage.bar, usage.percentage_remaining),
                             value_style,
                         ),
-                        ("context remaining".to_owned(), muted),
+                        (t!("context remaining").to_owned(), muted),
                     ])
                     .truncate()
                     .finish(),
@@ -342,7 +343,7 @@ impl TuiTerminalSessionView {
         ctx: &AppContext,
     ) -> Option<FooterHint<'_>> {
         if self.exit_confirmation.is_armed() {
-            return Some(FooterHint::muted(CTRL_C_EXIT_HINT));
+            return Some(FooterHint::muted(t!(CTRL_C_EXIT_HINT)));
         }
         if matches!(
             &self.conversation_restore_state,
@@ -351,7 +352,7 @@ impl TuiTerminalSessionView {
                 ..
             }
         ) {
-            return Some(FooterHint::muted(LOADING_CONVERSATION_HINT));
+            return Some(FooterHint::muted(t!(LOADING_CONVERSATION_HINT)));
         }
         if let Some((text, tone)) = self.transient_hint.current() {
             let style = match tone {
@@ -365,7 +366,7 @@ impl TuiTerminalSessionView {
             .session_state(ctx)
             .is_ok_and(|state| state.agent_is_tagged_in())
         {
-            return Some(FooterHint::muted(RUNNING_COMMAND_DETACH_HINT));
+            return Some(FooterHint::muted(t!(RUNNING_COMMAND_DETACH_HINT)));
         }
         #[cfg(feature = "voice_input")]
         {
@@ -375,14 +376,16 @@ impl TuiTerminalSessionView {
             match self.input_view.as_ref(ctx).voice_state(ctx) {
                 TuiVoiceInputState::Listening => {
                     let hint = if self.input_view.as_ref(ctx).voice_hold_key(ctx).is_some() {
-                        "listening to voice input... · release key to stop"
+                        t!("listening to voice input... · release key to stop")
                     } else {
-                        "listening to voice input... · esc or enter to stop"
+                        t!("listening to voice input... · esc or enter to stop")
                     };
                     return Some(FooterHint::voice_input(hint));
                 }
                 TuiVoiceInputState::Transcribing => {
-                    return Some(FooterHint::voice_input("Transcribing... · esc to cancel"));
+                    return Some(FooterHint::voice_input(t!(
+                        "Transcribing... · esc to cancel"
+                    )));
                 }
                 TuiVoiceInputState::Idle => {}
             }
@@ -713,16 +716,16 @@ impl TuiTerminalSessionView {
             .is_ok_and(|state| state.is_hovered());
         let (label, style) = match state {
             TuiVoiceInputState::Idle => (
-                "◉ Voice",
+                t!("◉ Voice"),
                 if hovered {
                     builder.primary_text_style().add_modifier(Modifier::BOLD)
                 } else {
                     builder.primary_text_style()
                 },
             ),
-            TuiVoiceInputState::Listening => ("◉ Voice", builder.success_glyph_style()),
+            TuiVoiceInputState::Listening => (t!("◉ Voice"), builder.success_glyph_style()),
             TuiVoiceInputState::Transcribing => {
-                return TuiText::new("… Transcribing")
+                return TuiText::new(t!("… Transcribing"))
                     .with_style(builder.voice_input_status_style())
                     .truncate()
                     .finish();

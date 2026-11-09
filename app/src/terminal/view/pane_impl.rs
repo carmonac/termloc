@@ -1,5 +1,6 @@
 //! This module contains the implementation of `BackingView` for `TerminalView`, as well as
 //! business logic for integrating the terminal view with the pane infra (`crate::pane_group`).
+use i18n::t;
 use warpui::elements::{
     ConstrainedBox, CrossAxisAlignment, Flex, MainAxisAlignment, MainAxisSize, ParentElement,
     Shrinkable,
@@ -536,9 +537,9 @@ impl TerminalView {
         button
             .with_tooltip(move || {
                 let tooltip_text = if is_open {
-                    "Hide details"
+                    t!("Hide details")
                 } else {
-                    "Show details"
+                    t!("Show details")
                 };
                 ui_builder
                     .tool_tip(tooltip_text.to_string())
@@ -703,5 +704,5 @@ impl TerminalView {
 }
 
 fn default_agent_conversation_title() -> String {
-    "New agent conversation".to_owned()
+    t!("New agent conversation").to_owned()
 }

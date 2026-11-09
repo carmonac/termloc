@@ -1,3 +1,4 @@
+use i18n::t;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
@@ -153,11 +154,11 @@ impl CliAgentPluginManager for CodexPluginManager {
     }
 
     fn install_success_message(&self) -> &'static str {
-        "Agent plugin installed. Please restart Codex to activate."
+        t!("Agent plugin installed. Please restart Codex to activate.")
     }
 
     fn update_success_message(&self) -> &'static str {
-        "Agent plugin updated. Please restart Codex to activate."
+        t!("Agent plugin updated. Please restart Codex to activate.")
     }
 
     fn install_instructions(&self) -> &'static PluginInstructions {

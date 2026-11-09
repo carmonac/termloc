@@ -8,6 +8,7 @@
 
 use chrono::{DateTime, Local};
 use fuzzy_match::FuzzyMatchResult;
+use i18n::t;
 use ordered_float::OrderedFloat;
 use warpui::{AppContext, Entity, EntityId, ModelHandle, SingletonEntity};
 
@@ -158,7 +159,7 @@ impl InlineHistoryMenuDataSource {
             };
             let title = conversation
                 .title()
-                .unwrap_or_else(|| "Untitled conversation".to_string());
+                .unwrap_or_else(|| t!("Untitled conversation").to_string());
             let match_result = if trimmed_query.is_empty() {
                 None
             } else {

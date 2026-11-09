@@ -1,3 +1,4 @@
+use i18n::t;
 use serde::Serialize;
 use warpui::Element;
 use warpui::elements::MouseStateHandle;
@@ -42,17 +43,21 @@ pub fn render_inline_notifications_discovery_banner(
 
     let (title, buttons) = match notifications_mode {
         NotificationsMode::Dismissed => (
-            "We won't show this banner again, but you can always go to Settings to enable notifications.",
+            t!(
+                "We won't show this banner again, but you can always go to Settings to enable notifications."
+            ),
             vec![],
         ),
         NotificationsMode::Disabled => (
-            "Notifications were turned off, but you can always go to Settings to enable notifications.",
+            t!(
+                "Notifications were turned off, but you can always go to Settings to enable notifications."
+            ),
             vec![],
         ),
         NotificationsMode::Unset => (
             trigger.discovery_banner_copy(),
             vec![InlineBannerTextButton {
-                text: "Enable".to_string(),
+                text: t!("Enable").to_string(),
                 text_color: active_ui_text_color,
                 button_state: InlineBannerButtonState {
                     on_click_event: TerminalAction::NotificationsDiscoveryBanner(
@@ -70,23 +75,25 @@ pub fn render_inline_notifications_discovery_banner(
             // permissions request (if any)
             let title = match request_outcome {
                 Some(RequestPermissionsOutcome::Accepted) => {
-                    "Success! You are now ready to receive desktop notifications."
+                    t!("Success! You are now ready to receive desktop notifications.")
                 }
                 Some(RequestPermissionsOutcome::PermissionsDenied) => {
-                    "Termloc was denied permissions to send you notifications."
+                    t!("Termloc was denied permissions to send you notifications.")
                 }
                 Some(RequestPermissionsOutcome::OtherError { .. }) => {
-                    "Something went wrong while requesting permissions."
+                    t!("Something went wrong while requesting permissions.")
                 }
                 None => {
-                    "Don't forget to 'Allow' the permissions request to finish setting up notifications."
+                    t!(
+                        "Don't forget to 'Allow' the permissions request to finish setting up notifications."
+                    )
                 }
             };
 
             (
                 title,
                 vec![InlineBannerTextButton {
-                    text: "Configure notifications".to_string(),
+                    text: t!("Configure notifications").to_string(),
                     text_color: active_ui_text_color,
                     button_state: InlineBannerButtonState {
                         on_click_event: TerminalAction::NotificationsDiscoveryBanner(

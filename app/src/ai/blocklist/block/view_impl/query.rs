@@ -2,6 +2,7 @@
 //!
 //! Queries are not rendered in blocks corresponding to requested command or requested action responses.
 use chrono::{DateTime, Local};
+use i18n::t;
 use pathfinder_geometry::vector::vec2f;
 use warp_core::features::FeatureFlag;
 use warp_core::ui::color::Opacity;
@@ -121,7 +122,10 @@ pub(crate) fn render_query(
     let avatar = avatar_container.finish();
     let avatar = if let Some(timestamp) = query_sent_at {
         appearance.ui_builder().overlay_tool_tip_on_element(
-            format!("Message sent {}", format_message_timestamp(&timestamp)),
+            t!(
+                "Message sent {time}",
+                time = format_message_timestamp(&timestamp)
+            ),
             query_timestamp_tooltip_handle,
             avatar,
             ParentAnchor::TopLeft,

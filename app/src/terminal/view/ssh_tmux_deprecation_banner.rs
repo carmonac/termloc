@@ -6,6 +6,7 @@
 //! `ssh_tmux_deprecation_notice_pending` setting, which is set by a one-time migration and
 //! cleared by the parent [`crate::terminal::TerminalView`] once the banner is shown.
 
+use i18n::t;
 use warp_core::ui::theme::color::internal_colors;
 use warpui::elements::{
     ConstrainedBox, Container, CrossAxisAlignment, Flex, Hoverable, MainAxisAlignment,
@@ -79,7 +80,7 @@ impl View for SshTmuxDeprecationBanner {
         .finish();
 
         let title = Text::new(
-            BANNER_TITLE.to_string(),
+            t!(BANNER_TITLE).to_string(),
             appearance.ui_font_family(),
             font_size,
         )
@@ -87,7 +88,7 @@ impl View for SshTmuxDeprecationBanner {
         .finish();
 
         let body = Text::new(
-            BANNER_BODY.to_string(),
+            t!(BANNER_BODY).to_string(),
             appearance.ui_font_family(),
             small_font_size,
         )

@@ -1,3 +1,4 @@
+use i18n::t;
 use std::future::Future;
 use std::path::PathBuf;
 
@@ -228,7 +229,7 @@ impl GlobalSearch {
         if active.completed_sources == 0 {
             ctx.emit(GlobalSearchEvent::Failed {
                 search_id,
-                error: "Global search failed.".to_string(),
+                error: t!("Global search failed.").to_string(),
             });
         } else {
             ctx.emit(GlobalSearchEvent::Completed {

@@ -2,6 +2,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 
+use i18n::t;
 use warp::tui_export::{
     AIActionStatus, AIAgentActionResultType, AIAgentActionType, AIAgentTextSection,
     AIConversationId, ActiveSession, BlocklistAIActionEvent, BlocklistAIActionModel,
@@ -79,14 +80,14 @@ impl CliAgentOscEventPublisher {
 
     pub(crate) fn publish_session_start(&self, ctx: &AppContext) {
         let mut notification = self.notification("session_start", ctx);
-        notification.summary = Some("Local Agent session started.".to_owned());
+        notification.summary = Some(t!("Local Agent session started.").to_owned());
         self.publish(notification);
     }
 
     pub(crate) fn publish_prompt_submit(&self, prompt: String, ctx: &AppContext) {
         let mut notification = self.notification("prompt_submit", ctx);
         notification.query = notification_excerpt(&prompt);
-        notification.summary = Some("Local Agent is working on your request.".to_owned());
+        notification.summary = Some(t!("Local Agent is working on your request.").to_owned());
         self.publish(notification);
     }
 
@@ -194,13 +195,13 @@ impl CliAgentOscEventPublisher {
         notification.error_type = status_event.error_type.map(str::to_owned);
         notification.summary = Some(
             match new_status {
-                ConversationStatus::Success => "Local Agent completed your request.",
-                ConversationStatus::Error => "Local Agent encountered an error.",
-                ConversationStatus::Cancelled => "Local Agent was cancelled.",
-                ConversationStatus::InProgress => "Local Agent is working on your request.",
-                ConversationStatus::Blocked { .. } => "Local Agent is waiting for your input.",
-                ConversationStatus::TransientError => "Local Agent is reconnecting.",
-                ConversationStatus::WaitingForEvents => "Local Agent is waiting for events.",
+                ConversationStatus::Success => t!("Local Agent completed your request."),
+                ConversationStatus::Error => t!("Local Agent encountered an error."),
+                ConversationStatus::Cancelled => t!("Local Agent was cancelled."),
+                ConversationStatus::InProgress => t!("Local Agent is working on your request."),
+                ConversationStatus::Blocked { .. } => t!("Local Agent is waiting for your input."),
+                ConversationStatus::TransientError => t!("Local Agent is reconnecting."),
+                ConversationStatus::WaitingForEvents => t!("Local Agent is waiting for events."),
             }
             .to_owned(),
         );
@@ -239,7 +240,7 @@ impl CliAgentOscEventPublisher {
                         .and_then(notification_excerpt)
                 }),
                 ConversationStatus::Cancelled => {
-                    Some("The task was cancelled before completion.".to_owned())
+                    Some(t!("The task was cancelled before completion.").to_owned())
                 }
                 ConversationStatus::InProgress
                 | ConversationStatus::Blocked { .. }

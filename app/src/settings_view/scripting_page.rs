@@ -2,6 +2,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
+use i18n::t;
 use settings::Setting as _;
 #[cfg(target_os = "macos")]
 use warp_core::channel::ChannelState;
@@ -71,7 +72,7 @@ impl ScriptingSettingsPageView {
             vec![Box::new(LocalControlModeWidget)];
 
         Self {
-            page: PageType::new_uncategorized(widgets, Some(PageTitle::new("Scripting"))),
+            page: PageType::new_uncategorized(widgets, Some(PageTitle::new(t!("Scripting")))),
             local_only_icon_tooltip_states: RefCell::new(HashMap::new()),
             local_control_mode_dropdown,
             #[cfg(target_os = "macos")]
@@ -90,7 +91,7 @@ impl ScriptingSettingsPageView {
                     .into_iter()
                     .map(|mode| {
                         DropdownItem::new(
-                            mode.as_dropdown_label(),
+                            t!(mode.as_dropdown_label()),
                             ScriptingSettingsPageAction::SetLocalControlMode(mode),
                         )
                     })
@@ -120,8 +121,9 @@ impl ScriptingSettingsPageView {
                 match result {
                     Ok(()) => {
                         let command_name = ChannelState::channel().warpctrl_command_name();
-                        let message = format!(
-                            "Successfully installed the Termloc Control CLI! You can now run '{command_name}' from the command line."
+                        let message = t!(
+                            "Successfully installed the Termloc Control CLI! You can now run '{command_name}' from the command line.",
+                            command_name = command_name
                         );
                         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                             toast_stack.add_ephemeral_toast(
@@ -132,8 +134,9 @@ impl ScriptingSettingsPageView {
                         });
                     }
                     Err(error) => {
-                        let message = format!("Failed to install Termloc Control command: {error}");
-                        log::warn!("{message}");
+                        log::warn!("Failed to install Termloc Control command: {error}");
+                        let message =
+                            t!("Failed to install Termloc Control command: {error}", error = error);
                         ToastStack::handle(ctx).update(ctx, |toast_stack, ctx| {
                             toast_stack.add_persistent_toast(
                                 DismissibleToast::error(message),
@@ -231,11 +234,11 @@ impl SettingsWidget for WarpControlCliInstallWidget {
         let installed = cli_install::is_warpctrl_installed();
         let disabled = view.warpctrl_installing || installed;
         let label = if view.warpctrl_installing {
-            "Installing…"
+            t!("Installing…")
         } else if installed {
-            "Installed"
+            t!("Installed")
         } else {
-            "Install"
+            t!("Install")
         };
         let mut button = appearance
             .ui_builder()
@@ -259,14 +262,14 @@ impl SettingsWidget for WarpControlCliInstallWidget {
         };
 
         render_body_item::<ScriptingSettingsPageAction>(
-            "Termloc Control CLI command".into(),
+            t!("Termloc Control CLI command").into(),
             None,
             LocalOnlyIconState::Hidden,
             ToggleState::Enabled,
             appearance,
             button,
             Some(
-                "Install the termlocctrl command for scripting Termloc from your terminal."
+                t!("Install the termlocctrl command for scripting Termloc from your terminal.")
                     .to_owned(),
             ),
         )
@@ -299,7 +302,7 @@ impl SettingsWidget for LocalControlModeWidget {
             ToggleState::Enabled,
             appearance,
             ChildView::new(&view.local_control_mode_dropdown).finish(),
-            Some("termlocctrl allows for scripting Termloc's UI. Use with care.".to_owned()),
+            Some(t!("termlocctrl allows for scripting Termloc's UI. Use with care.").to_owned()),
         )
     }
 }

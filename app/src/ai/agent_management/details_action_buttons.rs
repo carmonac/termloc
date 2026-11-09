@@ -1,5 +1,6 @@
 //! Action buttons row for conversation details panel.
 
+use i18n::t;
 use warp_core::ui::theme::AnsiColorIdentifier;
 use warpui::elements::{ChildView, CrossAxisAlignment, Empty, Flex, ParentElement};
 use warpui::{AppContext, Element, Entity, TypedActionView, View, ViewContext, ViewHandle};
@@ -84,7 +85,7 @@ impl ConversationActionButtonsRow {
         let open_button = ctx.add_typed_action_view(|_| {
             Self::make_action_button(
                 Icon::LinkExternal,
-                "Open conversation",
+                t!("Open conversation"),
                 None,
                 AgentDetailsAction::Open,
             )
@@ -93,7 +94,7 @@ impl ConversationActionButtonsRow {
         let fork_conversation_button = ctx.add_typed_action_view(|_| {
             Self::make_action_button(
                 Icon::ArrowSplit,
-                "Fork conversation",
+                t!("Fork conversation"),
                 None,
                 AgentDetailsAction::ForkConversation,
             )
@@ -102,7 +103,7 @@ impl ConversationActionButtonsRow {
         let view_details_button = ctx.add_typed_action_view(|_| {
             Self::make_action_button(
                 Icon::Info,
-                "View details",
+                t!("View details"),
                 None,
                 AgentDetailsAction::ViewDetails,
             )
@@ -111,7 +112,7 @@ impl ConversationActionButtonsRow {
         let copy_link_button = ctx.add_typed_action_view(|_| {
             Self::make_action_button(
                 Icon::Link,
-                "Copy link to run",
+                t!("Copy link to run"),
                 None,
                 AgentDetailsAction::CopyLink,
             )

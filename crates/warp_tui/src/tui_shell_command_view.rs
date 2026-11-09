@@ -10,6 +10,7 @@ use std::cell::Cell;
 use std::sync::Arc;
 use std::time::Duration;
 
+use i18n::t;
 use parking_lot::FairMutex;
 use warp::tui_export::{
     AIActionStatus, AIAgentAction, AIAgentActionResultType, AIAgentActionType, AIConversationId,
@@ -248,7 +249,7 @@ impl TuiShellCommandView {
         let command = self.command_editor.as_ref(ctx).text(ctx);
         if command.trim().is_empty() {
             self.permission_prompt.update(ctx, |prompt, ctx| {
-                prompt.set_body_error(Some("Enter a command to continue.".to_owned()), ctx);
+                prompt.set_body_error(Some(t!("Enter a command to continue.").to_owned()), ctx);
             });
             self.invalidate_layout(ctx);
             return;
@@ -280,13 +281,16 @@ impl TuiShellCommandView {
         let builder = TuiUiBuilder::from_app(app);
         let edit_hint = TuiText::from_spans([
             ("e".to_owned(), builder.primary_text_style()),
-            (" to edit command".to_owned(), builder.muted_text_style()),
+            (
+                t!(" to edit command").to_owned(),
+                builder.muted_text_style(),
+            ),
         ])
         .truncate()
         .finish();
         render_permission_card(
             &self.permission_prompt,
-            "Is it OK if I run this command and read the output?",
+            t!("Is it OK if I run this command and read the output?"),
             None,
             Some(edit_hint),
             app,

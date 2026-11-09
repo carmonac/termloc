@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use i18n::t;
 use markdown_parser::parse_markdown;
 use warp_core::ui::external_product_icon::ExternalProductIcon;
 use warp_core::ui::icons::Icon;
@@ -75,14 +76,14 @@ pub struct InstallationModalBody {
 impl InstallationModalBody {
     pub fn new(ctx: &mut ViewContext<Self>) -> Self {
         let cancel_button = ctx.add_typed_action_view(|_ctx| {
-            ActionButton::new("Cancel", NakedTheme).on_click(|ctx| {
+            ActionButton::new(t!("Cancel"), NakedTheme).on_click(|ctx| {
                 ctx.dispatch_typed_action(InstallationModalBodyAction::Cancel);
             })
         });
 
         let enter_keystroke = Keystroke::parse("enter").expect("valid keystroke");
         let install_button = ctx.add_typed_action_view(|ctx| {
-            ActionButton::new("Install", PrimaryTheme)
+            ActionButton::new(t!("Install"), PrimaryTheme)
                 .with_keybinding(KeystrokeSource::Fixed(enter_keystroke), ctx)
                 .on_click(|ctx| {
                     ctx.dispatch_typed_action(InstallationModalBodyAction::Install);
@@ -257,7 +258,7 @@ impl InstallationModalBody {
 
         // Renders MCP title text
         let title = Text::new(
-            format!("Install {name}"),
+            t!("Install {name}", name = name),
             appearance.ui_font_family(),
             appearance.header_font_size(),
         )
@@ -423,9 +424,9 @@ impl InstallationModalBody {
         .finish();
 
         let source_text = if is_shared {
-            "Shared from team"
+            t!("Shared from team")
         } else {
-            "From another device"
+            t!("From another device")
         };
 
         let label_text = Text::new_inline(
@@ -548,7 +549,7 @@ impl View for InstallationModalBody {
                 .finish()
         } else {
             Text::new(
-                "No MCP server selected",
+                t!("No MCP server selected"),
                 appearance.ui_font_family(),
                 appearance.ui_font_size(),
             )
